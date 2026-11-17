@@ -198,7 +198,7 @@ A strip above the game walks through the first minute on the demo creature. It h
 
 ### Pressure
 
-While a raid runs, "Possession spread" shows how far the possession has crept, from 0 to 100 percent, as a text line and a progress bar. It rises with the clock and climbs faster while KEV limbs stay open. Warnings appear at 10, 5 and 1 minutes left, in text, and the 10 and 5 minute warnings are announced. Pressure is display only: it does not change the team risk removed, the rank or the grade. It never pulses, and it looks the same with reduced motion, high-contrast reader mode and the 2D page.
+While a raid runs, "Possession spread" shows how far the possession has spread, from 0 to 100 percent, as a text line and a progress bar. It rises with the clock and climbs faster while KEV limbs stay open. Healing a KEV limb lowers it again. Warnings appear at 10, 5 and 1 minutes left, in text, and the 10 and 5 minute warnings are announced, and the last minute is announced by the raid timer. Pressure is display only: it does not change the team risk removed, the rank or the grade. It never pulses, and it looks the same with reduced motion, high-contrast reader mode and the 2D page.
 
 ## 6. Accessibility
 

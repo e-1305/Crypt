@@ -154,6 +154,15 @@ describe("blameless output", () => {
       for (const p of praiseLines(limbs.map((l) => ({ ...l, healedBy: "@x" })))) expect(p).toMatch(/ healed by @x$/);
     }));
   });
+  it("card wording around an arbitrary repo name is blameless", () => {
+    fc.assert(fc.property(fc.array(limb, { maxLength: 10 }), fc.string(), fc.nat(RAID_MS * 2), (limbs, repo, ms) => {
+      const lines = cardLines(cardData(repo, limbs, ms));
+      const echoed = cardData(repo, limbs, ms).repo;
+      // The repo name is user input echoed as is. Everything the game adds around it must stay clean.
+      const text = lines.join("\n").split(echoed).join("");
+      expect(text).not.toMatch(banned);
+    }));
+  });
   it("card and epitaphs contain no blame wording, owners or per-person figures", () => {
     fc.assert(fc.property(fc.array(limb, { maxLength: 10 }), fc.nat(RAID_MS * 2), (limbs, ms) => {
       // The repo name is user input echoed verbatim, so it is held fixed: the check covers

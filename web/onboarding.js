@@ -24,7 +24,7 @@ export function initOnboarding({ store, announce, now = () => Date.now() }) {
     if (!strip) return;
     const off = hidden();
     strip.hidden = off;
-    if (off) { setText("tutorial-hint", ""); return; }
+    if (off) { setText("tutorial-hint", ""); clearInterval(timer); timer = 0; return; }
     const i = done.findIndex((d) => !d);
     const step = tutorialSteps[i];
     setText("tutorial-progress", "Getting started, step " + (i + 1) + " of " + n);
@@ -62,7 +62,7 @@ export function initOnboarding({ store, announce, now = () => Date.now() }) {
   render();
 
   return {
-    /** The limb id to suggest (the top possessed or rotting limb on the plate). */
+    /** The limb id to suggest (a limb that has a rehearsal pull request). */
     setLimb(id) { if (typeof id === "string" && id !== limb) { limb = id; render(); } },
     /** Events the game accepted. A verb finishes its step when it is the one the strip is waiting for. */
     note(events) {

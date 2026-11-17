@@ -22,7 +22,7 @@ export interface TutorialStep {
 
 export const tutorialSteps: readonly TutorialStep[] = [
   { id: "look", text: "Look at the creature in Plate I. Limbs marked possessed or rotting are the ones to heal.", command: null, verb: null },
-  { id: "examine", text: "Type EXAMINE {limb} in the game input to inspect the top limb.", command: "EXAMINE {limb}", verb: "EXAMINE" },
+  { id: "examine", text: "Type EXAMINE {limb} in the game input to inspect a limb that has a rehearsal pull request.", command: "EXAMINE {limb}", verb: "EXAMINE" },
   { id: "assign", text: "Type ASSIGN {limb} to put a healer on it.", command: "ASSIGN {limb}", verb: "ASSIGN" },
   { id: "graft", text: "Type GRAFT {limb} yourself to open a rehearsal pull request. Nothing leaves this page.", command: "GRAFT {limb}", verb: "GRAFT" },
   { id: "review", text: "The pull request now waits for a human to review it. CRYPT leaves the final decision to people.", command: null, verb: null },
@@ -53,7 +53,7 @@ export function nextHint(stepDone: readonly boolean[], idleMs: number, limb = ""
   return "Hint: read the step above, then press Got it.";
 }
 
-/** 0..1 level of "possession spreads". Rises with elapsed time; open KEV limbs make it climb faster. Never decreases as either input grows. */
+/** 0..1 level of "possession spreads". Rises with elapsed time; open KEV limbs make it climb faster. Recomputed on every render, so healing a KEV limb lowers it. */
 export function spreadPressure(elapsedMs: number, openKevCount: number): number {
   const t = Number.isFinite(elapsedMs) ? Math.min(1, Math.max(0, elapsedMs / RAID_MS)) : 0;
   const k = Number.isFinite(openKevCount) ? Math.min(3, Math.max(0, Math.floor(openKevCount))) : 0;
@@ -75,8 +75,8 @@ export function pressureWarning(remainingMs: number): string | null {
 }
 
 export const DAILY_EVENTS = [
-  "Fog Friday: the crypt is quiet. A good day to heal the oldest limb.",
-  "Full Moon Raid: KEV limbs are worth the most today. Heal them first.",
+  "Fog Night: the crypt is quiet. A good day to heal the oldest limb.",
+  "Full Moon Raid: KEV limbs spread possession fastest. Heal them first.",
   "Open Slab Day: every limb on the table is waiting for its first EXAMINE.",
   "Steady Hands: one limb at a time, one pull request at a time.",
   "Lantern Night: look closely at the plate. The quiet limbs hold surprises.",
