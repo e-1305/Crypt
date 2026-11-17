@@ -46,6 +46,16 @@ button:hover, button[aria-pressed="true"] { background: var(--fg); color: #000; 
   95% { transform: translateX(-1px); }
   97% { transform: none; text-shadow: 2px 0 rgba(0, 255, 255, .6), -2px 0 rgba(255, 0, 80, .6); }
 }
+.plate .convulsing { display: inline-block; animation: convulse .5s linear 3; color: #ff4d4d; }
+.line.reject { color: #ff6a3d; }
+.sim-label { color: var(--hot); font-weight: bold; }
+@keyframes convulse {
+  0%, 100% { transform: none; }
+  20% { transform: translate(2px, -1px) skewX(6deg); }
+  40% { transform: translate(-2px, 1px) skewX(-6deg); }
+  60% { transform: translate(2px, 1px); }
+  80% { transform: translate(-1px, -1px); }
+}
 @keyframes healed {
   0% { color: #fff; text-shadow: 0 0 14px #fff; }
   100% { color: var(--fg); text-shadow: 0 0 5px rgba(51, 255, 51, .45); }
@@ -89,3 +99,8 @@ body.theatre .top, body.theatre .crt { position: absolute; width: 1px; height: 1
 .raid-actions button:disabled { opacity: .5; cursor: default; }
 body.theatre #raid { position: fixed; left: 1rem; bottom: 1rem; z-index: 5; margin: 0; padding: .5rem; background: rgba(0,0,0,.7); }
 body.theatre #raid > h2, body.theatre #raid > p, body.theatre .raid-readout { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* Simulated CI controls (web/heal.js). In 3D the buttons float bottom right; the label is drawn on the wall plate. */
+body.theatre #sim { position: fixed; right: 1rem; bottom: 3.5rem; z-index: 5; margin: 0; padding: .5rem; background: rgba(0,0,0,.7); }
+body.theatre #sim > h2, body.theatre #sim > p { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.sim { margin: 0 1rem 1rem; }

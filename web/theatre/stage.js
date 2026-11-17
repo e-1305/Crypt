@@ -163,6 +163,11 @@ export async function mountStage() {
   const hcWatch = new MutationObserver(() => { if (document.body.classList.contains("hc")) destroy(); });
   hcWatch.observe(document.body, { attributes: true, attributeFilter: ["class"] });
 
+  // Thunder: a heal flashes the lamp light for a moment. Not under reduced motion.
+  let flashAt = -1;
+  const onFx = (e) => { if (e.detail && e.detail.kind === "heal" && e.detail.reduced !== true) flashAt = performance.now(); };
+  document.addEventListener("crypt:fx", onFx);
+
   let raf = 0, stopped = false;
   const t0 = performance.now();
   function frame(now) {
@@ -172,7 +177,9 @@ export async function mountStage() {
     const t = (now - t0) / 1000;
     camera.position.set(camBase.x + mouse.x * 0.35, camBase.y - mouse.y * 0.2, camBase.z);
     camera.lookAt(0, 2.3, 0);
-    lampLight.intensity = 14 + Math.sin(t * 31) * 0.25 + Math.sin(t * 5.1) * 0.35;
+    const sinceFlash = flashAt < 0 ? 1e9 : now - flashAt;
+    const flash = sinceFlash < 700 ? (Math.floor(sinceFlash / 90) % 2 === 0 ? 1 : 0.35) * 90 * (1 - sinceFlash / 700) : 0;
+    lampLight.intensity = 14 + Math.sin(t * 31) * 0.25 + Math.sin(t * 5.1) * 0.35 + flash;
     screenMat.uniforms.time.value = t;
     if (screen.update(now)) screenTex.needsUpdate = true;
     if (wallPlate.update()) plateTex.needsUpdate = true;
@@ -193,6 +200,7 @@ export async function mountStage() {
     window.removeEventListener("mousemove", onMove);
     window.removeEventListener("resize", onResize);
     document.removeEventListener("keydown", onKey);
+    document.removeEventListener("crypt:fx", onFx);
     screen.dispose();
     wallPlate.dispose();
     board.dispose();
