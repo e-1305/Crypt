@@ -13,7 +13,10 @@ import {
   type AgentPaths,
   type PrRecord,
 } from "../common/agent.js";
-import type { GithubClient } from "../github/client.js";
+import type { FileChange, GithubClient } from "../github/client.js";
+import type { RegistryClient, RegistryVersion } from "../registry/types.js";
+import { BUMP_MESSAGES, bumpLockfile, jsonIndent, respec } from "./lockfile.js";
+import { SABOTAGE_BODY_LINE, SABOTAGE_PATH, SABOTAGE_TITLE_PREFIX, sabotageSmokeTest } from "./sabotage.js";
 import { chooseVersion, type Advisory } from "./version.js";
 
 export const MAX_PRS_PER_RAID = 5;
@@ -28,6 +31,10 @@ export interface NecromancerCtx extends AgentPaths {
   /** Directory of the target repository checkout (package.json, package-lock.json). */
   targetDir: string;
   now: () => Date;
+  /** Registry metadata source. Required whenever the client is not a dry run. */
+  registry?: RegistryClient;
+  /** Demo only: add a deliberately failing test to the PR. */
+  sabotage?: boolean;
 }
 
 export interface GraftResult {
@@ -58,6 +65,9 @@ export interface PrFields {
   epss: number | null;
   owner: string;
   auditId: string;
+  /** True when `resolved` and `integrity` come from registry metadata. */
+  fromRegistry?: boolean;
+  sabotage?: boolean;
 }
 
 /** PR body. Built from creature.json only (owners from CODEOWNERS); never from git history. */
@@ -73,19 +83,13 @@ export function prBody(f: PrFields): string {
     `Audit ID: ${f.auditId}`,
     ...(f.breaking ? ["breaking: true"] : []),
     "",
-    "One dependency per PR. package-lock.json: `resolved` and `integrity` for this package were removed and refresh on the next `npm install`.",
+    ...(f.sabotage ? [SABOTAGE_BODY_LINE, ""] : []),
+    f.fromRegistry
+      ? "One dependency per PR. package-lock.json: `version`, `resolved` and `integrity` for this package come from the npm registry metadata. Nothing was installed or run."
+      : "One dependency per PR. package-lock.json: `resolved` and `integrity` for this package were removed and refresh on the next `npm install`.",
     "A human lands this PR after CI is green.",
     "",
   ].join("\n");
-}
-
-function jsonIndent(text: string): number | string {
-  const m = /^[{[]\r?\n([ \t]+)"/.exec(text);
-  return m ? m[1]! : 2;
-}
-
-function respec(old: string, version: string): string {
-  return /^[\^~]/.test(old) ? old[0] + version : version;
 }
 
 type Json = Record<string, unknown>;
@@ -191,7 +195,7 @@ export async function graft(ctx: NecromancerCtx, requestPath: string): Promise<G
     const choice = chooseVersion(ref.ecosystem, ref.name, ref.version, advisories);
     if (!choice) return done("NO_FIX_AVAILABLE");
 
-    const branch = `crypt/graft-${limb.toLowerCase()}-${choice.version}`;
+    const branch = `crypt/graft-${limb.toLowerCase()}-${choice.version}${ctx.sabotage === true ? "-sabotage" : ""}`;
     const records: PrRecord[] = readPrRecords(io, ctx.prsDir);
     if (records.some((r) => r.branch === branch || r.limb === limb)) return done("PR_EXISTS");
     // A raid is the set of PRs not yet healed: healed and rejected records do not count.
@@ -199,13 +203,37 @@ export async function graft(ctx: NecromancerCtx, requestPath: string): Promise<G
     const open = records.filter((r) => state.limbs[r.limb]?.state !== "healed");
     if (open.length >= MAX_PRS_PER_RAID) return done("RAID_LIMIT");
 
-    const edited = editManifests(
-      io.readText(`${ctx.targetDir}/package.json`),
-      io.readText(`${ctx.targetDir}/package-lock.json`),
-      ref.name,
-      choice.version,
-    );
+    // Live mode (a client that writes to a remote): registry metadata is required before any GitHub write.
+    const live = !ctx.client.dryRun;
+    let meta: RegistryVersion | null = null;
+    if (ctx.registry) {
+      meta = await ctx.registry.getVersion(ref.name, choice.version);
+      if (meta.version !== choice.version) throw new Error(`registry answered ${meta.version} for ${choice.version}`);
+    } else if (live) {
+      throw new Error("npm registry client is required for a live graft");
+    }
+    const readFile = (path: string): Promise<string> | string =>
+      live ? ctx.client.readBaseFile(path) : io.readText(`${ctx.targetDir}/${path}`);
+    const pkgText = await readFile("package.json");
+    const lockText = await readFile("package-lock.json");
+    let edited: { pkg: string; lock: string } | null;
+    if (meta) {
+      const r = bumpLockfile({ pkgText, lockText, name: ref.name, from: ref.version, meta, fixed: choice.version });
+      if (!r.ok) {
+        process.stderr.write(`necromancer: ${BUMP_MESSAGES[r.reason]} (${r.reason})\n`);
+        return done(r.reason === "not-direct-dependency" || r.reason === "lock-entry-count" ? "NO_FIX_AVAILABLE" : "ERROR");
+      }
+      edited = r;
+    } else {
+      edited = editManifests(pkgText, lockText, ref.name, choice.version);
+    }
     if (!edited) return done("NO_FIX_AVAILABLE");
+    const sabotage = ctx.sabotage === true;
+    const files: FileChange[] = [
+      { path: "package.json", content: edited.pkg },
+      { path: "package-lock.json", content: edited.lock },
+    ];
+    if (sabotage) files.push({ path: SABOTAGE_PATH, content: sabotageSmokeTest(await readFile(SABOTAGE_PATH)) });
 
     const auditId = auditIdFor(ctx.now(), limb);
     const cves = [...new Set(vulns.flatMap((v) => (Array.isArray(v.cves) ? v.cves : [])))].sort();
@@ -220,26 +248,43 @@ export async function graft(ctx: NecromancerCtx, requestPath: string): Promise<G
       epss: typeof cl.epss === "number" ? cl.epss : null,
       owner: typeof cl.owner === "string" ? cl.owner : "",
       auditId,
+      fromRegistry: meta !== null,
+      sabotage,
     });
-    const title = `fix: graft ${ref.name} ${ref.version} to ${choice.version} (${limb})`;
-    await ctx.client.createBranchWithFiles({
-      branch,
-      message: title,
-      files: [
-        { path: "package.json", content: edited.pkg },
-        { path: "package-lock.json", content: edited.lock },
-      ],
-    });
-    const pr = await ctx.client.openPullRequest({
-      branch,
-      title,
-      body,
-      meta: { limb, ecosystem: ref.ecosystem, name: ref.name, from: ref.version, to: choice.version, breaking: choice.breaking },
-    });
+    const title = `${sabotage ? SABOTAGE_TITLE_PREFIX : ""}fix: graft ${ref.name} ${ref.version} to ${choice.version} (${limb})`;
+    // Complete mediation: re-check the seal before each remote write step.
+    if (isSealed(io, ctx.sealPath)) return done("REJECTED_SEALED");
+    await ctx.client.createBranchWithFiles({ branch, message: title, files });
+    if (isSealed(io, ctx.sealPath)) {
+      if (ctx.client.deleteBranch && branch.startsWith("crypt/")) await ctx.client.deleteBranch(branch).catch(() => undefined);
+      return done("REJECTED_SEALED");
+    }
+    let pr: { number: number; url: string; headSha?: string };
+    try {
+      pr = await ctx.client.openPullRequest({
+        branch,
+        title,
+        body,
+        meta: { limb, ecosystem: ref.ecosystem, name: ref.name, from: ref.version, to: choice.version, breaking: choice.breaking },
+      });
+    } catch (e) {
+      // The branch exists but no PR does: remove it so no orphan remains (best effort).
+      if (ctx.client.deleteBranch && branch.startsWith("crypt/")) await ctx.client.deleteBranch(branch).catch(() => undefined);
+      throw e;
+    }
     if (!ctx.client.dryRun) {
-      io.mkdirp(ctx.prsDir);
-      const rec = { branch, limb, ecosystem: ref.ecosystem, name: ref.name, from: ref.version, to: choice.version, breaking: choice.breaking, number: pr.number, url: pr.url, auditId };
-      io.writeText(`${ctx.prsDir}/${branchFile(branch)}`, JSON.stringify(rec, null, 2) + "\n");
+      const rec = {
+        branch, limb, ecosystem: ref.ecosystem, name: ref.name, from: ref.version, to: choice.version, breaking: choice.breaking,
+        number: pr.number, url: pr.url, headSha: pr.headSha, sabotage, auditId,
+      };
+      try {
+        io.mkdirp(ctx.prsDir);
+        io.writeText(`${ctx.prsDir}/${branchFile(branch)}`, JSON.stringify(rec, null, 2) + "\n");
+      } catch (e) {
+        // The PR is open but unrecorded. Closing it would be another remote write, so name it for a human.
+        process.stderr.write(`necromancer: pull request ${pr.url} is open but its record could not be written (${(e as Error).message}). Close it by hand before grafting ${limb} again.\n`);
+        return done("ERROR", {}, pr.url);
+      }
     }
     return done("PR_OPENED", { branch, breaking: choice.breaking }, pr.url);
   } catch (e) {

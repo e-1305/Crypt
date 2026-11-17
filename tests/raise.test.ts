@@ -158,10 +158,31 @@ describe("raise: story content (R2, R5, R6)", () => {
     expect(inf).toContain("Verb 'seal'");
   });
 
+  it("sets crypt_sealed on SEAL and answers GRAFT with the sealed line, keeping the marker", () => {
+    expect(inf).toContain("Global crypt_sealed = 0;");
+    const seal = inf.slice(inf.indexOf("[ SealSub;"), inf.indexOf('Include "Grammar"'));
+    expect(seal).toContain("crypt_sealed = 1;");
+    const graftSub = inf.slice(inf.indexOf("[ GraftSub;"), inf.indexOf("[ AssignSub;"));
+    expect(graftSub).toContain('print "[[CRYPT GRAFT ";');
+    expect(graftSub.indexOf("[[CRYPT GRAFT")).toBeLessThan(graftSub.indexOf("The crypt is sealed. No needle moves."));
+    expect(graftSub).toContain("The surgeon begins the graft.");
+    expect(inf.indexOf("Global crypt_sealed")).toBeLessThan(inf.indexOf("[ GraftSub;"));
+  });
+
   it("handles a creature with no spawned limbs", () => {
     const g = generate({ limbs: [] });
     expect(g.limbs).toEqual({});
     expect(g.inf).toContain("The slabs are bare.");
+  });
+
+  it("declares the four limb properties when no limb object defines them, so Limb compiles", () => {
+    // Without a spawned limb no object sets these, and Inform rejects the Limb class that reads them.
+    for (const c of [{ limbs: [] }, { limbs: [{ rank: 1, ecosystem: "npm", name: "ms", version: "2.1.3", owner: "x", state: "Healthy", spawned: false, epss: null, vulns: [] }] }]) {
+      const { inf } = generate(c as CreatureInput);
+      for (const p of ["limbid", "limbcodes", "owner", "lore"]) expect(inf, p).toMatch(new RegExp(`^Property ${p};$`, "m"));
+    }
+    // With a spawned limb the object defines them, so the declarations must not appear twice.
+    expect(generate(fixture).inf).not.toMatch(/^Property (limbid|limbcodes|owner|lore);$/m);
   });
 
   it("never carries a commit author field", () => {

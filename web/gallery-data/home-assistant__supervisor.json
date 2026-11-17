@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "repo": "home-assistant/supervisor",
+  "sha": "e610ca810eab5f7444dfb7f74a3b7c869685c797",
+  "scannedLimbs": 27,
+  "counts": {
+    "unresolved": 0
+  },
+  "limbs": []
+}

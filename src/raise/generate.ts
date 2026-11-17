@@ -179,6 +179,8 @@ export function generate(creature: CreatureInput): Generated {
   out.push("    rtrue;");
   out.push("];");
   out.push("");
+  // With no spawned limb no object defines these properties, and the Limb class would not compile.
+  if (monsters.length === 0) for (const p of ["limbid", "limbcodes", "owner", "lore"]) out.push(`Property ${p};`);
   out.push("! The only code that prints markers. Data strings are plain game text.");
   out.push("Class Limb");
   out.push("  with parse_name [ i len wa;");
@@ -216,9 +218,12 @@ export function generate(creature: CreatureInput): Generated {
   out.push('    "Nothing here answers to that name. EXAMINE a limb from the list.";');
   out.push("];");
   out.push("");
+  out.push("Global crypt_sealed = 0;");
+  out.push("");
   out.push("[ GraftSub;");
   out.push("    if (~~(noun ofclass Limb)) return NoLimb();");
   out.push('    print "[[CRYPT GRAFT "; print (string) noun.limbid; print "]]^";');
+  out.push('    if (crypt_sealed) { print "The crypt is sealed. No needle moves.^"; rtrue; }');
   out.push('    "The surgeon begins the graft.";');
   out.push("];");
   out.push("");
@@ -231,6 +236,7 @@ export function generate(creature: CreatureInput): Generated {
   out.push("");
   out.push("[ SealSub;");
   out.push('    print "[[CRYPT SEAL]]^";');
+  out.push("    crypt_sealed = 1;");
   out.push('    "The crypt falls silent. Every needle rests.";');
   out.push("];");
   out.push("");

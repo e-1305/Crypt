@@ -1,0 +1,632 @@
+{
+  "schemaVersion": 1,
+  "repo": "npm/cli",
+  "sha": "8f92e740ee1547568779284005454ce2f1a5e58b",
+  "scannedLimbs": 999,
+  "counts": {
+    "unresolved": 0
+  },
+  "limbs": [
+    {
+      "rank": 1,
+      "ecosystem": "npm",
+      "name": "lodash",
+      "version": "4.17.21",
+      "state": "Rotting",
+      "spawned": false,
+      "kev": false,
+      "epss": 0.0287,
+      "vulns": [
+        {
+          "id": "GHSA-r5fr-rjxr-66jc",
+          "cves": [
+            "CVE-2026-4800"
+          ]
+        },
+        {
+          "id": "GHSA-xxjr-mmjv-4gpg",
+          "cves": [
+            "CVE-2025-13465"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 2,
+      "ecosystem": "npm",
+      "name": "ws",
+      "version": "7.5.9",
+      "state": "Rotting",
+      "spawned": false,
+      "kev": false,
+      "epss": 0.01426,
+      "vulns": [
+        {
+          "id": "GHSA-3h5v-q93c-6h6q",
+          "cves": [
+            "CVE-2024-37890"
+          ]
+        },
+        {
+          "id": "GHSA-96hv-2xvq-fx4p",
+          "cves": [
+            "CVE-2026-48779"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 3,
+      "ecosystem": "npm",
+      "name": "shell-quote",
+      "version": "1.8.1",
+      "state": "Rotting",
+      "spawned": false,
+      "kev": false,
+      "epss": 0.00793,
+      "vulns": [
+        {
+          "id": "GHSA-395f-4hp3-45gv",
+          "cves": [
+            "CVE-2026-13311"
+          ]
+        },
+        {
+          "id": "GHSA-w7jw-789q-3m8p",
+          "cves": [
+            "CVE-2026-9277"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 4,
+      "ecosystem": "npm",
+      "name": "handlebars",
+      "version": "4.7.9",
+      "state": "Rotting",
+      "spawned": false,
+      "kev": false,
+      "epss": 0.00786,
+      "vulns": [
+        {
+          "id": "GHSA-8r5x-fm3f-whwj",
+          "cves": [
+            "CVE-2026-106446"
+          ]
+        },
+        {
+          "id": "GHSA-p8wg-vrv2-v86f",
+          "cves": [
+            "CVE-2026-106445"
+          ]
+        },
+        {
+          "id": "GHSA-xw65-4hp5-5hc7",
+          "cves": [
+            "CVE-2026-106444"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 5,
+      "ecosystem": "npm",
+      "name": "browserslist",
+      "version": "4.22.2",
+      "state": "Rotting",
+      "spawned": false,
+      "kev": false,
+      "epss": 0.00658,
+      "vulns": [
+        {
+          "id": "GHSA-73wf-gq98-2v4g",
+          "cves": [
+            "CVE-2026-73088"
+          ]
+        },
+        {
+          "id": "GHSA-c83g-rgw3-j3cx",
+          "cves": [
+            "CVE-2026-73089"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 6,
+      "ecosystem": "npm",
+      "name": "browserslist",
+      "version": "4.28.5",
+      "state": "Rotting",
+      "spawned": false,
+      "kev": false,
+      "epss": 0.00658,
+      "vulns": [
+        {
+          "id": "GHSA-73wf-gq98-2v4g",
+          "cves": [
+            "CVE-2026-73088"
+          ]
+        },
+        {
+          "id": "GHSA-c83g-rgw3-j3cx",
+          "cves": [
+            "CVE-2026-73089"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 7,
+      "ecosystem": "npm",
+      "name": "brace-expansion",
+      "version": "1.1.11",
+      "state": "Rotting",
+      "spawned": false,
+      "kev": false,
+      "epss": 0.00647,
+      "vulns": [
+        {
+          "id": "GHSA-3jxr-9vmj-r5cp",
+          "cves": [
+            "CVE-2026-13149"
+          ]
+        },
+        {
+          "id": "GHSA-6j4f-fj2g-mc7p",
+          "cves": [
+            "CVE-2026-102276"
+          ]
+        },
+        {
+          "id": "GHSA-f886-m6hf-6m8v",
+          "cves": [
+            "CVE-2026-33750"
+          ]
+        },
+        {
+          "id": "GHSA-mh99-v99m-4gvg",
+          "cves": [
+            "CVE-2026-14257"
+          ]
+        },
+        {
+          "id": "GHSA-q2hr-2g5m-vwhr",
+          "cves": [
+            "CVE-2026-102277"
+          ]
+        },
+        {
+          "id": "GHSA-qhr7-859c-m2p7",
+          "cves": [
+            "CVE-2026-102278"
+          ]
+        },
+        {
+          "id": "GHSA-rgw5-rvv9-x895",
+          "cves": [
+            "CVE-2026-69152"
+          ]
+        },
+        {
+          "id": "GHSA-v6h2-p8h4-qcjw",
+          "cves": [
+            "CVE-2025-5889"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 8,
+      "ecosystem": "npm",
+      "name": "@xmldom/xmldom",
+      "version": "0.8.13",
+      "state": "Rotting",
+      "spawned": false,
+      "kev": false,
+      "epss": 0.00619,
+      "vulns": [
+        {
+          "id": "GHSA-27p8-2357-5qqv",
+          "cves": [
+            "CVE-2026-83608"
+          ]
+        },
+        {
+          "id": "GHSA-4w3w-2rp5-g8jm",
+          "cves": [
+            "CVE-2026-83605"
+          ]
+        },
+        {
+          "id": "GHSA-6gmq-8vp8-gcm6",
+          "cves": [
+            "CVE-2026-83610"
+          ]
+        },
+        {
+          "id": "GHSA-6h8r-xr42-gp59",
+          "cves": [
+            "CVE-2026-83611"
+          ]
+        },
+        {
+          "id": "GHSA-8344-3jmq-59r6",
+          "cves": [
+            "CVE-2026-83613"
+          ]
+        },
+        {
+          "id": "GHSA-93r5-fhx6-vmg9",
+          "cves": [
+            "CVE-2026-83614"
+          ]
+        },
+        {
+          "id": "GHSA-965w-775f-mr7g",
+          "cves": [
+            "CVE-2026-83615"
+          ]
+        },
+        {
+          "id": "GHSA-c7q8-3ch8-vqpv",
+          "cves": [
+            "CVE-2026-83616"
+          ]
+        },
+        {
+          "id": "GHSA-w2rr-34g9-rvrj",
+          "cves": [
+            "CVE-2026-83607"
+          ]
+        },
+        {
+          "id": "GHSA-x4fp-j954-r2f4",
+          "cves": [
+            "CVE-2026-83619"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 9,
+      "ecosystem": "npm",
+      "name": "minimatch",
+      "version": "3.1.2",
+      "state": "Rotting",
+      "spawned": false,
+      "kev": false,
+      "epss": 0.00576,
+      "vulns": [
+        {
+          "id": "GHSA-23c5-xmqv-rm74",
+          "cves": [
+            "CVE-2026-27904"
+          ]
+        },
+        {
+          "id": "GHSA-3ppc-4f35-3m26",
+          "cves": [
+            "CVE-2026-26996"
+          ]
+        },
+        {
+          "id": "GHSA-7r86-cg39-jmmj",
+          "cves": [
+            "CVE-2026-27903"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 10,
+      "ecosystem": "npm",
+      "name": "@babel/helpers",
+      "version": "7.23.6",
+      "state": "Rotting",
+      "spawned": false,
+      "kev": false,
+      "epss": 0.00563,
+      "vulns": [
+        {
+          "id": "GHSA-968p-4wvh-cqc8",
+          "cves": [
+            "CVE-2025-27789"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 11,
+      "ecosystem": "npm",
+      "name": "js-yaml",
+      "version": "3.15.0",
+      "state": "Rotting",
+      "spawned": false,
+      "kev": false,
+      "epss": 0.00541,
+      "vulns": [
+        {
+          "id": "GHSA-2883-xcg3-v3hh",
+          "cves": [
+            "CVE-2026-84375"
+          ]
+        },
+        {
+          "id": "GHSA-5p4m-2wfm-xmqj",
+          "cves": []
+        }
+      ]
+    },
+    {
+      "rank": 12,
+      "ecosystem": "npm",
+      "name": "js-yaml",
+      "version": "4.3.0",
+      "state": "Rotting",
+      "spawned": false,
+      "kev": false,
+      "epss": 0.00541,
+      "vulns": [
+        {
+          "id": "GHSA-2883-xcg3-v3hh",
+          "cves": [
+            "CVE-2026-84375"
+          ]
+        },
+        {
+          "id": "GHSA-5p4m-2wfm-xmqj",
+          "cves": []
+        }
+      ]
+    },
+    {
+      "rank": 13,
+      "ecosystem": "npm",
+      "name": "baseline-browser-mapping",
+      "version": "2.10.42",
+      "state": "Rotting",
+      "spawned": false,
+      "kev": false,
+      "epss": 0.00507,
+      "vulns": [
+        {
+          "id": "GHSA-w5vr-8v7q-w6rv",
+          "cves": [
+            "CVE-2026-45819"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 14,
+      "ecosystem": "npm",
+      "name": "yaml",
+      "version": "1.10.2",
+      "state": "Rotting",
+      "spawned": false,
+      "kev": false,
+      "epss": 0.00499,
+      "vulns": [
+        {
+          "id": "GHSA-48c2-rrv3-qjmp",
+          "cves": [
+            "CVE-2026-33532"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 15,
+      "ecosystem": "npm",
+      "name": "source-map-js",
+      "version": "1.2.1",
+      "state": "Rotting",
+      "spawned": false,
+      "kev": false,
+      "epss": 0.00455,
+      "vulns": [
+        {
+          "id": "GHSA-68fv-2mgg-jv7q",
+          "cves": [
+            "CVE-2026-93749"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 16,
+      "ecosystem": "npm",
+      "name": "fast-uri",
+      "version": "3.1.3",
+      "state": "Rotting",
+      "spawned": false,
+      "kev": false,
+      "epss": 0.00436,
+      "vulns": [
+        {
+          "id": "GHSA-333x-w4r6-6crp",
+          "cves": [
+            "CVE-2026-110725"
+          ]
+        },
+        {
+          "id": "GHSA-5jgf-p345-68v8",
+          "cves": [
+            "CVE-2026-75931"
+          ]
+        },
+        {
+          "id": "GHSA-7p8r-x3mc-p8w7",
+          "cves": [
+            "CVE-2026-18446"
+          ]
+        },
+        {
+          "id": "GHSA-f65p-4m7j-42xc",
+          "cves": [
+            "CVE-2026-75975"
+          ]
+        },
+        {
+          "id": "GHSA-fph4-wmhf-6fwf",
+          "cves": [
+            "CVE-2026-75899"
+          ]
+        },
+        {
+          "id": "GHSA-hrr3-gc8f-f4qj",
+          "cves": [
+            "CVE-2026-86472"
+          ]
+        },
+        {
+          "id": "GHSA-jqff-g426-hqxp",
+          "cves": [
+            "CVE-2026-76172"
+          ]
+        },
+        {
+          "id": "GHSA-qw65-cvwx-89v3",
+          "cves": [
+            "CVE-2026-84292"
+          ]
+        },
+        {
+          "id": "GHSA-v2hh-gcrm-f6hx",
+          "cves": [
+            "CVE-2026-16221"
+          ]
+        },
+        {
+          "id": "GHSA-w74x-v6f9-j3xg",
+          "cves": [
+            "CVE-2026-110306"
+          ]
+        },
+        {
+          "id": "GHSA-wjr9-j795-jxcr",
+          "cves": [
+            "CVE-2026-110180"
+          ]
+        },
+        {
+          "id": "GHSA-xhq7-xmqj-769h",
+          "cves": [
+            "CVE-2026-110095"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 17,
+      "ecosystem": "npm",
+      "name": "glob",
+      "version": "13.0.6",
+      "state": "Rotting",
+      "spawned": false,
+      "kev": false,
+      "epss": 0.0035,
+      "vulns": [
+        {
+          "id": "GHSA-3g3m-2fjr-6pw4",
+          "cves": [
+            "CVE-2026-118773"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 18,
+      "ecosystem": "npm",
+      "name": "uuid",
+      "version": "8.3.2",
+      "state": "Rotting",
+      "spawned": false,
+      "kev": false,
+      "epss": 0.0035,
+      "vulns": [
+        {
+          "id": "GHSA-w5hq-g745-h8pq",
+          "cves": [
+            "CVE-2026-41907",
+            "CVE-2026-41988"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 19,
+      "ecosystem": "npm",
+      "name": "picomatch",
+      "version": "2.3.2",
+      "state": "Rotting",
+      "spawned": false,
+      "kev": false,
+      "epss": 0.00335,
+      "vulns": [
+        {
+          "id": "GHSA-fc5q-39xc-vjpf",
+          "cves": [
+            "CVE-2026-112366"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 20,
+      "ecosystem": "npm",
+      "name": "picomatch",
+      "version": "4.0.5",
+      "state": "Rotting",
+      "spawned": false,
+      "kev": false,
+      "epss": 0.00335,
+      "vulns": [
+        {
+          "id": "GHSA-fc5q-39xc-vjpf",
+          "cves": [
+            "CVE-2026-112366"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 21,
+      "ecosystem": "npm",
+      "name": "minimatch",
+      "version": "10.2.5",
+      "state": "Rotting",
+      "spawned": false,
+      "kev": false,
+      "epss": 0.00301,
+      "vulns": [
+        {
+          "id": "GHSA-g3hv-75wg-m249",
+          "cves": [
+            "CVE-2026-118764"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 22,
+      "ecosystem": "npm",
+      "name": "@babel/core",
+      "version": "7.23.6",
+      "state": "Rotting",
+      "spawned": false,
+      "kev": false,
+      "epss": 0.00152,
+      "vulns": [
+        {
+          "id": "GHSA-4x5r-pxfx-6jf8",
+          "cves": [
+            "CVE-2026-49356"
+          ]
+        }
+      ]
+    }
+  ]
+}

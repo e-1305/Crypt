@@ -10,7 +10,10 @@
 <body>
 <a class="skip" href="#cmd">Skip to the game input</a>
 <header class="top">
-  <h1>CRYPT</h1>
+  <div>
+    <h1>CRYPT</h1>
+    <p class="subtitle">The first vulnerability report you can play</p>
+  </div>
   <button id="hc-toggle" type="button" aria-pressed="false" aria-describedby="hc-help">High-contrast reader mode</button>
   <span id="hc-help" class="sr-only">Plain text, no effects, game events announced.</span>
 </header>
@@ -23,6 +26,8 @@
     </section>
     <section class="pane game" aria-labelledby="game-h">
       <h2 id="game-h">The crypt</h2>
+      <p class="muted">Playing: <span id="creature-name">the demo creature</span>.
+        <button id="download" type="button" disabled>Download the playable report</button></p>
       <div id="transcript" class="transcript" role="log" aria-live="polite" aria-label="Game text" tabindex="0"></div>
       <form id="input-form" class="input-row" autocomplete="off">
         <label for="cmd" class="prompt">Command &gt;</label>
@@ -30,10 +35,29 @@
       </form>
     </section>
   </div>
-  <aside class="pane events" aria-labelledby="events-h">
-    <h2 id="events-h">Event log</h2>
-    <ol id="event-log" class="event-log"></ol>
-    <p id="event-empty" class="muted">No markers detected yet.</p>
+  <aside class="side">
+    <section class="pane events" aria-labelledby="events-h">
+      <h2 id="events-h">Event log</h2>
+      <ol id="event-log" class="event-log"></ol>
+      <p id="event-empty" class="muted">No markers detected yet.</p>
+    </section>
+    <section class="pane" aria-labelledby="payload-h">
+      <h2 id="payload-h">Dry-run PR payload</h2>
+      <p id="payload-note" class="muted">Grafts here are rehearsals. GRAFT a limb to read the pull request it would open. Nothing leaves this page.</p>
+      <pre id="payload" class="payload" tabindex="0"></pre>
+    </section>
+    <nav class="pane" aria-labelledby="gallery-h">
+      <h2 id="gallery-h">Gallery</h2>
+      <p class="muted">Twenty public projects, each scanned at a pinned commit. Each creature shows only its own project's packages, listed alphabetically.</p>
+      <p><a id="demo-link" href="./">The demo creature</a></p>
+      <form id="lookup-form" autocomplete="off">
+        <label for="lookup">Open a project by its GitHub address</label>
+        <input id="lookup" type="text" spellcheck="false" placeholder="https://github.com/owner/repo">
+        <button type="submit">Open</button>
+      </form>
+      <p id="lookup-status" class="muted" role="status"></p>
+      <ul id="gallery-list" class="gallery-list"></ul>
+    </nav>
   </aside>
 </main>
 <div id="announcer" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>

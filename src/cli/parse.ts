@@ -28,16 +28,23 @@ export const SPECS: Record<CommandName, Spec> = {
   exhume: { positional: TARGET, flags: { out: "value", feeds: "value", cache: "value", offline: "bool" } },
   raise: { positional: [{ name: "creature.json", required: false }], flags: { out: "value" } },
   play: { positional: [], flags: { story: "value", target: "value", advisories: "value" } },
-  graft: { positional: LIMB, flags: { live: "bool", repo: "value", target: "value", advisories: "value" } },
-  inquisit: { positional: LIMB, flags: { "dry-run": "bool", repo: "value" } },
-  reraise: { positional: [], flags: { "dry-run": "bool", repo: "value" } },
+  graft: {
+    positional: LIMB,
+    flags: { live: "bool", repo: "value", target: "value", advisories: "value", sabotage: "bool", "i-know-this-is-a-demo": "bool" },
+  },
+  inquisit: { positional: LIMB, flags: { "dry-run": "bool", repo: "value", live: "bool", timeout: "value" } },
+  reraise: { positional: [], flags: { "dry-run": "bool", repo: "value", live: "bool", timeout: "value" } },
   seal: { positional: [], flags: {} },
   unseal: { positional: [], flags: {} },
-  raid: { positional: TARGET, flags: { offline: "bool", feeds: "value", cache: "value" } },
+  raid: { positional: TARGET, flags: { offline: "bool", feeds: "value", cache: "value", live: "bool", timeout: "value" } },
 };
 
 const REPO = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
 const LIMB_ID = /^[A-Z]{1,32}$/;
+
+export const TIMEOUT_MIN = 10;
+export const TIMEOUT_MAX = 3600;
+export const TIMEOUT_DEFAULT = 600;
 
 const HINT = "Run 'crypt --help' for usage.";
 
@@ -99,9 +106,30 @@ export function parseCli(argv: readonly string[], env: Record<string, string | u
   if (typeof flags.repo === "string" && !REPO.test(flags.repo)) {
     throw new UsageError(`--repo must look like owner/name, got '${flags.repo.slice(0, 60)}'`);
   }
-  if (command === "graft" && flags.live === true) {
-    if (!env.GITHUB_TOKEN) throw new UsageError("--live needs GITHUB_TOKEN in the environment. Without it, graft stays in dry-run and writes a payload to out/prs/.");
-    if (flags.repo === undefined) throw new UsageError("--live needs --repo owner/name, the repository that receives the pull request.");
+  if (flags.timeout !== undefined) {
+    const t = String(flags.timeout);
+    if (!/^\d+$/.test(t) || Number(t) < TIMEOUT_MIN || Number(t) > TIMEOUT_MAX) {
+      throw new UsageError(`--timeout must be a whole number of seconds from ${TIMEOUT_MIN} to ${TIMEOUT_MAX}, got '${t.slice(0, 20)}'`);
+    }
   }
+  const needsToken = (what: string) => {
+    if (!env.GITHUB_TOKEN) throw new UsageError(`${what} needs GITHUB_TOKEN in the environment. Create a fine-grained token limited to the target repository, then export GITHUB_TOKEN.`);
+  };
+  if (command === "graft") {
+    const sabotage = flags.sabotage === true;
+    const demo = flags["i-know-this-is-a-demo"] === true;
+    if (sabotage && !(flags.live === true && demo)) {
+      throw new UsageError("--sabotage is a demo flag. Run it as: crypt graft <LIMB> --live --sabotage --i-know-this-is-a-demo");
+    }
+    if (demo && !sabotage) throw new UsageError("--i-know-this-is-a-demo only goes with --sabotage. Remove it, or add --sabotage and --live.");
+    if (flags.live === true) needsToken("--live");
+  }
+  if ((command === "inquisit" || command === "reraise") && flags.live === true) needsToken("--live");
+  if (command === "raid" && flags.live === true) {
+    if (flags.offline === true) throw new UsageError("--live cannot be combined with --offline. Remove --offline to talk to GitHub.");
+    if (!parseGithubUrl(args[0]!)) throw new UsageError(`--live needs a GitHub URL target: ${GITHUB_BASE}/<owner>/<repo>`);
+    needsToken("--live");
+  }
+  if (command === "raid" && flags.timeout !== undefined && flags.live !== true) throw new UsageError("--timeout only applies with --live.");
   return { command, args, flags };
 }

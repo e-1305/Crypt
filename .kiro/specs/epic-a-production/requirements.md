@@ -25,9 +25,15 @@ Terms. **CI**: GitHub Actions on this repository. **Guard**: `scripts/ci/failsaf
 2. The workflow SHALL use `pages: write` and `id-token: write` only on the deploy job.
 3. The demo SHALL work offline from the deployed files. The CORS result for any fetch the player makes SHALL be recorded in `design.md`.
 4. The demo creature SHALL be built from `fixtures/vulnerable-npm`, never from a scanned repository.
+5. The page SHALL load the demo creature (plate and playable `.z8`) with no input, use relative URLs only, and open no connection except to its own files.
+6. GRAFT on the page SHALL show a prebuilt dry-run payload and send nothing. No network request on the page SHALL use a method other than GET.
+7. The page SHALL offer "Download the playable report", which downloads the loaded `.z8`, and the subtitle "The first vulnerability report you can play".
+8. The page SHALL offer a gallery of the 20 census creatures, listed alphabetically. A creature page SHALL show only that repository's own packages: no total, ranking or comparison across repositories, no owners and no names of people.
+9. Gallery data SHALL be committed snapshots (`web/gallery-data/`), so the Pages build uses no network.
 
 ## A4 npm packaging
-1. `npm pack --dry-run` SHALL list exactly the files in the `files` whitelist, and SHALL exclude `web/`, `.toolchain/` and `out/`.
+1. `npm pack --dry-run` SHALL list exactly the files in the `files` whitelist, and SHALL exclude `web/`, `.toolchain/`, `out/` and `tests/`.
 2. A packed tarball installed in a clean directory SHALL answer `crypt --help` and `crypt --version`.
-3. The package SHALL stay `private: true` until a human removes it. No step publishes.
-4. `docs/ATTRIBUTION.md` SHALL list every new dependency and action.
+3. The package SHALL be ready to publish (no `private` flag, `bin`, `files`, `engines`, `repository`, `license`) under the first free name of `crypt`, `crypt-cli`, `@e-1305/crypt`. No step publishes; the owner runs `npm publish`.
+4. CI SHALL pack the package, install the tarball into an empty project and run the installed CLI on Node 20 and 22.
+5. `docs/ATTRIBUTION.md` SHALL list every new dependency and action.

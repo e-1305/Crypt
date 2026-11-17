@@ -71,3 +71,11 @@ body.hc .plate [data-state], body.hc .line.echo, body.hc .muted, body.hc .plate-
 body.hc .event-log li.rejected { color: #ffd54a; }
 body.hc button { color: #fff; border-color: #fff; }
 body.hc button[aria-pressed="true"] { background: #fff; color: #000; }
+
+.subtitle { margin: .15rem 0 0; color: var(--dim); }
+.side { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+.payload { margin: 0; max-height: 14rem; overflow: auto; white-space: pre-wrap; font: inherit; font-size: 13px; }
+.gallery-list { list-style: none; margin: 0; padding: 0; max-height: 14rem; overflow-y: auto; }
+.gallery-list a, #demo-link { color: var(--fg); }
+#lookup { width: 100%; background: transparent; border: 1px solid var(--dim); color: var(--fg); font: inherit; padding: .25rem; margin: .25rem 0; }
+button:disabled { opacity: .5; cursor: default; }
