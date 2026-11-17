@@ -3,6 +3,7 @@
 import { makeCrtMaterial } from "./crt-shader.js";
 import { makeScreen } from "./screen.js";
 import { makeWall } from "./wall.js";
+import { makeBoard } from "./board.js";
 
 export async function mountStage() {
   const THREE = await import("../vendor/three.module.min.js");
@@ -98,6 +99,37 @@ export async function mountStage() {
   plateMesh.position.set(-2.9, 3.1, -2.45);
   scene.add(plateMesh);
 
+  // The raid board on the wall, above the lamp.
+  const board = makeBoard();
+  const boardTex = new THREE.CanvasTexture(board.canvas);
+  boardTex.colorSpace = THREE.SRGBColorSpace;
+  const boardMesh = new THREE.Mesh(new THREE.PlaneGeometry(2.7, 1.77), new THREE.MeshBasicMaterial({ map: boardTex }));
+  boardMesh.position.set(4.3, 4.6, -2.45);
+  scene.add(boardMesh);
+
+  // The raid lever on the bench. Pulling it (click) starts the raid, same as the Start button.
+  const lever = new THREE.Group();
+  lever.position.set(-2.9, 0.48, 0.9);
+  const leverBase = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.2, 0.5), metal);
+  const leverArm = new THREE.Group();
+  const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.9, 10), metal);
+  rod.position.y = 0.45;
+  const knob = new THREE.Mesh(new THREE.SphereGeometry(0.14, 16, 12), new THREE.MeshStandardMaterial({ color: 0x992222, roughness: 0.4 }));
+  knob.position.y = 0.95;
+  leverArm.add(rod, knob);
+  leverArm.position.y = 0.1;
+  leverArm.rotation.z = 0.7;
+  lever.add(leverBase, leverArm);
+  scene.add(lever);
+  const raycaster = new THREE.Raycaster();
+  const ndc = new THREE.Vector2();
+  const onPointerDown = (e) => {
+    ndc.set((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
+    raycaster.setFromCamera(ndc, camera);
+    if (raycaster.intersectObject(lever, true).length > 0) document.getElementById("raid-start")?.click();
+    else focusCmd();
+  };
+
   // Props for the bench.
   const jar = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.7, 16), new THREE.MeshStandardMaterial({ color: 0x4a7a4a, transparent: true, opacity: 0.55, roughness: 0.1 }));
   jar.position.set(-0.9, 0.82, 0.7);
@@ -124,7 +156,7 @@ export async function mountStage() {
   window.addEventListener("mousemove", onMove);
   window.addEventListener("resize", onResize);
   document.addEventListener("keydown", onKey);
-  canvas.addEventListener("pointerdown", focusCmd);
+  canvas.addEventListener("pointerdown", onPointerDown);
   onResize();
 
   // Leaving the 3D path live: turning on reader mode tears the stage down.
@@ -144,6 +176,9 @@ export async function mountStage() {
     screenMat.uniforms.time.value = t;
     if (screen.update(now)) screenTex.needsUpdate = true;
     if (wallPlate.update()) plateTex.needsUpdate = true;
+    if (board.update()) boardTex.needsUpdate = true;
+    const pulled = document.documentElement.dataset.raid === "running";
+    leverArm.rotation.z += ((pulled ? -0.7 : 0.7) - leverArm.rotation.z) * 0.15;
     renderer.render(scene, camera);
     frames++;
   }
@@ -160,6 +195,7 @@ export async function mountStage() {
     document.removeEventListener("keydown", onKey);
     screen.dispose();
     wallPlate.dispose();
+    board.dispose();
     scene.traverse((o) => { o.geometry?.dispose?.(); });
     renderer.dispose();
     canvas.remove();

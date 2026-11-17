@@ -95,6 +95,8 @@ export function plateInput(creature: unknown): { repo?: string; limbs: Record<st
     limbs.push({
       ecosystem: l.ecosystem, name: l.name, version: l.version,
       state: l.state, rank: l.rank, spawned: l.spawned,
+      // Public scan numbers for the raid score. Owners stay out.
+      epss: typeof l.epss === "number" ? l.epss : null, kev: l.kev === true,
     });
   }
   return typeof c.repo === "string" ? { repo: c.repo, limbs } : { limbs };
