@@ -1,0 +1,16 @@
+{
+  "name": "vulnerable-npm-fixture",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CRYPT fixture: old pinned dependencies listed only to be scanned. Never install or run.",
+  "dependencies": {
+    "handlebars": "4.0.11",
+    "jquery": "3.4.1",
+    "lodash": "4.17.15",
+    "mkdirp": "0.5.1",
+    "node-fetch": "2.6.0"
+  },
+  "devDependencies": {
+    "ms": "2.1.3"
+  }
+}

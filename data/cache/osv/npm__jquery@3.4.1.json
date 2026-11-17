@@ -1,0 +1,23 @@
+{
+  "ecosystem": "npm",
+  "name": "jquery",
+  "version": "3.4.1",
+  "vulns": [
+    {
+      "id": "GHSA-gxr4-xjj5-5px2",
+      "aliases": [
+        "BIT-drupal-2020-11022",
+        "CVE-2020-11022"
+      ],
+      "severity": "MODERATE"
+    },
+    {
+      "id": "GHSA-jpcq-cgw6-v4j6",
+      "aliases": [
+        "BIT-drupal-2020-11023",
+        "CVE-2020-11023"
+      ],
+      "severity": "MODERATE"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "ecosystem": "npm",
+  "name": "minimist",
+  "version": "0.0.8",
+  "vulns": [
+    {
+      "id": "GHSA-vh95-rmgr-6w4m",
+      "aliases": [
+        "CVE-2020-7598"
+      ],
+      "severity": "MODERATE"
+    },
+    {
+      "id": "GHSA-xvch-5gv4-984h",
+      "aliases": [
+        "CVE-2021-44906"
+      ],
+      "severity": "CRITICAL"
+    }
+  ]
+}

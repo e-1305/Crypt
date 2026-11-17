@@ -104,7 +104,7 @@ Only the manifest-level `owner` is attributed; no person appears in failure mess
 
 ## Offline fixtures and data folder
 
-`data/feeds/` is gitignored (EPSS is about 12 MB uncompressed). `data/cache/osv/` is committed for the fixture so a clean clone can rerun it. For a clone without feeds, `fixtures/vulnerable-npm/feeds/` holds a small snapshot (KEV and EPSS rows for the fixture's CVEs only), selected with `--feeds fixtures/vulnerable-npm/feeds`. With no feeds at all the scan still works and marks every limb Unknown.
+`data/feeds/` is gitignored (EPSS is about 12 MB uncompressed). `data/cache/osv/` is committed for the fixture so a clean clone can rerun it. For a clone without feeds, `fixtures/vulnerable-npm/feeds/` holds a small snapshot (KEV and EPSS rows for the fixture's CVEs only), selected with `--feeds fixtures/vulnerable-npm/feeds`. When `--feeds` is not given, `data/feeds/kev.json` is absent and a local target contains `feeds/kev.json`, that snapshot is used, so `npm run exhume -- fixtures/vulnerable-npm` works on a fresh clone. With no feeds at all the scan still works and marks every limb Unknown.
 
 ## CLI
 
