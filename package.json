@@ -16,7 +16,8 @@
     "spike": "bash scripts/setup-tools.sh && bash scripts/build-game.sh && tsx scripts/reset.ts && tsx scripts/play.ts && tsx src/bridge/watch.ts --once && tsx scripts/check-spike.ts",
     "feeds:update": "tsx scripts/feeds-update.ts",
     "exhume": "tsx scripts/exhume.ts",
-    "raise": "tsx scripts/raise.ts"
+    "raise": "bash scripts/setup-tools.sh && tsx scripts/raise.ts",
+    "raise:check": "tsx scripts/check-raise.ts"
   },
   "dependencies": {
     "tsx": "^4.23.15"

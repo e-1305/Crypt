@@ -27,13 +27,17 @@ function main(): void {
   if (!creature || typeof creature !== "object" || (creature as { schemaVersion?: unknown }).schemaVersion !== 1) {
     throw new Error(`${input} is not a creature file (schemaVersion 1 expected)`);
   }
+  if (!Array.isArray((creature as { limbs?: unknown }).limbs)) {
+    throw new Error(`${input} is not a creature file (limbs array expected)`);
+  }
   const { inf, limbs } = generate(creature as Parameters<typeof generate>[0]);
   mkdirSync(outDir, { recursive: true });
   const infPath = `${outDir}/creature.inf`;
   const z8Path = `${outDir}/creature.z8`;
   rmSync(z8Path, { force: true });
   writeFileSync(infPath, inf);
-  writeFileSync(`${outDir}/limbs.json`, JSON.stringify(limbs, null, 2) + "\n");
+  const sorted = Object.fromEntries(Object.keys(limbs).sort().map((k) => [k, limbs[k]]));
+  writeFileSync(`${outDir}/limbs.json`, JSON.stringify(sorted, null, 2) + "\n");
   const r = spawnSync(".toolchain/Inform6/inform6", ["-v8", "+include_path=.toolchain/inc", infPath, z8Path], {
     encoding: "utf8",
   });
