@@ -1,5 +1,7 @@
 # Design: transcript-bridge-spike
 
+> **Superseded in part by bridge-v2** (`.kiro/specs/bridge-v2/`): L1 (driver-written `> CMD` lines no longer trigger anything; the game prints markers) and review decision 1 "Driver-synthesized commands" (its Fallback of requiring the game reply is replaced by markers).
+
 ## Pipeline
 
 ```

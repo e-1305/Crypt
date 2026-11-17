@@ -2,7 +2,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import fc from "fast-check";
 import { readFileSync } from "node:fs";
 import { createWatcher } from "../src/bridge/watch.js";
-import { makeEnv, transcript } from "./helpers.js";
+import { makeEnv, markerFor, transcript } from "./helpers.js";
 
 beforeAll(() => {
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
@@ -58,7 +58,7 @@ describe("watcher", () => {
 
   it("ignores game output lines that are not commands", () => {
     const e = env();
-    createWatcher(e.ctx).processText("GRAFT ARM\nThe surgeon begins the graft.\n >GRAFT ARM\n");
+    createWatcher(e.ctx).processText("GRAFT ARM\nThe surgeon begins the graft.\n >GRAFT ARM\n> GRAFT ARM\n");
     expect(e.requests()).toEqual([]);
     expect(e.auditLines()).toEqual([]);
   });
@@ -71,7 +71,7 @@ describe("watcher", () => {
           const w = createWatcher(e.ctx);
           w.processText(transcript(before.filter((c) => c !== "SEAL CRYPT")));
           const n = e.requests().length;
-          w.processLine("> SEAL CRYPT");
+          w.processLine(markerFor("SEAL CRYPT"));
           w.processText(transcript(after));
           expect(e.requests().length).toBe(n);
           expect(e.sealed()).toBe(true);
@@ -92,7 +92,7 @@ describe("watcher", () => {
         const lines = cmds.filter((c) => !/^(EXAMINE|GRAFT) [A-Z]{1,32}$|^SEAL CRYPT$/.test(c));
         const e = makeEnv();
         try {
-          createWatcher(e.ctx).processText(lines.map((c) => `> ${c}`).join("\n"));
+          createWatcher(e.ctx).processText(lines.map((c) => `> ${c}\n${markerFor(c)}`).join("\n"));
           expect(e.requests()).toEqual([]);
           expect(e.auditLines()).toEqual([]);
           expect(e.sealed()).toBe(false);
@@ -154,11 +154,11 @@ describe("watcher", () => {
   it("property (rule 8): each accepted command yields exactly one audit line", () => {
     fc.assert(
       fc.property(fc.array(fc.oneof(accepted, garbage), { maxLength: 25 }), (cmds) => {
-        const ok = /^(EXAMINE|GRAFT) [A-Z]{1,32}$|^SEAL CRYPT$/;
+        const ok = /^\[\[CRYPT ((EXAMINE|GRAFT) [A-Z]{1,32}|SEAL)\]\]$/;
         const e = makeEnv();
         try {
-          createWatcher(e.ctx).processText(cmds.map((c) => `> ${c}`).join("\n"));
-          expect(e.auditLines().length).toBe(cmds.filter((c) => ok.test(c)).length);
+          createWatcher(e.ctx).processText(transcript(cmds));
+          expect(e.auditLines().length).toBe(cmds.filter((c) => ok.test(markerFor(c))).length);
         } finally {
           e.cleanup();
         }

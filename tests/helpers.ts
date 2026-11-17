@@ -23,4 +23,8 @@ export function makeEnv(fsOverride?: Partial<Fs>) {
   };
 }
 
-export const transcript = (cmds: string[]) => cmds.map((c) => `> ${c}\nsome game output\n`).join("");
+/** The marker line the game prints when it accepts a command. */
+export const markerFor = (cmd: string) => `[[CRYPT ${cmd === "SEAL CRYPT" ? "SEAL" : cmd}]]`;
+
+/** Realistic game output: input record, then a marker and a reply for each accepted command. */
+export const transcript = (cmds: string[]) => cmds.map((c) => `> ${c}\n${markerFor(c)}\nsome game output\n`).join("");

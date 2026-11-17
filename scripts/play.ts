@@ -1,5 +1,6 @@
 // Play spike.z5 headlessly with dfrotz and write transcript.txt.
 // dfrotz does not echo piped input (design.md L1), so this driver writes "> COMMAND" lines itself.
+// Those lines are a record only. The watcher triggers on marker lines the game prints (bridge-v2).
 import { spawnSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 
