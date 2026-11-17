@@ -1,7 +1,7 @@
 // DOM glue of the page (web/raid.js, web/app.js) run against a minimal fake DOM. The glue is plain browser JS, so the
 // test compiles web/ into a temp directory (never touching web/js, which other tests rebuild) and imports it from there.
 // web/heal.js (live and simulated heal events) is covered here too; its pure rules are in tests/heal-events.test.ts.
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import fc from "fast-check";
 import { spawnSync } from "node:child_process";
 import { cpSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -90,6 +90,21 @@ beforeAll(() => {
   const r = spawnSync("npx", ["tsc", "-p", "tsconfig.web.json", "--outDir", join(tmp, "js")], { cwd: ROOT, encoding: "utf8" });
   if (r.status !== 0) throw new Error(r.stdout + r.stderr);
 }, 120_000);
+// Raids started by a test keep a setInterval alive; stop them so a stale tick cannot write into the next test's document.
+const intervals = new Set<ReturnType<typeof setInterval>>();
+const realSetInterval = globalThis.setInterval;
+beforeAll(() => {
+  globalThis.setInterval = ((...a: Parameters<typeof setInterval>) => {
+    const id = realSetInterval(...a);
+    intervals.add(id);
+    return id;
+  }) as typeof setInterval;
+});
+afterEach(() => {
+  for (const id of intervals) clearInterval(id);
+  intervals.clear();
+});
+afterAll(() => { globalThis.setInterval = realSetInterval; });
 afterAll(() => rmSync(tmp, { recursive: true, force: true }));
 
 const limbs = (healed: boolean) => [
