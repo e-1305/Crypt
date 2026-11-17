@@ -3,7 +3,7 @@
 // The only requests this page makes are for its own files under game/: index.json, <id>.z8, <id>.json, <id>.payloads.json.
 // Grafts are rehearsals here: GRAFT shows a prebuilt dry-run payload and sends nothing.
 import { startPlayer } from "./js/web/player.js";
-import { markHealed } from "./js/web/healed.js";
+import { markHealed, markRed } from "./js/web/healed.js";
 import { layoutPlate, plateSummary, creatureName } from "./js/render/plate.js";
 import { parseRepoUrl, repoSlug } from "./js/web/repo-url.js";
 import { initRaid } from "./raid.js";
@@ -174,6 +174,7 @@ async function loadPlate() {
     const creature = await res.json();
     if (!creature || !Array.isArray(creature.limbs)) throw new Error("no limbs");
     const fresh = markHealed(creature.limbs, scopedStore());
+    const red = markRed(creature.limbs, scopedStore());
     drawPlate(creature, fresh);
     const name = creatureName(creature.repo || "demo");
     creatureNameEl.textContent = name + (creatureId === "demo" ? " (the demo creature)" : " (" + creature.repo + ")");
@@ -181,6 +182,8 @@ async function loadPlate() {
     raid.setLimbs(creature.limbs, creature.repo);
     // Real source: each limb that turned Healed goes through the same fail-safe pipeline as the simulation.
     heal.real(fresh);
+    // A red check recorded by the Inquisitor shows the rejection once per PR.
+    heal.red(red);
     if (!simStarted) { simStarted = true; heal.start(); }
   } catch (err) {
     plateEl.textContent = "";

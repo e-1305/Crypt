@@ -1,6 +1,8 @@
 // Pure renderer: creature.json data -> anatomical-plate ASCII. Deterministic, no fs, clock, random or network.
 // Every data string is cleaned to printable ASCII. Owners are never shown: rot belongs to the limb.
 
+import { safeLogin } from "../common/creature-status.js";
+
 export type PlateState = "Possessed" | "Rotting" | "Healed" | "Healthy";
 
 export interface PlateSegment {
@@ -97,6 +99,10 @@ export function plateInput(creature: unknown): { repo?: string; limbs: Record<st
       state: l.state, rank: l.rank, spawned: l.spawned,
       // Public scan numbers for the raid score. Owners stay out.
       epss: typeof l.epss === "number" ? l.epss : null, kev: l.kev === true,
+      // Pipeline records: neutral facts about the limb. healedBy is praise only (a cleaned login).
+      ...(l.status === "awaiting-human-merge" ? { status: "awaiting-human-merge" } : {}),
+      ...(l.ciVerdict === "red" && Number.isInteger(l.ciPr) ? { ciVerdict: "red", ciPr: l.ciPr } : {}),
+      ...(l.healed === true && safeLogin(l.healedBy) ? { healed: true, healedBy: safeLogin(l.healedBy) } : {}),
     });
   }
   return typeof c.repo === "string" ? { repo: c.repo, limbs } : { limbs };

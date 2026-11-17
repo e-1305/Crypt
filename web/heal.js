@@ -73,6 +73,8 @@ export function initHeal({ addLine, announce, getLimbs, redraw }) {
   return {
     /** Real source: limbs app.js saw turn from sick to Healthy in game/<id>.json (the plate remembers they were sick). */
     real: (keys) => { for (const k of keys) handle({ type: "healed", limb: k }, false, { [k]: "Rotting" }); },
+    /** Real source: limbs whose creature.json record shows a new red CI verdict. A red never changes a limb's state. */
+    red: (keys) => { for (const k of keys) handle({ type: "ci-red", limb: k }, false); },
     /** The simulated heal is a view only: applied on top of whatever the page last loaded. */
     overlay: (limbs) => limbs.map((l) => (sim[keyOf(l)] === "Healed" ? { ...l, state: "Healed" } : l)),
     start: () => { if (q === "green" || q === "red") run(q); },

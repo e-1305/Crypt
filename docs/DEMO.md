@@ -204,7 +204,7 @@ Before the take: clear site data for the page (`localStorage` remembers healed l
 
 ### Known limits
 
-- Real red CI is not routed to the convulse effect. Only the simulation shows it, because nothing writes a CI verdict into `game/<id>.json`.
-- Praise lines need a `healedBy` field on a limb in `game/<id>.json`. The web reads it if present. The reraise and inquisitor code does not write it yet, so praise is empty on a live repo.
-- The `awaiting-human-merge` score term needs `status: "awaiting-human-merge"` on a limb in `game/<id>.json`. Inquisitor state is a separate file and is not bridged yet.
+- A red CI is recorded by the Inquisitor on the limb in `out/creature.json` (`ciVerdict: "red"`, `ciPr`). The page shows the convulse effect once per PR when `game/<id>.json` carries it. `game/<id>.json` is built by `npm run build:site`, so a live page needs that file regenerated from `out/creature.json` after the Inquisitor runs.
+- Praise lines read `healedBy` on a limb. reraise writes it (a cleaned GitHub login, praise only) from the PR the human landed. It is empty when the API does not name anyone.
+- The Inquisitor writes `status: "awaiting-human-merge"` on the limb in `out/creature.json` when CI is green, and reraise clears it when the limb heals. The score counts it once `game/<id>.json` is regenerated.
 - Risk removed and Nights Without Possession are per browser (they are remembered in localStorage), not shared team numbers. The counter starts at the browser's first visit.

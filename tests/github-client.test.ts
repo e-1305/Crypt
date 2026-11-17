@@ -33,4 +33,13 @@ describe("github adapter basics", () => {
     expect(runs).toEqual([{ name: "test", status: "completed", conclusion: "success" }]);
     expect(w.requests[0]!.path).toBe(`/repos/${REPO}/commits/${"a".repeat(40)}/check-runs`);
   });
+  it("reads who landed a PR (GET only) and omits it for an open PR", async () => {
+    const w = makeWorld();
+    const c = githubClient(REPO, TOKEN, w.github);
+    await c.createBranchWithFiles(req);
+    const pr = await c.openPullRequest({ branch: req.branch, title: "t", body: "b", meta: { limb: "A", ecosystem: "npm", name: "a", from: "1.0.0", to: "1.0.1", breaking: false } });
+    expect(await c.getPullRequestState({ number: pr.number, branch: req.branch })).toEqual({ open: true, landed: false });
+    w.land(pr.number);
+    expect(await c.getPullRequestState({ number: pr.number, branch: req.branch })).toEqual({ open: false, landed: true, landedBy: "octo-cat" });
+  });
 });
