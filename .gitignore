@@ -22,3 +22,6 @@ crypt-audit.log
 
 # IMPORTANT: never ignore .kiro/ (hackathon rule — disqualification risk)
 !.kiro/
+
+# Local toolchain built by scripts/setup-tools.sh
+.toolchain/

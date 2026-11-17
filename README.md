@@ -59,3 +59,13 @@ Third-party data, tools and code are listed in [`docs/ATTRIBUTION.md`](docs/ATTR
 ## License
 
 [MIT](LICENSE)
+
+## Transcript bridge spike
+
+```
+npm install
+npm run spike   # builds tools into .toolchain/ on first run, compiles the game, plays a scripted session, checks the result
+npm test        # vitest + fast-check
+```
+
+See `.kiro/specs/transcript-bridge-spike/` for the spec.

@@ -8,8 +8,10 @@ and using third-party SDKs, APIs and data in line with their terms. Keep this fi
 | OSV | API + data | Vulnerability lookup for npm / PyPI | TODO: confirm terms | https://osv.dev |
 | CISA KEV catalog | Data | Actively exploited CVEs | TODO: confirm terms | https://www.cisa.gov/known-exploited-vulnerabilities-catalog |
 | FIRST EPSS | Data | Exploit probability scores | TODO: confirm terms | https://www.first.org/epss/ |
-| Inform 6 compiler | Tool | Compile story source to Z-machine `.z5` | TODO: confirm license | TODO |
-| Web Z-machine interpreter | Code | Play `.z5` in the browser | TODO: confirm license | TODO |
+| Inform 6 compiler (6.45) | Tool | Compile story source to Z-machine `.z5` | Artistic License 2.0 or original Inform licence (user's choice) | https://github.com/DavidKinder/Inform6 |
+| Inform 6 standard library (6.12.2) | Code | Parser and verbs included by `game/spike.inf` at compile time | Artistic License 2.0 or traditional Inform licence (user's choice) | https://github.com/DavidGriffith/inform6lib |
+| Frotz `dfrotz` (2.44) | Tool | Headless Z-machine interpreter that plays `spike.z5` in the spike; run as a separate process, not bundled | GPL-2.0 | https://github.com/DavidGriffith/frotz |
+| Web Z-machine interpreter | Code | Play `.z5` in the browser | TODO: confirm license (not used in the transcript-bridge spike) | TODO |
 
 ## Ideas and references (not code)
 

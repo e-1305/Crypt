@@ -1,0 +1,36 @@
+! CRYPT transcript-bridge spike: one room, one object, three verbs.
+Constant Story "The Crypt";
+Constant Headline "^A transcript bridge spike.^";
+
+Include "Parser";
+Include "VerbLib";
+
+[ Initialise;
+    location = Crypt;
+    "^You wake in the dark.^";
+];
+
+Object Crypt "The Crypt"
+  with description "A cold stone vault. Something rots here.",
+  has light;
+
+Object arm "arm" Crypt
+  with name 'arm' 'limb' 'rotting',
+       description "A rotting limb, grey and slack, begging for a graft.",
+  has static;
+
+[ GraftSub;
+    "The surgeon begins the graft.";
+];
+
+[ SealSub;
+    "The crypt is sealed.";
+];
+
+Include "Grammar";
+
+Verb 'graft'
+    * noun                      -> Graft;
+
+Verb 'seal'
+    * 'crypt'                   -> Seal;
