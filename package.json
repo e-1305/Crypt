@@ -21,7 +21,8 @@
     "necromancer": "tsx scripts/necromancer.ts",
     "inquisitor": "tsx scripts/inquisitor.ts",
     "reraise": "tsx scripts/reraise.ts",
-    "necromancer:check": "tsx scripts/check-necromancer.ts"
+    "necromancer:check": "tsx scripts/check-necromancer.ts",
+    "census": "npm run feeds:update && tsx scripts/census/run.ts"
   },
   "dependencies": {
     "tsx": "^4.23.15"
