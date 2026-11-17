@@ -87,4 +87,21 @@ Raise fix found by the gallery: a creature with no spawned limb produced Inform 
 Triggers: push to `main`, `workflow_dispatch`. Top-level `permissions: contents: read`. Job `build`: checkout, Node 22, `npm ci`, toolchain cache (same key as CI), `bash scripts/setup-tools.sh`, `npm run build:site`, `configure-pages`, `upload-pages-artifact` (`_site`). Job `deploy` (needs `build`): `pages: write`, `id-token: write`, `environment: github-pages`, `deploy-pages`. Concurrency group `pages`, no cancel of a running deploy.
 
 ## A4 Packaging
-To be designed in the A4 milestone.
+
+### Name availability (checked 2026-11-17 with `npm view <name> name version description`)
+| Name | Result |
+|---|---|
+| `crypt` | taken: 0.0.2, "utilities for encryption and hashing" (unrelated) |
+| `crypt-cli` | taken: 1.0.0, "CLI tool to encrypt or decrypt JWT" (unrelated) |
+| `@e-1305/crypt` | E404, free |
+
+The package is named `@e-1305/crypt`. The `bin` entry stays `crypt`, so after install the command is `crypt`. Publishing a scoped package needs the `@e-1305` npm scope owned by the publisher, which the owner confirms; `publishConfig.access` is `public`. Run it with `npx @e-1305/crypt raid <dir>` (npx runs the only bin) or, once installed, `npx --no-install crypt`.
+
+### Files whitelist
+`files` ships `bin`, `scripts`, `src`, `game`, `fixtures/vulnerable-npm`, `data/cache/osv`, README, LICENSE and `docs/ATTRIBUTION.md`. Negations drop what only maintainers use: `scripts/ci`, `scripts/hooks`, `scripts/census`, `scripts/check-*.ts`, `scripts/build-site.ts`, `scripts/gallery-snapshot.ts`, `scripts/web.ts`, `src/web` and `src/site` (the web gallery and Pages build). Result: 108 files, 64 kB packed (131 files before the negations). `tsx` stays a runtime dependency because the launcher runs TypeScript through it.
+
+### Path audit
+`PACKAGE_ROOT` comes from `import.meta.url` (`scripts/toolchain-dir.ts`), so the fixture, OSV cache and `setup-tools.sh` resolve inside `node_modules`. `out/`, `crypt-audit.log` and `.crypt-seal` use `process.cwd()`. No change was needed.
+
+### Install test
+`scripts/ci/pack-install-test.sh` runs `npm pack`, checks the tarball for required and forbidden paths, installs it into an empty project, runs `crypt --help`, `crypt --version` and an offline exhume of the packaged fixture. With `CRYPT_PACK_RAID=1` it also plays the scripted raid. CI job `pack-install` runs it on Node 20 and 22. `prepublishOnly` runs typecheck, tests and the same script.
