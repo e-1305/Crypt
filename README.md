@@ -17,7 +17,7 @@ Each command dispatches AI agents built with [Kiro](https://kiro.dev) that open 
 
 ---
 
-**New here? Read the [user manual](docs/USER_MANUAL.md).**
+**New here? Read the [user manual](docs/USER_MANUAL.md), also hosted at [e-1305.github.io/Crypt/manual.html](https://e-1305.github.io/Crypt/manual.html).**
 
 ## Install
 

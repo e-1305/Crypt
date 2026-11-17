@@ -2,6 +2,20 @@
 
 CRYPT turns a project's dependency tree into a creature, one limb per package, and lets a team heal it by playing a text adventure. This manual covers day-to-day use. Background and design live in the [README](../README.md), [DEMO.md](DEMO.md) (the live pull request walkthrough), [ACCESSIBILITY.md](ACCESSIBILITY.md) (measurements) and [KIRO.md](KIRO.md).
 
+## Quick start for testers
+
+You do not need to know what jQuery is. This page walks you through the live demo in about five minutes. Nothing you do here changes any real project.
+
+The demo shows a small project as a creature. Each package the project depends on is a limb. `JQUERY` is one of those limbs: jQuery is a JavaScript library that many websites use, and the demo project depends on an old version of it that has known security problems. The game tells you what is wrong with it.
+
+1. Open the [live page](https://e-1305.github.io/Crypt/). Click the Command box, type `EXAMINE JQUERY` and press Enter. The game describes the limb: its state, how many known vulnerabilities (CVEs, public security bug reports) it has and how likely they are to be attacked.
+2. Type `GRAFT JQUERY` and press Enter. This asks for a fix. The page shows a dry-run pull request in the "Dry-run PR payload" panel. It is a preview only. Nothing is sent anywhere, and a person would still have to merge a real one.
+3. Read the plate (the picture of the creature). Each limb has a glyph and a word, so colour is never the only clue. `#` POSSESSED (orange) means the vulnerability is being used by attackers right now. `%` ROTTING (yellow-green) means a known vulnerability exists. `.` HEALTHY (dim green) means none is known. HEALED (bright green) means the fix was merged.
+4. Type `RAID` and press Enter to start the 15 minute timer and the team score.
+5. Type `SEAL CRYPT` and press Enter to freeze every agent action. After that, any `GRAFT` is rejected.
+
+Commands use capital letters only and exactly one space between words. Anything else is rejected, and nothing happens. The rest of this manual has the details.
+
 ## 1. Install and first raid
 
 Node 20 or newer is required.
@@ -101,7 +115,7 @@ The full rule list is in [`.kiro/steering/failsafe.md`](../.kiro/steering/failsa
 
 ## 5. The web player
 
-The hosted page is [e-1305.github.io/Crypt](https://e-1305.github.io/Crypt/). To run it locally:
+The hosted page is [e-1305.github.io/Crypt](https://e-1305.github.io/Crypt/). This manual is also hosted, at [e-1305.github.io/Crypt/manual.html](https://e-1305.github.io/Crypt/manual.html), and the page links to it as "How to play (manual)". To run it locally:
 
 ```bash
 npm ci

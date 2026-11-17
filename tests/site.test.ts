@@ -9,6 +9,8 @@ import { parseRepoUrl, repoSlug } from "../src/web/repo-url.js";
 import { MAX_GALLERY_LIMBS, galleryIndex, previewPayload, slugForRepo, snapshotCreature } from "../src/site/gallery.js";
 import { parseRepos } from "../scripts/census/aggregate.js";
 import { buildSite } from "../scripts/build-site.js";
+import { renderManual } from "../src/site/manual.js";
+import { parseCommand } from "../src/bridge/grammar.js";
 import { inform6Path } from "../scripts/toolchain-dir.js";
 
 const ROOT = resolve(import.meta.dirname, "..");
@@ -98,6 +100,63 @@ describe("gallery data is aggregate-safe and blameless", () => {
   });
 });
 
+const manualOpts = (over: Partial<Parameters<typeof renderManual>[1]> = {}) => ({
+  sourcePath: "docs/USER_MANUAL.md",
+  repoBlobBase: "https://github.com/e-1305/Crypt/blob/main/",
+  repoHas: (p: string) => existsSync(join(ROOT, p)),
+  siteHas: () => false,
+  siteBase: "https://e-1305.github.io/Crypt/",
+  ...over,
+});
+const manualMd = readFileSync(join(ROOT, "docs", "USER_MANUAL.md"), "utf8");
+
+describe("renderManual", () => {
+  it("escapes HTML and renders tables, code fences, headings with ids and inline code", () => {
+    const html = renderManual("# T\n\nintro <script>alert(1)</script> **b** `<x>`\n\n## 1. Two words\n\n| A | B |\n|---|---|\n| `x` | y |\n\n```bash\nnpm <ci>\n```\n\n- one\n- two\n", manualOpts());
+    expect(html).not.toContain("<script>");
+    expect(html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
+    expect(html).toContain("<strong>b</strong>");
+    expect(html).toContain("<code>&lt;x&gt;</code>");
+    expect(html).toContain('<h2 id="1-two-words">');
+    expect(html).toContain('<th scope="col">A</th>');
+    expect(html).toContain("<td><code>x</code></td>");
+    expect(html).toContain("<pre tabindex=\"0\"><code>npm &lt;ci&gt;</code></pre>");
+    expect(html).toContain("<ul><li>one</li><li>two</li></ul>");
+    expect(html).toContain('lang="en"');
+    expect(html).toContain('href="./"');
+  });
+  it("rewrites repo links to GitHub and the live site to a relative link, and throws on dead links", () => {
+    const html = renderManual("# T\n\n[a](../README.md) [b](DEMO.md#x) [c](../.kiro/steering/failsafe.md) [d](https://e-1305.github.io/Crypt/) [e](#t)", manualOpts());
+    expect(html).toContain('href="https://github.com/e-1305/Crypt/blob/main/README.md"');
+    expect(html).toContain('href="https://github.com/e-1305/Crypt/blob/main/docs/DEMO.md#x"');
+    expect(html).toContain('href="https://github.com/e-1305/Crypt/blob/main/.kiro/steering/failsafe.md"');
+    expect(html).toContain('href="./"');
+    expect(html).toContain('href="#t"');
+    expect(() => renderManual("# T\n\n[x](NOPE.md)", manualOpts())).toThrow(/neither/);
+    expect(() => renderManual("# T\n\n[x](#missing)", manualOpts())).toThrow(/missing heading/);
+    expect(() => renderManual("# T\n\n[x](javascript:alert(1))", manualOpts())).toThrow();
+  });
+  it("renders the real manual with Quick start for testers as its first section", () => {
+    const html = renderManual(manualMd, manualOpts());
+    expect(html.match(/<h2 id="[^"]*">/)![0]).toBe('<h2 id="quick-start-for-testers">');
+    expect(html).not.toMatch(/href="(\.\.\/|[^"#:]*\.md)/);
+    expect(html).not.toContain("\u2014");
+    expect(html).not.toContain("<script");
+  });
+  it("accepts every command in the Quick start code spans", () => {
+    const section = manualMd.slice(manualMd.indexOf("## Quick start for testers"), manualMd.indexOf("## 1. Install"));
+    const cmds = [...section.matchAll(/`((?:EXAMINE|GRAFT|ASSIGN) [A-Z]+|RAID|SEAL CRYPT)`/g)].map((m) => m[1]!);
+    expect(cmds).toEqual(expect.arrayContaining(["EXAMINE JQUERY", "GRAFT JQUERY", "RAID", "SEAL CRYPT"]));
+    for (const c of cmds) expect(parseCommand(c).ok, c).toBe(true);
+  });
+  it("is linked from the 2D page and from the 3D bench", () => {
+    expect(readFileSync(join(ROOT, "web", "index.html"), "utf8")).toContain('href="manual.html"');
+    const stage = readFileSync(join(ROOT, "web", "theatre", "stage.js"), "utf8");
+    expect(stage).toContain("manual.html");
+    expect(stage).toContain("theatre-manual");
+  });
+});
+
 const haveToolchain = existsSync(inform6Path());
 if (!haveToolchain) console.warn("site build skipped: toolchain missing, run `npm run setup`");
 
@@ -114,7 +173,7 @@ describe.skipIf(!haveToolchain)("build:site output", () => {
   it("is a complete, offline, deterministic static site", async () => {
     const a = await build();
     try {
-      for (const f of ["index.html", "app.js", "style.css", "vendor/zvm.min.js", "vendor/three.module.min.js", "theatre.js", "raid.js", "theatre/stage.js", "theatre/drawer.js", "js/theatre/capability.js", "js/web/player.js", "game/demo.z8", "game/demo.json", "game/demo.payloads.json", "game/index.json"]) {
+      for (const f of ["index.html", "manual.html", "manual.css", "app.js", "style.css", "vendor/zvm.min.js", "vendor/three.module.min.js", "theatre.js", "raid.js", "theatre/stage.js", "theatre/drawer.js", "js/theatre/capability.js", "js/web/player.js", "game/demo.z8", "game/demo.json", "game/demo.payloads.json", "game/index.json"]) {
         expect(existsSync(join(a, f)), f).toBe(true);
       }
       expect(readFileSync(join(a, "game", "demo.z8"))[0]).toBe(8);
@@ -131,6 +190,22 @@ describe.skipIf(!haveToolchain)("build:site output", () => {
         expect(readFileSync(join(a, "game", `${e.slug}.z8`))[0], e.slug).toBe(8);
         expect(Object.keys(JSON.parse(readFileSync(join(a, "game", `${e.slug}.json`), "utf8"))).sort()).toEqual(["limbs", "repo"]);
       }
+
+      const manual = readFileSync(join(a, "manual.html"), "utf8");
+      expect(manual).toContain("Quick start for testers");
+      expect(manual).toContain("<main");
+      expect(manual).toContain('lang="en"');
+      expect(manual).toContain('href="./"');
+      expect(manual).not.toContain("<script");
+      expect(manual).not.toContain("\u2014");
+      expect(manual).not.toMatch(/href="(\.\.\/|[^"#:]*\.md)/);
+      const ids = new Set([...manual.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]));
+      for (const m of manual.matchAll(/\b(?:href|src)="([^"]+)"/g)) {
+        const u = m[1]!;
+        if (u.startsWith("#")) expect(ids.has(u.slice(1)), u).toBe(true);
+        else if (!/^https:/.test(u)) expect(existsSync(join(a, u.split("#")[0] || ".")), u).toBe(true);
+      }
+      expect(readFileSync(join(a, "index.html"), "utf8")).toContain('href="manual.html"');
 
       // Relative URLs only, and the page code opens no connection except to its own files.
       for (const f of ["index.html", "app.js", "style.css", ...files(join(a, "js")).map((x) => x.slice(a.length + 1))]) {
