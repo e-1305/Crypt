@@ -21,7 +21,9 @@
     "necromancer": "tsx scripts/necromancer.ts",
     "inquisitor": "tsx scripts/inquisitor.ts",
     "reraise": "tsx scripts/reraise.ts",
-    "necromancer:check": "tsx scripts/check-necromancer.ts"
+    "necromancer:check": "tsx scripts/check-necromancer.ts",
+    "web": "tsx scripts/web.ts",
+    "build:web": "tsc -p tsconfig.web.json"
   },
   "dependencies": {
     "tsx": "^4.23.15"

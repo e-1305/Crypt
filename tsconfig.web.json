@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "rootDir": "src",
+    "outDir": "web/js",
+    "types": []
+  },
+  "include": ["src/web/*.ts", "src/bridge/parse-output.ts", "src/bridge/grammar.ts"]
+}

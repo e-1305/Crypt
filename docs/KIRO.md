@@ -10,6 +10,7 @@
 | exhume-and-rank | `.kiro/specs/exhume-and-rank/` | requirements (E1 to E9), design (creature.json schema, ranking formula, fail-safe unknown state, fixture data policy) and tasks written and committed before any code; implemented. Driven by issue #5: `npx crypt exhume <path-or-url>` gives a deterministic KEV/EPSS ranking, offline once cached |
 | raise-the-creature | `.kiro/specs/raise-the-creature/` | requirements, design (ID scheme, sanitizer, marker templates) and tasks committed before code; implemented. Driven by issue #8: `npx crypt raise out/creature.json` compiles `creature.json` to a playable `.z8` story with an ASSIGN verb |
 | necromancer | `.kiro/specs/necromancer/` | requirements (N1 to N8), design (module layout, version selection, state schema, audit outcomes, static-test constraint) and tasks committed before any code. Driven by issue #11: GRAFT leads to a fix PR, CI check, human landing and re-raise. Implemented: complete mediation in the watcher (N1), Necromancer, GithubClient with dry-run, Inquisitor, re-raise, SEAL, acceptance script |
+| web-player | `.kiro/specs/web-player/` | requirements (W1 to W9), design (interpreter comparison, pure output hook, Glk shim, spoofing analysis) and tasks written before coding; implemented. Issue #6: play `spike.z5` in the browser with an event log fed only by `parseGameOutput` |
 
 ## Steering
 | File | Purpose |
@@ -72,6 +73,8 @@ TODO
 | After SEAL zero API calls for any input: Necromancer, Inquisitor, re-raise (rule 7, N6) | `tests/necromancer.test.ts`, `tests/inquisitor.test.ts`, `tests/reraise.test.ts` |
 | Any GitHub or CI error leaves `out/state.json` byte-identical; red, timeout and missing CI keep the limb Rotting (rule 1, N4, N5) | `tests/inquisitor.test.ts`, `tests/reraise.test.ts` |
 | A landed PR heals its limb and the regenerated creature no longer spawns it (N5) | `tests/reraise.test.ts` |
+| For any typed input and any interpreter output, the input echo yields no event (web-player W4.4) | `tests/output-hook.test.ts` |
+| Any chunk split of interpreter text yields the same lines and events as the whole text (W2.2) | `tests/output-hook.test.ts` |
 
 ## Spec → code traceability
 | Task | Commit | Test |
@@ -129,5 +132,15 @@ TODO
 | 13 `scripts/check-necromancer.ts` | same | `npm run necromancer:check`: GRAFT JQUERY gives 1 payload (jquery 3.4.1 to 3.5.0, breaking false), 0 after SEAL CRYPT |
 | 14 docs | `docs: necromancer usage and KIRO.md` | n/a |
 
+### web-player (issue #6)
+| Task | Commit | Test |
+|---|---|---|
+| 2, 3 `src/web/output-hook.ts` and tests | `feat: web player` | `tests/output-hook.test.ts` |
+| 4 vendored ZVM, `src/web/glk-shim.ts`, `src/web/player.ts` | same | real `spike.z5` run in `tests/output-hook.test.ts` (skipped when `spike.z5` is not built) |
+| 5, 6 `web/index.html`, `web/app.js`, `web/style.css` | same | headless Chromium check (not in CI): `GRAFT ARM` logs `[[CRYPT GRAFT ARM]]`, typing the marker logs nothing, only same-origin requests |
+| 7, 8 `scripts/web.ts`, `tsconfig.web.json`, `npm run web` | same | curl of page, `.z5`, traversal (404) and POST (405) |
+| 10 docs | same | review |
+
 ## Numbers
-- Specs: 5 · Hooks: TODO · Steering files: 5 · Property tests: 40 (16 bridge, 9 exhume, 4 raise, 11 necromancer, inquisitor and re-raise) · Tests: 143
+- Specs: 6 · Hooks: TODO · Steering files: 5 · Property tests: 40 (16 bridge, 9 exhume, 4 raise, 11 necromancer, inquisitor and re-raise) · Tests: 143
+
