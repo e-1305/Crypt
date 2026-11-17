@@ -65,7 +65,7 @@ function announce(text) {
   pending.push(text);
 }
 
-// RAID is a client-side command: the game grammar stays strict and never sees it.
+// RAID is a game command: the story prints [[CRYPT RAID]] and onResult starts the raid from that event.
 let pollTimer = 0;
 const raid = initRaid({
   store: scopedStore(), // per creature, like the healed marks, so a gallery creature has its own raid state
@@ -128,6 +128,7 @@ function onResult(result) {
   }
   result.events.forEach(addEvent);
   if (result.events.some((e) => e.ok && e.command && e.command.startsWith("GRAFT"))) sound.graft();
+  if (result.events.some((e) => e.ok && e.parsed.verb === "RAID")) raid.start();
 }
 
 let lastCreature = null;
@@ -269,11 +270,6 @@ async function main() {
     ev.preventDefault();
     const text = cmd.value;
     cmd.value = "";
-    if (raid.handleCommand(text)) {
-      addLine("> " + text.trim(), "echo");
-      addLine("The raid begins. Fifteen minutes. Heal what you can.");
-      return;
-    }
     player.submit(text);
   });
 }

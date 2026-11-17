@@ -1,6 +1,6 @@
 // The raid (Epic B2): DOM glue around the pure logic in js/theatre/raid.js and card.js.
 // One team score, no per-person figures, no leaderboard. The same readout feeds the 2D page and the 3D wall board.
-import { RAID_MS, createRaidTimer, formatClock, healedCount, isRaidCommand, nightsWithoutPossession, praiseLines, rankFor, teamScore, countsForScore } from "./js/theatre/raid.js";
+import { RAID_MS, createRaidTimer, formatClock, healedCount, nightsWithoutPossession, praiseLines, rankFor, teamScore, countsForScore } from "./js/theatre/raid.js";
 import { cardData } from "./js/theatre/card.js";
 import { downloadCard } from "./theatre/card-draw.js";
 
@@ -112,12 +112,6 @@ export function initRaid({ store, announce, onRunning, now = () => Date.now() })
       limbs = remember(Array.isArray(list) ? list : []);
       if (typeof name === "string") repo = name;
       render();
-    },
-    /** Called with the typed text before it is submitted. Returns true when it was the RAID command. */
-    handleCommand(text) {
-      if (!isRaidCommand(text)) return false;
-      start();
-      return true;
     },
     start,
     now,

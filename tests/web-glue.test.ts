@@ -1,7 +1,7 @@
 // DOM glue of the page (web/raid.js, web/app.js) run against a minimal fake DOM. The glue is plain browser JS, so the
 // test compiles web/ into a temp directory (never touching web/js, which other tests rebuild) and imports it from there.
 // web/heal.js (live and simulated heal events) is covered here too; its pure rules are in tests/heal-events.test.ts.
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import fc from "fast-check";
 import { spawnSync } from "node:child_process";
 import { cpSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -10,6 +10,7 @@ import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { numRuns } from "./runs.js";
 
+let glkOf: Record<string, (...a: unknown[]) => unknown> | null = null;
 const ROOT = resolve(import.meta.dirname, "..");
 vi.setConfig({ testTimeout: 120_000 });
 
@@ -68,7 +69,11 @@ function fakeDom(search = "") {
     CustomEvent: class { constructor(public type: string, public init: { detail: Record<string, unknown> }) {} get detail() { return this.init.detail; } },
     localStorage: { getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, v: string) => void mem.set(k, v) },
     location: { search },
-    window: { matchMedia: () => ({ matches: false }), ZVM: class { prepare() {} start() {} resume() {} } },
+    window: { matchMedia: () => ({ matches: false }), ZVM: class {
+      prepare(_s: unknown, o: { Glk: Record<string, (...a: unknown[]) => unknown> }) { glkOf = o.Glk; }
+      start() { glkOf?.glk_set_window(glkOf.glk_window_open(null, 0, 0, 3)); }
+      resume() {}
+    } },
     fetch: async (url: string) => {
       const body = files[url];
       return { ok: body !== undefined, status: body === undefined ? 404 : 200, json: async () => JSON.parse(body), arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer };
@@ -85,6 +90,21 @@ beforeAll(() => {
   const r = spawnSync("npx", ["tsc", "-p", "tsconfig.web.json", "--outDir", join(tmp, "js")], { cwd: ROOT, encoding: "utf8" });
   if (r.status !== 0) throw new Error(r.stdout + r.stderr);
 }, 120_000);
+// Raids started by a test keep a setInterval alive; stop them so a stale tick cannot write into the next test's document.
+const intervals = new Set<ReturnType<typeof setInterval>>();
+const realSetInterval = globalThis.setInterval;
+beforeAll(() => {
+  globalThis.setInterval = ((...a: Parameters<typeof setInterval>) => {
+    const id = realSetInterval(...a);
+    intervals.add(id);
+    return id;
+  }) as typeof setInterval;
+});
+afterEach(() => {
+  for (const id of intervals) clearInterval(id);
+  intervals.clear();
+});
+afterAll(() => { globalThis.setInterval = realSetInterval; });
 afterAll(() => rmSync(tmp, { recursive: true, force: true }));
 
 const limbs = (healed: boolean) => [
@@ -114,7 +134,7 @@ describe("web/raid.js", () => {
       expect(el("raid-timer").textContent).toBe("15:00");
       expect(el("raid-download").hidden).toBe(true);
       raid.setLimbs(limbs(false), "acme/app");
-      expect(raid.handleCommand("  raid ")).toBe(true);
+      raid.start();
       expect(running).toEqual([true]);
       expect(el("raid-start").disabled).toBe(true);
       expect(document.documentElement.dataset.raid).toBe("running");
@@ -136,10 +156,8 @@ describe("web/raid.js", () => {
     }
   });
 
-  it("ignores every other command and a second start while running", async () => {
+  it("ignores a second start while running", async () => {
     const { raid, running } = await start();
-    for (const t of ["EXAMINE", "RAID NOW", "", "graft jquery"]) expect(raid.handleCommand(t)).toBe(false);
-    expect(running).toEqual([]);
     raid.start();
     raid.start();
     expect(running).toEqual([true]);
@@ -180,7 +198,7 @@ describe("web/app.js", () => {
   const demo = JSON.stringify({ repo: "acme/app", limbs: limbs(false) });
   const flush = () => new Promise((r) => setTimeout(r, 20));
 
-  it("draws the plate, the gallery and starts the story; RAID never reaches the game", async () => {
+  it("draws the plate, the gallery and starts the story; the game owns RAID and the page starts the raid from its marker", async () => {
     fakeDom();
     files = {
       "game/index.json": JSON.stringify([{ slug: "axios__axios", repo: "axios/axios" }, { bad: 1 }]),
@@ -200,10 +218,15 @@ describe("web/app.js", () => {
 
     el("cmd").value = "RAID";
     el("input-form").fire("submit");
-    const lines = el("transcript").children.map((c) => c.textContent);
-    expect(lines).toEqual(["> RAID", "The raid begins. Fifteen minutes. Heal what you can."]);
     expect(el("cmd").value).toBe("");
+    // The page no longer intercepts typed text: nothing starts until the story prints the marker.
+    expect(document.documentElement.dataset.raid).not.toBe("running");
+    // Typed lowercase text is not a marker either.
+    glkOf!.glk_put_jstring("[[CRYPT raid]]\n");
+    expect(document.documentElement.dataset.raid).not.toBe("running");
+    glkOf!.glk_put_jstring("[[CRYPT RAID]]\nThe raid begins. Fifteen minutes. Heal what you can.\n");
     expect(document.documentElement.dataset.raid).toBe("running");
+    expect(el("transcript").children.map((c) => c.textContent)).toContain("The raid begins. Fifteen minutes. Heal what you can.");
     el("raid-start").disabled = false;
   });
 

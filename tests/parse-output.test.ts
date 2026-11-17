@@ -17,7 +17,7 @@ function env() {
 }
 const commandsOf = (text: string) => parseGameOutput(text).flatMap((ev) => (ev.ok ? [ev.command] : []));
 
-const validMarker = fc.constantFrom("[[CRYPT GRAFT ARM]]", "[[CRYPT EXAMINE ARM]]", "[[CRYPT ASSIGN ARM]]", "[[CRYPT SEAL]]");
+const validMarker = fc.constantFrom("[[CRYPT GRAFT ARM]]", "[[CRYPT EXAMINE ARM]]", "[[CRYPT ASSIGN ARM]]", "[[CRYPT SEAL]]", "[[CRYPT RAID]]");
 const markerLooking = fc.oneof(
   validMarker,
   fc.string().map((s) => `[[CRYPT ${s}]]`),
@@ -44,6 +44,12 @@ describe("parseGameOutput examples", () => {
     expect(parseGameOutput(text)[2]).toMatchObject({ ok: true, lineNo: 9, parsed: { verb: "SEAL", limb: "-" } });
   });
 
+  it("reads the RAID marker as a limb-less command", () => {
+    expect(parseGameOutput("> RAID\n[[CRYPT RAID]]\nThe raid begins.\n")).toEqual([
+      { ok: true, lineNo: 2, command: "RAID", parsed: { ok: true, verb: "RAID", limb: "-" } },
+    ]);
+  });
+
   it("tolerates CRLF line endings", () => {
     expect(commandsOf("[[CRYPT GRAFT ARM]]\r\n[[CRYPT SEAL]]\r\n")).toEqual(["GRAFT ARM", "SEAL CRYPT"]);
   });
@@ -53,6 +59,8 @@ describe("parseGameOutput examples", () => {
     "[[CRYPT GRAFT ARM EXTRA]]",
     "[[CRYPT ]]",
     "[[CRYPT SEAL CRYPT]]",
+    "[[CRYPT RAID ARM]]",
+    "[[CRYPT raid]]",
     "x [[CRYPT GRAFT ARM]]",
     "[[CRYPT GRAFT ARM]] x",
     " [[CRYPT GRAFT ARM]]",

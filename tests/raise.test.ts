@@ -35,6 +35,7 @@ const MARKER_LINES = [
   'print "[[CRYPT GRAFT "; print (string) noun.limbid; print "]]^";',
   'print "[[CRYPT ASSIGN "; print (string) noun.limbid; print "]]^";',
   'print "[[CRYPT SEAL]]^";',
+  'print "[[CRYPT RAID]]^";',
 ];
 
 /** Same data with every object's keys in reverse order. */
@@ -156,6 +157,8 @@ describe("raise: story content (R2, R5, R6)", () => {
     expect(inf).toContain("Verb 'assign'");
     expect(inf).toContain("Verb 'graft'");
     expect(inf).toContain("Verb 'seal'");
+    expect(inf).toContain("Verb 'raid'");
+    expect(inf).toContain("-> Raid;");
   });
 
   it("sets crypt_sealed on SEAL and answers GRAFT with the sealed line, keeping the marker", () => {
@@ -203,13 +206,13 @@ describe("raise: sanitizer (R6)", () => {
     );
   });
 
-  it("property: markers appear in generated source only as the four fixed templates", () => {
+  it("property: markers appear in generated source only as the five fixed templates", () => {
     fc.assert(
       fc.property(hostileCreature, (c) => {
         const { inf } = generate(c as CreatureInput);
         const hits = inf.split("\n").filter((l) => l.includes("[["));
         expect(hits.map((l) => l.trim())).toEqual(MARKER_LINES);
-        expect((inf.match(/\[\[/g) ?? []).length).toBe(4);
+        expect((inf.match(/\[\[/g) ?? []).length).toBe(5);
         expect(inf).not.toMatch(/[^\x20-\x7e\n]/); // pure ASCII source
         // each limb object is exactly five lines: a raw newline in data cannot add a statement
         const n = (inf.match(/^Object limb_/gm) ?? []).length;

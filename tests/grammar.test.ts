@@ -4,7 +4,7 @@ import fc from "fast-check";
 import { parseCommand } from "../src/bridge/grammar.js";
 
 const limb = fc.stringMatching(/^[A-Z]{1,32}$/);
-const GRAMMAR = /^((EXAMINE|ASSIGN|GRAFT) [A-Z]{1,32}|SEAL CRYPT)$/;
+const GRAMMAR = /^((EXAMINE|ASSIGN|GRAFT) [A-Z]{1,32}|SEAL CRYPT|RAID)$/;
 
 describe("grammar (failsafe 5, complete mediation)", () => {
   it("accepts the documented commands", () => {
@@ -13,6 +13,26 @@ describe("grammar (failsafe 5, complete mediation)", () => {
     expect(parseCommand("ASSIGN JQUERY")).toEqual({ ok: true, verb: "ASSIGN", limb: "JQUERY" });
     expect(parseCommand("assign jquery")).toEqual({ ok: false });
     expect(parseCommand("SEAL CRYPT")).toEqual({ ok: true, verb: "SEAL", limb: "-" });
+    expect(parseCommand("RAID")).toEqual({ ok: true, verb: "RAID", limb: "-" });
+  });
+
+  it("property: RAID takes no limb and survives no mutation (extras, case, whitespace, newline)", () => {
+    const mutate = fc.constantFrom(
+      (s: string) => s.toLowerCase(),
+      (s: string) => " " + s,
+      (s: string) => s + " ",
+      (s: string) => s + "\n",
+      (s: string) => s + "\r",
+      (s: string) => s + "\t",
+      (s: string) => s + "0",
+    );
+    fc.assert(
+      fc.property(mutate, limb, (f, l) => {
+        expect(parseCommand(f("RAID"))).toEqual({ ok: false });
+        expect(parseCommand(`RAID ${l}`)).toEqual({ ok: false });
+        expect(parseCommand(`RAID ${l}`.toLowerCase())).toEqual({ ok: false });
+      }),
+    );
   });
 
   it("property: rejects every string outside the grammar", () => {

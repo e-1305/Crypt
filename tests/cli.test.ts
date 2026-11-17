@@ -364,6 +364,19 @@ describe("raid end to end", () => {
     }
   }, 120_000);
 
+  it.skipIf(!haveToolchain)("typing RAID prints the marker, is audited as NO_ACTION and opens no PR", () => {
+    const d = mkdtempSync(join(tmpdir(), "crypt-raid-"));
+    try {
+      const r = crypt(["raid", FIXTURE, "--offline"], { cwd: d, input: "RAID\nraid\nRAID JQUERY\n", env: { CRYPT_TOOLCHAIN_DIR: toolchainDir() } });
+      expect(r.status, r.stderr).toBe(0);
+      const lines = readFileSync(join(d, "crypt-audit.log"), "utf8").split("\n").filter(Boolean).map((l) => l.split("\t"));
+      expect(lines.map((l) => [l[1], l[3]])).toEqual([["RAID", "NO_ACTION"], ["RAID", "NO_ACTION"]]); // the story ignores case, like graft; "RAID JQUERY" is a parser error
+      expect(existsSync(join(d, "out", "prs"))).toBe(false);
+    } finally {
+      rmSync(d, { recursive: true, force: true });
+    }
+  }, 120_000);
+
   it.skipIf(!haveToolchain)("a sealed crypt stays sealed at the start of a raid", () => {
     const d = mkdtempSync(join(tmpdir(), "crypt-raid-"));
     try {
