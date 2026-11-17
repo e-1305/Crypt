@@ -1,0 +1,39 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`plate renderer > matches the snapshot for the fixture creature 1`] = `
+"================================================================================
+PLATE I. — THE CREATURE OF crypt-demo
+The Creature of crypt-demo, called Cinder-51
+Fig. 1. Corpus ex dependentiis consutum.
+================================================================================
+
+                                    .-----.
+                                   / ##### \\
+                                   | ##### |<---------- jquery 3.4.1 — POSSESSED
+                                   \\ ##### /
+                                    \`-. .-'
+                              .------' '------.
+                             / .... |%%%%%| .... \\
+                            |  .... |%%%%%| ....  |
+                            |  .... |%%%%%| ....  |
+                             \\_...._|%%%%%|_...._/
+                                    |%%%%%|<----------- lodash 4.17.15 — ROTTING
+                                    |-----|
+                                    |.....|
+                                    |.....|
+                                    \`-+-+-'
+                                    |..|..|
+                                    |..|..|
+                                    |..|..|
+                                    |..|..|
+                                    |..|..|
+                                   _|..|..|_
+                                  (___)  (___)
+
+STITCHES: . . . . .
+# POSSESSED   % ROTTING   (clean lines) HEALED   . HEALTHY
+================================================================================
+LIMBS 7  POSSESSED 1  ROTTING 4  HEALED 0  HEALTHY 2
+================================================================================
+"
+`;
