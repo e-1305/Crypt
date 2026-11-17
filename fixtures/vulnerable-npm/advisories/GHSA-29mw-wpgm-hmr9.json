@@ -1,0 +1,27 @@
+{
+  "id": "GHSA-29mw-wpgm-hmr9",
+  "aliases": [
+    "CVE-2020-28500"
+  ],
+  "affected": [
+    {
+      "package": {
+        "ecosystem": "npm",
+        "name": "lodash"
+      },
+      "ranges": [
+        {
+          "type": "SEMVER",
+          "events": [
+            {
+              "introduced": "4.0.0"
+            },
+            {
+              "fixed": "4.17.21"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

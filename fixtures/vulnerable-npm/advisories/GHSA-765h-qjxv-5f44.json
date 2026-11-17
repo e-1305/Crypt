@@ -1,0 +1,27 @@
+{
+  "id": "GHSA-765h-qjxv-5f44",
+  "aliases": [
+    "CVE-2021-23383"
+  ],
+  "affected": [
+    {
+      "package": {
+        "ecosystem": "npm",
+        "name": "handlebars"
+      },
+      "ranges": [
+        {
+          "type": "SEMVER",
+          "events": [
+            {
+              "introduced": "0"
+            },
+            {
+              "fixed": "4.7.7"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

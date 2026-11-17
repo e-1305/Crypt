@@ -1,0 +1,46 @@
+{
+  "id": "GHSA-w457-6q6x-cgp9",
+  "aliases": [
+    "CVE-2019-19919"
+  ],
+  "affected": [
+    {
+      "package": {
+        "ecosystem": "npm",
+        "name": "handlebars"
+      },
+      "ranges": [
+        {
+          "type": "SEMVER",
+          "events": [
+            {
+              "introduced": "4.0.0"
+            },
+            {
+              "fixed": "4.3.0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "package": {
+        "ecosystem": "npm",
+        "name": "handlebars"
+      },
+      "ranges": [
+        {
+          "type": "SEMVER",
+          "events": [
+            {
+              "introduced": "0"
+            },
+            {
+              "fixed": "3.0.8"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "id": "GHSA-xw65-4hp5-5hc7",
+  "aliases": [
+    "CVE-2026-106444"
+  ],
+  "affected": [
+    {
+      "package": {
+        "ecosystem": "npm",
+        "name": "handlebars"
+      },
+      "ranges": [
+        {
+          "type": "SEMVER",
+          "events": [
+            {
+              "introduced": "4.0.0"
+            },
+            {
+              "fixed": "4.7.10"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

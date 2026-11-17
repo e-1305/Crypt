@@ -1,0 +1,27 @@
+{
+  "id": "GHSA-3mfm-83xf-c92r",
+  "aliases": [
+    "CVE-2026-33938"
+  ],
+  "affected": [
+    {
+      "package": {
+        "ecosystem": "npm",
+        "name": "handlebars"
+      },
+      "ranges": [
+        {
+          "type": "SEMVER",
+          "events": [
+            {
+              "introduced": "4.0.0"
+            },
+            {
+              "fixed": "4.7.9"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -29,7 +29,7 @@ src/reraise       PR states -> healed limbs -> regenerate creature -> recompile
 | `scripts/github-client.ts`, `scripts/osv-advisory.ts` | network adapters (real) |
 | `scripts/necromancer.ts`, `inquisitor.ts`, `reraise.ts`, `check-necromancer.ts` | CLIs |
 
-`tests/static.test.ts` bans `/merge/i`, `fetch(`, `https://` and octokit in `src/`. So `src/` says "landed" (`isLanded`), and the scripts adapter maps GitHub's merge timestamp to it. A second static check greps `src/` and `scripts/` for merge endpoints and commands.
+`tests/static.test.ts` bans `/merge/i`, `fetch(`, `https://` and octokit in `src/`. So `src/` says "landed" (`isLanded`), and the scripts adapter maps GitHub's merge timestamp to it. A second static check greps `src/` and `scripts/` for merge endpoints and commands. The one allowed use of the word in `src/` is the required state label `awaiting-human-merge` (and its audit outcome); the static test strips exactly that token before checking.
 
 ## Mediation
 
@@ -46,11 +46,11 @@ Input: current version `c`; for every spawned vuln of the limb, the OSV `affecte
 
 ## State schema
 
-`out/state.json`: `{ "schemaVersion": 1, "limbs": { "<LIMBID>": { "state": "awaiting-human-merge" | "healed", "pr": "<branch>", "updatedAt": "<ISO>" } }, "raid": { "prs": <count> } }`. Written to a temp file then renamed. Written only on a real change.
+`out/state.json`: `{ "schemaVersion": 1, "limbs": { "<LIMBID>": { "state": "awaiting-human-merge" | "healed", "pr": "<branch>", "updatedAt": "<ISO>", "ecosystem"?, "name"?, "to"? } } }`. The extra fields on healed entries let re-raise find the limb again after its ID left `out/limbs.json`. The PRs of a raid are counted from the records in `out/prs/` instead of a counter. Written to a temp file then renamed. Written only on a real change.
 
 ## Audit outcomes
 
-Line format as before: `ISO\tcommand\tlimb\tOUTCOME\tURL-or-dash`. New outcomes: `REJECTED_UNKNOWN_LIMB`, `PR_OPENED`, `NO_FIX_AVAILABLE`, `REFUSED_NOT_SPAWNED`, `RAID_LIMIT`, `AWAITING_HUMAN_MERGE`, `GRAFT_REJECTED`, `HEALED`.
+Line format as before: `ISO\tcommand\tlimb\tOUTCOME\tURL-or-dash`. New outcomes: `REJECTED_UNKNOWN_LIMB`, `PR_OPENED`, `PR_EXISTS`, `ERROR`, `NO_FIX_AVAILABLE`, `REFUSED_NOT_SPAWNED`, `RAID_LIMIT`, `AWAITING_HUMAN_MERGE`, `GRAFT_REJECTED`, `HEALED`.
 
 ## PR body
 
