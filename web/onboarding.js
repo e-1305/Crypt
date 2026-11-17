@@ -1,0 +1,78 @@
+// First 30 seconds (G3): DOM glue around js/theatre/onboarding.js. A tutorial strip, an idle hint and the daily banner.
+// The strip only shows text for the player to type. It never submits a command: the player types GRAFT.
+// Everything is plain text, so reduced motion, high contrast and the 2D page all keep every feature.
+import { dailyEvent, nextHint, stepText, tutorialCommand, tutorialSteps } from "./js/theatre/onboarding.js";
+
+const $ = (id) => document.getElementById(id);
+
+export function initOnboarding({ store, announce, now = () => Date.now() }) {
+  const n = tutorialSteps.length;
+  let done = Array.isArray(store.get("crypt.tutorial.done")) ? tutorialSteps.map((_, i) => store.get("crypt.tutorial.done")[i] === true) : tutorialSteps.map(() => false);
+  let limb = "";
+  let lastInput = now();
+  let timer = 0;
+
+  const banner = $("daily-banner");
+  if (banner) banner.textContent = "Today in the crypt: " + dailyEvent(new Date(now()).toISOString().slice(0, 10));
+
+  const strip = $("tutorial");
+  const hidden = () => store.get("crypt.tutorial.hidden") === true || store.get("crypt.tutorial.skipped") === true || done.every(Boolean);
+
+  function setText(id, text) { const el = $(id); if (el && el.textContent !== text) el.textContent = text; }
+
+  function render() {
+    if (!strip) return;
+    const off = hidden();
+    strip.hidden = off;
+    if (off) { setText("tutorial-hint", ""); clearInterval(timer); timer = 0; return; }
+    const i = done.findIndex((d) => !d);
+    const step = tutorialSteps[i];
+    setText("tutorial-progress", "Getting started, step " + (i + 1) + " of " + n);
+    setText("tutorial-step", stepText(step, limb));
+    const cmd = tutorialCommand(step, limb);
+    setText("tutorial-command", cmd === null ? "" : "Type: " + cmd);
+    const next = $("tutorial-next");
+    if (next) next.hidden = step.verb !== null;
+    hint();
+  }
+
+  function hint() {
+    if (hidden()) return;
+    setText("tutorial-hint", nextHint(done, now() - lastInput, limb) ?? "");
+  }
+
+  function finishStep(i) {
+    if (done[i]) return;
+    done[i] = true;
+    store.set("crypt.tutorial.done", done);
+    lastInput = now();
+    if (done.every(Boolean)) announce("Getting started complete. Heal the rest of the creature at your own pace.");
+    else announce("Step done. Next: " + stepText(tutorialSteps[done.findIndex((d) => !d)], limb));
+    render();
+  }
+
+  $("tutorial-next")?.addEventListener("click", () => {
+    const i = done.findIndex((d) => !d);
+    if (i >= 0 && tutorialSteps[i].verb === null) finishStep(i);
+  });
+  $("tutorial-skip")?.addEventListener("click", () => { store.set("crypt.tutorial.skipped", true); announce("Getting started closed."); render(); });
+  $("tutorial-hide")?.addEventListener("click", () => { store.set("crypt.tutorial.hidden", true); announce("Getting started is hidden on later visits."); render(); });
+  $("cmd")?.addEventListener("input", () => { lastInput = now(); hint(); });
+  timer = setInterval(hint, 1000);
+  render();
+
+  return {
+    /** The limb id to suggest (a limb that has a rehearsal pull request). */
+    setLimb(id) { if (typeof id === "string" && id !== limb) { limb = id; render(); } },
+    /** Events the game accepted. A verb finishes its step when it is the one the strip is waiting for. */
+    note(events) {
+      lastInput = now();
+      for (const e of events) {
+        const i = done.findIndex((d) => !d);
+        if (i >= 0 && e?.ok && e.parsed && tutorialSteps[i].verb === e.parsed.verb) finishStep(i);
+      }
+      render();
+    },
+    stop() { clearInterval(timer); },
+  };
+}

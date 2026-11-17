@@ -9,6 +9,7 @@ import { layoutPlate, plateSummary, creatureName } from "./js/render/plate.js";
 import { parseRepoUrl, repoSlug } from "./js/web/repo-url.js";
 import { initRaid } from "./raid.js";
 import { initHeal } from "./heal.js";
+import { initOnboarding } from "./onboarding.js";
 import { initSound } from "./theatre/sound.js";
 import { countPossessed } from "./js/theatre/audio-plan.js";
 
@@ -78,6 +79,9 @@ const raid = initRaid({
   },
 });
 
+// First 30 seconds: tutorial strip, idle hint and daily banner. Tutorial state is per browser, not per creature.
+const onboarding = initOnboarding({ store, announce });
+
 // High-contrast / screen-reader mode.
 function setHc(on) {
   document.body.classList.toggle("hc", on);
@@ -139,6 +143,7 @@ function onResult(result) {
   result.events.forEach((e) => addEvent(e, refused.includes(e)));
   if (allowed.some((e) => e.ok && e.command && e.command.startsWith("GRAFT"))) sound.graft();
   if (allowed.some((e) => e.ok && e.parsed.verb === "RAID")) raid.start();
+  onboarding.note(allowed);
 }
 
 let lastCreature = null;
@@ -263,6 +268,8 @@ async function main() {
   try {
     const p = await fetch("game/" + creatureId + ".payloads.json");
     if (p.ok) payloads = await p.json();
+    // The tutorial suggests a limb that has a rehearsal pull request: the first payload key is a limb ID the grammar accepts.
+    onboarding.setLimb(Object.keys(payloads).find((k) => /^[A-Z]{1,32}$/.test(k)) ?? "");
   } catch { /* no payloads: GRAFT shows the plain message */ }
   const res = await fetch("game/" + creatureId + ".z8");
   if (!res.ok) throw new Error("game/" + creatureId + ".z8 not found (HTTP " + res.status + ")");

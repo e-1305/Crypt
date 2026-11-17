@@ -3,6 +3,7 @@
 import { RAID_MS, createRaidTimer, formatClock, healedCount, nightsWithoutPossession, praiseLines, rankFor, teamScore, countsForScore } from "./js/theatre/raid.js";
 import { cardData } from "./js/theatre/card.js";
 import { COMBO_WINDOW_MS, bossLimbs, comboState, rankProgress, styleBonus, trophies, vitals } from "./js/theatre/gamify.js";
+import { pressureLabel, pressureWarning, spreadPressure } from "./js/theatre/onboarding.js";
 import { downloadCard } from "./theatre/card-draw.js";
 
 const $ = (id) => document.getElementById(id);
@@ -85,6 +86,7 @@ export function initRaid({ store, announce, onRunning, now = () => Date.now() })
     setText("raid-epitaph", card ? card.epitaph : "");
     setText("raid-card", card ? "Limbs healed: " + card.limbsHealed + ". Risk removed: " + card.riskRemoved + ". Time: " + card.time + ". Grade: " + card.grade + "." + (card.trophies.length ? " Trophies: " + card.trophies.join(", ") + "." : "") : "");
     renderGame(v, score);
+    renderPressure(v);
     document.documentElement.dataset.raid = v.status;
   }
 
@@ -142,6 +144,22 @@ export function initRaid({ store, announce, onRunning, now = () => Date.now() })
     setText("raid-grade", card ? "Grade: " + card.grade : "");
   }
 
+  // Possession pressure (G3): display only, never part of the score. The same facts show as text and a progress bar.
+  const openKev = () => limbs.filter((l) => l.kev === true && (l.state === "Possessed" || l.state === "Rotting")).length;
+  function renderPressure(v) {
+    const level = v.status === "idle" ? 0 : spreadPressure(v.elapsedMs, openKev());
+    const pct = Math.round(level * 100);
+    setText("raid-pressure-text", pressureLabel(level, openKev()));
+    $("raid-pressure")?.setAttribute("aria-valuenow", String(pct));
+    setStyle("raid-pressure", "--pct", pct + "%");
+    const warn = v.status === "running" ? pressureWarning(v.remainingMs) : null;
+    setText("raid-warning", warn ?? "");
+    const el = $("raid-warning");
+    if (el) el.hidden = warn === null;
+    if (warn !== null && warn !== lastWarn) { lastWarn = warn; if (v.remainingMs > 60000) announce(warn); }
+  }
+  let lastWarn = "";
+
   function gainedCount() { return limbs.filter((l) => countsForScore(l) && !baseline.has(keyOf(l))).length; }
 
   // Called when the list changes: one chain entry per limb that newly counts for the score.
@@ -189,6 +207,7 @@ export function initRaid({ store, announce, onRunning, now = () => Date.now() })
     baseline = new Set(limbs.filter(countsForScore).map(keyOf));
     timer.start();
     warned = false;
+    lastWarn = "";
     healTimes = [];
     lastPop = "";
     const boss = bossLimbs(limbs).find((b) => !countsForScore(b));

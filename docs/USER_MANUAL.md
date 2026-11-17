@@ -186,6 +186,20 @@ The raid adds arcade touches on top of the team score. They are display only: th
 - **Grade.** The card shows a grade from S to D. It rises with limbs healed and falls the longer the raid takes. Each grade has its own set of epitaphs.
 - **Effects.** A "+risk" pop-up, a short screen shake and a lightning flash mark a heal or a boss kill. With reduced motion or high-contrast reader mode the effects are off and the same facts appear as plain text and announcements.
 
+### Getting started
+
+A strip above the game walks through the first minute on the demo creature. It has five steps: look at the plate, type `EXAMINE <limb>`, type `ASSIGN <limb>`, type `GRAFT <limb>`, then read how the pull request waits for a human to review it. The strip names a limb that has a rehearsal pull request.
+
+- You type every command. The strip shows what to type and never runs anything, `GRAFT` included. Each command goes through the same strict grammar as the rest of the game.
+- A step finishes when the game accepts its verb. Steps 1 and 5 finish with the "Got it" button.
+- After 8 seconds without typing, one hint appears under the strip and is read out politely by screen readers. Typing clears the wait.
+- "Skip" closes the strip. "Hide for good" keeps it closed on later visits. Both are remembered in this browser.
+- A banner above the page shows one of eight daily lines, chosen from the date, so everyone sees the same line on the same day.
+
+### Pressure
+
+While a raid runs, "Possession spread" shows how far the possession has spread, from 0 to 100 percent, as a text line and a progress bar. It rises with the clock and climbs faster while KEV limbs stay open. Healing a KEV limb lowers it again. Warnings appear at 10, 5 and 1 minutes left, in text, and the 10 and 5 minute warnings are announced, and the last minute is announced by the raid timer. Pressure is display only: it does not change the team risk removed, the rank or the grade. It never pulses, and it looks the same with reduced motion, high-contrast reader mode and the 2D page.
+
 ## 6. Accessibility
 
 The text game is the core, so screen readers work with the same text the game prints. The transcript is a live log region, every command has a labelled input, state is told by glyph and word, and events are announced through a polite status region. Reduced motion turns off all animation. The Lighthouse score is 100 on the default 2D page. Full measurements are in [ACCESSIBILITY.md](ACCESSIBILITY.md).

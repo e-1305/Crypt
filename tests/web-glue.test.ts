@@ -4,7 +4,7 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import fc from "fast-check";
 import { spawnSync } from "node:child_process";
-import { cpSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -85,7 +85,7 @@ function fakeDom(search = "") {
 beforeAll(() => {
   tmp = mkdtempSync(join(tmpdir(), "crypt-glue-"));
   cpSync(join(ROOT, "web", "theatre"), join(tmp, "theatre"), { recursive: true });
-  for (const f of ["app.js", "raid.js", "heal.js"]) cpSync(join(ROOT, "web", f), join(tmp, f));
+  for (const f of ["app.js", "raid.js", "heal.js", "onboarding.js"]) cpSync(join(ROOT, "web", f), join(tmp, f));
   writeFileSync(join(tmp, "package.json"), '{"type":"module"}');
   const r = spawnSync("npx", ["tsc", "-p", "tsconfig.web.json", "--outDir", join(tmp, "js")], { cwd: ROOT, encoding: "utf8" });
   if (r.status !== 0) throw new Error(r.stdout + r.stderr);
@@ -127,6 +127,24 @@ describe("web/raid.js", () => {
     const raid = initRaid({ store: store(m), announce: (t: string) => said.push(t), onRunning: (b: boolean) => running.push(b), now: () => clock });
     return { raid, said, running, m };
   }
+
+  it("shows possession pressure as text and a progress bar without touching the score", async () => {
+    vi.useFakeTimers();
+    try {
+      const { raid, said } = await start();
+      raid.setLimbs(limbs(false), "acme/app");
+      expect(el("raid-pressure-text").textContent).toBe("Possession spread: 0 percent. Heal the KEV limbs first.");
+      raid.start();
+      const score = el("raid-score").textContent;
+      clock += 5 * 60_000;
+      vi.advanceTimersByTime(250);
+      expect(el("raid-pressure").attrs["aria-valuenow"]).not.toBe("0");
+      expect(el("raid-warning").hidden).toBe(false);
+      expect(el("raid-warning").textContent).toContain("10 minutes left");
+      expect(said.filter((s) => s.includes("10 minutes left"))).toHaveLength(1);
+      expect(el("raid-score").textContent).toBe(score);
+    } finally { vi.useRealTimers(); }
+  });
 
   it("shows the ready state, then runs, warns at one minute and ends with a card", async () => {
     vi.useFakeTimers();
@@ -279,6 +297,76 @@ describe("web/app.js", () => {
     el("raid-start").disabled = false;
   });
 
+  it("runs the tutorial: only suggests commands, finishes steps from accepted verbs and never grafts by itself", async () => {
+    fakeDom();
+    files = { "game/index.json": "[]", "game/demo.json": demo, "game/demo.payloads.json": JSON.stringify({ JQUERY: { title: "x" } }), "game/demo.z8": "story" };
+    await load("app.js");
+    await flush();
+    expect(el("daily-banner").textContent).toMatch(/^Today in the crypt: /);
+    expect(el("tutorial").hidden).toBe(false);
+    expect(el("tutorial-progress").textContent).toBe("Getting started, step 1 of 5");
+    expect(el("tutorial-command").textContent).toBe("");
+    el("tutorial-next").click();
+    expect(el("tutorial-command").textContent).toBe("Type: EXAMINE JQUERY");
+    glkOf!.glk_put_jstring("[[CRYPT EXAMINE JQUERY]]\nA rotting limb.\n");
+    expect(el("tutorial-command").textContent).toBe("Type: ASSIGN JQUERY");
+    // A verb the strip is not waiting for does not finish a step.
+    glkOf!.glk_put_jstring("[[CRYPT GRAFT JQUERY]]\n");
+    expect(el("tutorial-command").textContent).toBe("Type: ASSIGN JQUERY");
+    glkOf!.glk_put_jstring("[[CRYPT ASSIGN JQUERY]]\n");
+    expect(el("tutorial-command").textContent).toBe("Type: GRAFT JQUERY");
+    expect(el("tutorial-step").textContent).toContain("yourself");
+    // No tutorial code path submits input: the command row is still empty and the payload stays unread.
+    expect(el("cmd").value).toBe("");
+    glkOf!.glk_put_jstring("[[CRYPT GRAFT JQUERY]]\n");
+    expect(el("tutorial-step").textContent).toContain("waits for a human");
+    el("tutorial-next").click();
+    expect(el("tutorial").hidden).toBe(true);
+  });
+
+  it("keeps Skip and Hide for good across reloads", async () => {
+    const { mem } = fakeDom();
+    files = { "game/index.json": "[]", "game/demo.json": demo, "game/demo.z8": "story" };
+    await load("app.js");
+    await flush();
+    el("tutorial-skip").click();
+    expect(el("tutorial").hidden).toBe(true);
+    expect(mem.get("crypt.tutorial.skipped")).toBe("true");
+    fakeDom();
+    (globalThis as unknown as { localStorage: { setItem(k: string, v: string): void } }).localStorage.setItem("crypt.tutorial.hidden", "true");
+    await load("app.js");
+    await flush();
+    expect(el("tutorial").hidden).toBe(true);
+    fakeDom();
+    await load("app.js");
+    await flush();
+    el("tutorial-hide").click();
+    expect(el("tutorial").hidden).toBe(true);
+    expect((globalThis as unknown as { localStorage: { getItem(k: string): string | null } }).localStorage.getItem("crypt.tutorial.hidden")).toBe("true");
+  });
+
+  it("shows the idle hint only after 8 seconds without input, in the polite live region", async () => {
+    vi.useFakeTimers();
+    const { initOnboarding } = await load("onboarding.js");
+    fakeDom();
+    let t = 5_000_000;
+    const m = new Map<string, unknown>();
+    initOnboarding({ store: { get: (k: string) => m.get(k) ?? null, set: (k: string, v: unknown) => void m.set(k, v) }, announce() {}, now: () => t }).setLimb("JQUERY");
+    expect(el("tutorial-hint").textContent).toBe("");
+    el("tutorial-next").click();
+    t += 7_999;
+    vi.advanceTimersByTime(1000);
+    expect(el("tutorial-hint").textContent).toBe("");
+    el("cmd").fire("input"); // typing restarts the idle clock
+    t += 7_999;
+    vi.advanceTimersByTime(1000);
+    expect(el("tutorial-hint").textContent).toBe("");
+    t += 1;
+    vi.advanceTimersByTime(1000);
+    expect(el("tutorial-hint").textContent).toBe("Hint: type EXAMINE JQUERY and press Enter.");
+    vi.useRealTimers();
+  });
+
   it("opens a gallery creature only when its slug is listed", async () => {
     fakeDom("?creature=axios__axios");
     files = { "game/index.json": JSON.stringify([{ slug: "axios__axios", repo: "axios/axios" }]), "game/axios__axios.json": demo, "game/axios__axios.z8": "story" };
@@ -401,5 +489,15 @@ describe("web/heal.js", () => {
       vi.advanceTimersByTime(5000);
       expect(dispatched).toEqual([]);
     } finally { vi.useRealTimers(); }
+  });
+});
+
+describe("web/index.html (G3)", () => {
+  const html = readFileSync(join(ROOT, "web", "index.html"), "utf8");
+  it("marks the hint as a polite live region and the pressure meter as a progressbar with a text twin", () => {
+    expect(html).toMatch(/id="tutorial-hint"[^>]*aria-live="polite"/);
+    expect(html).toMatch(/id="raid-pressure"[^>]*role="progressbar"/);
+    expect(html).toContain('id="raid-pressure-text"');
+    expect(html).not.toContain("\u2014");
   });
 });
