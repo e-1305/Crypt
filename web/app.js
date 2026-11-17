@@ -6,6 +6,10 @@ import { markHealed } from "./js/web/healed.js";
 import { layoutPlate, plateSummary } from "./js/render/plate.js";
 import { initRaid } from "./raid.js";
 import { initHeal } from "./heal.js";
+import { initSound } from "./theatre/sound.js";
+import { countPossessed } from "./js/theatre/audio-plan.js";
+
+const sound = initSound();
 
 const transcript = document.getElementById("transcript");
 const form = document.getElementById("input-form");
@@ -90,6 +94,7 @@ function onResult(result) {
     addLine(line, line.startsWith("> ") ? "echo" : "");
   }
   result.events.forEach(addEvent);
+  if (result.events.some((e) => e.ok && e.command && e.command.startsWith("GRAFT"))) sound.graft();
 }
 
 let lastCreature = null;
@@ -102,6 +107,7 @@ const heal = initHeal({
 
 function drawPlate(real, fresh, convulse) {
   lastCreature = real;
+  sound.setPossessed(countPossessed(heal.overlay(real.limbs)));
   const creature = { ...real, limbs: heal.overlay(real.limbs) };
   const lines = layoutPlate(creature, { repo: creature.repo });
   plateEl.textContent = "";
@@ -125,6 +131,9 @@ function drawPlate(real, fresh, convulse) {
   plateSummaryEl.textContent = summary.length === 0 ? "The slab is bare. No limbs are possessed or rotting." : "Limbs: " + summary.join("; ") + ".";
 }
 
+// ?simulate= runs once, not on every raid poll.
+let simStarted = false;
+
 async function loadPlate() {
   try {
     const res = await fetch("game/creature.json");
@@ -136,7 +145,7 @@ async function loadPlate() {
     raid.setLimbs(creature.limbs, creature.repo);
     // Real source: each limb that turned Healed goes through the same fail-safe pipeline as the simulation.
     heal.real(fresh);
-    heal.start();
+    if (!simStarted) { simStarted = true; heal.start(); }
   } catch (err) {
     plateEl.textContent = "";
     plateSummaryEl.textContent = "No plate yet. Run npm run exhume, then reload this page.";
