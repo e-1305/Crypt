@@ -23,6 +23,8 @@ export interface InquisitorCtx extends AgentPaths {
   sleep: (ms: number) => Promise<void>;
   maxAttempts: number;
   intervalMs: number;
+  /** Judge only the check run(s) with this name (live default: `test`). */
+  requiredCheck?: string;
 }
 
 export interface VerifyResult {
@@ -59,7 +61,13 @@ export async function verify(ctx: InquisitorCtx, limb: string): Promise<VerifyRe
     let verdict: "green" | "red" | "pending" = "pending";
     let previous: string | null = null; // green needs the same completed set on two polls in a row
     for (let i = 0; i < ctx.maxAttempts; i++) {
-      const runs = await ctx.client.getCheckRuns(typeof rec.headSha === "string" ? rec.headSha : rec.branch);
+      if (i > 0 && isSealed(io, ctx.sealPath)) {
+        // Kill switch: sealed mid-poll aborts with no state change.
+        tryAudit(io, ctx.auditPath, ctx.now, command, limb, "REJECTED_SEALED");
+        return { outcome: "REJECTED_SEALED" };
+      }
+      const all = await ctx.client.getCheckRuns(typeof rec.headSha === "string" ? rec.headSha : rec.branch);
+      const runs = ctx.requiredCheck ? all.filter((r) => r.name === ctx.requiredCheck) : all;
       const v = judge(runs);
       if (v === "red") {
         verdict = "red";

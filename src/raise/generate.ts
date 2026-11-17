@@ -216,9 +216,12 @@ export function generate(creature: CreatureInput): Generated {
   out.push('    "Nothing here answers to that name. EXAMINE a limb from the list.";');
   out.push("];");
   out.push("");
+  out.push("Global crypt_sealed = 0;");
+  out.push("");
   out.push("[ GraftSub;");
   out.push("    if (~~(noun ofclass Limb)) return NoLimb();");
   out.push('    print "[[CRYPT GRAFT "; print (string) noun.limbid; print "]]^";');
+  out.push('    if (crypt_sealed) { print "The crypt is sealed. No needle moves.^"; rtrue; }');
   out.push('    "The surgeon begins the graft.";');
   out.push("];");
   out.push("");
@@ -231,6 +234,7 @@ export function generate(creature: CreatureInput): Generated {
   out.push("");
   out.push("[ SealSub;");
   out.push('    print "[[CRYPT SEAL]]^";');
+  out.push("    crypt_sealed = 1;");
   out.push('    "The crypt falls silent. Every needle rests.";');
   out.push("];");
   out.push("");

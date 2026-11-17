@@ -3,17 +3,20 @@ import { dryRunClient, type GithubClient } from "../src/github/client.js";
 import { nodeIo } from "../src/common/io.js";
 import { defaultPaths } from "../src/common/agent.js";
 import { githubClient } from "./github-client.js";
+import { apiAuditHook } from "./live-audit.js";
 
 export interface CliOpts {
   dryRun: boolean;
   repo?: string;
   target: string;
   advisories?: string;
+  /** Seconds to wait for the `test` check. */
+  timeout: number;
   positional: string[];
 }
 
 export function parseArgs(args: string[]): CliOpts {
-  const o: CliOpts = { dryRun: false, target: ".", positional: [] };
+  const o: CliOpts = { dryRun: false, target: ".", timeout: 600, positional: [] };
   for (let i = 0; i < args.length; i++) {
     const a = args[i]!;
     const val = () => {
@@ -25,7 +28,12 @@ export function parseArgs(args: string[]): CliOpts {
     else if (a === "--repo") o.repo = val();
     else if (a === "--target") o.target = val();
     else if (a === "--advisories") o.advisories = val();
-    else if (a.startsWith("--")) throw new Error(`unexpected argument ${a}`);
+    else if (a === "--live") o.dryRun = false;
+    else if (a === "--timeout") {
+      const t = val();
+      if (!/^\d+$/.test(t) || Number(t) < 10 || Number(t) > 3600) throw new Error("--timeout must be 10 to 3600 seconds");
+      o.timeout = Number(t);
+    } else if (a.startsWith("--")) throw new Error(`unexpected argument ${a}`);
     else o.positional.push(a);
   }
   // Dry-run is the default whenever there is no token.
@@ -37,5 +45,5 @@ export function makeClient(o: CliOpts): GithubClient {
   const paths = defaultPaths();
   if (o.dryRun) return dryRunClient(nodeIo, paths.prsDir, () => new Date());
   if (!o.repo) throw new Error("--repo owner/name is required without --dry-run");
-  return githubClient(o.repo, process.env.GITHUB_TOKEN ?? "");
+  return githubClient({ repo: o.repo, token: process.env.GITHUB_TOKEN ?? "", audit: apiAuditHook(nodeIo, paths.auditPath) });
 }
