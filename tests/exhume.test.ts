@@ -9,7 +9,7 @@ import { parseEpss, parseKev } from "../src/exhume/feeds.js";
 import { LockfileError, parsePackageLock, parseRequirements } from "../src/exhume/lockfile.js";
 import { ownerOf, parseCodeowners } from "../src/exhume/owners.js";
 import { OSV_TTL_MS, cachePath, resolveOsv } from "../src/exhume/osv.js";
-import { countLimbs, mergeOsvAnswers, rankLimbs, scoreOf } from "../src/exhume/rank.js";
+import { countLimbs, combineOsvAnswers, rankLimbs, scoreOf } from "../src/exhume/rank.js";
 import type { ExhumeFs, Limb, OsvVuln } from "../src/exhume/types.js";
 import { limbKey } from "../src/exhume/types.js";
 import { nodeFs } from "../scripts/node-fs.js";
@@ -240,7 +240,7 @@ function mergedAnswers(rows: Row[]): Map<string, OsvVuln[] | undefined> {
     const k = limbKey(limb(r.name, r.version));
     groups.set(k, [...(groups.get(k) ?? []), r]);
   }
-  return new Map([...groups].map(([k, g]) => [k, mergeOsvAnswers(g.map(answerOf))]));
+  return new Map([...groups].map(([k, g]) => [k, combineOsvAnswers(g.map(answerOf))]));
 }
 
 async function run(s: Scenario, order: "asc" | "desc" = "asc") {
@@ -332,8 +332,8 @@ describe("exhume properties", () => {
         (rows, stream) => {
           const keyed = rows.map((r) => ({ r, k: stream.next().value as number }));
           const shuffled = keyed.sort((x, y) => x.k - y.k).map((x) => x.r);
-          const a = mergeOsvAnswers(rows.map(answerOf));
-          const b = mergeOsvAnswers(shuffled.map(answerOf));
+          const a = combineOsvAnswers(rows.map(answerOf));
+          const b = combineOsvAnswers(shuffled.map(answerOf));
           expect(JSON.stringify(b)).toBe(JSON.stringify(a));
           if (rows.some((r) => !r.osvKnown)) expect(a).toBeUndefined();
           else for (const r of rows) for (const [n] of r.vulns) expect(a!.some((v) => v.id === `GHSA-${n}`)).toBe(true);

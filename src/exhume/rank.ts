@@ -49,11 +49,11 @@ function cvesOf(v: OsvVuln): string[] {
 }
 
 /**
- * Merge several OSV answers for the same limb, worst case. Any unknown answer
+ * Combine several OSV answers for the same limb, worst case. Any unknown answer
  * (undefined) makes the result unknown; otherwise the vulns are unioned by id.
  * Order of the inputs does not matter.
  */
-export function mergeOsvAnswers(answers: (OsvVuln[] | undefined)[]): OsvVuln[] | undefined {
+export function combineOsvAnswers(answers: (OsvVuln[] | undefined)[]): OsvVuln[] | undefined {
   if (answers.length === 0 || answers.some((a) => a === undefined)) return undefined;
   const byId = new Map<string, OsvVuln>();
   for (const list of answers as OsvVuln[][]) {

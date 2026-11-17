@@ -67,7 +67,7 @@ State: `Possessed` if kev; `Rotting` if it has a vulnerability; else `Healthy`. 
 
 ### Merging rows for one limb
 
-When several rows describe the same `ecosystem:name@version`, they merge to the worst case (`mergeOsvAnswers` in `src/exhume/rank.ts`): the OSV answer is unknown if any row is unknown (unknown wins over known-clean), vulns are the union by id, and KEV and EPSS then follow from that union (KEV if any row is KEV, max EPSS). The result does not depend on row order. Property tests run 1000 cases each; fast-check prints the seed and path of any failure.
+When several rows describe the same `ecosystem:name@version`, they merge to the worst case (`combineOsvAnswers` in `src/exhume/rank.ts`): the OSV answer is unknown if any row is unknown (unknown wins over known-clean), vulns are the union by id, and KEV and EPSS then follow from that union (KEV if any row is KEV, max EPSS). The result does not depend on row order. Property tests run 1000 cases each; fast-check prints the seed and path of any failure.
 
 ## Ownership
 
