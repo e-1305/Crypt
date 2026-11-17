@@ -2,6 +2,7 @@
   "ecosystem": "npm",
   "name": "node-fetch",
   "version": "2.6.0",
+  "fetchedAt": "2026-11-17T13:01:08.765Z",
   "vulns": [
     {
       "id": "GHSA-r683-j2x4-v87g",

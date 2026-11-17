@@ -2,7 +2,7 @@
 
 Goal: `npx crypt exhume <path-or-github-url>` produces a deterministic, ranked list of limbs (packages) from a real repository, and works offline once its data is cached. Follows `.kiro/steering/failsafe.md`, `blameless.md` and `sla-policy.md`. Driven by issue #5 (Tier 1).
 
-Terms. **Limb**: one `package@version` (direct or transitive). **Manifest**: the lockfile a limb was read from. **Feed**: a local copy of CISA KEV (JSON) or FIRST EPSS (CSV) in `data/feeds/`. **Unknown**: the tool could not establish whether a limb is clean. **Finding**: any limb whose state is not Healthy. **Spawned**: a finding that becomes a monster. **Exorcised**: a finding that is not spawned.
+Terms. **Limb**: one `package@version` (direct or transitive). **Manifest**: the lockfile a limb was read from. **Feed**: a local copy of CISA KEV (JSON) or FIRST EPSS (CSV) in `data/feeds/`. **Unknown**: the tool could not establish whether a limb is clean. **Finding**: any limb whose state is not Healthy. **Spawned**: a finding that becomes a monster. **Exorcised**: a finding that is not spawned and not Unknown. **Unresolved**: an Unknown finding that is not spawned.
 
 ## E1 Lockfile parsing
 1. The scanner SHALL read `package-lock.json` (lockfileVersion 2 or 3, `packages` map) and emit one limb per distinct `name@version`, direct and transitive. Root (`""`) and `link` entries are skipped.
@@ -14,7 +14,7 @@ Terms. **Limb**: one `package@version` (direct or transitive). **Manifest**: the
 ## E2 OSV lookup and cache
 1. Vulnerabilities SHALL be looked up with the OSV `querybatch` API. The network client lives in `scripts/`; `src/` receives an injected lookup function.
 2. Every answer SHALL be cached in `data/cache/osv/`, one file per `ecosystem`, `name` and `version`, so a rerun needs no network.
-3. WHEN the cache has an entry, the scanner SHALL not call the lookup.
+3. WHEN the cache has an entry newer than 7 days, or the scanner runs offline, the scanner SHALL not call the lookup. An older entry SHALL be refreshed; if the refresh fails the limb SHALL be Unknown (stale), never Healthy.
 4. IF a limb has no cache entry and the lookup fails, is absent (offline) or answers incompletely, THEN the limb SHALL be Unknown and SHALL NOT be Healthy. A corrupt cache file SHALL be treated as a miss.
 
 ## E3 Exploit intel feeds
@@ -31,7 +31,7 @@ Terms. **Limb**: one `package@version` (direct or transitive). **Manifest**: the
 
 ## E5 Noise exorcism
 1. Spawned = Possessed, plus Rotting limbs with max EPSS >= 0.1.
-2. The output SHALL carry counts: `findings`, `exorcised`, `spawned` (and `limbs`, `possessed`, `rotting`, `healthy`, `unknown`).
+2. The output SHALL carry counts: `findings`, `exorcised`, `spawned`, `unresolved` (and `limbs`, `possessed`, `rotting`, `healthy`, `unknown`).
 
 ## E6 Ownership (blameless.md)
 1. The owner SHALL come only from CODEOWNERS, searched in `.github/`, the repository root, then `docs/` (first file found is used). The last matching rule wins.

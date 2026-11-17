@@ -17,10 +17,12 @@
     "feeds:update": "tsx scripts/feeds-update.ts",
     "exhume": "tsx scripts/exhume.ts"
   },
+  "dependencies": {
+    "tsx": "^4.23.15"
+  },
   "devDependencies": {
     "@types/node": "^26.6.6",
     "fast-check": "^4.10.2",
-    "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vitest": "^5.1.0"
   },

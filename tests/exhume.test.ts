@@ -1,17 +1,19 @@
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
-import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { execFileSync, spawnSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { buildCreature, serializeCreature } from "../src/exhume/creature.js";
+import { NoManifestError, buildCreature, serializeCreature } from "../src/exhume/creature.js";
 import { parseEpss, parseKev } from "../src/exhume/feeds.js";
 import { LockfileError, parsePackageLock, parseRequirements } from "../src/exhume/lockfile.js";
 import { ownerOf, parseCodeowners } from "../src/exhume/owners.js";
-import { cachePath, resolveOsv } from "../src/exhume/osv.js";
-import { rankLimbs, scoreOf } from "../src/exhume/rank.js";
+import { OSV_TTL_MS, cachePath, resolveOsv } from "../src/exhume/osv.js";
+import { countLimbs, rankLimbs, scoreOf } from "../src/exhume/rank.js";
 import type { ExhumeFs, Limb, OsvVuln } from "../src/exhume/types.js";
 import { limbKey } from "../src/exhume/types.js";
+import { nodeFs } from "../scripts/node-fs.js";
+import { osvLookup, type Fetcher } from "../scripts/osv-client.js";
 
 function memFs(files: Record<string, string> = {}): ExhumeFs & { files: Map<string, string> } {
   const m = new Map(Object.entries(files));
@@ -102,6 +104,36 @@ describe("OSV cache (E2)", () => {
     const fs = memFs({ [cachePath("c", l)]: "{nope" });
     const r = await resolveOsv([l], { fs, cacheDir: "c" });
     expect(r.unknown.has(limbKey(l))).toBe(true);
+  });
+  it("refreshes an expired entry, and a clean answer does not stay clean forever", async () => {
+    const t0 = Date.UTC(2026, 0, 1);
+    const fs = memFs();
+    await resolveOsv([l], { fs, cacheDir: "c", now: t0, lookup: async () => new Map([[limbKey(l), []]]) });
+    expect(JSON.parse(fs.files.get(cachePath("c", l))!).fetchedAt).toBe(new Date(t0).toISOString());
+    let calls = 0;
+    const lookup = async () => (calls++, new Map([[limbKey(l), vulns]]));
+    await resolveOsv([l], { fs, cacheDir: "c", now: t0 + OSV_TTL_MS - 1, lookup });
+    expect(calls).toBe(0);
+    const r = await resolveOsv([l], { fs, cacheDir: "c", now: t0 + OSV_TTL_MS + 1, lookup });
+    expect(calls).toBe(1);
+    expect(r.known.get(limbKey(l))).toEqual(vulns);
+    expect(r.stale.size).toBe(0);
+  });
+  it("an expired entry whose refresh fails is stale and ranks unknown, never Healthy", async () => {
+    const t0 = Date.UTC(2026, 0, 1);
+    const fs = memFs();
+    await resolveOsv([l], { fs, cacheDir: "c", now: t0, lookup: async () => new Map([[limbKey(l), []]]) });
+    const r = await resolveOsv([l], { fs, cacheDir: "c", now: t0 + OSV_TTL_MS * 2, lookup: async () => new Map() });
+    expect(r.stale.has(limbKey(l))).toBe(true);
+    const [ranked] = rankLimbs({ limbs: [l], osv: r.known, stale: r.stale, ...feedsOf([], {}), ownerOfManifest: () => "unowned" });
+    expect(ranked).toMatchObject({ state: "Rotting", unknown: true, unknownReason: "osv-stale" });
+  });
+  it("offline use (no lookup) accepts old entries without checking age", async () => {
+    const fs = memFs();
+    await resolveOsv([l], { fs, cacheDir: "c", now: 0, lookup: async () => new Map([[limbKey(l), []]]) });
+    const r = await resolveOsv([l], { fs, cacheDir: "c", now: Date.UTC(2030, 0, 1) });
+    expect(r.known.has(limbKey(l))).toBe(true);
+    expect(r.stale.size).toBe(0);
   });
   it("cache file names never leave the cache directory", () => {
     fc.assert(
@@ -249,14 +281,18 @@ describe("exhume properties", () => {
       }),
     );
   });
-  it("counts add up: exorcised + spawned = findings", async () => {
+  it("counts add up: exorcised + spawned + unresolved = findings", async () => {
     await fc.assert(
       fc.asyncProperty(arbScenario, async (s) => {
         const ranked = await run(s);
         const findings = ranked.filter((l) => l.state !== "Healthy").length;
         const spawned = ranked.filter((l) => l.spawned).length;
-        const exorcised = ranked.filter((l) => l.state !== "Healthy" && !l.spawned).length;
-        expect(exorcised + spawned).toBe(findings);
+        const exorcised = ranked.filter((l) => l.state !== "Healthy" && !l.spawned && !l.unknown).length;
+        const unresolved = ranked.filter((l) => l.unknown && !l.spawned).length;
+        expect(exorcised + spawned + unresolved).toBe(findings);
+        expect(countLimbs(ranked)).toMatchObject({ findings, exorcised, spawned, unresolved });
+        // unknown limbs are never dropped as noise
+        for (const l of ranked) if (l.unknown) expect(l.state).not.toBe("Healthy");
       }),
     );
   });
@@ -284,7 +320,7 @@ describe("creature.json (E7) and blamelessness (E6.3)", () => {
     const files = { "package-lock.json": lock, CODEOWNERS: "* @team" };
     expect(await make(files, false)).toBe(await make(files, false));
     const c = JSON.parse(await make(files, false));
-    expect(c.counts).toMatchObject({ limbs: 2, findings: 1, spawned: 1, exorcised: 0, healthy: 1 });
+    expect(c.counts).toMatchObject({ limbs: 2, findings: 1, spawned: 1, exorcised: 0, unresolved: 0, healthy: 1 });
     expect(c.limbs[0]).toMatchObject({ id: "npm:a@1.0.0", state: "Possessed", owner: "@team" });
     expect(c.feeds.kev.date).toBe("2026-01-01T00:00:00Z");
   });
@@ -296,29 +332,90 @@ describe("creature.json (E7) and blamelessness (E6.3)", () => {
   it("a repository without CODEOWNERS is unowned", async () => {
     expect(JSON.parse(await make({ "package-lock.json": lock }, false)).manifests[0].owner).toBe("unowned");
   });
-  it("no output field contains a git author or committer", async () => {
-    await fc.assert(
-      fc.asyncProperty(fc.stringMatching(/^[A-Z][a-z]{5,9}[A-Z][a-z]{5,9}$/), async (author) => {
-        const dir = mkdtempSync(join(tmpdir(), "crypt-git-"));
-        writeFileSync(join(dir, "package-lock.json"), lock);
-        const git = (...a: string[]) =>
-          execFileSync("git", ["-C", dir, ...a], {
-            env: { ...process.env, GIT_AUTHOR_NAME: author, GIT_COMMITTER_NAME: author, GIT_AUTHOR_EMAIL: "a@example.invalid", GIT_COMMITTER_EMAIL: "a@example.invalid" },
-            stdio: "ignore",
-          });
-        git("init", "-q");
-        git("add", ".");
-        git("commit", "-q", "-m", "x");
-        const out = await make({ "package-lock.json": readFileSync(join(dir, "package-lock.json"), "utf8") }, false);
-        expect(out).not.toContain(author);
-        expect(out.toLowerCase()).not.toMatch(/author|committer/);
-      }),
-      { numRuns: 5 },
+  it("no output field contains a git author or committer, with a real git repo read through the CLI filesystem", async () => {
+    const author = "Zelda Quimby";
+    const dir = mkdtempSync(join(tmpdir(), "crypt-git-"));
+    writeFileSync(join(dir, "package-lock.json"), lock);
+    const git = (...a: string[]) =>
+      execFileSync("git", ["-C", dir, ...a], {
+        env: { ...process.env, GIT_AUTHOR_NAME: author, GIT_COMMITTER_NAME: author, GIT_AUTHOR_EMAIL: "zq@example.invalid", GIT_COMMITTER_EMAIL: "zq@example.invalid" },
+        stdio: "ignore",
+      });
+    git("init", "-q");
+    git("add", ".");
+    git("commit", "-q", "-m", "x");
+    const out = serializeCreature(
+      await buildCreature({ repo: nodeFs(dir), cacheFs: memFs(), cacheDir: "c", ...feedsOf(["CVE-2020-1"], {}), lookup: async () => new Map() }),
     );
+    expect(out).not.toContain("Zelda");
+    expect(out).not.toContain("zq@example.invalid");
+    expect(out.toLowerCase()).not.toMatch(/author|committer/);
+  });
+  it("a repository without a readable manifest fails instead of reporting a clean run", async () => {
+    await expect(buildCreature({ repo: memFs({ CODEOWNERS: "* @t" }), cacheFs: memFs(), cacheDir: "c", ...feedsOf([], {}) })).rejects.toBeInstanceOf(NoManifestError);
+    const dir = mkdtempSync(join(tmpdir(), "crypt-empty-"));
+    await expect(buildCreature({ repo: nodeFs(dir), cacheFs: memFs(), cacheDir: "c", ...feedsOf([], {}) })).rejects.toBeInstanceOf(NoManifestError);
   });
   it("src/exhume never touches git or processes", () => {
     for (const f of readdirSync("src/exhume")) {
       expect(readFileSync(join("src/exhume", f), "utf8"), f).not.toMatch(/child_process|\bblame\b|\.git\b|committer|\bauthor\b/i);
     }
+  });
+});
+
+describe("OSV client (osvLookup) fail-safe", () => {
+  const a = limb("a", "1.0.0");
+  const b = limb("b", "2.0.0");
+  const reply = (body: unknown, ok = true) => async () => ({ ok, json: async () => body });
+  const fake = (routes: { batch: unknown; details?: Record<string, unknown | null> }): Fetcher => async (url) => {
+    if (url.endsWith("/querybatch")) return { ok: true, json: async () => routes.batch };
+    const id = decodeURIComponent(url.split("/vulns/")[1]!);
+    const d = routes.details?.[id];
+    return d == null ? { ok: false, json: async () => ({}) } : { ok: true, json: async () => d };
+  };
+  it("returns aliases and severity for a complete answer, and [] for a clean limb", async () => {
+    const f = fake({
+      batch: { results: [{ vulns: [{ id: "GHSA-1" }] }, {}] },
+      details: { "GHSA-1": { aliases: ["CVE-1"], database_specific: { severity: "HIGH" } } },
+    });
+    const r = await osvLookup(f)([a, b]);
+    expect(r.get(limbKey(a))).toEqual([{ id: "GHSA-1", aliases: ["CVE-1"], severity: "HIGH" }]);
+    expect(r.get(limbKey(b))).toEqual([]);
+  });
+  it("leaves every limb out when the batch fails, is not ok or has a length mismatch", async () => {
+    expect((await osvLookup(reply({}, false))([a, b])).size).toBe(0);
+    expect((await osvLookup(reply({ results: [{}] }))([a, b])).size).toBe(0);
+    expect((await osvLookup(async () => { throw new Error("offline"); })([a])).size).toBe(0);
+  });
+  it("leaves limbs out on an incomplete page (next_page_token)", async () => {
+    expect((await osvLookup(reply({ results: [{ next_page_token: "t" }, {}] }))([a, b])).size).toBe(0);
+  });
+  it("leaves only the limb with a failed detail fetch out, never reporting it clean", async () => {
+    const f = fake({ batch: { results: [{ vulns: [{ id: "GHSA-9" }] }, {}] }, details: { "GHSA-9": null } });
+    const r = await osvLookup(f)([a, b]);
+    expect(r.has(limbKey(a))).toBe(false);
+    expect(r.get(limbKey(b))).toEqual([]);
+  });
+});
+
+describe("CLI (scripts/exhume.ts)", () => {
+  const cli = (...args: string[]) =>
+    spawnSync(process.execPath, ["--import", "tsx", "scripts/exhume.ts", ...args], { encoding: "utf8" });
+  it("exits non-zero without a target and for a directory with no manifest", () => {
+    expect(cli().status).toBe(1);
+    const dir = mkdtempSync(join(tmpdir(), "crypt-cli-"));
+    const r = cli(dir, "--offline", "--out", join(dir, "o.json"));
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain("nothing was exhumed");
+  });
+  it("ignores feeds shipped inside the scanned repository", () => {
+    const dir = mkdtempSync(join(tmpdir(), "crypt-cli-"));
+    writeFileSync(join(dir, "package-lock.json"), JSON.stringify({ lockfileVersion: 3, packages: { "node_modules/a": { version: "1.0.0" } } }));
+    mkdirSync(join(dir, "feeds"));
+    writeFileSync(join(dir, "feeds", "kev.json"), JSON.stringify({ dateReleased: "2026-01-01", vulnerabilities: [] }));
+    const out = join(dir, "o.json");
+    const r = cli(dir, "--offline", "--feeds", join(dir, "nofeeds"), "--cache", join(dir, "cache"), "--out", out);
+    expect(r.status).toBe(0);
+    expect(JSON.parse(readFileSync(out, "utf8")).feeds.kev.status).toBe("missing");
   });
 });

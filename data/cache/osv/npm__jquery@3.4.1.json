@@ -2,6 +2,7 @@
   "ecosystem": "npm",
   "name": "jquery",
   "version": "3.4.1",
+  "fetchedAt": "2026-11-17T13:01:08.765Z",
   "vulns": [
     {
       "id": "GHSA-gxr4-xjj5-5px2",

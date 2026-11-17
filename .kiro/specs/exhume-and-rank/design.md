@@ -39,12 +39,12 @@ The lookup returns an entry only when the limb's batch result and every detail f
 Cache file `data/cache/osv/<ecosystem>__<encodeURIComponent(name)>@<encodeURIComponent(version)>.json`:
 
 ```json
-{"ecosystem":"npm","name":"jquery","version":"3.4.1","vulns":[{"id":"GHSA-...","aliases":["CVE-..."],"severity":"MODERATE"}]}
+{"ecosystem":"npm","name":"jquery","version":"3.4.1","fetchedAt":"2026-11-17T13:01:08.765Z","vulns":[{"id":"GHSA-...","aliases":["CVE-..."],"severity":"MODERATE"}]}
 ```
 
-`vulns` is sorted by id and aliases are sorted. A file with a different shape or a different key is a miss. The file name starts with the ecosystem and the whole name is URL-encoded, so no name can leave the cache directory.
+`vulns` is sorted by id and aliases are sorted. A file with a different shape or a different key is a miss. `fetchedAt` is the time of the OSV answer. When a lookup is available, an entry older than 7 days (or without `fetchedAt`) is refreshed, so a cached "no vulnerabilities" answer does not stay clean forever. If the refresh fails, the old vulnerabilities are kept but the limb is `unknown` with reason `osv-stale`, never Healthy. With `--offline` (no lookup) the cache is used as is, without an age check. The file name starts with the ecosystem and the whole name is URL-encoded, so no name can leave the cache directory.
 
-Severity to number (the CVSS vector is not evaluated, the label is used): LOW 2, MODERATE 5, HIGH 7.5, CRITICAL 9.5, null 0. This is deterministic and documented here on purpose.
+Severity to number (the CVSS vector in OSV `severity[]` is not evaluated, only `database_specific.severity`. Advisories that carry only a vector get severity 0, so the last tie-break is weaker for them. Known limitation; the label is used): LOW 2, MODERATE 5, HIGH 7.5, CRITICAL 9.5, null 0. This is deterministic and documented here on purpose.
 
 ## Feeds
 
@@ -63,7 +63,7 @@ score = (kev ? 1e9 : 0) + (epss ?? 0) * 1e7 + severity
 
 EPSS has 5 decimals, so one EPSS step is at least 1e2 in score, above the severity range (0 to 10); EPSS dominates severity, KEV dominates everything. Healthy limbs score 0.
 
-State: `Possessed` if kev; `Rotting` if it has a vulnerability; else `Healthy`. Unknown handling (fail-safe): a limb is `unknown: true` when its OSV answer is unavailable, its version is `unknown`, or any feed is missing. An unknown Healthy limb becomes `Rotting`. Sort key: state rank (Possessed, Rotting, Healthy), score desc, known before unknown, `ecosystem:name@version` asc. `spawned = Possessed || (Rotting && epss !== null && epss >= 0.1)`. `findings = limbs - healthy`, `exorcised = findings - spawned`.
+State: `Possessed` if kev; `Rotting` if it has a vulnerability; else `Healthy`. Unknown handling (fail-safe): a limb is `unknown: true` when its OSV answer is unavailable, its OSV answer is stale (`osv-stale`), its version is `unknown`, or any feed is missing. An unknown Healthy limb becomes `Rotting`. Sort key: state rank (Possessed, Rotting, Healthy), score desc, known before unknown, `ecosystem:name@version` asc. `spawned = Possessed || (Rotting && epss !== null && epss >= 0.1)`. `findings = limbs - healthy`. `exorcised` counts findings that are not spawned and not unknown (noise below the threshold). `unresolved` counts unknown findings that are not spawned; they are never exorcised, because their score could not be computed. `exorcised + spawned + unresolved = findings`.
 
 ## Ownership
 
@@ -80,7 +80,7 @@ Keys are written in the order below; `limbs` is in rank order. No run timestamp.
     "kev":  { "status": "ok" | "missing", "date": string | null },
     "epss": { "status": "ok" | "missing", "date": string | null }
   },
-  "counts": { "limbs", "findings", "exorcised", "spawned", "possessed", "rotting", "healthy", "unknown" },
+  "counts": { "limbs", "findings", "exorcised", "spawned", "unresolved", "possessed", "rotting", "healthy", "unknown" },
   "manifests": [ { "path": string, "ecosystem": "npm" | "PyPI", "owner": string } ],
   "limbs": [ {
       "rank": number,                // 1-based
@@ -89,7 +89,7 @@ Keys are written in the order below; `limbs` is in rank order. No run timestamp.
       "manifest": string, "owner": string,           // "unowned" when no CODEOWNERS rule matches
       "state": "Healthy" | "Rotting" | "Possessed",
       "unknown": boolean,
-      "unknownReason": string | null, // "osv-unavailable" | "version-unpinned" | "feed-missing"
+      "unknownReason": string | null, // "osv-unavailable" | "osv-stale" | "version-unpinned" | "feed-missing"
       "spawned": boolean,
       "score": number,
       "kev": boolean,
@@ -104,11 +104,11 @@ Only the manifest-level `owner` is attributed; no person appears in failure mess
 
 ## Offline fixtures and data folder
 
-`data/feeds/` is gitignored (EPSS is about 12 MB uncompressed). `data/cache/osv/` is committed for the fixture so a clean clone can rerun it. For a clone without feeds, `fixtures/vulnerable-npm/feeds/` holds a small snapshot (KEV and EPSS rows for the fixture's CVEs only), selected with `--feeds fixtures/vulnerable-npm/feeds`. When `--feeds` is not given, `data/feeds/kev.json` is absent and a local target contains `feeds/kev.json`, that snapshot is used, so `npm run exhume -- fixtures/vulnerable-npm` works on a fresh clone. With no feeds at all the scan still works and marks every limb Unknown.
+`data/feeds/` is gitignored (EPSS is about 12 MB uncompressed). `data/cache/osv/` is committed for the fixture so a clean clone can rerun it. For a clone without feeds, `fixtures/vulnerable-npm/feeds/` holds a small snapshot (KEV and EPSS rows for the fixture's CVEs only), selected with `--feeds fixtures/vulnerable-npm/feeds`. Feeds are read only from `--feeds` (default `data/feeds`), never from the scanned repository, so a target cannot choose which CVEs count as KEV. The offline demo is `npm run exhume -- fixtures/vulnerable-npm --feeds fixtures/vulnerable-npm/feeds --offline`. A KEV or EPSS feed older than 7 days prints a warning on stderr; ranking is unchanged so output stays deterministic. With no feeds at all the scan still works and marks every limb Unknown.
 
 ## CLI
 
-`tsx scripts/exhume.ts <path-or-url> [--out out/creature.json] [--feeds data/feeds] [--cache data/cache/osv] [--offline]`. `bin/crypt.mjs` maps `crypt exhume ...` to it. `--offline` never calls OSV. Exit code is non-zero only for bad arguments, an unreadable target or an unsupported lockfile; unknown limbs are a normal result.
+`tsx scripts/exhume.ts <path-or-url> [--out out/creature.json] [--feeds data/feeds] [--cache data/cache/osv] [--offline]`. `bin/crypt.mjs` maps `crypt exhume ...` to it. `--offline` never calls OSV. Exit code is non-zero for bad arguments, an unsupported lockfile, a run that read no manifest (`package-lock.json` or `requirements.txt` at the repository root), and a GitHub fetch that fails for any reason other than 404 (404 means the file is absent). Unknown limbs are a normal result. Network calls have a 20 second timeout. `tsx` is a runtime dependency because `bin/crypt.mjs` runs the TypeScript script through it.
 
 ## Property tests
 

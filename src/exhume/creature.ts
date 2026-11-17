@@ -16,6 +16,17 @@ export interface ExhumeOptions {
   kev: KevFeed | null;
   epss: EpssFeed | null;
   lookup?: OsvLookup;
+  /** Current time in ms, used only for the OSV cache TTL. */
+  now?: number;
+}
+
+/** No supported manifest was readable: the run says nothing about the repository. */
+export class NoManifestError extends Error {
+  constructor() {
+    super(
+      `no ${MANIFESTS.join(" or ")} found at the repository root (manifests in subdirectories are not read); nothing was exhumed`,
+    );
+  }
 }
 
 export async function buildCreature(o: ExhumeOptions) {
@@ -42,12 +53,14 @@ export async function buildCreature(o: ExhumeOptions) {
     limbs.push(...parseRequirements(req, "requirements.txt"));
     manifests.push({ path: "requirements.txt", ecosystem: "PyPI", owner: ownerOfManifest("requirements.txt") });
   }
+  if (manifests.length === 0) throw new NoManifestError();
   limbs.sort(compareLimbs);
 
-  const osv = await resolveOsv(limbs, { fs: o.cacheFs, cacheDir: o.cacheDir, lookup: o.lookup });
+  const osv = await resolveOsv(limbs, { fs: o.cacheFs, cacheDir: o.cacheDir, lookup: o.lookup, now: o.now });
   const ranked = rankLimbs({
     limbs,
     osv: osv.known,
+    stale: osv.stale,
     kev: o.kev,
     epss: o.epss,
     ownerOfManifest,
@@ -91,7 +104,7 @@ export function serializeCreature(c: Creature): string {
 export function summarize(c: Creature, top = 5): string {
   const n = c.counts;
   const lines = [
-    `CRYPT exhume: ${n.limbs} limbs, ${n.findings} findings, ${n.exorcised} exorcised, ${n.spawned} spawned`,
+    `CRYPT exhume: ${n.limbs} limbs, ${n.findings} findings, ${n.exorcised} exorcised, ${n.spawned} spawned, ${n.unresolved} unresolved`,
     `  possessed ${n.possessed}, rotting ${n.rotting}, healthy ${n.healthy}, unknown ${n.unknown}`,
     `  KEV feed: ${c.feeds.kev.status}${c.feeds.kev.date ? ` (${c.feeds.kev.date})` : ""}`,
     `  EPSS feed: ${c.feeds.epss.status}${c.feeds.epss.date ? ` (${c.feeds.epss.date})` : ""}`,

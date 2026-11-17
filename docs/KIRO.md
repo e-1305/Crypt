@@ -53,7 +53,8 @@ TODO
 | Ranking is deterministic and independent of input order; same input gives byte-identical `creature.json` (rule 4, E7) | `tests/exhume.test.ts` |
 | Spawned is a subset of Possessed plus Rotting with EPSS >= 0.1 (noise exorcism, E5) | `tests/exhume.test.ts` |
 | Missing feed, OSV failure or unpinned version never yields Healthy (rule 1, E2, E3) | `tests/exhume.test.ts` |
-| No output field contains a git author or committer, `src/exhume` never touches git (blameless, E6) | `tests/exhume.test.ts` |
+| No output field contains a git author or committer: a real git repo is read through the CLI filesystem, and `src/exhume` never touches git (blameless, E6) | `tests/exhume.test.ts` |
+| Unknown findings are never exorcised; stale OSV cache entries are never Healthy; a run with no manifest fails (rule 1, E2, E5) | `tests/exhume.test.ts` |
 | OSV cache file names never leave the cache directory (E2) | `tests/exhume.test.ts` |
 
 ## Spec → code traceability
@@ -88,4 +89,4 @@ TODO
 | 10 attribution, docs | same | `docs/ATTRIBUTION.md` has no TODO for OSV, KEV, EPSS |
 
 ## Numbers
-- Specs: 3 · Hooks: TODO · Steering files: 5 · Property tests: 21 (14 bridge, 7 exhume) · Tests: 65
+- Specs: 3 · Hooks: TODO · Steering files: 5 · Property tests: 20 (14 bridge, 6 exhume) · Tests: 75

@@ -1,6 +1,6 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
-import { buildCreature, serializeCreature, summarize } from "../src/exhume/creature.js";
+import { NoManifestError, buildCreature, serializeCreature, summarize } from "../src/exhume/creature.js";
 import { parseEpss, parseKev } from "../src/exhume/feeds.js";
 import { LockfileError } from "../src/exhume/lockfile.js";
 import { CODEOWNERS_LOCATIONS } from "../src/exhume/owners.js";
@@ -30,34 +30,57 @@ function parseArgs(argv: string[]) {
 const GITHUB = /^https:\/\/github\.com\/([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+?)(?:\.git)?\/?$/;
 const FILES = ["package-lock.json", "requirements.txt", ...CODEOWNERS_LOCATIONS];
 
+const FETCH_TIMEOUT_MS = 20_000;
+const MAX_FEED_AGE_DAYS = 7;
+
+/** A missing file (404) is normal. Any other failure aborts, so it is never mistaken for an empty repository. */
 async function githubRepo(owner: string, repo: string): Promise<Pick<ExhumeFs, "read">> {
   const files = new Map<string, string>();
   for (const f of FILES) {
-    const res = await fetch(`https://raw.githubusercontent.com/${owner}/${repo}/HEAD/${f}`).catch(() => null);
-    if (res?.ok) files.set(f, await res.text());
+    const url = `https://raw.githubusercontent.com/${owner}/${repo}/HEAD/${f}`;
+    let res: Response;
+    try {
+      res = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+    } catch (e) {
+      throw new Error(`could not fetch ${f} from ${owner}/${repo}: ${(e as Error).message}`);
+    }
+    if (res.status === 404) continue;
+    if (!res.ok) throw new Error(`could not fetch ${f} from ${owner}/${repo}: HTTP ${res.status} (private repository or rate limit?)`);
+    files.set(f, await res.text());
   }
   return { read: (p) => files.get(p) ?? null };
 }
 
+function warnIfStale(name: string, date: string | undefined): void {
+  if (!date) return;
+  const days = (Date.now() - Date.parse(date)) / 86_400_000;
+  if (Number.isNaN(days) || days > MAX_FEED_AGE_DAYS)
+    console.error(`exhume: warning: ${name} feed is older than ${MAX_FEED_AGE_DAYS} days (${date}). Run npm run feeds:update.`);
+}
+
 async function main(): Promise<void> {
   const a = parseArgs(process.argv.slice(2));
-  const explicitFeeds = process.argv.includes("--feeds");
   const gh = GITHUB.exec(a.target);
   const repo = gh ? await githubRepo(gh[1]!, gh[2]!) : nodeFs(a.target);
-  // Default feeds dir: data/feeds. A local target that ships its own feeds/ snapshot (the fixture) is used
-  // only when data/feeds has no KEV file, so a fresh clone can run the demo offline.
-  const useLocal = !gh && !explicitFeeds && nodeFs(a.feeds).read("kev.json") === null && nodeFs(a.target).read("feeds/kev.json") !== null;
-  const feedFs = useLocal ? nodeFs(`${a.target}/feeds`) : nodeFs(a.feeds);
+  // Feeds only come from --feeds (default data/feeds), never from the scanned repository.
+  const feedFs = nodeFs(a.feeds);
   const kevText = feedFs.read("kev.json");
   const epssText = feedFs.read("epss.csv");
+  const kev = kevText === null ? null : parseKev(kevText);
+  const epss = epssText === null ? null : parseEpss(epssText);
   const creature = await buildCreature({
     repo,
     cacheFs: nodeFs("."),
     cacheDir: a.cache,
-    kev: kevText === null ? null : parseKev(kevText),
-    epss: epssText === null ? null : parseEpss(epssText),
-    lookup: a.offline ? undefined : osvLookup((url, init) => fetch(url, init)),
+    kev,
+    epss,
+    now: Date.now(),
+    lookup: a.offline
+      ? undefined
+      : osvLookup((url, init) => fetch(url, { ...init, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })),
   });
+  warnIfStale("KEV", kev?.date);
+  warnIfStale("EPSS", epss?.date);
   mkdirSync(dirname(a.out), { recursive: true });
   writeFileSync(a.out, serializeCreature(creature));
   console.log(summarize(creature));
@@ -65,6 +88,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((e) => {
-  console.error(e instanceof LockfileError ? `exhume: ${e.message}` : `exhume: ${(e as Error).message}\n${USAGE}`);
+  console.error(e instanceof LockfileError || e instanceof NoManifestError ? `exhume: ${e.message}` : `exhume: ${(e as Error).message}\n${USAGE}`);
   process.exit(1);
 });

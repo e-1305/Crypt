@@ -2,6 +2,7 @@
   "ecosystem": "npm",
   "name": "lodash",
   "version": "4.17.15",
+  "fetchedAt": "2026-11-17T13:01:08.765Z",
   "vulns": [
     {
       "id": "GHSA-29mw-wpgm-hmr9",

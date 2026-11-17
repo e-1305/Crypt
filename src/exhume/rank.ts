@@ -2,7 +2,7 @@ import type { EpssFeed, KevFeed } from "./feeds.js";
 import { type Limb, type OsvVuln, cmp, limbKey } from "./types.js";
 
 export type State = "Healthy" | "Rotting" | "Possessed";
-export type UnknownReason = "osv-unavailable" | "version-unpinned" | "feed-missing";
+export type UnknownReason = "osv-unavailable" | "osv-stale" | "version-unpinned" | "feed-missing";
 
 export const SPAWN_EPSS = 0.1;
 const SEVERITY: Record<string, number> = { LOW: 2, MODERATE: 5, MEDIUM: 5, HIGH: 7.5, CRITICAL: 9.5 };
@@ -35,6 +35,8 @@ export interface RankInput {
   limbs: Limb[];
   /** Limb key to vulns. A limb absent from this map has OSV status unknown. */
   osv: Map<string, OsvVuln[]>;
+  /** Limb keys whose OSV answer is expired and could not be refreshed. */
+  stale?: Set<string>;
   kev: KevFeed | null;
   epss: EpssFeed | null;
   ownerOfManifest: (manifest: string) => string;
@@ -61,6 +63,7 @@ export function rankLimbs(input: RankInput): RankedLimb[] {
     let reason: UnknownReason | null = null;
     if (l.version === "unknown") reason = "version-unpinned";
     else if (vulns === undefined) reason = "osv-unavailable";
+    else if (input.stale?.has(key)) reason = "osv-stale";
     else if (feedMissing) reason = "feed-missing";
     let state: State = kev ? "Possessed" : list.length > 0 ? "Rotting" : "Healthy";
     if (reason !== null && state === "Healthy") state = "Rotting"; // fail-safe: unknown is never clean
@@ -95,6 +98,8 @@ export interface Counts {
   findings: number;
   exorcised: number;
   spawned: number;
+  /** Unknown findings that are not spawned. They are never exorcised as noise. */
+  unresolved: number;
   possessed: number;
   rotting: number;
   healthy: number;
@@ -108,8 +113,9 @@ export function countLimbs(limbs: RankedLimb[]): Counts {
   return {
     limbs: limbs.length,
     findings,
-    exorcised: findings - spawned,
+    exorcised: limbs.filter((l) => l.state !== "Healthy" && !l.spawned && !l.unknown).length,
     spawned,
+    unresolved: limbs.filter((l) => l.unknown && !l.spawned).length,
     possessed: limbs.filter((l) => l.state === "Possessed").length,
     rotting: limbs.filter((l) => l.state === "Rotting").length,
     healthy,
