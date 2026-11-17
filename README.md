@@ -17,7 +17,19 @@ Each command dispatches AI agents built with [Kiro](https://kiro.dev) that open 
 
 ---
 
+## Install
+
+```bash
+npm install --global @e-1305/crypt     # gives the `crypt` command
+crypt raid <path-or-github-url>
+```
+
+Or run it once without installing: `npx @e-1305/crypt raid <path-or-github-url>`.
+Node 20 or newer. The package is `@e-1305/crypt` because the names `crypt` and `crypt-cli` belong to unrelated packages on the npm registry. The command it installs is still `crypt`.
+
 ## Quickstart
+
+From a checkout of this repository:
 
 ```bash
 npm ci
@@ -28,8 +40,9 @@ Type `GRAFT JQUERY` at the game prompt: a dry-run fix payload lands in `out/prs/
 `crypt raid` builds the Inform 6 and dfrotz toolchain once into `~/.cache/crypt/toolchain` (override with `CRYPT_TOOLCHAIN_DIR`; needs git, make, a C compiler and network the first time).
 Run it from any directory: `out/`, `crypt-audit.log` and `.crypt-seal` are written to the current one.
 
-Always use `npx --no-install crypt` (or `npm run crypt --`). The names `crypt` and `crypt-cli` both exist on the npm registry as unrelated packages, and `--no-install` makes sure npx runs this checkout and never downloads one of them.
+Inside a checkout or a project that has the package installed, use `npx --no-install crypt`: it runs the local command and never downloads another package. Outside a project, use `npx @e-1305/crypt`.
 `crypt --help` lists every command and flag. `exhume` of a GitHub URL shallow-clones it into a temporary directory, reads the lockfile and CODEOWNERS only, runs nothing from it, installs nothing, and removes the clone.
+`bash scripts/ci/pack-install-test.sh` packs the package, installs the tarball into an empty project and runs the installed command, the same check CI runs on Node 20 and 22.
 
 | Exit code | Meaning |
 |---|---|
