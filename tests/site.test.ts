@@ -9,6 +9,7 @@ import { parseRepoUrl, repoSlug } from "../src/web/repo-url.js";
 import { MAX_GALLERY_LIMBS, galleryIndex, previewPayload, slugForRepo, snapshotCreature } from "../src/site/gallery.js";
 import { parseRepos } from "../scripts/census/aggregate.js";
 import { buildSite } from "../scripts/build-site.js";
+import { generate, type CreatureInput } from "../src/raise/generate.js";
 import { renderManual } from "../src/site/manual.js";
 import { parseCommand } from "../src/bridge/grammar.js";
 import { inform6Path } from "../scripts/toolchain-dir.js";
@@ -55,6 +56,15 @@ describe("gallery data is aggregate-safe and blameless", () => {
   it("holds one snapshot per census repository, nothing else", () => {
     expect(snapshots().map((x) => x.f)).toEqual(repos.map((r) => `${slugForRepo(r.repo)}.json`).sort());
     for (const { s } of snapshots()) expect(repos.map((r) => r.repo)).toContain(s.repo);
+  });
+  it("rebuilt stories declare the native raid verb for every gallery creature", () => {
+    for (const { f, s } of snapshots()) {
+      const { inf } = generate(s as CreatureInput);
+      expect(inf, f).toContain("Verb 'raid'");
+      expect(inf, f).toContain("-> Raid;");
+      expect(inf, f).toContain("[ RaidSub;");
+      expect(inf, f).toContain('print "[[CRYPT RAID]]^";');
+    }
   });
   it("snapshots carry no owner, no author and no total across repositories", () => {
     const banned = /owner|author|email|committer|blame|total|aggregate|median|percent/i;

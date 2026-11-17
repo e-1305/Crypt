@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 import {
   EPITAPHS, KEV_WEIGHT, RAID_MS, SLA_KEV_MS, createRaidTimer, countsForScore, epitaph, formatClock, healedCount,
-  isRaidCommand, nightsWithoutPossession, praiseLines, rankFor, riskOf, teamScore, type RaidLimb,
+  nightsWithoutPossession, praiseLines, rankFor, riskOf, teamScore, type RaidLimb,
 } from "../src/theatre/raid.js";
 import { cardData, cardLines } from "../src/theatre/card.js";
 
@@ -136,12 +136,6 @@ describe("raid timer", () => {
     t = 5000;
     timer.start();
     expect(timer.view().elapsedMs).toBe(5000);
-  });
-  it("recognises only the RAID command", () => {
-    expect(isRaidCommand("RAID")).toBe(true);
-    expect(isRaidCommand(" raid ")).toBe(true);
-    expect(isRaidCommand("RAID NOW")).toBe(false);
-    expect(isRaidCommand(5)).toBe(false);
   });
 });
 
