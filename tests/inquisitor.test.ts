@@ -120,6 +120,55 @@ describe("inquisitor", () => {
   });
 });
 
+describe("inquisitor live (requiredCheck)", () => {
+  const named = (name: string, status: string, conclusion: string | null): CheckRun => ({ name, status, conclusion });
+  const live = (opts: MockOpts, maxAttempts = 3) => {
+    const s = setup(opts, maxAttempts);
+    return { ...s, ctx: { ...s.ctx, requiredCheck: "test" } };
+  };
+  it("test green on two polls: AWAITING_HUMAN_MERGE", async () => {
+    const { env, limb, ctx } = live({ checkRuns: () => [named("test", "completed", "success")] });
+    expect((await verify(ctx, limb)).outcome).toBe("AWAITING_HUMAN_MERGE");
+    env.cleanup();
+  });
+  it("test red: GRAFT_REJECTED, no state", async () => {
+    for (const c of ["failure", "cancelled", "timed_out", "action_required", "neutral", "skipped"]) {
+      const { env, limb, ctx } = live({ checkRuns: () => [named("test", "completed", c)] });
+      expect(await verify(ctx, limb)).toEqual({ outcome: "GRAFT_REJECTED", message: REJECTED_TEXT });
+      expect(env.stateText()).toBeNull();
+      env.cleanup();
+    }
+  });
+  it("test absent until the attempts run out: GRAFT_REJECTED, record kept", async () => {
+    const { env, limb, ctx, m } = live({ checkRuns: () => [named("lint", "completed", "success")] }, 4);
+    expect((await verify(ctx, limb)).outcome).toBe("GRAFT_REJECTED");
+    expect(m.calls.length).toBe(4);
+    expect(env.payloads()).toEqual(["crypt-graft-alpha-1.0.1.json"]);
+    env.cleanup();
+  });
+  it("other checks red or running do not matter: only test is judged", async () => {
+    const { env, limb, ctx } = live({ checkRuns: () => [named("test", "completed", "success"), named("lint", "completed", "failure"), named("deploy", "in_progress", null)] });
+    expect((await verify(ctx, limb)).outcome).toBe("AWAITING_HUMAN_MERGE");
+    env.cleanup();
+  });
+  it("seal mid-poll aborts with REJECTED_SEALED and no state change", async () => {
+    const { env, limb, ctx, m } = live({ checkRuns: () => [named("test", "in_progress", null)] }, 5);
+    const sleep = async () => env.seal();
+    expect((await verify({ ...ctx, sleep }, limb)).outcome).toBe("REJECTED_SEALED");
+    expect(m.calls.length).toBe(1);
+    expect(env.stateText()).toBeNull();
+    env.cleanup();
+  });
+  it("API error leaves state.json byte-identical", async () => {
+    const { env, limb, ctx } = live({ failOn: "getCheckRuns" });
+    const before = '{\n  "schemaVersion": 1,\n  "limbs": {}\n}\n';
+    env.writeState(before);
+    expect((await verify(ctx, limb)).outcome).toBe("ERROR");
+    expect(env.stateText()).toBe(before);
+    env.cleanup();
+  });
+});
+
 describe("inquisitor properties", () => {
   const conclusion = fc.constantFrom("success", "failure", "timed_out", "cancelled", "neutral", "skipped", null);
   const status = fc.constantFrom("queued", "in_progress", "completed");

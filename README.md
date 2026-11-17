@@ -56,6 +56,24 @@ npm run necromancer:check                     # offline acceptance: GRAFT JQUERY
 ```
 
 `exhume` reads `package-lock.json` (v2/v3) and `requirements.txt` (`==` pins only), asks OSV once per `package@version` (cached in `data/cache/osv/`), ranks with local KEV/EPSS files and prints totals (findings, exorcised, spawned). A limb whose status cannot be established is reported as unknown, never as clean. Schema: `.kiro/specs/exhume-and-rank/design.md`.
+## Live raid
+
+`crypt raid https://github.com/<owner>/<repo> --live` opens a real fix pull request through the GitHub API, the Inquisitor watches its `test` check, a human lands it on GitHub, and `crypt reraise --live` shows the limb HEALED. Step by step for the video, including how to create the token: [docs/DEMO.md](docs/DEMO.md).
+
+| Flag | Where | Meaning |
+|---|---|---|
+| `--live` | `raid`, `graft`, `inquisit`, `reraise` | talk to GitHub for real; needs `GITHUB_TOKEN` |
+| `--timeout <seconds>` | `raid`, `inquisit`, `reraise` | how long to wait for the `test` check (10 to 3600, default 600) |
+| `--sabotage --i-know-this-is-a-demo` | `graft`, with `--live` | demo only: adds a failing test so CI goes red |
+
+Safety notes:
+
+- Use a fine-grained token limited to the target repository (Contents, Pull requests: read and write; Checks: read). Classic tokens are refused, and so is a token that can see other repositories.
+- CRYPT has no merge capability. A person lands the pull request on GitHub.
+- `--sabotage` is refused unless `--live` and `--i-know-this-is-a-demo` are both given.
+- Every live API call is written to `crypt-audit.log` (method and path, never the token). Any error leaves the state unchanged.
+- `npm run live-raid:check` runs the whole raid offline against a mocked GitHub and registry.
+
 ## Play in the browser
 
 ```bash

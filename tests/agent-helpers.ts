@@ -5,6 +5,7 @@ import { defaultPaths } from "../src/common/agent.js";
 import { nodeIo, type Io } from "../src/common/io.js";
 import type { CheckRun, GithubClient, PrState } from "../src/github/client.js";
 import type { NecromancerCtx } from "../src/necromancer/index.js";
+import type { RegistryClient } from "../src/registry/types.js";
 import type { Advisory } from "../src/necromancer/version.js";
 import { generate } from "../src/raise/generate.js";
 
@@ -32,8 +33,11 @@ export function mockClient(o: MockOpts = {}) {
   };
   const client: GithubClient = {
     dryRun: false,
+    readBaseFile: async () => {
+      throw new Error("mockClient has no remote files; env.ctxFor supplies them from the target directory");
+    },
     createBranchWithFiles: (r) => rec("createBranchWithFiles", () => void r),
-    openPullRequest: (r) => rec("openPullRequest", () => ({ number: 100 + calls.length, url: `https://example.invalid/pr/${r.branch}` })),
+    openPullRequest: (r) => rec("openPullRequest", () => ({ number: 100 + calls.length, url: `https://example.invalid/pr/${r.branch}`, headSha: "a".repeat(40) })),
     getCheckRuns: () => rec("getCheckRuns", () => o.checkRuns?.() ?? []),
     getPullRequestState: (ref) => rec("getPullRequestState", () => o.prState?.(ref) ?? { open: true, landed: false }),
   };
@@ -92,10 +96,25 @@ export function makeAgentEnv(limbs: TestLimb[] = [{ name: "alpha", version: "1.0
   const now = () => new Date("2026-01-01T00:00:00.000Z");
   const ids = Object.keys(gen.limbs);
   const idOf = (name: string) => ids.find((k) => gen.limbs[k]!.name === name)!;
+  /** Registry that answers for any version: no dependencies, integrity derived from the name and version. */
+  const registry: RegistryClient = {
+    async getVersion(name, version) {
+      return {
+        version,
+        resolved: `https://registry.npmjs.org/${name}/-/${name}-${version}.tgz`,
+        integrity: `sha512-${Buffer.from(`${name}@${version}`).toString("base64")}`,
+        dependencies: {},
+        optionalDependencies: {},
+        peerDependencies: {},
+      };
+    },
+  };
+  /** Live clients read the base branch; here that is the target directory. Dry-run clients read it directly. */
   const ctxFor = (client: GithubClient): NecromancerCtx => ({
     ...paths,
     io,
-    client,
+    client: client.dryRun ? client : { ...client, readBaseFile: async (p: string) => readFileSync(join(target, p), "utf8") },
+    registry,
     advisories: async (id) => {
       lookups.push(id);
       return advisories.get(id) ?? null;

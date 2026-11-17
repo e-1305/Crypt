@@ -224,6 +224,25 @@ describe("necromancer graft", () => {
     expect(env.stateText()).toBeNull();
     env.cleanup();
   });
+  it("a seal issued during createBranchWithFiles stops before the PR is opened", async () => {
+    const env = makeAgentEnv();
+    const { client, calls } = mockClient();
+    const inner = client.createBranchWithFiles.bind(client);
+    client.createBranchWithFiles = async (r) => {
+      await inner(r);
+      env.seal();
+    };
+    expect((await graft(env.ctxFor(client), env.request(env.idOf("alpha")))).outcome).toBe("REJECTED_SEALED");
+    expect(calls).toEqual(["createBranchWithFiles"]);
+    env.cleanup();
+  });
+  it("a failed PR record write after the PR opened is an ERROR that names the PR", async () => {
+    const env = makeAgentEnv(undefined, { ...nodeIo, writeText: (p: string, t: string) => { if (p.includes("/prs/")) throw new Error("disk full"); nodeIo.writeText(p, t); } });
+    const { client } = mockClient();
+    const r = await graft(env.ctxFor(client), env.request(env.idOf("alpha")));
+    expect(r.outcome).toBe("ERROR");
+    env.cleanup();
+  });
   it("a sealed or unreadable-seal state aborts with zero calls", async () => {
     const env = makeAgentEnv();
     const { client, calls } = mockClient();
