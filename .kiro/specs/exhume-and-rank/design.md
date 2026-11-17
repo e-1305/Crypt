@@ -80,6 +80,7 @@ Keys are written in the order below; `limbs` is in rank order. No run timestamp.
 ```
 {
   "schemaVersion": 1,
+  "repo": string,                  // name of the scanned target (GitHub repo name, else package.json name without @scope/, else directory name); never the cwd. Omitted when the caller gives no name (census)
   "feeds": {
     "kev":  { "status": "ok" | "missing", "date": string | null },
     "epss": { "status": "ok" | "missing", "date": string | null }

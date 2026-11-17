@@ -18,6 +18,8 @@ export interface ExhumeOptions {
   lookup?: OsvLookup;
   /** Current time in ms, used only for the OSV cache TTL. */
   now?: number;
+  /** Repository name written to creature.json as "repo". Omitted when not given. */
+  name?: string;
 }
 
 /** No supported manifest was readable: the run says nothing about the repository. */
@@ -67,6 +69,7 @@ export async function buildCreature(o: ExhumeOptions) {
   });
   return {
     schemaVersion: 1,
+    ...(o.name ? { repo: o.name } : {}),
     feeds: {
       kev: { status: o.kev ? "ok" : "missing", date: o.kev?.date ?? null },
       epss: { status: o.epss ? "ok" : "missing", date: o.epss?.date ?? null },

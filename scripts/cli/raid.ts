@@ -44,7 +44,7 @@ export function inputPaths(dir: string, flags: Parsed["flags"], cwd: string = pr
 export async function exhumeTarget(t: Target, flags: Parsed["flags"]): Promise<string> {
   const { feeds, cache, offline } = inputPaths(t.dir, flags);
   const out = typeof flags.out === "string" ? flags.out : "out/creature.json";
-  await runScriptOrFail("exhume.ts", [t.dir, "--out", out, "--feeds", feeds, "--cache", cache, ...(offline ? ["--offline"] : [])]);
+  await runScriptOrFail("exhume.ts", [t.dir, "--out", out, "--feeds", feeds, "--cache", cache, "--name", t.name, ...(offline ? ["--offline"] : [])]);
   return out;
 }
 
