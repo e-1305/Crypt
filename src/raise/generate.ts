@@ -109,9 +109,9 @@ function lore(m: Monster): string {
   const label = sanitize(`${m.ref.name} ${m.ref.version}`);
   const lines: string[] = [];
   if (m.possessed) {
-    lines.push(`${label} is possessed. It is on the known-exploited list (KEV) and thrashes on the slab.`);
+    lines.push(`${label} is possessed. Attackers use it today (KEV list). It thrashes on the slab.`);
   } else {
-    lines.push(`${label} is rotting. The flesh gives way a little more each day.`);
+    lines.push(`${label} is rotting. It weakens a little more each day.`);
   }
   const count = m.cves > 0 ? plural(m.cves, "CVE", "CVEs") : plural(m.advisories, "advisory", "advisories");
   lines.push(m.epss === null ? `${count}.` : `${count}, top EPSS ${m.epss}.`);
@@ -198,7 +198,7 @@ export function generate(creature: CreatureInput): Generated {
   out.push("");
   out.push('Object Crypt "The Crypt"');
   out.push(
-    `  with description "A cold stone vault. ${monsters.length > 0 ? "Something stitched together lies on the slabs." : "The slabs are bare."}${quiet ? "^" + quiet : ""}",`,
+    `  with description "A cold stone vault. ${monsters.length > 0 ? "Something stitched lies on the slabs." : "The slabs are bare."}${quiet ? "^" + quiet : ""}",`,
   );
   out.push("  has light;");
   monsters.forEach((m, i) => {
@@ -213,7 +213,7 @@ export function generate(creature: CreatureInput): Generated {
   });
   out.push("");
   out.push("[ NoLimb;");
-  out.push('    "Nothing of the crypt answers to that.";');
+  out.push('    "Nothing here answers to that name. EXAMINE a limb from the list.";');
   out.push("];");
   out.push("");
   out.push("[ GraftSub;");
@@ -231,7 +231,7 @@ export function generate(creature: CreatureInput): Generated {
   out.push("");
   out.push("[ SealSub;");
   out.push('    print "[[CRYPT SEAL]]^";');
-  out.push('    "The crypt is sealed.";');
+  out.push('    "The crypt falls silent. Every needle rests.";');
   out.push("];");
   out.push("");
   out.push('Include "Grammar";');

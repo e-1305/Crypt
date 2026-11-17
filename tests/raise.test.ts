@@ -138,7 +138,7 @@ describe("raise: story content (R2, R5, R6)", () => {
   });
 
   it("describes possessed with KEV, rotting with CVE count and top EPSS", () => {
-    expect(inf).toContain("jquery 3.4.1 is possessed. It is on the known-exploited list (KEV)");
+    expect(inf).toContain("jquery 3.4.1 is possessed. Attackers use it today (KEV list)");
     expect(inf).toContain("2 CVEs, top EPSS 0.99.");
     expect(inf).toContain("lodash 4.17.15 is rotting.");
     expect(inf).toContain("3 CVEs, top EPSS 0.20.");
