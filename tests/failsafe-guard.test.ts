@@ -48,7 +48,19 @@ describe("failsafe-guard.sh", () => {
     ["gh pr merge in bin/", { "bin/a.mjs": "run('gh pr merge 5');\n" }],
     ["git blame in src/", { "src/a.ts": "run('git blame file.ts');\n" }],
     ["git blame as spawn args in bin/", { "bin/a.mjs": 'spawn("git", ["x"]); spawn("git", "blame");\n' }],
+    ["gh pr merge as spawn args", { "src/a.ts": 'spawn("gh", ["pr", "merge", "5"]);\n' }],
+    ["merge token in a multi-line array", { "src/a.ts": 'run("gh", [\n  "pr",\n  "merge",\n]);\n' }],
+    ["git -C dir blame as execFile args", { "src/a.ts": 'execFile("git", ["-C", d, "blame", f]);\n' }],
+    ["git and blame on separate lines", { "src/a.ts": 'run("git",\n ["blame"]);\n' }],
+    ["git -C repo blame in a command string", { "src/a.ts": 'sh("git -C repo blame f");\n' }],
+    ["git --no-pager blame in a command string", { "bin/a.mjs": 'sh("git --no-pager blame f");\n' }],
     ["gitignored .kiro/", {}, ".kiro/\n"],
+    ["gitignored .kiro/hooks/", {}, ".kiro/hooks/\n"],
+    ["gitignored .kiro/steering/", {}, ".kiro/steering/\n"],
+    ["gitignored .kiro/specs/", {}, ".kiro/specs/\n"],
+    ["gitignored .kiro/specs/x/ by a glob", {}, ".kiro/specs/*/design.md\n"],
+    ["gitignored hook files by extension", {}, ".kiro/hooks/*.json\n"],
+    ["gitignored with a leading slash", {}, "/.kiro\n"],
   ];
   for (const [name, files, ignore] of violations) {
     it(`fails on ${name}`, () => {
@@ -57,12 +69,23 @@ describe("failsafe-guard.sh", () => {
       expect(r.stderr).toContain("failsafe-guard:");
     });
   }
-  it("fails on any planted merge word across random file names", () => {
-    const names = ["a", "b", "deep/c"];
-    for (let i = 0; i < Math.min(numRuns(6), 12); i++) {
+  it("fails on planted merge and blame words in varied shapes and file names", () => {
+    const names = ["a", "b", "deep/c", "x/y/z", "mod-1"];
+    const payloads = [
+      (i: number) => `x();\nclient.merge(${i});\n`,
+      (i: number) => `spawn("gh", ["pr", "merge", "${i}"]);\n`,
+      (i: number) => `execFile("git", ["-C", d${i}, "blame", f]);\n`,
+      (i: number) => `run("git",\n  ["blame", "${i}"]);\n`,
+      (i: number) => `const u = \`/repos/o/r/pulls/${i}/merge\`;\n`,
+    ];
+    for (let i = 0; i < Math.min(numRuns(10), 40); i++) {
       const n = names[i % names.length]!;
-      const r = check({ [`src/${n}.ts`]: `x();\nclient.merge(${i});\n` });
-      expect(r.status).toBe(1);
+      const p = payloads[(i * 3 + Math.floor(i / 5)) % payloads.length]!;
+      const r = check({ [`src/${n}.ts`]: p(i) });
+      expect(r.status, `${n}: ${p(i)}`).toBe(1);
     }
+  });
+  it("does not flag unrelated quoted words", () => {
+    expect(check({ "src/a.ts": 'const a = ["git", "status"]; const b = "blamed-not";\n' }).status).toBe(0);
   });
 });
