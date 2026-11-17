@@ -87,6 +87,7 @@ body.hc button[aria-pressed="true"] { background: #fff; color: #000; }
 .payload { margin: 0; max-height: 14rem; overflow: auto; white-space: pre-wrap; font: inherit; font-size: 13px; }
 .gallery-list { list-style: none; margin: 0; padding: 0; max-height: 14rem; overflow-y: auto; }
 .gallery-list a, #demo-link { color: var(--fg); }
+.gallery-list a { display: inline-block; min-height: 24px; line-height: 24px; }
 #lookup { width: 100%; background: transparent; border: 1px solid var(--dim); color: var(--fg); font: inherit; padding: .25rem; margin: .25rem 0; }
 button:disabled { opacity: .5; cursor: default; }
 /* 3D bench (web/theatre.js). The DOM panes stay in the page for screen readers and keyboard focus,
