@@ -1,4 +1,4 @@
-! CRYPT transcript-bridge spike: one room, one object, three verbs.
+! CRYPT transcript-bridge spike: one room, one object, three verbs (GRAFT prints the marker for the noun).
 Constant Story "The Crypt";
 Constant Headline "^A transcript bridge spike.^";
 
@@ -16,6 +16,7 @@ Object Crypt "The Crypt"
 
 Object arm "arm" Crypt
   with name 'arm' 'limb' 'rotting',
+       limbid "ARM",
        description [;
            print "[[CRYPT EXAMINE ARM]]^";
            print "A rotting limb, grey and slack, begging for a graft.^";
@@ -24,7 +25,7 @@ Object arm "arm" Crypt
   has static;
 
 [ GraftSub;
-    print "[[CRYPT GRAFT ARM]]^";
+    print "[[CRYPT GRAFT "; print (string) noun.limbid; print "]]^";
     "The surgeon begins the graft.";
 ];
 

@@ -8,6 +8,7 @@
 | transcript-bridge-spike | `.kiro/specs/transcript-bridge-spike/` | requirements, design (with interpreter limitations and fallbacks) and tasks written; implemented (tasks 1 to 11), PR step pending |
 | bridge-v2 | `.kiro/specs/bridge-v2/` | requirements (V1 to V7), design (marker syntax, `GameEvent`, Tier 1 browser reading, threat notes) and tasks written before coding; implemented. Driven by issue #3: the game now prints `[[CRYPT ...]]` markers on accepted actions and the watcher triggers only on those, not on `> ` input lines |
 | exhume-and-rank | `.kiro/specs/exhume-and-rank/` | requirements (E1 to E9), design (creature.json schema, ranking formula, fail-safe unknown state, fixture data policy) and tasks written and committed before any code; implemented. Driven by issue #5: `npx crypt exhume <path-or-url>` gives a deterministic KEV/EPSS ranking, offline once cached |
+| raise-the-creature | `.kiro/specs/raise-the-creature/` | requirements, design (ID scheme, sanitizer, marker templates) and tasks committed before code; implemented. Driven by issue #8: `npx crypt raise out/creature.json` compiles `creature.json` to a playable `.z8` story with an ASSIGN verb |
 
 ## Steering
 | File | Purpose |
@@ -56,6 +57,11 @@ TODO
 | No output field contains a git author or committer: a real git repo is read through the CLI filesystem, and `src/exhume` never touches git (blameless, E6) | `tests/exhume.test.ts` |
 | Unknown findings are never exorcised; stale OSV cache entries are never Healthy; a run with no manifest fails (rule 1, E2, E5) | `tests/exhume.test.ts` |
 | OSV cache file names never leave the cache directory (E2) | `tests/exhume.test.ts` |
+| `generate` is deterministic, also under reversed key order (R1) | `tests/raise.test.ts` |
+| Limb IDs are unique, A-Z only, 1 to 32 characters and pass the grammar gate (R3) | `tests/raise.test.ts` |
+| Hostile names, CVE IDs, owners and versions never add a marker, bracket, control character or Inform special; removing the sanitizer fails these tests (R6) | `tests/raise.test.ts` |
+| Markers appear in generated source only as the four fixed templates; in a compiled game they come only from verb routines for the actual noun (R4, R6) | `tests/raise.test.ts` |
+| `ASSIGN <limb>` is accepted by the grammar, lowercase and near misses are rejected (R5) | `tests/grammar.test.ts` |
 
 ## Spec → code traceability
 | Task | Commit | Test |
@@ -88,5 +94,13 @@ TODO
 | 9 property and unit tests | same | `npm test` |
 | 10 attribution, docs | same | `docs/ATTRIBUTION.md` has no TODO for OSV, KEV, EPSS |
 
+### raise-the-creature (issue #8)
+| Task | Commit | Test |
+|---|---|---|
+| 1 spec | `docs: add raise-the-creature spec` | n/a (committed before code) |
+| 2 to 5, 7 `src/bridge/grammar.ts`, `src/bridge/watch.ts`, `game/spike.inf`, `src/raise/generate.ts`, `src/raise/sanitize.ts` | `feat: raise the creature generator, ASSIGN verb and graft fix` | `tests/raise.test.ts`, `tests/grammar.test.ts`, `tests/watch.test.ts` |
+| 6, 8 `scripts/raise.ts`, `scripts/play.ts`, `scripts/check-raise.ts`, `bin/crypt.mjs` | `feat: raise script, z8 compile and acceptance check` | `npm run raise:check`: EXAMINE, ASSIGN, GRAFT JQUERY, SEAL CRYPT, GRAFT LODASH give 1 graft request for jquery and 0 after seal |
+| 9 docs | `docs: update KIRO.md and README for raise` | n/a |
+
 ## Numbers
-- Specs: 3 · Hooks: TODO · Steering files: 5 · Property tests: 20 (14 bridge, 6 exhume) · Tests: 75
+- Specs: 4 · Hooks: TODO · Steering files: 5 · Property tests: 29 (16 bridge, 9 exhume, 4 raise) · Tests: 94

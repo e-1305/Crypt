@@ -23,6 +23,7 @@ const accepted = fc.oneof(
   fc.constant("SEAL CRYPT"),
   limb.map((l) => `EXAMINE ${l}`),
   limb.map((l) => `GRAFT ${l}`),
+  limb.map((l) => `ASSIGN ${l}`),
   fc.constant("GRAFT ARM"),
 );
 const garbage = fc.oneof(fc.string(), fc.string().map((s) => s.toLowerCase() + " ARM"), fc.constant("GRAFT ARM "));
@@ -49,11 +50,18 @@ describe("watcher", () => {
     expect(e.auditLines()[0]).toBe("2026-01-01T00:00:00.000Z\tGRAFT ARM\tARM\tREQUEST_WRITTEN\t-");
   });
 
-  it("GRAFT of another grammatical limb is audited but writes no request", () => {
+  it("GRAFT of any grammatical limb writes a request named for the limb", () => {
     const e = env();
-    createWatcher(e.ctx).processText(transcript(["GRAFT LEG"]));
+    createWatcher(e.ctx).processText(transcript(["GRAFT JQUERY", "GRAFT LODASH"]));
+    expect(e.requests()).toEqual(["graft-001-jquery.json", "graft-002-lodash.json"]);
+    expect(e.auditLines()).toHaveLength(2);
+  });
+
+  it("ASSIGN is audited OK and writes no request", () => {
+    const e = env();
+    createWatcher(e.ctx).processText(transcript(["ASSIGN JQUERY"]));
     expect(e.requests()).toEqual([]);
-    expect(e.auditLines()).toHaveLength(1);
+    expect(e.auditLines().map((l) => l.split("\t").slice(1).join("\t"))).toEqual(["ASSIGN JQUERY\tJQUERY\tOK\t-"]);
   });
 
   it("ignores game output lines that are not commands", () => {
@@ -89,7 +97,7 @@ describe("watcher", () => {
   it("property (rule 1): parse errors write nothing", () => {
     fc.assert(
       fc.property(fc.array(garbage, { maxLength: 20 }), (cmds) => {
-        const lines = cmds.filter((c) => !/^(EXAMINE|GRAFT) [A-Z]{1,32}$|^SEAL CRYPT$/.test(c));
+        const lines = cmds.filter((c) => !/^(EXAMINE|ASSIGN|GRAFT) [A-Z]{1,32}$|^SEAL CRYPT$/.test(c));
         const e = makeEnv();
         try {
           createWatcher(e.ctx).processText(lines.map((c) => `> ${c}\n${markerFor(c)}`).join("\n"));
@@ -154,7 +162,7 @@ describe("watcher", () => {
   it("property (rule 8): each accepted command yields exactly one audit line", () => {
     fc.assert(
       fc.property(fc.array(fc.oneof(accepted, garbage), { maxLength: 25 }), (cmds) => {
-        const ok = /^\[\[CRYPT ((EXAMINE|GRAFT) [A-Z]{1,32}|SEAL)\]\]$/;
+        const ok = /^\[\[CRYPT ((EXAMINE|ASSIGN|GRAFT) [A-Z]{1,32}|SEAL)\]\]$/;
         const e = makeEnv();
         try {
           createWatcher(e.ctx).processText(transcript(cmds));

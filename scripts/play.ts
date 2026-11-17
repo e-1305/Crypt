@@ -1,4 +1,5 @@
-// Play spike.z5 headlessly with dfrotz and write transcript.txt.
+// Usage: play.ts [story.z5|z8] [session.txt]. Defaults to spike.z5 and game/session.txt.
+// Play a story headlessly with dfrotz and write transcript.txt.
 // dfrotz does not echo piped input (design.md L1), so this driver writes "> COMMAND" lines itself.
 // Those lines are a record only. The watcher triggers on marker lines the game prints (bridge-v2).
 import { spawnSync } from "node:child_process";
@@ -33,10 +34,11 @@ export function buildTranscript(commands: string[], stdout: string): string {
 }
 
 function main(): void {
-  const commands = readFileSync("game/session.txt", "utf8")
+  const story = process.argv[2] ?? "spike.z5";
+  const commands = readFileSync(process.argv[3] ?? "game/session.txt", "utf8")
     .split("\n")
     .filter((l) => l !== "");
-  const r = spawnSync(DFROTZ, ["-m", "-p", "spike.z5"], {
+  const r = spawnSync(DFROTZ, ["-m", "-p", story], {
     input: commands.join("\n") + "\n",
     encoding: "utf8",
     timeout: 20000,
