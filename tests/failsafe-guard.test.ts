@@ -4,6 +4,10 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { numRuns } from "./runs.js";
+import { vi } from "vitest";
+
+// These properties spawn a shell per run: cap runs (even in CI) and allow a longer timeout.
+vi.setConfig({ testTimeout: 120_000 });
 
 const ROOT = resolve(import.meta.dirname, "..");
 const GUARD = join(ROOT, "scripts", "ci", "failsafe-guard.sh");

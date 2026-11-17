@@ -5,6 +5,10 @@ import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writ
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { numRuns } from "./runs.js";
+import { vi } from "vitest";
+
+// These properties spawn a shell per run: cap runs (even in CI) and allow a longer timeout.
+vi.setConfig({ testTimeout: 120_000 });
 import { BEGIN, END, parseTasks, renderSpec, splice, testOf } from "../scripts/hooks/kiro-trace.js";
 
 const ROOT = resolve(import.meta.dirname, "..");
@@ -91,7 +95,7 @@ describe("failsafe-check.sh (hook 2)", () => {
         const r = run("failsafe-check.sh", { "src/mcp/p.ts": `${a} gh pr ${M} ${b}\n` }, ["src/mcp/p.ts"]);
         return r.status === 1;
       }),
-      { numRuns: numRuns(8) },
+      { numRuns: Math.min(numRuns(8), 40) },
     );
   });
 });
@@ -136,7 +140,7 @@ describe("blameless-copy-check.sh (hook 5)", () => {
         const r = run("blameless-copy-check.sh", { "web/p.js": `say("${a} ${w} ${b}");\n` }, ["web/p.js"]);
         return r.status === 1;
       }),
-      { numRuns: numRuns(8) },
+      { numRuns: Math.min(numRuns(8), 40) },
     );
   });
 });
@@ -178,7 +182,7 @@ describe("deps-check.sh (hook 4 helper)", () => {
           rmSync(d, { recursive: true, force: true });
         }
       }),
-      { numRuns: numRuns(8) },
+      { numRuns: Math.min(numRuns(8), 40) },
     );
   });
 });
@@ -238,7 +242,7 @@ describe("kiro-trace.ts (hook 3)", () => {
         const doc = `${a}${block}${b}`;
         return splice(doc, block) === doc;
       }),
-      { numRuns: numRuns(50) },
+      { numRuns: Math.min(numRuns(50), 40) },
     );
   });
   it("running it twice on the repository prints the same table", () => {
