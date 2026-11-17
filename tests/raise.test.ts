@@ -164,6 +164,16 @@ describe("raise: story content (R2, R5, R6)", () => {
     expect(g.inf).toContain("The slabs are bare.");
   });
 
+  it("declares the four limb properties when no limb object defines them, so Limb compiles", () => {
+    // Without a spawned limb no object sets these, and Inform rejects the Limb class that reads them.
+    for (const c of [{ limbs: [] }, { limbs: [{ rank: 1, ecosystem: "npm", name: "ms", version: "2.1.3", owner: "x", state: "Healthy", spawned: false, epss: null, vulns: [] }] }]) {
+      const { inf } = generate(c as CreatureInput);
+      for (const p of ["limbid", "limbcodes", "owner", "lore"]) expect(inf, p).toMatch(new RegExp(`^Property ${p};$`, "m"));
+    }
+    // With a spawned limb the object defines them, so the declarations must not appear twice.
+    expect(generate(fixture).inf).not.toMatch(/^Property (limbid|limbcodes|owner|lore);$/m);
+  });
+
   it("never carries a commit author field", () => {
     expect(inf).not.toMatch(/author|committer/i);
   });

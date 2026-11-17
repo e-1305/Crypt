@@ -1,7 +1,11 @@
 name: Pages
 
+# Deploys only after the CI workflow (test, failsafe-guard, pack-install) succeeded on main, so a push that fails
+# CI never publishes. workflow_dispatch is a manual deploy of the selected ref and skips that gate on purpose.
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
 
@@ -18,10 +22,14 @@ env:
 
 jobs:
   build:
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The commit CI tested, not whatever main points to by now.
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
