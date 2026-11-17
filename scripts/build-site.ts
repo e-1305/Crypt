@@ -11,6 +11,7 @@ import { plateInput } from "../src/render/plate.js";
 import { dryRunClient } from "../src/github/client.js";
 import { graft } from "../src/necromancer/index.js";
 import { galleryIndex, previewPayload, type GalleryIndexEntry, type GallerySnapshot, type PayloadPreview } from "../src/site/gallery.js";
+import { renderManual } from "../src/site/manual.js";
 import { raiseCreature } from "./compile.js";
 import { fixtureAdvisories } from "./osv-advisory.js";
 
@@ -83,6 +84,18 @@ export async function buildSite(outDir: string): Promise<void> {
     cpSync(join(WEB, "js"), join(outDir, "js"), { recursive: true });
     cpSync(join(WEB, "theatre"), join(outDir, "theatre"), { recursive: true });
     writeFileSync(join(outDir, ".nojekyll"), "");
+    cpSync(join(WEB, "manual.css"), join(outDir, "manual.css"));
+    // The user manual, rendered offline. A relative link that is neither a repo file nor a site file fails the build.
+    writeFileSync(
+      join(outDir, "manual.html"),
+      renderManual(readFileSync(join(ROOT, "docs", "USER_MANUAL.md"), "utf8"), {
+        sourcePath: "docs/USER_MANUAL.md",
+        repoBlobBase: "https://github.com/e-1305/Crypt/blob/main/",
+        siteBase: "https://e-1305.github.io/Crypt/",
+        repoHas: (p) => existsSync(join(ROOT, p)),
+        siteHas: (p) => existsSync(join(outDir, p)),
+      }),
+    );
     const gameDir = join(outDir, "game");
 
     // Demo: exhume the fixture offline with its own feed snapshot.

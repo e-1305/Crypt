@@ -23,6 +23,7 @@ export async function mountStage() {
   document.body.prepend(canvas);
   document.body.classList.add("theatre");
   addPlainLink();
+  addManualLink();
 
   const scene = new THREE.Scene();
   scene.fog = new THREE.Fog(0x050403, 9, 16);
@@ -259,6 +260,7 @@ export async function mountStage() {
     renderer.dispose();
     canvas.remove();
     document.getElementById("theatre-plain")?.remove();
+    document.getElementById("theatre-manual")?.remove();
     document.body.classList.remove("theatre");
     document.documentElement.dataset.theatre = "2d:high-contrast";
   }
@@ -271,5 +273,13 @@ function addPlainLink() {
   a.id = "theatre-plain";
   a.href = "?theatre=off";
   a.textContent = "Plain page";
+  document.body.appendChild(a);
+}
+
+function addManualLink() {
+  const a = document.createElement("a");
+  a.id = "theatre-manual";
+  a.href = "manual.html";
+  a.textContent = "How to play (manual)";
   document.body.appendChild(a);
 }
