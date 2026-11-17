@@ -7,6 +7,7 @@
 |---|---|---|
 | transcript-bridge-spike | `.kiro/specs/transcript-bridge-spike/` | requirements, design (with interpreter limitations and fallbacks) and tasks written; implemented (tasks 1 to 11), PR step pending |
 | bridge-v2 | `.kiro/specs/bridge-v2/` | requirements (V1 to V7), design (marker syntax, `GameEvent`, Tier 1 browser reading, threat notes) and tasks written before coding; implemented. Driven by issue #3: the game now prints `[[CRYPT ...]]` markers on accepted actions and the watcher triggers only on those, not on `> ` input lines |
+| exhume-and-rank | `.kiro/specs/exhume-and-rank/` | requirements (E1 to E9), design (creature.json schema, ranking formula, fail-safe unknown state, fixture data policy) and tasks written and committed before any code; implemented. Driven by issue #5: `npx crypt exhume <path-or-url>` gives a deterministic KEV/EPSS ranking, offline once cached |
 
 ## Steering
 | File | Purpose |
@@ -47,6 +48,13 @@ TODO
 | Markers that fail the grammar or are not alone on their line yield no action (rule 5, V3) | `tests/parse-output.test.ts` |
 | `parseGameOutput` is deterministic and never throws (V6) | `tests/parse-output.test.ts` |
 | No merge call, network client or LLM import in `src/` (rules 2, 4) | `tests/static.test.ts` |
+| KEV always outranks non-KEV, in score and in the ranked list (sla-policy, E4) | `tests/exhume.test.ts` |
+| Score is monotonic in EPSS, and EPSS dominates severity (E4) | `tests/exhume.test.ts` |
+| Ranking is deterministic and independent of input order; same input gives byte-identical `creature.json` (rule 4, E7) | `tests/exhume.test.ts` |
+| Spawned is a subset of Possessed plus Rotting with EPSS >= 0.1 (noise exorcism, E5) | `tests/exhume.test.ts` |
+| Missing feed, OSV failure or unpinned version never yields Healthy (rule 1, E2, E3) | `tests/exhume.test.ts` |
+| No output field contains a git author or committer, `src/exhume` never touches git (blameless, E6) | `tests/exhume.test.ts` |
+| OSV cache file names never leave the cache directory (E2) | `tests/exhume.test.ts` |
 
 ## Spec → code traceability
 | Task | Commit | Test |
@@ -70,5 +78,14 @@ TODO
 | 7 `scripts/check-spike.ts` | same | `npm run spike` |
 | 8 failsafe property tests, docs | same | `npm test` |
 
+### exhume-and-rank (issue #5)
+| Task | Commit | Test |
+|---|---|---|
+| 1 spec | `docs: add exhume-and-rank spec` | n/a (committed before code) |
+| 2 to 7 `src/exhume/*`, `scripts/exhume.ts`, `scripts/feeds-update.ts`, `scripts/osv-client.ts`, `bin/crypt.mjs` | `feat: exhume and deterministic KEV/EPSS ranking` | `tests/exhume.test.ts`, `tests/static.test.ts` |
+| 8 `fixtures/vulnerable-npm/`, `data/cache/osv/` | same | `npm run exhume -- fixtures/vulnerable-npm --feeds fixtures/vulnerable-npm/feeds` twice and with `--offline` give identical `out/creature.json` |
+| 9 property and unit tests | same | `npm test` |
+| 10 attribution, docs | same | `docs/ATTRIBUTION.md` has no TODO for OSV, KEV, EPSS |
+
 ## Numbers
-- Specs: 2 · Hooks: TODO · Steering files: 5 · Property tests: 14
+- Specs: 3 · Hooks: TODO · Steering files: 5 · Property tests: 21 (14 bridge, 7 exhume) · Tests: 65

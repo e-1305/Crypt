@@ -18,9 +18,14 @@ Each command dispatches AI agents built with [Kiro](https://kiro.dev) that open 
 ## Quickstart
 
 ```bash
-# coming soon
-npx crypt exhume <github-repo-url>
+npm ci
+npm run feeds:update                          # download CISA KEV and FIRST EPSS into data/feeds/
+npx crypt exhume <path-or-github-url>         # writes out/creature.json, prints totals
+# offline demo with the committed fixture (OSV answers cached, feeds snapshot used when data/feeds is empty):
+npm run exhume -- fixtures/vulnerable-npm --offline
 ```
+
+`exhume` reads `package-lock.json` (v2/v3) and `requirements.txt` (`==` pins only), asks OSV once per `package@version` (cached in `data/cache/osv/`), ranks with local KEV/EPSS files and prints totals (findings, exorcised, spawned). A limb whose status cannot be established is reported as unknown, never as clean. Schema: `.kiro/specs/exhume-and-rank/design.md`.
 
 ## The three pillars
 
