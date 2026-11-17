@@ -60,8 +60,27 @@
     </nav>
   </aside>
 </main>
+<section id="raid" class="pane raid" aria-labelledby="raid-h">
+  <h2 id="raid-h">The raid</h2>
+  <div id="raid-readout" class="raid-readout">
+    <p>Time left: <span id="raid-timer">15:00</span></p>
+    <p id="raid-state">Ready. Start the raid when the team is together.</p>
+    <p id="raid-score">Team risk removed: 0.00</p>
+    <p id="raid-rank">Rank: Apprentice</p>
+    <p id="raid-nights">Nights Without Possession: 0</p>
+    <p id="raid-praise"></p>
+    <p id="raid-card"></p>
+    <p id="raid-epitaph"></p>
+  </div>
+  <div id="raid-actions" class="raid-actions">
+    <button id="raid-start" type="button">Start the 15 minute raid</button>
+    <button id="raid-download" type="button" hidden>Download the raid card (PNG)</button>
+  </div>
+  <p class="muted">Type RAID in the game input to start as well.</p>
+</section>
 <div id="announcer" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
 <script src="vendor/zvm.min.js"></script>
 <script type="module" src="app.js"></script>
+<script type="module" src="theatre.js"></script>
 </body>
 </html>
