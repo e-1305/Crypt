@@ -117,3 +117,9 @@ body.theatre #raid > h2, body.theatre #raid > p, body.theatre .raid-readout { po
 body.theatre #sim { position: fixed; right: 1rem; bottom: 3.5rem; z-index: 5; margin: 0; padding: .5rem; background: rgba(0,0,0,.7); }
 body.theatre #sim > h2, body.theatre #sim > p { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .sim { margin: 0 1rem 1rem; }
+
+/* Sound toggle (web/theatre/sound.js): visible in the 2D page and over the 3D bench. */
+.sound-toggle { position: fixed; top: .5rem; right: .5rem; z-index: 6; font: inherit; color: var(--fg); background: #000; border: 1px solid var(--dim); padding: .25rem .75rem; cursor: pointer; }
+.sound-toggle[aria-pressed="true"] { border-color: var(--fg); }
+.sound-toggle:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+body:not(.theatre) .sound-toggle { position: static; display: block; margin: .5rem 1rem 0 auto; }
