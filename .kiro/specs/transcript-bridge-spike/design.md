@@ -94,7 +94,16 @@ Expected acceptance log: 4 lines (`EXAMINE ARM OK`, `GRAFT ARM REQUEST_WRITTEN`,
 
 ## Failsafe mapping
 
-Rules 3 (separation of privilege) and 6 (blast radius) concern PRs and verification and do not apply until a later spike. Rule 4 holds because nothing here scores or ranks.
+Rules 3 (separation of privilege) and 6 (blast radius) concern PRs and verification and do not apply until a later spike. Recorded waiver: no real property exists yet, so `tests/review.test.ts` only checks invariants (requests are `GRAFT ARM` only, at most one per command, no merge or verification fields). Rule 4 holds because nothing here scores or ranks; a property test checks the watcher is deterministic. Rule 2 has a property test that no `fetch` is made on any generated transcript, plus the static grep in `tests/static.test.ts`.
+
+## Review decisions (review 2026-11-17-124000)
+
+1. **Driver-synthesized commands (fixed by documentation).** Because of L1, the `> CMD` lines come from the driver, not the game. This spike proves the pipeline (transcript line to parser to request, audit and seal), not that the game accepted the command. A game-reply check was not added: the replies are not machine-stable (the library varies wording) and the real source, a browser interpreter transcript, will differ. Fallback: require the reply line "The surgeon begins the graft." after `> GRAFT ARM` before acting.
+2. **Tail replay (fixed).** `tail()` now starts at end-of-file; `--from-start` opts into replay. `seq` still restarts at 0 per process, so a restart on a populated `out/requests/` fails the exclusive create and audits `ERROR` (fail-safe, nothing overwritten). Known limitation.
+3. **Property tests for rules 2, 3, 4, 6 (partly fixed, partly waived).** See Failsafe mapping. The `merge` grep also matches comments and identifiers; accepted for a spike, change the word if it trips.
+4. **Audit scope (decision).** Rejected lines are not agent actions (no action is taken), so they go to stderr only, not `crypt-audit.log`. Rule 8 covers accepted commands.
+5. **Segmentation on `^> ` (fixed).** `buildTranscript` now throws unless the segment count is exactly commands + 1, so a game line starting with `> ` fails the run instead of shifting segments. Tested.
+6. **Manual unseal (decision).** Once a SEAL is seen the process stays sealed. Deleting `.crypt-seal` re-enables GRAFT in a running watcher only if no SEAL was processed by that process. Removing the file is the intended manual unseal; restart the watcher afterwards.
 
 ## Testing
 

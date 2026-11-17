@@ -9,7 +9,12 @@ const STATUS_LINE = /^[>\s]*The Crypt\s+Score:.*$/;
 export function buildTranscript(commands: string[], stdout: string): string {
   // Segment 0 is the intro. Segment k (1..n) is the output of command k (design.md L3, L5).
   const segments = stdout.split(/^> /m);
-  if (segments.length < commands.length + 1) {
+  // dfrotz prints a final prompt after the last command, which yields one trailing near-empty segment.
+  if (segments.length === commands.length + 2 && /^[>\s]*(EOT)?\s*$/.test(segments[segments.length - 1])) {
+    segments.pop();
+  }
+  if (segments.length !== commands.length + 1) {
+    // Too many segments also happens when game output has a line starting with "> ".
     throw new Error(`expected ${commands.length + 1} output segments, got ${segments.length}`);
   }
   const out: string[] = [];

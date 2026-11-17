@@ -165,8 +165,16 @@ export function createWatcher(ctx: Ctx): Watcher {
 }
 
 /** Polls a transcript and feeds complete lines to the watcher. Returns a stop function. */
-export function tail(path: string, w: Watcher, intervalMs = 250): () => void {
+export function tail(path: string, w: Watcher, intervalMs = 250, fromStart = false): () => void {
+  // Default: start at end-of-file so a restart does not replay old commands (review issue 2).
   let offset = 0;
+  if (!fromStart) {
+    try {
+      offset = nodeFs.statSync(path).size;
+    } catch {
+      offset = 0; // file not there yet: everything written later is new
+    }
+  }
   let partial = "";
   const timer = setInterval(() => {
     try {
@@ -202,7 +210,7 @@ function main(): void {
   if (once) {
     w.processText(nodeFs.readFileSync(path, "utf8"));
   } else {
-    tail(path, w);
+    tail(path, w, 250, args.includes("--from-start"));
   }
 }
 
