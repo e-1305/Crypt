@@ -25,6 +25,11 @@ npx crypt exhume <path-or-github-url>         # writes out/creature.json, prints
 npm run exhume -- fixtures/vulnerable-npm --feeds fixtures/vulnerable-npm/feeds --offline
 npm run raise -- out/creature.json            # writes out/creature.inf, out/limbs.json, out/creature.z8
 npm run raise:check                           # plays the story with dfrotz and checks the graft bridge
+# GRAFT requests become fix PRs (dry-run by default without GITHUB_TOKEN: payloads go to out/prs/, nothing is sent)
+npm run necromancer -- --dry-run --target fixtures/vulnerable-npm --advisories fixtures/vulnerable-npm/advisories
+npm run inquisitor -- JQUERY --dry-run        # checks the PR's CI; green means awaiting a human to land it
+npm run reraise                               # after a human landed PRs: marks limbs healed, recompiles the creature
+npm run necromancer:check                     # offline acceptance: GRAFT JQUERY gives 1 payload, SEAL CRYPT then GRAFT LODASH gives 0
 ```
 
 `exhume` reads `package-lock.json` (v2/v3) and `requirements.txt` (`==` pins only), asks OSV once per `package@version` (cached in `data/cache/osv/`), ranks with local KEV/EPSS files and prints totals (findings, exorcised, spawned). A limb whose status cannot be established is reported as unknown, never as clean. Schema: `.kiro/specs/exhume-and-rank/design.md`.

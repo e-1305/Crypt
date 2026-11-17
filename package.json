@@ -17,7 +17,11 @@
     "feeds:update": "tsx scripts/feeds-update.ts",
     "exhume": "tsx scripts/exhume.ts",
     "raise": "bash scripts/setup-tools.sh && tsx scripts/raise.ts",
-    "raise:check": "tsx scripts/check-raise.ts"
+    "raise:check": "tsx scripts/check-raise.ts",
+    "necromancer": "tsx scripts/necromancer.ts",
+    "inquisitor": "tsx scripts/inquisitor.ts",
+    "reraise": "tsx scripts/reraise.ts",
+    "necromancer:check": "tsx scripts/check-necromancer.ts"
   },
   "dependencies": {
     "tsx": "^4.23.15"
