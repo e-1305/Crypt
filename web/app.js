@@ -3,6 +3,7 @@
 // The only requests this page makes are for its own files under game/: index.json, <id>.z8, <id>.json, <id>.payloads.json.
 // Grafts are rehearsals here: GRAFT shows a prebuilt dry-run payload and sends nothing.
 import { startPlayer } from "./js/web/player.js";
+import { createSealGate, refusalMessage } from "./js/web/seal.js";
 import { markHealed, markRed } from "./js/web/healed.js";
 import { layoutPlate, plateSummary, creatureName } from "./js/render/plate.js";
 import { parseRepoUrl, repoSlug } from "./js/web/repo-url.js";
@@ -12,6 +13,7 @@ import { initSound } from "./theatre/sound.js";
 import { countPossessed } from "./js/theatre/audio-plan.js";
 
 const sound = initSound();
+const seal = createSealGate(); // SEAL CRYPT lasts until the page is reloaded
 
 const transcript = document.getElementById("transcript");
 const form = document.getElementById("input-form");
@@ -93,7 +95,7 @@ function addLine(text, cls) {
   transcript.scrollTop = transcript.scrollHeight;
 }
 
-function addEvent(e) {
+function addEvent(e, refused) {
   const li = document.createElement("li");
   let spoken;
   if (e.ok) {
@@ -107,6 +109,13 @@ function addEvent(e) {
   }
   eventLog.appendChild(li);
   eventEmpty.hidden = true;
+  if (refused) {
+    const msg = refusalMessage(e);
+    if (e.parsed.verb === "GRAFT") payloadEl.textContent = msg;
+    addLine(msg);
+    announce(msg);
+    return;
+  }
   if (e.ok && e.parsed.verb === "GRAFT") showPayload(e.parsed.limb);
   announce(spoken);
 }
@@ -126,9 +135,10 @@ function onResult(result) {
     if (line === ">") continue; // the game's prompt, shown by the input row
     addLine(line, line.startsWith("> ") ? "echo" : "");
   }
-  result.events.forEach(addEvent);
-  if (result.events.some((e) => e.ok && e.command && e.command.startsWith("GRAFT"))) sound.graft();
-  if (result.events.some((e) => e.ok && e.parsed.verb === "RAID")) raid.start();
+  const { allowed, refused } = seal.apply(result.events);
+  result.events.forEach((e) => addEvent(e, refused.includes(e)));
+  if (allowed.some((e) => e.ok && e.command && e.command.startsWith("GRAFT"))) sound.graft();
+  if (allowed.some((e) => e.ok && e.parsed.verb === "RAID")) raid.start();
 }
 
 let lastCreature = null;
@@ -274,4 +284,4 @@ async function main() {
   });
 }
 
-main().catch((err) => addLine("Story file could not be loaded: " + err.message));
+main().catch((err) => addLine("Story file could not be loaded: " + err.message + ". Commands, including RAID, need the story. Reload the page to try again."));

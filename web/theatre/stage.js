@@ -280,6 +280,9 @@ function addManualLink() {
   const a = document.createElement("a");
   a.id = "theatre-manual";
   a.href = "manual.html";
+  a.target = "_blank";
+  a.rel = "noopener";
+  a.setAttribute("aria-label", "How to play (manual), opens in a new tab");
   a.textContent = "How to play (manual)";
   document.body.appendChild(a);
 }

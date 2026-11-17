@@ -155,6 +155,31 @@ describe("renderManual", () => {
     expect(stage).toContain("manual.html");
     expect(stage).toContain("theatre-manual");
   });
+  it("opens the manual in a new tab with noopener and a label that says so, on both pages", () => {
+    const stage = readFileSync(join(ROOT, "web", "theatre", "stage.js"), "utf8");
+    const fn = stage.slice(stage.indexOf("function addManualLink"));
+    expect(fn).toContain('a.target = "_blank"');
+    expect(fn).toContain('a.rel = "noopener"');
+    expect(fn).toContain("opens in a new tab");
+    const tag = /<a [^>]*id="manual-link"[^>]*>/.exec(readFileSync(join(ROOT, "web", "index.html"), "utf8"))?.[0] ?? "";
+    expect(tag).toContain('target="_blank"');
+    expect(tag).toContain('rel="noopener"');
+    expect(tag).toContain("opens in a new tab");
+  });
+  it("renders italics and level 4 headings, and refuses syntax it cannot render", () => {
+    const html = renderManual("# T\n\nintro *one* and _two_ snake_case 2*3*4\n\n#### Deep\n\n- a\n  continued\n", manualOpts());
+    expect(html).toContain("<em>one</em>");
+    expect(html).toContain("<em>two</em>");
+    expect(html).toContain("snake_case");
+    expect(html).toContain('<h4 id="deep">Deep</h4>');
+    expect(() => renderManual("# T\n\n- a\n  - nested\n", manualOpts())).toThrow(/nested/);
+    expect(() => renderManual("# T\n\n> quote\n", manualOpts())).toThrow(/unsupported/);
+    expect(() => renderManual("# T\n\n![x](a.png)\n", manualOpts())).toThrow(/unsupported/);
+  });
+  it("keeps a relative link to a site file relative", () => {
+    const html = renderManual("# T\n\n[m](manual.css)", manualOpts({ siteHas: (p) => p === "manual.css", repoHas: () => false }));
+    expect(html).toContain('href="manual.css"');
+  });
 });
 
 const haveToolchain = existsSync(inform6Path());
