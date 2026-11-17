@@ -20,6 +20,18 @@
   <button id="hc-toggle" type="button" aria-pressed="false" aria-describedby="hc-help">High-contrast reader mode</button>
   <span id="hc-help" class="sr-only">Plain text, no effects, game events announced.</span>
 </header>
+<p id="daily-banner" class="daily-banner"></p>
+<section id="tutorial" class="pane tutorial" aria-labelledby="tutorial-progress" hidden>
+  <h2 id="tutorial-progress">Getting started</h2>
+  <p id="tutorial-step"></p>
+  <p id="tutorial-command" class="tutorial-command"></p>
+  <p id="tutorial-hint" class="tutorial-hint" role="status" aria-live="polite"></p>
+  <div class="raid-actions">
+    <button id="tutorial-next" type="button" hidden>Got it</button>
+    <button id="tutorial-skip" type="button">Skip</button>
+    <button id="tutorial-hide" type="button">Hide for good</button>
+  </div>
+</section>
 <main class="crt">
   <div class="left">
     <section class="pane plate-pane" aria-labelledby="plate-h">
@@ -80,6 +92,9 @@
       <p id="raid-next">Next rank: Surgeon in 3 heals.</p>
       <p id="raid-combo" class="raid-chip">Combo: none. Heal two limbs within 90 seconds to start a chain.</p>
       <p id="raid-boss" class="raid-boss" hidden></p>
+      <p id="raid-pressure-text">Possession spread: 0 percent. Heal the next limb.</p>
+      <p><span id="raid-pressure" class="raid-pressure" role="progressbar" aria-label="Possession spread" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="raid-pressure-fill"></span></span></p>
+      <p id="raid-warning" class="raid-boss" hidden></p>
       <p id="raid-grade"></p>
       <p id="raid-shelf">Trophies 0 of 6</p>
       <ul id="raid-trophies" class="raid-trophies" aria-label="Team trophies"></ul>

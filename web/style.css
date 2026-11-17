@@ -170,3 +170,14 @@ body.theatre .raid-hud { position: absolute; width: 1px; height: 1px; margin: -1
 body.hc .raid-heart, body.hc .raid-pop, body.hc .raid-chip, body.hc .crt, body.hc::before { animation: none !important; }
 body.hc .raid-boss { border-color: #fff; color: #fff; }
 body.hc .raid-health-fill { background: #fff; }
+
+/* Getting started and pressure (web/onboarding.js, web/raid.js, G3). Text first: nothing here pulses or moves. */
+.daily-banner { margin: .25rem 1rem; color: var(--warn); }
+.tutorial-command { font-weight: bold; }
+.tutorial-hint { color: var(--warn); min-height: 1.2em; }
+.raid-pressure { display: inline-block; vertical-align: middle; width: 12rem; height: .9rem; border: 1px solid var(--dim); }
+.raid-pressure-fill { display: block; height: 100%; width: var(--pct, 0%); background: var(--hot); }
+body.hc .raid-pressure-fill { background: #fff; }
+@media (prefers-reduced-motion: no-preference) {
+  .raid-pressure-fill { transition: width .6s ease; }
+}
