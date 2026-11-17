@@ -1,7 +1,7 @@
 // Transcript watcher. Acts on marker lines printed by the game ("[[CRYPT GRAFT ARM]]" etc.),
 // found by parseGameOutput and gated by the strict grammar. "> COMMAND" input lines never trigger anything.
 // Fail-safe: on any error, nothing further is changed and the command is treated as sealed.
-// No network access. Only GRAFT ARM writes a request; other grammatical limbs are audited only.
+// No network access. A grammatical GRAFT of any limb writes a request; EXAMINE and ASSIGN are audited only.
 import * as nodeFs from "node:fs";
 import { dirname, join } from "node:path";
 import { parseGameOutput, type GameEvent } from "./parse-output.js";
@@ -97,10 +97,6 @@ export function createWatcher(ctx: Ctx): Watcher {
       audit(command, limb, "REJECTED_SEALED");
       return;
     }
-    if (limb !== "ARM") {
-      audit(command, limb, "NO_ACTION"); // grammatical, but only GRAFT ARM triggers a request
-      return;
-    }
     seq += 1;
     const file = join(ctx.requestsDir, `graft-${String(seq).padStart(3, "0")}-${limb.toLowerCase()}.json`);
     const body = {
@@ -134,6 +130,7 @@ export function createWatcher(ctx: Ctx): Watcher {
     try {
       switch (parsed.verb) {
         case "EXAMINE":
+        case "ASSIGN":
           audit(command, parsed.limb, "OK");
           break;
         case "SEAL":

@@ -3,12 +3,14 @@ import fc from "fast-check";
 import { parseCommand } from "../src/bridge/grammar.js";
 
 const limb = fc.stringMatching(/^[A-Z]{1,32}$/);
-const GRAMMAR = /^((EXAMINE|GRAFT) [A-Z]{1,32}|SEAL CRYPT)$/;
+const GRAMMAR = /^((EXAMINE|ASSIGN|GRAFT) [A-Z]{1,32}|SEAL CRYPT)$/;
 
 describe("grammar (failsafe 5, complete mediation)", () => {
   it("accepts the documented commands", () => {
     expect(parseCommand("EXAMINE ARM")).toEqual({ ok: true, verb: "EXAMINE", limb: "ARM" });
     expect(parseCommand("GRAFT ARM")).toEqual({ ok: true, verb: "GRAFT", limb: "ARM" });
+    expect(parseCommand("ASSIGN JQUERY")).toEqual({ ok: true, verb: "ASSIGN", limb: "JQUERY" });
+    expect(parseCommand("assign jquery")).toEqual({ ok: false });
     expect(parseCommand("SEAL CRYPT")).toEqual({ ok: true, verb: "SEAL", limb: "-" });
   });
 
@@ -24,7 +26,7 @@ describe("grammar (failsafe 5, complete mediation)", () => {
 
   it("property: rejects near misses (case, whitespace, newline, length, wrong verb)", () => {
     const mutate = fc.tuple(
-      fc.constantFrom("EXAMINE", "GRAFT", "SEAL"),
+      fc.constantFrom("EXAMINE", "ASSIGN", "GRAFT", "SEAL"),
       limb,
       fc.constantFrom(
         (s: string) => s.toLowerCase(),
@@ -52,7 +54,7 @@ describe("grammar (failsafe 5, complete mediation)", () => {
 
   it("property: accepts every in-grammar string", () => {
     fc.assert(
-      fc.property(fc.constantFrom("EXAMINE", "GRAFT"), limb, (verb, l) => {
+      fc.property(fc.constantFrom("EXAMINE", "ASSIGN", "GRAFT"), limb, (verb, l) => {
         expect(parseCommand(`${verb} ${l}`)).toEqual({ ok: true, verb, limb: l });
       }),
     );
