@@ -59,7 +59,7 @@ export async function verify(ctx: InquisitorCtx, limb: string): Promise<VerifyRe
     let verdict: "green" | "red" | "pending" = "pending";
     let previous: string | null = null; // green needs the same completed set on two polls in a row
     for (let i = 0; i < ctx.maxAttempts; i++) {
-      const runs = await ctx.client.getCheckRuns(rec.branch);
+      const runs = await ctx.client.getCheckRuns(typeof rec.headSha === "string" ? rec.headSha : rec.branch);
       const v = judge(runs);
       if (v === "red") {
         verdict = "red";

@@ -1,0 +1,12 @@
+{
+  "name": "lodash",
+  "version": "4.18.0",
+  "dependencies": {},
+  "optionalDependencies": {},
+  "peerDependencies": {},
+  "dist": {
+    "tarball": "https://registry.npmjs.org/lodash/-/lodash-4.18.0.tgz",
+    "integrity": "sha512-l1mfj2atMqndAHI3ls7XqPxEjV2J9ZkcNyHpoZA3r2T1LLwDB69jgkMWh71YKwhBbK0G2f4WSn05ahmQXVxupA==",
+    "shasum": "dfd726f07ab2e39dd763de28fcf66e395c03e440"
+  }
+}
