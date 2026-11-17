@@ -29,6 +29,7 @@ and using third-party SDKs, APIs and data in line with their terms. Keep this fi
 | vitest (5.1.0) | Tool (dev-time only) | Test runner for `tests/**/*.test.ts` | MIT | https://github.com/vitest-dev/vitest |
 | fast-check (4.10.2) | Tool (dev-time only) | Property-based tests for the failsafe and blameless invariants | MIT | https://github.com/dubzzz/fast-check |
 | @types/node (26.6.6) | Types (dev-time only) | Node.js type declarations for `tsc --noEmit` | MIT | https://github.com/DefinitelyTyped/DefinitelyTyped |
+| playwright-core (not installed by this repo) | Tool (dev-time only) | `scripts/playtest/judge.mjs` loads it from `PLAYWRIGHT_CORE` to drive headless Chromium for the playtest log. Not in `package.json`, not in the npm package, not in the site | Apache-2.0 | https://github.com/microsoft/playwright |
 | Sound effects (`web/theatre/sound.js`) | Code | CRT hum, heartbeat, thunder and needle clicks are original, synthesised at runtime with WebAudio oscillators and filtered noise by project code. No audio files, samples or third-party sound assets are used. Sound is off on load and starts only after the user clicks the toggle | MIT (project license) | n/a |
 
 ## Ideas and references (not code)

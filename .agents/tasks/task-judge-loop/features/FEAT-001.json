@@ -1,0 +1,25 @@
+{
+ "id": "FEAT-001",
+ "type": "chore",
+ "description": "Setup + Round 1. (a) npm ci, npm run setup, baseline green, build site. (b) Add scripts/playtest/ judge harness (Playwright chromium, swiftshader, headless; screenshots to out/playtest/, not shipped in npm pack, not a new runtime dep in package.json 'dependencies'; record any devDependency in docs/ATTRIBUTION.md). (c) Act as the JUDGE persona (docs/judge-persona section in docs/PLAYTEST_LOG.md): sceptical senior dev, 3 minutes, never played IF. Play the local site and CLI; time-to-understand-pitch on landing, one-click demo path, keyboard-only, reduced-motion, 2D fallback, page weight. Score 1-10 on rubric: first-minute clarity, wow factor, technical credibility, Kiro usage story, polish, accessibility, safety story. Honest quotes, state what was not verified. (d) Act as PM persona: write docs/BACKLOG.md with top 5 prioritised items, each with user value and acceptance criteria, ordered by value/effort.",
+ "status": "completed",
+ "steps": [
+  "Run npm ci && npm run setup && npx vitest run baseline",
+  "Create scripts/playtest/judge.mjs (dev-only) using playwright-core from node_modules/@playwright/mcp or devDependency; chromium path from ~/.cache/ms-playwright",
+  "Create docs/PLAYTEST_LOG.md with Rubric, Judge persona, Round 1 scores+quotes+not-verified",
+  "Create docs/BACKLOG.md Round 1 backlog"
+ ],
+ "acceptance_criteria": [
+  "docs/PLAYTEST_LOG.md has Round 1 with 7 rubric scores and quotes",
+  "docs/BACKLOG.md has 5 items with acceptance criteria",
+  "npm pack --dry-run excludes scripts/playtest",
+  "no em dashes in new docs"
+ ],
+ "verification": [
+  "npm run typecheck",
+  "npx vitest run",
+  "bash scripts/ci/pack-install-test.sh"
+ ],
+ "blocked_reason": null,
+ "findings": "Baseline green (577 tests). playwright-core is not in the repo: harness takes PLAYWRIGHT_CORE=/projects/sandbox/devtools/node_modules/playwright-core. Full chromium-1255 crashes on crashpad in the sandbox; harness uses chromium_headless_shell-1255 (swiftshader WebGL2 works). Server must be started in the same shell command as the harness (background processes die between calls). Added !scripts/playtest to package.json files; npm pack excludes it. Round 1 mean 6.1; top findings: 2D page scrolls past title (autofocus), count mismatch 7/5/2, audit log PR_OPENED on dry run, bench raid board clipped, no Kiro mention on page. Not verified: real GPU, audio, Lighthouse, axe, live Pages site, screen readers."
+}

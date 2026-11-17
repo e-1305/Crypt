@@ -36,6 +36,7 @@
     "scripts",
     "!scripts/ci",
     "!scripts/hooks",
+    "!scripts/playtest",
     "!scripts/census",
     "!scripts/check-*.ts",
     "!scripts/build-site.ts",
