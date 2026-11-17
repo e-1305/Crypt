@@ -4,6 +4,7 @@ import { nodeIo } from "../src/common/io.js";
 import { defaultPaths } from "../src/common/agent.js";
 import { githubClient } from "./github-client.js";
 import { apiAuditHook } from "./live-audit.js";
+import { livePreflight } from "./live-preflight.js";
 
 export interface CliOpts {
   dryRun: boolean;
@@ -46,4 +47,12 @@ export function makeClient(o: CliOpts): GithubClient {
   if (o.dryRun) return dryRunClient(nodeIo, paths.prsDir, () => new Date());
   if (!o.repo) throw new Error("--repo owner/name is required without --dry-run");
   return githubClient({ repo: o.repo, token: process.env.GITHUB_TOKEN ?? "", audit: apiAuditHook(nodeIo, paths.auditPath) });
+}
+
+/** Same token and scope checks as raid and graft, for the standalone live commands. No-op in dry-run. */
+export async function preflightLive(o: CliOpts): Promise<void> {
+  if (o.dryRun) return;
+  if (!o.repo) throw new Error("--repo owner/name is required without --dry-run");
+  const paths = defaultPaths();
+  await livePreflight({ repo: o.repo, token: process.env.GITHUB_TOKEN ?? "", audit: apiAuditHook(nodeIo, paths.auditPath), warn: (m) => process.stderr.write(m + "\n") });
 }

@@ -15,6 +15,8 @@ export interface LiveGraftCtx extends AgentPaths {
 }
 
 export const CHECK_NAME = "test";
+/** Green needs the same result on two consecutive polls. */
+export const MIN_ATTEMPTS = 2;
 
 export async function handleLiveGraft(ctx: LiveGraftCtx, limb: string, branch: string, out: { write(s: string): unknown }): Promise<void> {
   let url = "";
@@ -24,7 +26,7 @@ export async function handleLiveGraft(ctx: LiveGraftCtx, limb: string, branch: s
     // the Inquisitor reports unreadable records as ERROR
   }
   out.write(`Graft ${limb}: pull request opened ${url || branchFile(branch)}\n`);
-  const maxAttempts = Math.max(1, Math.ceil(ctx.timeoutMs / ctx.intervalMs));
+  const maxAttempts = Math.max(MIN_ATTEMPTS, Math.ceil(ctx.timeoutMs / ctx.intervalMs));
   const r = await verify({ ...ctx, maxAttempts, requiredCheck: CHECK_NAME }, limb);
   if (r.outcome === "AWAITING_HUMAN_MERGE") out.write(`${limb}: awaiting a human to land the pull request\n`);
   else if (r.outcome === "GRAFT_REJECTED") out.write(`${REJECTED_TEXT}\n`);

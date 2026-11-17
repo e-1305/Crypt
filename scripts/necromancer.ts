@@ -3,7 +3,7 @@
 import { graft } from "../src/necromancer/index.js";
 import { defaultPaths } from "../src/common/agent.js";
 import { nodeIo } from "../src/common/io.js";
-import { makeClient, parseArgs } from "./agent-cli.js";
+import { makeClient, parseArgs, preflightLive } from "./agent-cli.js";
 import { apiAuditHook } from "./live-audit.js";
 import { npmRegistryClient } from "./registry-client.js";
 import { fixtureAdvisories, osvAdvisories } from "./osv-advisory.js";
@@ -14,6 +14,7 @@ async function main(): Promise<void> {
   const files = o.positional.length
     ? o.positional
     : nodeIo.listDir("out/requests").filter((f) => /^graft-.*\.json$/.test(f)).map((f) => `out/requests/${f}`);
+  await preflightLive(o);
   const client = makeClient(o);
   const ctx = {
     ...paths,

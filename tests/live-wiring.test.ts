@@ -81,6 +81,13 @@ describe("session hand-off to the Inquisitor", () => {
     expect(env.outcomes()).toEqual(["AWAITING_HUMAN_MERGE"]);
     env.cleanup();
   });
+  it("a timeout shorter than two polls still gets two attempts, so a green check passes", async () => {
+    const { env, limb, branch, ctx } = make(() => [{ name: "test", status: "completed", conclusion: "success" }]);
+    const out = sink();
+    await handleLiveGraft({ ...ctx, timeoutMs: 10, intervalMs: 20 }, limb, branch, out);
+    expect(out.lines[1]).toBe(`${limb}: awaiting a human to land the pull request\n`);
+    env.cleanup();
+  });
   it("prints the rejection text on red and on timeout, and the limb stays rotting", async () => {
     for (const runs of [[{ name: "test", status: "completed", conclusion: "failure" }], []]) {
       const { env, limb, branch, ctx } = make(() => runs);
@@ -136,5 +143,20 @@ describe("reraise live", () => {
     expect(readFileSync(env.paths.creaturePath, "utf8")).toBe(before);
     expect(env.stateText()).toBeNull();
     env.cleanup();
+  });
+});
+
+describe("preflight on the standalone live commands", () => {
+  it("rejects a classic token before any client is built, and does nothing in dry-run", async () => {
+    const { preflightLive } = await import("../scripts/agent-cli.js");
+    const old = process.env.GITHUB_TOKEN;
+    process.env.GITHUB_TOKEN = "ghp_" + "a".repeat(36);
+    try {
+      await expect(preflightLive({ dryRun: false, repo: "o/r", target: ".", timeout: 600, positional: [] })).rejects.toThrow(/fine-grained/);
+      await expect(preflightLive({ dryRun: true, target: ".", timeout: 600, positional: [] })).resolves.toBeUndefined();
+    } finally {
+      if (old === undefined) delete process.env.GITHUB_TOKEN;
+      else process.env.GITHUB_TOKEN = old;
+    }
   });
 });

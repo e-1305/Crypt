@@ -6,11 +6,12 @@ import { nodeIo } from "../src/common/io.js";
 import { readFileSync } from "node:fs";
 import { renderPlate } from "../src/render/plate.js";
 import { raiseCreature } from "./compile.js";
-import { makeClient, parseArgs } from "./agent-cli.js";
+import { makeClient, parseArgs, preflightLive } from "./agent-cli.js";
 
 async function main(): Promise<void> {
   const o = parseArgs(process.argv.slice(2));
   const paths = defaultPaths();
+  await preflightLive(o);
   const r = await reraise({ ...paths, io: nodeIo, client: makeClient(o), now: () => new Date() });
   if (r.outcome !== "OK") {
     console.log(`reraise: ${r.outcome} (nothing changed)`);

@@ -138,7 +138,8 @@ export function githubClient(a: GithubClientOptions | string, token?: string, f?
       const owner = repo.split("/")[0]!;
       const open = await call("GET", `/pulls?state=open&head=${encodeURIComponent(`${owner}:${req.branch}`)}`);
       if (Array.isArray(open) && open.length > 0) {
-        return { number: Number(open[0].number), url: str(open[0].html_url, "html_url"), headSha: sha(open[0].head?.sha, "head sha") };
+        // The listing can lag a force-reset, so the commit this client just wrote wins.
+        return { number: Number(open[0].number), url: str(open[0].html_url, "html_url"), headSha: commits.get(req.branch) ?? sha(open[0].head?.sha, "head sha") };
       }
       const pr = await call("POST", "/pulls", { title: req.title, head: req.branch, base: defaultBranch, body: req.body });
       return { number: Number(pr.number), url: str(pr.html_url, "html_url"), headSha: sha(pr.head?.sha ?? commits.get(req.branch), "head sha") };

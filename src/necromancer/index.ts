@@ -252,7 +252,13 @@ export async function graft(ctx: NecromancerCtx, requestPath: string): Promise<G
       sabotage,
     });
     const title = `${sabotage ? SABOTAGE_TITLE_PREFIX : ""}fix: graft ${ref.name} ${ref.version} to ${choice.version} (${limb})`;
+    // Complete mediation: re-check the seal before each remote write step.
+    if (isSealed(io, ctx.sealPath)) return done("REJECTED_SEALED");
     await ctx.client.createBranchWithFiles({ branch, message: title, files });
+    if (isSealed(io, ctx.sealPath)) {
+      if (ctx.client.deleteBranch && branch.startsWith("crypt/")) await ctx.client.deleteBranch(branch).catch(() => undefined);
+      return done("REJECTED_SEALED");
+    }
     let pr: { number: number; url: string; headSha?: string };
     try {
       pr = await ctx.client.openPullRequest({
@@ -267,12 +273,18 @@ export async function graft(ctx: NecromancerCtx, requestPath: string): Promise<G
       throw e;
     }
     if (!ctx.client.dryRun) {
-      io.mkdirp(ctx.prsDir);
       const rec = {
         branch, limb, ecosystem: ref.ecosystem, name: ref.name, from: ref.version, to: choice.version, breaking: choice.breaking,
         number: pr.number, url: pr.url, headSha: pr.headSha, sabotage, auditId,
       };
-      io.writeText(`${ctx.prsDir}/${branchFile(branch)}`, JSON.stringify(rec, null, 2) + "\n");
+      try {
+        io.mkdirp(ctx.prsDir);
+        io.writeText(`${ctx.prsDir}/${branchFile(branch)}`, JSON.stringify(rec, null, 2) + "\n");
+      } catch (e) {
+        // The PR is open but unrecorded. Closing it would be another remote write, so name it for a human.
+        process.stderr.write(`necromancer: pull request ${pr.url} is open but its record could not be written (${(e as Error).message}). Close it by hand before grafting ${limb} again.\n`);
+        return done("ERROR", {}, pr.url);
+      }
     }
     return done("PR_OPENED", { branch, breaking: choice.breaking }, pr.url);
   } catch (e) {

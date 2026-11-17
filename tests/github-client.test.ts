@@ -12,6 +12,17 @@ describe("github adapter basics", () => {
     expect(w.cryptRefs()).toEqual(["refs/heads/crypt/graft-a-1.0.1"]);
     expect(Object.keys(c).filter((k) => /merge/i.test(k))).toEqual([]);
   });
+  it("after a force-reset the open PR reports the new commit, not a stale listing SHA", async () => {
+    const w = makeWorld();
+    const c = githubClient(REPO, TOKEN, w.github);
+    await c.createBranchWithFiles(req);
+    const first = await c.openPullRequest({ branch: req.branch, title: "t", body: "b", meta: { limb: "A", ecosystem: "npm", name: "a", from: "1.0.0", to: "1.0.1", breaking: false } });
+    w.prs[0]!.sha = "0".repeat(40); // the listing lags
+    await c.createBranchWithFiles({ ...req, message: "again", files: [{ path: "package.json", content: "{\"x\":1}" }] });
+    const again = await c.openPullRequest({ branch: req.branch, title: "t", body: "b", meta: { limb: "A", ecosystem: "npm", name: "a", from: "1.0.0", to: "1.0.1", breaking: false } });
+    expect(again.number).toBe(first.number);
+    expect(again.headSha).toBe(w.refs.get(`refs/heads/${req.branch}`));
+  });
   it("refuses a bad repo name and an empty token", () => {
     expect(() => githubClient("nope", TOKEN)).toThrow(/owner\/name/);
     expect(() => githubClient(REPO, "")).toThrow(/GITHUB_TOKEN/);

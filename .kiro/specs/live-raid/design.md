@@ -52,7 +52,7 @@ src/reraise      PR state via API -> healed -> creature, plate, story regenerate
 
 ## Necromancer order of work
 
-1. Seal check. 2. Lookup. 3. Creature and spawned check. 4. Advisories and `chooseVersion`. 5. `PR_EXISTS` and `RAID_LIMIT` checks. 6. `registry.getVersion` (live: the registry is required, absent gives `ERROR` before any GitHub write). 7. Read `package.json` and `package-lock.json` (live: `readBaseFile`; dry-run: `targetDir`). 8. `bumpLockfile` (dry-run without a registry keeps `editManifests`). 9. With sabotage: add `test/smoke.test.js` built from `readBaseFile`; a missing file aborts. 10. `createBranchWithFiles`, `openPullRequest`. IF the PR call throws after the branch exists THEN `deleteBranch` runs. 11. Write the PR record and audit `PR_OPENED`.
+1. Seal check. 2. Lookup. 3. Creature and spawned check. 4. Advisories and `chooseVersion`. 5. `PR_EXISTS` and `RAID_LIMIT` checks. 6. `registry.getVersion` (live: the registry is required, absent gives `ERROR` before any GitHub write). 7. Read `package.json` and `package-lock.json` (live: `readBaseFile`; dry-run: `targetDir`). 8. `bumpLockfile` (dry-run without a registry keeps `editManifests`). 9. With sabotage: add `test/smoke.test.js` built from `readBaseFile`; a missing file aborts. 10. Seal re-check, `createBranchWithFiles`, seal re-check (a seal here deletes the new `crypt/` branch and audits `REJECTED_SEALED`), `openPullRequest`. IF the PR call throws after the branch exists THEN `deleteBranch` runs. The adapter reports the SHA of the commit it wrote as the PR head, also after a 422 force-reset of its own `crypt/` branch. 11. Write the PR record and audit `PR_OPENED`. IF the record write fails the outcome is `ERROR` and stderr names the open PR for a human to close; the agent does not write again.
 
 ## Remote graft (Git Data API)
 
@@ -72,11 +72,11 @@ Both clients call `audit({ method, path })` before every request, without query 
 
 ## Preflight
 
-`livePreflight({ repo, token, fetch, audit, warn })`: empty token, `ghp_` or `gho_` prefix, unreadable repo, no push permission, extra visible repositories each throw a `CliError` with an action to take (create a fine-grained token limited to the target with Contents RW, Pull requests RW, Checks R). A failed listing warns once and continues. The least-privilege listing is best effort: a fine-grained token limited to one repository may still be broader on other scopes, and GitHub offers no endpoint that lists a token's permissions, so the listing only catches visible repositories. Classic tokens are refused outright because they cannot be limited to one repository.
+`livePreflight({ repo, token, fetch, audit, warn })`: empty token, `ghp_` or `gho_` prefix, unreadable repo, no push permission, extra visible repositories each throw a `CliError` with an action to take (create a fine-grained token limited to the target with Contents RW, Pull requests RW, Checks R). A failed listing warns once and continues. The same preflight runs for `inquisit --live`, `reraise --live` and the standalone scripts. The warn-and-continue choice is deliberate: some enterprise setups block the listing endpoint, and the token still needs push on the target. The least-privilege listing is best effort: a fine-grained token limited to one repository may still be broader on other scopes, and GitHub offers no endpoint that lists a token's permissions, so the listing only catches visible repositories. Classic tokens are refused outright because they cannot be limited to one repository.
 
 ## Inquisitor live
 
-`requiredCheck?: string` (live default `test`). Only runs with that name are judged: none yet is pending, completed success is green, completed with any other conclusion is red. The existing two-consecutive-polls rule stays. The timeout is `--timeout` seconds (default 600) converted into attempts with the injected sleep. The seal is read before every poll. Timeout keeps the record; red moves it to `out/prs/rejected/` and audits `GRAFT_REJECTED`.
+`requiredCheck?: string` (live default `test`). Only runs with that name are judged: none yet is pending, completed success is green, completed with any other conclusion is red. The existing two-consecutive-polls rule stays. The timeout is `--timeout` seconds (default 600) converted into attempts with the injected sleep, with a floor of two attempts because green needs two consecutive polls. The seal is read before every poll. Timeout keeps the record; red moves it to `out/prs/rejected/` and audits `GRAFT_REJECTED`.
 
 ## Target record
 
