@@ -107,6 +107,7 @@ afterEach(() => {
 afterAll(() => { globalThis.setInterval = realSetInterval; });
 afterAll(() => rmSync(tmp, { recursive: true, force: true }));
 
+const RAID_MS_TEST = 15 * 60_000 + 1000;
 const limbs = (healed: boolean) => [
   { ecosystem: "npm", name: "jquery", version: "1.0.0", state: healed ? "Healthy" : "Rotting", healed, spawned: true, epss: 0.5, kev: false, healedBy: "Ada" },
   { ecosystem: "npm", name: "lodash", version: "4.0.0", state: healed ? "Healthy" : "Possessed", healed, spawned: true, epss: 0.2, kev: true },
@@ -181,6 +182,54 @@ describe("web/raid.js", () => {
     expect((m.get("crypt.risk") as Record<string, unknown>)["npm:lodash"]).toEqual({ epss: 0.2, kev: true });
     raid.setLimbs(limbs(false).map((l) => ({ ...l, state: "Healthy", healed: true })), "acme/app");
     expect(el("raid-score").textContent).toBe("Team risk removed: 1.10");
+  });
+
+  it("game feel: vitals, combo, boss, trophies and grade are all plain text in the readout", async () => {
+    const { raid, said } = await start();
+    raid.setLimbs(limbs(false), "acme/app");
+    expect(el("raid-vitals").textContent).toBe("Creature health 0 of 100. Heartbeat 160 beats per minute.");
+    expect(el("raid-health").attrs["aria-valuenow"]).toBe("0");
+    expect(el("raid-next").textContent).toBe("Next rank: Surgeon in 3 heals.");
+    expect(el("raid-boss").textContent).toBe("Boss: lodash.");
+    expect(el("raid-boss").hidden).toBe(false);
+    expect(el("raid-combo").textContent).toMatch(/^Combo: none/);
+    raid.start();
+    expect(said.at(-1)).toContain("A boss stirs: lodash");
+    raid.setLimbs(limbs(true), "acme/app");
+    expect(el("raid-vitals").textContent).toBe("Creature health 100 of 100. Heartbeat 50 beats per minute.");
+    expect(el("raid-combo").textContent).toBe("Combo x1.5, chain of 2. Style bonus +0.55.");
+    expect(el("raid-boss").textContent).toBe("Boss slain: lodash.");
+    expect(el("raid-pop").textContent).toMatch(/^\+\d\.\d\d risk removed/);
+    expect(el("raid-shelf").textContent).toContain("First Blood");
+    expect(el("raid-trophies").children.length).toBe(6);
+    expect(said.some((s) => s.startsWith("Boss slain: lodash."))).toBe(true);
+    expect(el("raid-score").textContent).toBe("Team risk removed: 1.10");
+  });
+
+  it("game feel: the card carries a grade and trophies and no person", async () => {
+    vi.useFakeTimers();
+    try {
+      const { raid } = await start();
+      raid.setLimbs(limbs(false), "acme/app");
+      raid.start();
+      raid.setLimbs(limbs(true), "acme/app");
+      clock += RAID_MS_TEST;
+      vi.advanceTimersByTime(250);
+      expect(el("raid-grade").textContent).toMatch(/^Grade: [SABCD]$/);
+      expect(el("raid-card").textContent).toMatch(/Grade: [SABCD]\. Trophies: First Blood/);
+      expect(el("raid-card").textContent).not.toContain("Ada");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("game feel: reduced motion skips the effect classes and still shows the counter", async () => {
+    Object.assign(window, { matchMedia: () => ({ matches: true }) });
+    const { raid } = await start();
+    raid.setLimbs(limbs(false), "acme/app");
+    raid.setLimbs(limbs(true), "acme/app");
+    expect((document.body as unknown as { classes: Set<string> }).classes.size).toBe(0);
+    expect(el("raid-counter").textContent).toBe("1.10");
   });
 
   it("property: any limb list renders without throwing and the score is finite and never negative", async () => {

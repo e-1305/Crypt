@@ -166,9 +166,20 @@ Type `RAID` in the game input, or press "Start the 15 minute raid". The readout 
 - **Rank**, from the number of healed limbs: Apprentice (0 to 2), Surgeon (3 to 6), Resurrectionist (7 or more).
 - **Nights Without Possession.** Whole days since a KEV limb last stayed open longer than 48 hours after it was first seen. With no such breach it counts from this browser's first visit. It restarts at 0 while a KEV limb is open past 48 hours.
 - **Praise.** Lines such as "jquery healed by `<login>`", sorted by package. Names appear in praise only.
-- **Download the raid card (PNG).** Appears when the raid completes. It holds the repo name, limbs healed, risk removed, time, rank and an epitaph. It carries no owner or person.
+- **Download the raid card (PNG).** Appears when the raid completes. It holds the repo name, limbs healed, risk removed, time, rank, grade, trophies and an epitaph. It carries no owner or person.
 
 Scores are for the team. CRYPT does not rank, total or compare individuals, and has no leaderboard. Raid state is stored in the browser, per creature, so clearing site data resets it.
+
+### Game feel
+
+The raid adds arcade touches on top of the team score. They are display only: the team risk removed and the rank above do not change because of them. Nothing here is counted per person.
+
+- **Combo.** Heals that land within 90 seconds of each other form a team chain. Each heal after the first adds 0.5 to the multiplier, up to x3. The readout shows the chain and a "style bonus" (team risk removed times the multiplier minus 1). The chain lapses 90 seconds after the last heal.
+- **Bosses.** Limbs on the KEV list with an EPSS of 0.5 or more are bosses. If none qualify, the highest-risk KEV limb is the boss. A banner names the boss when the raid starts and says "Boss slain" when it is healed.
+- **Vitals.** A health bar (0 to 100, with its value read by screen readers) falls as sick limbs remain, and the heartbeat quickens with it. The text line gives the same numbers. A risk removed counter counts up, and the readout names the next rank and the heals still needed.
+- **Trophies.** Six team plates: First Blood, Chain of 3, Boss Slain, Clean Sweep, Nights Without Possession (3 or more nights), Under Ten Minutes. They belong to the team. The shelf lists each as earned or locked, and the wall board shows the count.
+- **Grade.** The card shows a grade from S to D. It rises with limbs healed and falls the longer the raid takes. Each grade has its own set of epitaphs.
+- **Effects.** A "+risk" pop-up, a short screen shake and a lightning flash mark a heal or a boss kill. With reduced motion or high-contrast reader mode the effects are off and the same facts appear as plain text and announcements.
 
 ## 6. Accessibility
 

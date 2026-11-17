@@ -82,7 +82,7 @@ export function nightsWithoutPossession(limbs: readonly RaidLimb[], now: number,
   return Math.max(0, Math.floor((now - latest) / 86400000));
 }
 
-function fnv1a(s: string): number {
+export function fnv1a(s: string): number {
   let h = 0x811c9dc5;
   for (let i = 0; i < s.length; i++) {
     h ^= s.charCodeAt(i);
