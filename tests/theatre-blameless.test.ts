@@ -7,6 +7,7 @@ import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { numRuns } from "./runs.js";
 import { cardData, cardLines } from "../src/theatre/card.js";
+import { GRADES, GRADE_EPITAPHS, bossLimbs, trophies } from "../src/theatre/gamify.js";
 import { EPITAPHS, praiseLines, rankFor, teamScore, type RaidLimb } from "../src/theatre/raid.js";
 
 const ROOT = resolve(import.meta.dirname, "..");
@@ -62,12 +63,26 @@ describe("theatre is blameless", () => {
     fc.assert(
       fc.property(limbs, fc.string({ maxLength: 40 }), fc.integer({ min: 0, max: 2_000_000 }), (list, repo, ms) => {
         const card = cardData(repo, list as RaidLimb[], ms);
-        expect(Object.keys(card).sort()).toEqual(["epitaph", "limbsHealed", "rank", "repo", "riskRemoved", "time", "title"]);
+        expect(Object.keys(card).sort()).toEqual(["chain", "epitaph", "grade", "limbsHealed", "rank", "repo", "riskRemoved", "time", "title", "trophies"]);
         for (const line of cardLines(card)) expect(line.replace(card.repo, "")).not.toMatch(BANNED);
         expect(rankFor(card.limbsHealed)).toBe(card.rank);
       }),
       { numRuns: RUNS },
     );
+  });
+
+  it("property: game feel output never contains a healer name or a per-person count", () => {
+    fc.assert(
+      fc.property(limbs, fc.string({ minLength: 3, maxLength: 12 }), (list, who) => {
+        const named = (list as RaidLimb[]).map((l) => ({ ...l, healedBy: `Zq${who}Zq` }));
+        const out = JSON.stringify([trophies(named, { healed: 3, elapsedMs: 1000, nights: 3, bestChain: 3 }), cardData("repo", named, 1000, { all: named, bestChain: 3 })]);
+        expect(out).not.toContain(`Zq${who}Zq`);
+        expect(out).not.toMatch(BANNED);
+        expect(JSON.stringify(bossLimbs(named).map((l) => l.name))).not.toContain(`Zq${who}Zq`);
+      }),
+      { numRuns: RUNS },
+    );
+    for (const g of GRADES) for (const e of GRADE_EPITAPHS[g]) expect(e).not.toMatch(BANNED);
   });
 
   it("every epitaph is free of banned wording", () => {
@@ -76,7 +91,7 @@ describe("theatre is blameless", () => {
 
   it("the page and theatre sources (comments removed) hold no leaderboard, ranking of people or blame wording", () => {
     const strip = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
-    for (const f of ["src/theatre/raid.ts", "src/theatre/card.ts", "src/theatre/screen-text.ts", "src/theatre/heal-events.ts", "src/theatre/polish.ts", "src/theatre/audio-plan.ts", "web/raid.js", "web/heal.js", "web/theatre/sound.js", "web/theatre/board.js", "web/theatre/wall.js", "web/theatre/card-draw.js"]) {
+    for (const f of ["src/theatre/raid.ts", "src/theatre/card.ts", "src/theatre/gamify.ts", "src/theatre/screen-text.ts", "src/theatre/heal-events.ts", "src/theatre/polish.ts", "src/theatre/audio-plan.ts", "web/raid.js", "web/heal.js", "web/theatre/sound.js", "web/theatre/board.js", "web/theatre/wall.js", "web/theatre/card-draw.js"]) {
       expect(strip(readFileSync(join(ROOT, f), "utf8")), f).not.toMatch(BANNED);
     }
     expect(readFileSync(join(ROOT, "web", "index.html"), "utf8").replace(/<!--[\s\S]*?-->/g, "")).not.toMatch(BANNED);

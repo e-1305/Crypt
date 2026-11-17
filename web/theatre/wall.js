@@ -44,6 +44,8 @@ export function makeWall(plateEl, summaryEl) {
   document.addEventListener("crypt:fx", onFx);
   const obs = new MutationObserver(() => { dirty = true; });
   obs.observe(plateEl, { childList: true, subtree: true, characterData: true });
+  const shelfNode = document.getElementById("raid-shelf");
+  if (shelfNode) obs.observe(shelfNode, { childList: true, subtree: true, characterData: true });
   const simEl = document.getElementById("sim-label");
   if (simEl) obs.observe(simEl, { childList: true, subtree: true, characterData: true, attributes: true });
   function draw() {
@@ -84,6 +86,13 @@ export function makeWall(plateEl, summaryEl) {
       ctx.font = "bold 20px " + "ui-monospace, 'DejaVu Sans Mono', Menlo, Consolas, monospace";
       ctx.fillStyle = "#ff6a3d";
       ctx.fillText(sim.textContent.slice(0, 64), 48, H - 120);
+    }
+    // Team trophy shelf (text twin: #raid-shelf in the raid readout).
+    const shelf = document.getElementById("raid-shelf");
+    if (shelf && shelf.textContent) {
+      ctx.font = "16px ui-monospace, 'DejaVu Sans Mono', Menlo, Consolas, monospace";
+      ctx.fillStyle = "#ffb000";
+      ctx.fillText(shelf.textContent.slice(0, 90), 48, H - 98);
     }
     // Legend: color chip + glyph + word, so no state depends on color alone.
     ctx.font = "bold 22px ui-monospace, 'DejaVu Sans Mono', Menlo, Consolas, monospace";

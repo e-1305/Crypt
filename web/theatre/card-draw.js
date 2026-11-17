@@ -25,7 +25,17 @@ export function drawCard(data, canvas = document.createElement("canvas")) {
   ctx.fillStyle = "#33ff33";
   ctx.font = "bold 30px " + MONO;
   lines.slice(2, 6).forEach((t, i) => ctx.fillText(t, 48, 160 + i * 46));
+  // Grade stamp (letter plus word, never color alone) and the team trophies.
+  const grade = lines[7] || "";
+  ctx.fillStyle = "#ffb000";
+  ctx.font = "bold 120px " + MONO;
+  ctx.fillText(grade.replace("Grade: ", ""), W - 170, 60);
+  ctx.font = "bold 18px " + MONO;
+  ctx.fillText("GRADE", W - 170, 190);
   ctx.fillStyle = "#d8c590";
+  ctx.font = "18px " + MONO;
+  ctx.fillText(lines[8] || "", W - 250, 220, 200);
+  ctx.fillText((lines[9] || "").slice(0, 70), 48, H - 105, W - 96);
   ctx.font = "italic 22px " + MONO;
   ctx.fillText(lines[6], 48, H - 70, W - 96);
   return canvas;

@@ -2,6 +2,7 @@
 // One team score, no per-person figures, no leaderboard. The same readout feeds the 2D page and the 3D wall board.
 import { RAID_MS, createRaidTimer, formatClock, healedCount, nightsWithoutPossession, praiseLines, rankFor, teamScore, countsForScore } from "./js/theatre/raid.js";
 import { cardData } from "./js/theatre/card.js";
+import { COMBO_WINDOW_MS, bossLimbs, comboState, rankProgress, styleBonus, trophies, vitals } from "./js/theatre/gamify.js";
 import { downloadCard } from "./theatre/card-draw.js";
 
 const $ = (id) => document.getElementById(id);
@@ -15,6 +16,21 @@ export function initRaid({ store, announce, onRunning, now = () => Date.now() })
   let card = null;
   let interval = 0;
   let warned = false;
+  // Game feel (gamify.js). Team-wide: heal times carry no person. Everything shown here also exists as plain text.
+  let healTimes = [];
+  let counted = null; // keys that counted for the score at the last setLimbs; null until the first list arrives
+  let shown = 0; // the value the animated risk counter currently shows
+  let lastPop = "";
+  const shelfEls = [];
+  const reduced = () => document.body?.classList?.contains("hc") === true || window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true;
+  function pulse(cls, ms) {
+    if (reduced()) return;
+    const b = document.body;
+    if (!b?.classList) return;
+    b.classList.toggle(cls, false);
+    b.classList.toggle(cls, true);
+    setTimeout(() => b.classList.toggle(cls, false), ms);
+  }
 
   const scanStart = (() => {
     const t = store.get("crypt.scanStart");
@@ -67,8 +83,85 @@ export function initRaid({ store, announce, onRunning, now = () => Date.now() })
     const dl = $("raid-download");
     if (dl) dl.hidden = card === null;
     setText("raid-epitaph", card ? card.epitaph : "");
-    setText("raid-card", card ? "Limbs healed: " + card.limbsHealed + ". Risk removed: " + card.riskRemoved + ". Time: " + card.time + "." : "");
+    setText("raid-card", card ? "Limbs healed: " + card.limbsHealed + ". Risk removed: " + card.riskRemoved + ". Time: " + card.time + ". Grade: " + card.grade + "." + (card.trophies.length ? " Trophies: " + card.trophies.join(", ") + "." : "") : "");
+    renderGame(v, score);
     document.documentElement.dataset.raid = v.status;
+  }
+
+  function setStyle(id, name, value) { $(id)?.style?.setProperty?.(name, value); }
+
+  // Animated counter: counts up with requestAnimationFrame, or shows the final value at once with reduced motion.
+  function countTo(target) {
+    const el = $("raid-counter");
+    if (!el) return;
+    const from = shown;
+    shown = target;
+    if (reduced() || typeof requestAnimationFrame !== "function" || target <= from) { el.textContent = target.toFixed(2); return; }
+    const t0 = typeof performance !== "undefined" ? performance.now() : 0;
+    const step = (t) => {
+      if (shown !== target) return; // a newer count started
+      const p = Math.min(1, (t - t0) / 700);
+      el.textContent = (from + (target - from) * p).toFixed(2);
+      if (p < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+
+  function renderGame(v, score) {
+    const healed = healedCount(limbs);
+    const combo = comboState(healTimes, COMBO_WINDOW_MS, now());
+    const vit = vitals(limbs);
+    const bosses = bossLimbs(limbs);
+    const bonus = styleBonus(score, combo.multiplier);
+    setText("raid-vitals", "Creature health " + vit.health + " of 100. Heartbeat " + vit.bpm + " beats per minute.");
+    $("raid-health")?.setAttribute("aria-valuenow", String(vit.health));
+    setStyle("raid-health", "--pct", vit.health + "%");
+    setStyle("raid-heart", "--beat", (60 / vit.bpm).toFixed(2) + "s");
+    if (score !== shown) countTo(score);
+    const prog = rankProgress(healed);
+    setText("raid-next", prog.next ? "Next rank: " + prog.next + " in " + prog.need + (prog.need === 1 ? " heal." : " heals.") : "Top rank reached.");
+    setText("raid-combo", combo.chain > 0
+      ? "Combo x" + combo.multiplier.toFixed(1) + ", chain of " + combo.chain + ". Style bonus +" + bonus.toFixed(2) + "."
+      : "Combo: none. Heal two limbs within 90 seconds to start a chain.");
+    const bossText = bosses.length === 0 ? "" : bosses.map((b) => (countsForScore(b) ? "Boss slain: " : "Boss: ") + b.name).join(". ") + ".";
+    setText("raid-boss", bossText);
+    const bossEl = $("raid-boss");
+    if (bossEl) bossEl.hidden = bossText === "";
+    const shelf = trophies(limbs, { healed: gainedCount(), elapsedMs: v.elapsedMs, nights: nightsWithoutPossession(limbs, now(), scanStart), bestChain: combo.best });
+    const list = $("raid-trophies");
+    if (list) {
+      shelf.forEach((t, i) => {
+        if (!shelfEls[i]) { shelfEls[i] = document.createElement("li"); list.appendChild(shelfEls[i]); }
+        shelfEls[i].textContent = (t.earned ? "Earned: " : "Locked: ") + t.title + ". " + t.description;
+        shelfEls[i].dataset.earned = t.earned ? "true" : "false";
+      });
+    }
+    const got = shelf.filter((t) => t.earned).map((t) => t.title);
+    setText("raid-shelf", "Trophies " + got.length + " of " + shelf.length + (got.length ? ": " + got.join(", ") : ""));
+    setText("raid-pop", lastPop);
+    setText("raid-grade", card ? "Grade: " + card.grade : "");
+  }
+
+  function gainedCount() { return limbs.filter((l) => countsForScore(l) && !baseline.has(keyOf(l))).length; }
+
+  // Called when the list changes: one chain entry per limb that newly counts for the score.
+  function noteHeals(before) {
+    if (before === null) return;
+    const fresh = limbs.filter((l) => countsForScore(l) && !before.has(keyOf(l)));
+    if (fresh.length === 0) return;
+    const bossKeys = new Set(bossLimbs(limbs).map(keyOf));
+    for (const l of fresh) {
+      healTimes.push(now());
+      const gain = teamScore([l]);
+      lastPop = "+" + gain.toFixed(2) + " risk removed (" + l.name + ")";
+      const combo = comboState(healTimes, COMBO_WINDOW_MS, now());
+      const slain = bossKeys.has(keyOf(l));
+      if (timer.view().status === "running") {
+        announce((slain ? "Boss slain: " + l.name + ". " : "Healed " + l.name + ". ") + "Plus " + gain.toFixed(2) + " risk removed." + (combo.chain > 1 ? " Chain of " + combo.chain + ", multiplier x" + combo.multiplier.toFixed(1) + "." : ""));
+      }
+      pulse(slain ? "fx-flash" : "fx-pop", slain ? 900 : 500);
+      if (slain) pulse("fx-shake", 600);
+    }
   }
 
   function finish() {
@@ -76,9 +169,9 @@ export function initRaid({ store, announce, onRunning, now = () => Date.now() })
     interval = 0;
     const v = timer.view();
     const gained = limbs.filter((l) => countsForScore(l) && !baseline.has(keyOf(l)));
-    card = cardData(repo, gained, v.elapsedMs);
+    card = cardData(repo, gained, v.elapsedMs, { all: limbs, bestChain: comboState(healTimes).best, nights: nightsWithoutPossession(limbs, now(), scanStart) });
     onRunning?.(false);
-    announce("Raid complete. " + card.limbsHealed + " limbs healed. Risk removed " + card.riskRemoved + ". " + card.epitaph);
+    announce("Raid complete. " + card.limbsHealed + " limbs healed. Risk removed " + card.riskRemoved + ". Grade " + card.grade + ". " + card.epitaph);
     render();
   }
 
@@ -96,7 +189,10 @@ export function initRaid({ store, announce, onRunning, now = () => Date.now() })
     baseline = new Set(limbs.filter(countsForScore).map(keyOf));
     timer.start();
     warned = false;
-    announce("Raid started. Fifteen minutes. Heal what you can.");
+    healTimes = [];
+    lastPop = "";
+    const boss = bossLimbs(limbs).find((b) => !countsForScore(b));
+    announce("Raid started. Fifteen minutes. Heal what you can." + (boss ? " A boss stirs: " + boss.name + ". Heal it to slay it." : ""));
     clearInterval(interval);
     interval = setInterval(tick, 250);
     onRunning?.(true);
@@ -110,6 +206,8 @@ export function initRaid({ store, announce, onRunning, now = () => Date.now() })
   return {
     setLimbs(list, name) {
       limbs = remember(Array.isArray(list) ? list : []);
+      noteHeals(counted);
+      counted = new Set(limbs.filter(countsForScore).map(keyOf));
       if (typeof name === "string") repo = name;
       render();
     },
