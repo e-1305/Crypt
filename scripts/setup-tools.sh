@@ -34,7 +34,8 @@ if [ ! -x "$TC/Inform6/inform6" ]; then
 fi
 
 # frotz 2.44 does not link with modern GCC without -fcommon (design.md L4)
-make -C "$TC/frotz" -s dfrotz CFLAGS="-O2 -fcommon"
+# frotz 2.44 predates C23 (bool is a keyword there); newer GCC defaults to C23
+make -C "$TC/frotz" -s dfrotz CFLAGS="-O2 -fcommon -std=gnu17"
 
 # Library includes use mixed case, files are lowercase (design.md L6)
 rm -rf "$TC/inc"
