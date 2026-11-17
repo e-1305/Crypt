@@ -9,6 +9,7 @@
 | bridge-v2 | `.kiro/specs/bridge-v2/` | requirements (V1 to V7), design (marker syntax, `GameEvent`, Tier 1 browser reading, threat notes) and tasks written before coding; implemented. Driven by issue #3: the game now prints `[[CRYPT ...]]` markers on accepted actions and the watcher triggers only on those, not on `> ` input lines |
 | exhume-and-rank | `.kiro/specs/exhume-and-rank/` | requirements (E1 to E9), design (creature.json schema, ranking formula, fail-safe unknown state, fixture data policy) and tasks written and committed before any code; implemented. Driven by issue #5: `npx crypt exhume <path-or-url>` gives a deterministic KEV/EPSS ranking, offline once cached |
 | raise-the-creature | `.kiro/specs/raise-the-creature/` | requirements, design (ID scheme, sanitizer, marker templates) and tasks committed before code; implemented. Driven by issue #8: `npx crypt raise out/creature.json` compiles `creature.json` to a playable `.z8` story with an ASSIGN verb |
+| necromancer | `.kiro/specs/necromancer/` | requirements (N1 to N8), design (module layout, version selection, state schema, audit outcomes, static-test constraint) and tasks committed before any code. Driven by issue #11: GRAFT leads to a fix PR, CI check, human landing and re-raise. First part implemented: complete mediation in the watcher (N1) |
 
 ## Steering
 | File | Purpose |
@@ -28,8 +29,8 @@
 | Agent | Role |
 |---|---|
 | Oracle | Wraps the deterministic scorer |
-| Necromancer | Drafts the fix PR |
-| Inquisitor | Verifies the fix |
+| Necromancer | Drafts the fix PR. `.kiro/agents/necromancer.json`: read and write tools, no shell, no web |
+| Inquisitor | Verifies the fix. `.kiro/agents/inquisitor.json`: read-only, no write, no shell (separation of privilege, failsafe 3) |
 
 ## MCP
 TODO
@@ -62,6 +63,8 @@ TODO
 | Hostile names, CVE IDs, owners and versions never add a marker, bracket, control character or Inform special; removing the sanitizer fails these tests (R6) | `tests/raise.test.ts` |
 | Markers appear in generated source only as the four fixed templates; in a compiled game they come only from verb routines for the actual noun (R4, R6) | `tests/raise.test.ts` |
 | `ASSIGN <limb>` is accepted by the grammar, lowercase and near misses are rejected (R5) | `tests/grammar.test.ts` |
+| Unknown limb IDs never write a request; every rejection is audited `REJECTED_UNKNOWN_LIMB` (rules 5, 8, N1) | `tests/watch.test.ts` |
+| A missing, unreadable or invalid `out/limbs.json` rejects every GRAFT and ASSIGN (rule 1, N1) | `tests/watch.test.ts` |
 
 ## Spec → code traceability
 | Task | Commit | Test |
@@ -101,6 +104,13 @@ TODO
 | 2 to 5, 7 `src/bridge/grammar.ts`, `src/bridge/watch.ts`, `game/spike.inf`, `src/raise/generate.ts`, `src/raise/sanitize.ts` | `feat: raise the creature generator, ASSIGN verb and graft fix` | `tests/raise.test.ts`, `tests/grammar.test.ts`, `tests/watch.test.ts` |
 | 6, 8 `scripts/raise.ts`, `scripts/play.ts`, `scripts/check-raise.ts`, `bin/crypt.mjs` | `feat: raise script, z8 compile and acceptance check` | `npm run raise:check`: EXAMINE, ASSIGN, GRAFT JQUERY, SEAL CRYPT, GRAFT LODASH give 1 graft request for jquery and 0 after seal |
 | 9 docs | `docs: update KIRO.md and README for raise` | n/a |
+
+### necromancer (issue #11)
+| Task | Commit | Test |
+|---|---|---|
+| 1 spec | `docs: add necromancer spec` | n/a (committed before code) |
+| 2 `.kiro/agents/*.json` | `feat: necromancer and inquisitor agents, complete mediation` | n/a |
+| 3 `src/bridge/watch.ts` mediation, `scripts/reset.ts`, `scripts/check-raise.ts` | same | `tests/watch.test.ts`, `npm run spike`, `npm run raise:check` |
 
 ## Numbers
 - Specs: 4 · Hooks: TODO · Steering files: 5 · Property tests: 29 (16 bridge, 9 exhume, 4 raise) · Tests: 94

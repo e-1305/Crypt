@@ -1,7 +1,8 @@
 // Transcript watcher. Acts on marker lines printed by the game ("[[CRYPT GRAFT ARM]]" etc.),
 // found by parseGameOutput and gated by the strict grammar. "> COMMAND" input lines never trigger anything.
 // Fail-safe: on any error, nothing further is changed and the command is treated as sealed.
-// No network access. A grammatical GRAFT of any limb writes a request; EXAMINE and ASSIGN are audited only.
+// No network access. A grammatical GRAFT of a limb listed in out/limbs.json writes a request; ASSIGN of such a limb is audited only.
+// Complete mediation: an unknown limb ID (or an unreadable table) writes nothing and is audited REJECTED_UNKNOWN_LIMB.
 import * as nodeFs from "node:fs";
 import { dirname, join } from "node:path";
 import { parseGameOutput, type GameEvent } from "./parse-output.js";
@@ -16,6 +17,8 @@ export interface Fs {
   createExclusive(path: string, data: string): void;
   appendLine(path: string, line: string): void;
   remove(path: string): void;
+  /** Reads a UTF-8 text file. Throws on any error, including "not found". */
+  readText(path: string): string;
 }
 
 export interface Ctx {
@@ -23,6 +26,8 @@ export interface Ctx {
   sealPath: string;
   auditPath: string;
   requestsDir: string;
+  /** Lookup table written by raise: the only authority for valid limb IDs (complete mediation). */
+  limbsPath: string;
   now: () => Date;
 }
 
@@ -48,6 +53,9 @@ export const nodeFsOps: Fs = {
   remove(path) {
     nodeFs.rmSync(path, { force: true });
   },
+  readText(path) {
+    return nodeFs.readFileSync(path, "utf8");
+  },
 };
 
 export function defaultCtx(cwd: string = process.cwd()): Ctx {
@@ -56,11 +64,12 @@ export function defaultCtx(cwd: string = process.cwd()): Ctx {
     sealPath: join(cwd, ".crypt-seal"),
     auditPath: join(cwd, "crypt-audit.log"),
     requestsDir: join(cwd, "out", "requests"),
+    limbsPath: join(cwd, "out", "limbs.json"),
     now: () => new Date(),
   };
 }
 
-export type Outcome = "OK" | "NO_ACTION" | "REQUEST_WRITTEN" | "SEALED" | "REJECTED_SEALED" | "ERROR";
+export type Outcome = "OK" | "NO_ACTION" | "REQUEST_WRITTEN" | "SEALED" | "REJECTED_SEALED" | "REJECTED_UNKNOWN_LIMB" | "ERROR";
 
 export interface Watcher {
   processLine(line: string): void;
@@ -84,6 +93,17 @@ export function createWatcher(ctx: Ctx): Watcher {
     ctx.fs.appendLine(ctx.auditPath, [ctx.now().toISOString(), command, limb, outcome, "-"].join("\t"));
   }
 
+  /** True only when out/limbs.json is readable, valid, and has the ID as a key. Anything else: false (fail-safe). */
+  function isKnownLimb(limb: string): boolean {
+    try {
+      const table: unknown = JSON.parse(ctx.fs.readText(ctx.limbsPath));
+      if (typeof table !== "object" || table === null || Array.isArray(table)) return false;
+      return Object.prototype.hasOwnProperty.call(table, limb);
+    } catch {
+      return false;
+    }
+  }
+
   function tryAuditError(command: string, limb: string): void {
     try {
       audit(command, limb, "ERROR");
@@ -95,6 +115,10 @@ export function createWatcher(ctx: Ctx): Watcher {
   function handleGraft(command: string, limb: string): void {
     if (isSealed()) {
       audit(command, limb, "REJECTED_SEALED");
+      return;
+    }
+    if (!isKnownLimb(limb)) {
+      audit(command, limb, "REJECTED_UNKNOWN_LIMB");
       return;
     }
     seq += 1;
@@ -130,8 +154,14 @@ export function createWatcher(ctx: Ctx): Watcher {
     try {
       switch (parsed.verb) {
         case "EXAMINE":
-        case "ASSIGN":
           audit(command, parsed.limb, "OK");
+          break;
+        case "ASSIGN":
+          if (!isKnownLimb(parsed.limb)) {
+            audit(command, parsed.limb, "REJECTED_UNKNOWN_LIMB");
+          } else {
+            audit(command, parsed.limb, "OK");
+          }
           break;
         case "SEAL":
           sealedInMemory = true; // sealed even if the file cannot be created

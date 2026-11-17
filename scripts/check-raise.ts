@@ -37,6 +37,7 @@ const w = createWatcher({
   sealPath: join(dir, ".crypt-seal"),
   auditPath: join(dir, "crypt-audit.log"),
   requestsDir: join(dir, "requests"),
+  limbsPath: "out/limbs.json", // written by npm run raise
   now: () => new Date(),
 });
 // Feed one command at a time so requests can be counted before and after the seal.
