@@ -35,3 +35,30 @@ export function markHealed(limbs: LimbLike[], store: MemoryStore): string[] {
   store.set("crypt.healed", healed);
   return fresh;
 }
+
+interface RedLimbLike extends LimbLike {
+  ciVerdict?: unknown;
+  ciPr?: unknown;
+}
+
+/**
+ * Keys of limbs with a new red CI verdict: the page has not yet shown the rejection for that PR number.
+ * The store remembers the PR number per limb so a poll does not replay it. A limb that is no longer red is forgotten,
+ * so a later red on a new PR shows again. Anything malformed is ignored.
+ */
+export function markRed(limbs: RedLimbLike[], store: MemoryStore): string[] {
+  const seen = (store.get("crypt.red") as Record<string, number> | null) || {};
+  const fresh: string[] = [];
+  for (const l of limbs) {
+    if (!l || typeof l.name !== "string" || typeof l.ecosystem !== "string") continue;
+    const key = limbKey(l.ecosystem, l.name);
+    if (l.ciVerdict === "red" && typeof l.ciPr === "number" && Number.isInteger(l.ciPr)) {
+      if (seen[key] !== l.ciPr) fresh.push(key);
+      seen[key] = l.ciPr;
+    } else {
+      delete seen[key];
+    }
+  }
+  store.set("crypt.red", seen);
+  return fresh;
+}

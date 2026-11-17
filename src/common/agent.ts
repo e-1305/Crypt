@@ -96,6 +96,8 @@ export interface LimbStateEntry {
   name?: string;
   from?: string;
   to?: string;
+  /** Login of the human who landed it. Praise only. */
+  healedBy?: string;
 }
 
 export interface State {

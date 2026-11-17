@@ -141,7 +141,7 @@ export function makeWorld(o: WorldOpts = {}) {
       return reply(201, { number, html_url: `https://github.com/${REPO}/pull/${number}`, head: { sha } });
     }
     if (method === "GET" && (m = /^\/commits\/([0-9a-f]+)\/check-runs$/.exec(rest))) return reply(200, { check_runs: o.checkRuns ?? [] });
-    if (method === "GET" && (m = /^\/pulls\/(\d+)$/.exec(rest))) return reply(200, landed.has(Number(m[1])) ? { state: "closed", merged_at: "2026-01-02T00:00:00Z" } : { state: "open" });
+    if (method === "GET" && (m = /^\/pulls\/(\d+)$/.exec(rest))) return reply(200, landed.has(Number(m[1])) ? { state: "closed", merged_at: "2026-01-02T00:00:00Z", merged_by: { login: "octo-cat" } } : { state: "open" });
     return reply(404);
   };
 

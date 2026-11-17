@@ -31,6 +31,8 @@ export interface PrState {
   open: boolean;
   /** True when a human has accepted the PR into the default branch. */
   landed: boolean;
+  /** Login of the human who landed it, when known. Read-only; used for praise only. */
+  landedBy?: string;
 }
 
 export interface GithubClient {

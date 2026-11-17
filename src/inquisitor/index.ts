@@ -15,6 +15,7 @@ import {
   type AgentPaths,
 } from "../common/agent.js";
 import type { GithubClient } from "../github/client.js";
+import { patchLimb, serializeCreature, type LimbPatch, type LimbRef } from "../common/creature-status.js";
 
 export interface InquisitorCtx extends AgentPaths {
   io: Io;
@@ -39,6 +40,19 @@ export function judge(runs: { status: string; conclusion: string | null }[]): "g
   return "green";
 }
 
+/**
+ * Records the CI verdict on the limb in creature.json. Returns a function that restores the file as it was.
+ * No creature file: nothing to record. An unreadable creature throws, so the caller changes nothing.
+ */
+function recordOnCreature(ctx: InquisitorCtx, ref: LimbRef, patch: LimbPatch): () => void {
+  if (ctx.io.pathState(ctx.creaturePath) !== "present") return () => {};
+  const raw = ctx.io.readText(ctx.creaturePath);
+  const next = serializeCreature(patchLimb(JSON.parse(raw), ref, patch));
+  if (next === raw) return () => {};
+  ctx.io.writeText(ctx.creaturePath, next);
+  return () => ctx.io.writeText(ctx.creaturePath, raw);
+}
+
 export async function verify(ctx: InquisitorCtx, limb: string): Promise<VerifyResult> {
   const { io } = ctx;
   const command = `VERIFY ${limb}`.slice(0, 64);
@@ -48,7 +62,8 @@ export async function verify(ctx: InquisitorCtx, limb: string): Promise<VerifyRe
       tryAudit(io, ctx.auditPath, ctx.now, command, limb, "REJECTED_SEALED");
       return { outcome: "REJECTED_SEALED" };
     }
-    if (!lookupLimb(io, ctx.limbsPath, limb)) {
+    const ref = lookupLimb(io, ctx.limbsPath, limb);
+    if (!ref) {
       log("REJECTED_UNKNOWN_LIMB");
       return { outcome: "REJECTED_UNKNOWN_LIMB" };
     }
@@ -82,7 +97,14 @@ export async function verify(ctx: InquisitorCtx, limb: string): Promise<VerifyRe
       if (i < ctx.maxAttempts - 1) await ctx.sleep(ctx.intervalMs);
     }
     if (verdict !== "green") {
-      log("GRAFT_REJECTED", rec.url);
+      // A red check is recorded on the limb so the page can show the rejection once. Rolled back if the audit fails.
+      const undo = verdict === "red" ? recordOnCreature(ctx, ref, { set: { ciVerdict: "red", ciPr: rec.number } }) : () => {};
+      try {
+        log("GRAFT_REJECTED", rec.url);
+      } catch (e) {
+        undo();
+        throw e;
+      }
       if (verdict === "red") {
         // Free the limb for a second attempt. A pending timeout keeps its record: the PR may still turn green.
         const file = branchFile(rec.branch);
@@ -98,11 +120,13 @@ export async function verify(ctx: InquisitorCtx, limb: string): Promise<VerifyRe
       return { outcome: "NO_ACTION" };
     }
     const before = io.pathState(ctx.statePath) === "present" ? io.readText(ctx.statePath) : null;
+    const undoCreature = recordOnCreature(ctx, ref, { set: { status: "awaiting-human-merge" }, clear: ["ciVerdict", "ciPr"] });
     state.limbs[limb] = { state: "awaiting-human-merge", pr: rec.branch, updatedAt: ctx.now().toISOString() };
-    io.writeText(ctx.statePath, serializeState(state));
     try {
+      io.writeText(ctx.statePath, serializeState(state));
       log("AWAITING_HUMAN_MERGE", rec.url);
     } catch (e) {
+      undoCreature();
       if (before === null) io.remove(ctx.statePath);
       else io.writeText(ctx.statePath, before); // an unaudited transition must not stand
       throw e;

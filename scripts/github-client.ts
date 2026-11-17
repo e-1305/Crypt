@@ -156,7 +156,8 @@ export function githubClient(a: GithubClientOptions | string, token?: string, f?
     async getPullRequestState(ref) {
       const pr = await call("GET", `/pulls/${ref.number}`);
       // The timestamp is set only when a human accepted the PR; "landed" is our neutral name for that.
-      return { open: pr.state === "open", landed: typeof pr.merged_at === "string" };
+      const by = pr.merged_by && typeof pr.merged_by.login === "string" ? pr.merged_by.login : undefined;
+      return { open: pr.state === "open", landed: typeof pr.merged_at === "string", ...(by ? { landedBy: by } : {}) };
     },
     async deleteBranch(branch) {
       if (!branch.startsWith("crypt/")) throw new Error("refusing to delete a branch outside crypt/");
