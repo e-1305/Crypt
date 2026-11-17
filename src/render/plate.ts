@@ -66,7 +66,7 @@ function fnv1a(s: string): number {
   return h >>> 0;
 }
 
-/** Printable ASCII only, no brackets, bounded length. */
+/** Printable ASCII only, bounded length. Brackets are kept: the plate never reaches the game bridge. */
 export function clean(input: unknown, max = 60): string {
   const s = typeof input === "string" ? input : "";
   let out = "";
@@ -77,6 +77,27 @@ export function clean(input: unknown, max = 60): string {
   }
   out = out.trim();
   return out.length > max ? out.slice(0, max - 3).trimEnd() + "..." : out;
+}
+
+/** The key the plate uses for a limb. The page uses it too, so both agree on cleaned names. */
+export function limbKey(ecosystem: unknown, name: unknown): string {
+  return `${clean(ecosystem, 12)}:${clean(name, 40) || "unnamed"}`;
+}
+
+/** Only the fields the plate reads. Owners and everything else stay out of the browser. */
+export function plateInput(creature: unknown): { repo?: string; limbs: Record<string, unknown>[] } {
+  const c = (creature && typeof creature === "object" ? creature : {}) as Record<string, unknown>;
+  const raw = Array.isArray(c.limbs) ? c.limbs : [];
+  const limbs: Record<string, unknown>[] = [];
+  for (const x of raw) {
+    if (!x || typeof x !== "object") continue;
+    const l = x as Record<string, unknown>;
+    limbs.push({
+      ecosystem: l.ecosystem, name: l.name, version: l.version,
+      state: l.state, rank: l.rank, spawned: l.spawned,
+    });
+  }
+  return typeof c.repo === "string" ? { repo: c.repo, limbs } : { limbs };
 }
 
 /** Same repo name, same creature name, e.g. "Wretch-7". */
@@ -112,7 +133,7 @@ function items(creature: unknown): Item[] {
     const name = clean(l.name, 40) || "unnamed";
     out.push({
       it: {
-        key: `${clean(l.ecosystem, 12)}:${name}`,
+        key: limbKey(l.ecosystem, l.name),
         name,
         version: clean(l.version, 12) || "unknown",
         state,

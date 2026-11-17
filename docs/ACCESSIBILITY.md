@@ -23,3 +23,7 @@ Lighthouse 13.6.0, accessibility category only, headless Chromium (Playwright bu
 | `http://127.0.0.1:<port>/` (default look) | **100** (threshold: 95) |
 
 To repeat: `npm run exhume -- fixtures/vulnerable-npm --feeds fixtures/vulnerable-npm/feeds --offline`, `npm run web`, then run Lighthouse against the printed address. Lighthouse and Playwright were used as dev-time tools and are not project dependencies.
+
+## Not yet measured
+
+The recorded Lighthouse score of 100 covers the default look only. Reader mode and a page with Possessed limbs (orange `#ff6a3d`, animated) have not been run. Run Lighthouse on both and add the scores here.

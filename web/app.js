@@ -2,6 +2,7 @@
 // Plate drawing lives in js/render/plate.js (compiled from src/render/plate.ts).
 // The only requests this page makes are for its own files: game/spike.z5 and game/creature.json.
 import { startPlayer } from "./js/web/player.js";
+import { markHealed } from "./js/web/healed.js";
 import { layoutPlate, plateSummary } from "./js/render/plate.js";
 
 const transcript = document.getElementById("transcript");
@@ -23,9 +24,17 @@ const store = {
   },
 };
 
+// Messages queued in the same tick are spoken together, so none is overwritten.
+let pending = [];
 function announce(text) {
-  announcer.textContent = "";
-  setTimeout(() => { announcer.textContent = text; }, 50);
+  if (pending.length === 0) {
+    announcer.textContent = "";
+    setTimeout(() => {
+      announcer.textContent = pending.join(" ");
+      pending = [];
+    }, 50);
+  }
+  pending.push(text);
 }
 
 // High-contrast / screen-reader mode.
@@ -70,28 +79,6 @@ function onResult(result) {
   result.events.forEach(addEvent);
 }
 
-// A limb is HEALED when this browser saw it Possessed or Rotting before and it is Healthy now.
-// reraise turns a healed limb into a plain Healthy one, so the page keeps the memory.
-function markHealed(creature) {
-  const seen = store.get("crypt.seen") || {};
-  const healed = store.get("crypt.healed") || {};
-  const fresh = [];
-  for (const l of creature.limbs) {
-    const key = l.ecosystem + ":" + l.name;
-    if (l.state === "Possessed" || l.state === "Rotting") {
-      if (l.spawned === true) seen[key] = true;
-      delete healed[key];
-    } else if (l.state === "Healthy" && seen[key]) {
-      if (!healed[key]) fresh.push(key);
-      healed[key] = true;
-      l.healed = true;
-    }
-  }
-  store.set("crypt.seen", seen);
-  store.set("crypt.healed", healed);
-  return fresh;
-}
-
 function drawPlate(creature, fresh) {
   const lines = layoutPlate(creature, { repo: creature.repo });
   plateEl.textContent = "";
@@ -119,7 +106,7 @@ async function loadPlate() {
     if (!res.ok) throw new Error("HTTP " + res.status);
     const creature = await res.json();
     if (!creature || !Array.isArray(creature.limbs)) throw new Error("no limbs");
-    const fresh = markHealed(creature);
+    const fresh = markHealed(creature.limbs, store);
     drawPlate(creature, fresh);
     if (fresh.length > 0) announce("Healed: " + fresh.map((k) => k.split(":").slice(1).join(":")).join(", ") + ".");
   } catch (err) {
