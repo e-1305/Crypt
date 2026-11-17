@@ -4,6 +4,7 @@ import { makeCrtMaterial } from "./crt-shader.js";
 import { makeScreen } from "./screen.js";
 import { makeWall } from "./wall.js";
 import { makeBoard } from "./board.js";
+import { TITLE_CARD_TEXT, dollyProgress, shouldShowTitleCard, titleCardVisible } from "../js/theatre/polish.js";
 
 export async function mountStage() {
   const THREE = await import("../vendor/three.module.min.js");
@@ -153,6 +154,37 @@ export async function mountStage() {
     if (t instanceof HTMLElement && (t.tagName === "A" || t.tagName === "BUTTON")) return;
     if (e.key.length === 1 || e.key === "Backspace" || e.key === "Enter") focusCmd();
   };
+  // B5.2: the camera moves in on the CRT at the first keystroke in #cmd. Instant under reduced motion.
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let dollyAt = -1;
+  const onFirstKey = () => { dollyAt = performance.now(); cmd.removeEventListener("keydown", onFirstKey); };
+  cmd.addEventListener("keydown", onFirstKey);
+  const lookFrom = new THREE.Vector3(0, 2.3, 0);
+  const lookTo = new THREE.Vector3(1.7, 1.9, 0);
+  const look = new THREE.Vector3();
+
+  // B5.1: title card on the 3D path only, 3 seconds, any key or click skips it.
+  let card = null, cardTimer = 0, skipCard = () => {};
+  if (shouldShowTitleCard({ mode3d: true, reducedMotion: reduced })) {
+    card = document.createElement("div");
+    card.id = "title-card";
+    card.setAttribute("aria-hidden", "true");
+    card.textContent = TITLE_CARD_TEXT;
+    document.body.appendChild(card);
+    const shownAt = performance.now();
+    let skipped = false;
+    const clearCard = () => {
+      clearInterval(cardTimer);
+      document.removeEventListener("keydown", skipCard, true);
+      document.removeEventListener("pointerdown", skipCard, true);
+      card?.remove();
+      card = null;
+    };
+    skipCard = () => { skipped = true; clearCard(); };
+    document.addEventListener("keydown", skipCard, true);
+    document.addEventListener("pointerdown", skipCard, true);
+    cardTimer = setInterval(() => { if (!titleCardVisible(performance.now() - shownAt, skipped)) clearCard(); }, 100);
+  }
   window.addEventListener("mousemove", onMove);
   window.addEventListener("resize", onResize);
   document.addEventListener("keydown", onKey);
@@ -163,6 +195,11 @@ export async function mountStage() {
   const hcWatch = new MutationObserver(() => { if (document.body.classList.contains("hc")) destroy(); });
   hcWatch.observe(document.body, { attributes: true, attributeFilter: ["class"] });
 
+  // Thunder: a heal flashes the lamp light for a moment. Not under reduced motion.
+  let flashAt = -1;
+  const onFx = (e) => { if (e.detail && e.detail.kind === "heal" && e.detail.reduced !== true) flashAt = performance.now(); };
+  document.addEventListener("crypt:fx", onFx);
+
   let raf = 0, stopped = false;
   const t0 = performance.now();
   function frame(now) {
@@ -170,9 +207,13 @@ export async function mountStage() {
     raf = requestAnimationFrame(frame);
     if (document.hidden) return;
     const t = (now - t0) / 1000;
-    camera.position.set(camBase.x + mouse.x * 0.35, camBase.y - mouse.y * 0.2, camBase.z);
-    camera.lookAt(0, 2.3, 0);
-    lampLight.intensity = 14 + Math.sin(t * 31) * 0.25 + Math.sin(t * 5.1) * 0.35;
+    const d = dollyProgress(dollyAt < 0 ? 0 : now - dollyAt, reduced && dollyAt >= 0);
+    camera.position.set(camBase.x + mouse.x * 0.35 + (1.7 - camBase.x) * 0.6 * d, camBase.y - mouse.y * 0.2 - 0.3 * d, camBase.z * (1 - 0.5 * d));
+    look.lerpVectors(lookFrom, lookTo, d);
+    camera.lookAt(look);
+    const sinceFlash = flashAt < 0 ? 1e9 : now - flashAt;
+    const flash = sinceFlash < 700 ? (Math.floor(sinceFlash / 90) % 2 === 0 ? 1 : 0.35) * 90 * (1 - sinceFlash / 700) : 0;
+    lampLight.intensity = 14 + Math.sin(t * 31) * 0.25 + Math.sin(t * 5.1) * 0.35 + flash;
     screenMat.uniforms.time.value = t;
     if (screen.update(now)) screenTex.needsUpdate = true;
     if (wallPlate.update()) plateTex.needsUpdate = true;
@@ -190,9 +231,13 @@ export async function mountStage() {
     stopped = true;
     cancelAnimationFrame(raf);
     hcWatch.disconnect();
+    clearInterval(cardTimer);
+    skipCard();
+    cmd.removeEventListener("keydown", onFirstKey);
     window.removeEventListener("mousemove", onMove);
     window.removeEventListener("resize", onResize);
     document.removeEventListener("keydown", onKey);
+    document.removeEventListener("crypt:fx", onFx);
     screen.dispose();
     wallPlate.dispose();
     board.dispose();

@@ -5,6 +5,11 @@ import { startPlayer } from "./js/web/player.js";
 import { markHealed } from "./js/web/healed.js";
 import { layoutPlate, plateSummary } from "./js/render/plate.js";
 import { initRaid } from "./raid.js";
+import { initHeal } from "./heal.js";
+import { initSound } from "./theatre/sound.js";
+import { countPossessed } from "./js/theatre/audio-plan.js";
+
+const sound = initSound();
 
 const transcript = document.getElementById("transcript");
 const form = document.getElementById("input-form");
@@ -89,9 +94,21 @@ function onResult(result) {
     addLine(line, line.startsWith("> ") ? "echo" : "");
   }
   result.events.forEach(addEvent);
+  if (result.events.some((e) => e.ok && e.command && e.command.startsWith("GRAFT"))) sound.graft();
 }
 
-function drawPlate(creature, fresh) {
+let lastCreature = null;
+const heal = initHeal({
+  addLine,
+  announce,
+  getLimbs: () => (lastCreature ? lastCreature.limbs : []),
+  redraw: (fresh, convulse) => { if (lastCreature) drawPlate(lastCreature, fresh, convulse); },
+});
+
+function drawPlate(real, fresh, convulse) {
+  lastCreature = real;
+  sound.setPossessed(countPossessed(heal.overlay(real.limbs)));
+  const creature = { ...real, limbs: heal.overlay(real.limbs) };
   const lines = layoutPlate(creature, { repo: creature.repo });
   plateEl.textContent = "";
   lines.forEach((line, i) => {
@@ -102,7 +119,9 @@ function drawPlate(creature, fresh) {
       }
       const span = document.createElement("span");
       span.dataset.state = seg.state;
+      span.dataset.limb = seg.limb;
       if (fresh.includes(seg.limb)) span.className = "just-healed";
+      else if (convulse && seg.limb === convulse) span.className = "convulsing";
       span.textContent = seg.text;
       plateEl.appendChild(span);
     }
@@ -111,6 +130,9 @@ function drawPlate(creature, fresh) {
   const summary = plateSummary(creature);
   plateSummaryEl.textContent = summary.length === 0 ? "The slab is bare. No limbs are possessed or rotting." : "Limbs: " + summary.join("; ") + ".";
 }
+
+// ?simulate= runs once, not on every raid poll.
+let simStarted = false;
 
 async function loadPlate() {
   try {
@@ -121,7 +143,9 @@ async function loadPlate() {
     const fresh = markHealed(creature.limbs, store);
     drawPlate(creature, fresh);
     raid.setLimbs(creature.limbs, creature.repo);
-    if (fresh.length > 0) announce("Healed: " + fresh.map((k) => k.split(":").slice(1).join(":")).join(", ") + ".");
+    // Real source: each limb that turned Healed goes through the same fail-safe pipeline as the simulation.
+    heal.real(fresh);
+    if (!simStarted) { simStarted = true; heal.start(); }
   } catch (err) {
     plateEl.textContent = "";
     plateSummaryEl.textContent = "No plate yet. Run npm run exhume, then reload this page.";
