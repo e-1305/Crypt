@@ -1,0 +1,195 @@
+// The 3D bench: primitives only, no model files. Lamp with a real light, CRT body, glass screen,
+// the plate on the wall. Fixed camera with slight mouse parallax.
+import { makeCrtMaterial } from "./crt-shader.js";
+import { makeScreen } from "./screen.js";
+import { makeWall } from "./wall.js";
+import { makeDrawer } from "./drawer.js";
+
+export async function mountStage() {
+  const THREE = await import("../vendor/three.module.min.js");
+  const transcript = document.getElementById("transcript");
+  const cmd = document.getElementById("cmd");
+  const plateEl = document.getElementById("plate");
+  const summaryEl = document.getElementById("plate-summary");
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setClearColor(0x050403);
+  const canvas = renderer.domElement;
+  canvas.id = "theatre-canvas";
+  canvas.setAttribute("aria-hidden", "true"); // the DOM transcript, plate summary and event log carry the content
+  document.body.prepend(canvas);
+  document.body.classList.add("theatre");
+  addPlainLink();
+
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(0x050403, 9, 16);
+  const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 40);
+  const camBase = new THREE.Vector3(0, 2.3, 7.6);
+
+  const wood = new THREE.MeshStandardMaterial({ color: 0x3a2616, roughness: 0.8 });
+  const metal = new THREE.MeshStandardMaterial({ color: 0x6b6558, roughness: 0.45, metalness: 0.7 });
+  const plastic = new THREE.MeshStandardMaterial({ color: 0x9a8f72, roughness: 0.6 });
+  const stone = new THREE.MeshStandardMaterial({ color: 0x1d1a15, roughness: 0.95 });
+
+  // Room: back wall and floor.
+  const wall = new THREE.Mesh(new THREE.PlaneGeometry(22, 12), stone);
+  wall.position.set(0, 4, -2.5);
+  scene.add(wall);
+  const bench = new THREE.Mesh(new THREE.BoxGeometry(9, 0.35, 3.2), wood);
+  bench.position.set(0, 0.3, 0);
+  scene.add(bench);
+  for (const x of [-4.2, 4.2]) {
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.35, 4, 2.8), wood);
+    leg.position.set(x, -1.9, 0);
+    scene.add(leg);
+  }
+
+  // CRT: front case, back tube, bezel, glass.
+  const crt = new THREE.Group();
+  crt.position.set(1.7, 1.9, 0);
+  const front = new THREE.Mesh(new THREE.BoxGeometry(3.2, 2.5, 0.5), plastic);
+  const back = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.9, 1.4), plastic);
+  back.position.z = -0.95;
+  const foot = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.12, 1.2), metal);
+  foot.position.y = -1.3;
+  const bezel = new THREE.Mesh(new THREE.BoxGeometry(2.7, 2.05, 0.1), new THREE.MeshStandardMaterial({ color: 0x050805, roughness: 0.3 }));
+  bezel.position.z = 0.26;
+  crt.add(front, back, foot, bezel);
+  const screen = makeScreen(transcript, cmd);
+  const screenTex = new THREE.CanvasTexture(screen.canvas);
+  screenTex.colorSpace = THREE.SRGBColorSpace;
+  screenTex.minFilter = THREE.LinearFilter;
+  const screenMat = makeCrtMaterial(THREE, screenTex);
+  const glass = new THREE.Mesh(new THREE.PlaneGeometry(2.5, 1.875), screenMat);
+  glass.position.z = 0.32;
+  crt.add(glass);
+  const glow = new THREE.PointLight(0x33ff66, 1.2, 6);
+  glow.position.set(0, 0, 1.4);
+  crt.add(glow);
+  scene.add(crt);
+
+  // Lamp: base, two arms, shade, bulb and a warm light.
+  const lamp = new THREE.Group();
+  lamp.position.set(4.7, 0.48, 0.4);
+  lamp.scale.x = -1;
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.55, 0.12, 24), metal);
+  const arm1 = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.6, 8), metal);
+  arm1.position.set(0, 0.8, 0);
+  const arm2 = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.3, 8), metal);
+  arm2.position.set(0.55, 1.55, 0);
+  arm2.rotation.z = -1.1;
+  const shade = new THREE.Mesh(new THREE.ConeGeometry(0.45, 0.55, 24, 1, true), new THREE.MeshStandardMaterial({ color: 0x2f4a2f, side: THREE.DoubleSide, roughness: 0.5 }));
+  shade.position.set(1.15, 1.75, 0);
+  shade.rotation.z = Math.PI + 0.25;
+  const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.14, 16, 12), new THREE.MeshBasicMaterial({ color: 0xffe2a0 }));
+  bulb.position.set(1.12, 1.62, 0);
+  const lampLight = new THREE.PointLight(0xffc880, 14, 11, 1.6);
+  lampLight.position.set(1.12, 1.55, 0.2);
+  lamp.add(base, arm1, arm2, shade, bulb, lampLight);
+  scene.add(lamp);
+  scene.add(new THREE.AmbientLight(0x1a1a22, 0.9));
+
+  // The plate on the wall.
+  const wallPlate = makeWall(plateEl, summaryEl);
+  const plateTex = new THREE.CanvasTexture(wallPlate.canvas);
+  plateTex.colorSpace = THREE.SRGBColorSpace;
+  plateTex.anisotropy = 4;
+  const plateMesh = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 4.375), new THREE.MeshBasicMaterial({ map: plateTex }));
+  plateMesh.position.set(-2.9, 3.1, -2.45);
+  scene.add(plateMesh);
+
+  // Bench drawer: a visible drawer front under the bench top that slides out while the DOM drawer is open.
+  const drawerFront = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.22, 0.12), wood);
+  drawerFront.position.set(-1.6, 0.25, 1.62);
+  scene.add(drawerFront);
+  const drawerKnob = new THREE.Mesh(new THREE.SphereGeometry(0.06, 12, 8), metal);
+  drawerKnob.position.set(0, 0, 0.1);
+  drawerFront.add(drawerKnob);
+  const drawer = makeDrawer();
+  let drawerOut = 0;
+
+  // Props for the bench.
+  const jar = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.7, 16), new THREE.MeshStandardMaterial({ color: 0x4a7a4a, transparent: true, opacity: 0.55, roughness: 0.1 }));
+  jar.position.set(-0.9, 0.82, 0.7);
+  scene.add(jar);
+
+  // Resize, parallax, focus routing.
+  const mouse = { x: 0, y: 0 };
+  const onMove = (e) => { mouse.x = (e.clientX / window.innerWidth) * 2 - 1; mouse.y = (e.clientY / window.innerHeight) * 2 - 1; };
+  const onResize = () => {
+    const w = window.innerWidth, h = window.innerHeight;
+    renderer.setSize(w, h);
+    camera.aspect = w / h;
+    camBase.z = Math.max(7.6, 7.6 * (1.7 / camera.aspect));
+    camera.updateProjectionMatrix();
+  };
+  const focusCmd = () => { if (!cmd.disabled) cmd.focus(); };
+  const onKey = (e) => {
+    // Typing anywhere reaches the input; the form handles Enter.
+    const t = e.target;
+    if (t instanceof HTMLElement && t.closest("#bench-drawer")) return;
+    if (t === cmd || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (t instanceof HTMLElement && (t.tagName === "A" || t.tagName === "BUTTON")) return;
+    if (e.key.length === 1 || e.key === "Backspace" || e.key === "Enter") focusCmd();
+  };
+  window.addEventListener("mousemove", onMove);
+  window.addEventListener("resize", onResize);
+  document.addEventListener("keydown", onKey);
+  canvas.addEventListener("pointerdown", focusCmd);
+  onResize();
+
+  // Leaving the 3D path live: turning on reader mode tears the stage down.
+  const hcWatch = new MutationObserver(() => { if (document.body.classList.contains("hc")) destroy(); });
+  hcWatch.observe(document.body, { attributes: true, attributeFilter: ["class"] });
+
+  let raf = 0, stopped = false;
+  const t0 = performance.now();
+  function frame(now) {
+    if (stopped) return;
+    raf = requestAnimationFrame(frame);
+    if (document.hidden) return;
+    const t = (now - t0) / 1000;
+    camera.position.set(camBase.x + mouse.x * 0.35, camBase.y - mouse.y * 0.2, camBase.z);
+    camera.lookAt(0, 2.3, 0);
+    lampLight.intensity = 14 + Math.sin(t * 31) * 0.25 + Math.sin(t * 5.1) * 0.35;
+    screenMat.uniforms.time.value = t;
+    drawerOut += ((drawer.isOpen() ? 0.7 : 0) - drawerOut) * 0.15;
+    drawerFront.position.z = 1.62 + drawerOut;
+    if (screen.update(now)) screenTex.needsUpdate = true;
+    if (wallPlate.update()) plateTex.needsUpdate = true;
+    renderer.render(scene, camera);
+    frames++;
+  }
+  let frames = 0;
+  raf = requestAnimationFrame(frame);
+  focusCmd();
+
+  function destroy() {
+    stopped = true;
+    cancelAnimationFrame(raf);
+    hcWatch.disconnect();
+    window.removeEventListener("mousemove", onMove);
+    window.removeEventListener("resize", onResize);
+    document.removeEventListener("keydown", onKey);
+    screen.dispose();
+    wallPlate.dispose();
+    drawer.dispose();
+    scene.traverse((o) => { o.geometry?.dispose?.(); });
+    renderer.dispose();
+    canvas.remove();
+    document.getElementById("theatre-plain")?.remove();
+    document.body.classList.remove("theatre");
+    document.documentElement.dataset.theatre = "2d:high-contrast";
+  }
+  document.documentElement.dataset.theatreReady = "1";
+  return { destroy, frameCount: () => frames };
+}
+
+function addPlainLink() {
+  const a = document.createElement("a");
+  a.id = "theatre-plain";
+  a.href = "?theatre=off";
+  a.textContent = "Plain page";
+  document.body.appendChild(a);
+}

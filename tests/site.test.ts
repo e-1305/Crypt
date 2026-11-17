@@ -114,7 +114,7 @@ describe.skipIf(!haveToolchain)("build:site output", () => {
   it("is a complete, offline, deterministic static site", async () => {
     const a = await build();
     try {
-      for (const f of ["index.html", "app.js", "style.css", "vendor/zvm.min.js", "js/web/player.js", "game/demo.z8", "game/demo.json", "game/demo.payloads.json", "game/index.json"]) {
+      for (const f of ["index.html", "app.js", "style.css", "vendor/zvm.min.js", "vendor/three.module.min.js", "theatre.js", "theatre/stage.js", "theatre/drawer.js", "js/theatre/capability.js", "js/web/player.js", "game/demo.z8", "game/demo.json", "game/demo.payloads.json", "game/index.json"]) {
         expect(existsSync(join(a, f)), f).toBe(true);
       }
       expect(readFileSync(join(a, "game", "demo.z8"))[0]).toBe(8);

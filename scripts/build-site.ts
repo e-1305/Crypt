@@ -76,9 +76,10 @@ export async function buildSite(outDir: string): Promise<void> {
     run("npx", ["tsc", "-p", "tsconfig.web.json"]);
     rmSync(outDir, { recursive: true, force: true });
     mkdirSync(join(outDir, "game"), { recursive: true });
-    for (const f of ["index.html", "app.js", "style.css"]) cpSync(join(WEB, f), join(outDir, f));
+    for (const f of ["index.html", "app.js", "style.css", "theatre.js"]) cpSync(join(WEB, f), join(outDir, f));
     cpSync(join(WEB, "vendor"), join(outDir, "vendor"), { recursive: true });
     cpSync(join(WEB, "js"), join(outDir, "js"), { recursive: true });
+    cpSync(join(WEB, "theatre"), join(outDir, "theatre"), { recursive: true });
     writeFileSync(join(outDir, ".nojekyll"), "");
     const gameDir = join(outDir, "game");
 
