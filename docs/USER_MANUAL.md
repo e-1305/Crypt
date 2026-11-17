@@ -75,6 +75,11 @@ Commands are matched against a strict grammar. Capital letters only, one space b
 | `GRAFT <LIMB>` | Asks for a fix. In the terminal and in the browser this writes a dry-run pull request payload (`out/prs/` in the terminal, the "Dry-run PR payload" panel in the browser). With `--live` it opens a real pull request. |
 | `SEAL CRYPT` | Freezes every agent action. Later `GRAFT` and `RAID` commands are rejected. In the browser the seal lasts until the page is reloaded. |
 | `RAID` | Starts the 15-minute raid timer (see section 5). |
+| `HELP` | Lists the commands. Prints text only. |
+| `HINT` | Names the limb to `EXAMINE` or `GRAFT` next. Works in every state, including after `SEAL CRYPT`. Prints text only. |
+| `WAIT`, `SING`, `SLEEP`, `HELLO` | Pass a moment in the crypt. The vault has a few more replies, so try other words. Text only. |
+
+Each limb has a personality (grumpy elder, nervous intern, show-off and others) picked from its package name, and its description changes with its state: healed, rotting or possessed. A limb with a high exploit chance (EPSS 0.5 or more) gets a worse line. The room text follows the worst state in the vault, and now and then the crypt adds an atmosphere line such as `The lights flicker.` These extra words never ask for a fix and never reach the pull request step.
 
 `<LIMB>` is the package name in capitals, up to 32 letters, for example `GRAFT JQUERY`. Try the offline check with `npm run necromancer:check`: `GRAFT JQUERY` gives one payload, and after `SEAL CRYPT` a `GRAFT LODASH` gives none.
 
