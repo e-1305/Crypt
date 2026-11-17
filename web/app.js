@@ -292,6 +292,21 @@ downloadBtn.addEventListener("click", () => {
   announce("Downloaded " + downloadName + ". Open it in any Z-machine interpreter.");
 });
 
+// "Try: GRAFT JQUERY": fills the command box and nothing else. The player presses Enter to run it.
+function wireTryChip(limb) {
+  const chip = document.getElementById("try-chip");
+  if (!chip || !limb) return;
+  const text = "GRAFT " + limb;
+  chip.textContent = "Try: " + text;
+  chip.setAttribute("aria-label", "Try: " + text + ". Fills the command box and runs only when you press Enter.");
+  chip.hidden = false;
+  chip.addEventListener("click", () => {
+    cmd.value = text;
+    cmd.focus({ preventScroll: true });
+    announce("Command box filled with " + text + ". Press Enter to run it.");
+  });
+}
+
 async function main() {
   const list = await loadIndex();
   const wanted = new URLSearchParams(location.search).get("creature");
@@ -302,7 +317,9 @@ async function main() {
     const p = await fetch("game/" + creatureId + ".payloads.json");
     if (p.ok) payloads = await p.json();
     // The tutorial suggests a limb that has a rehearsal pull request: the first payload key is a limb ID the grammar accepts.
-    onboarding.setLimb(Object.keys(payloads).find((k) => /^[A-Z]{1,32}$/.test(k)) ?? "");
+    const first = Object.keys(payloads).find((k) => /^[A-Z]{1,32}$/.test(k)) ?? "";
+    onboarding.setLimb(first);
+    wireTryChip(first);
   } catch { /* no payloads: GRAFT shows the plain message */ }
   const res = await fetch("game/" + creatureId + ".z8");
   if (!res.ok) throw new Error("game/" + creatureId + ".z8 not found (HTTP " + res.status + ")");

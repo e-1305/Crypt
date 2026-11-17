@@ -192,3 +192,24 @@ Mean 6.9 (Round 1: 6.1).
 - Live mode (`--live`), real pull requests, the Inquisitor on real CI.
 - The 3D tutorial overlay (still not visible in the 3D screenshot; I did not check if that is intended).
 - Why the tutorial text does not advance after "Simulate CI: green". I saw the text only.
+
+## Round 2 after-fix check
+
+Run with `scripts/playtest/judge.mjs` against `npm run web` (headless Chromium, software WebGL). Each row is a recorded `checks` value in the harness report, not an impression.
+
+| Item | Check | Result |
+|---|---|---|
+| 1 Devpost front door | `docs/PITCH.md` word count, README order, no em dash, image under 300 KB | Pass in `tests/devpost-docs.test.ts` (PITCH is 204 words, `docs/img/bench-3d.png` is 238 KB) |
+| 2 Shot list | Seven beats in order above the runbook, audio and dry-run notes | Pass in `tests/devpost-docs.test.ts`. The by-hand hook run is labelled as such |
+| 3 How it works | Clicks from `/` to Z-machine, failsafe, human merge, specs, steering, hooks, agents | 1 click for the first three, 2 for the four folders. The bench drawer link needs 2 (toggle, link). Section is 357 words |
+| 4 KIRO.md | Draft note gone, Limits section, 30 word Outcome cells, appendix marker, every `.kiro/` path exists | Pass in `tests/devpost-docs.test.ts`. The summary part is 57 lines |
+| 5a Prompt in reach | `#cmd` top and bottom, tutorial open and closed | 1280x720: tutorial open top 715 bottom 740 (inside), closed top 564 bottom 589, tutorial box 147 px of 720 (20 percent). 390x780: closed top 702 bottom 727 (inside), open top 841 bottom 865 (below the fold while the tutorial is open, as the item allows) |
+| 5b Try chip | Keyboard Enter fills the box, announces, does not run | Pass: box reads `GRAFT JQUERY`, `#announcer` says "Command box filled with GRAFT JQUERY. Press Enter to run it.", event log and payload unchanged |
+| 5c 3D caption | Visible on the 3D first frame, no overlap with any visible control, hidden by Recording mode | Pass. The first placement (top) covered the raid timer on the wall board and the manual link, so it moved to the bottom centre. Checked with bounding boxes for DOM controls and by looking at the screenshot for the wall board |
+| 5d Tutorial after green | Strip text after GRAFT and "Simulate CI: green" | Moves to "step 6 of 7" ("Type SEAL CRYPT"). Cause of the old behaviour: the strip waited on step 1 ("Got it") and ignored a later event. Event signals now finish the steps before them. Typed verbs still finish only the step the strip waits for |
+| axe-core | `/?theatre=off`, axe 4.x | 0 violations, 43 rules passed after two fixes (Try chip name, daily banner landmark). See `docs/ACCESSIBILITY.md` |
+| Page weight | Bytes loaded | 2D page 254 KB. 3D page 1.9 MB (limit 5 MB). `_site/` is 3.0 MB |
+
+Found and fixed during this check: the Try chip made the page wider than a 390 px phone (the browser zoomed out to 529 px). The input row now wraps.
+
+Still not verified: real GPU rendering and frame rate, audio, Lighthouse, screen readers, Safari and Firefox, the live Pages site, `--live` mode. The 3D page was not run through axe-core. The four WebGL "GPU stall due to ReadPixels" warnings on the 3D landing come from software rendering.

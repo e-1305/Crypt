@@ -41,9 +41,11 @@ export function initOnboarding({ store, announce, now = () => Date.now() }) {
     setText("tutorial-hint", nextHint(done, now() - lastInput, limb) ?? "");
   }
 
+  // A page event that arrives ahead of the strip (green CI before "Got it") finishes the steps before it too, so the strip
+  // moves on. Typed verbs still finish only the step the strip waits for: EXAMINE and ASSIGN are taught in order.
   function finishStep(i) {
     if (done[i]) return;
-    done[i] = true;
+    for (let k = 0; k <= i; k++) done[k] = true;
     store.set("crypt.tutorial.done", done);
     lastInput = now();
     if (done.every(Boolean)) announce("Getting started complete. Heal the rest of the creature at your own pace.");
@@ -75,8 +77,8 @@ export function initOnboarding({ store, announce, now = () => Date.now() }) {
     },
     /** A page event (simulated CI green, a graft refused by the seal) finishes the step that waits for it. */
     signal(name) {
-      const i = done.findIndex((d) => !d);
-      if (i >= 0 && tutorialSteps[i].event === name) finishStep(i);
+      const i = tutorialSteps.findIndex((s, k) => !done[k] && s.event === name);
+      if (i >= 0) finishStep(i);
     },
     stop() { clearInterval(timer); },
   };

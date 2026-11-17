@@ -377,6 +377,39 @@ describe("web/app.js", () => {
     vi.useRealTimers();
   });
 
+  it("moves the strip on after Simulate CI: green even when earlier steps were skipped", async () => {
+    const { initOnboarding } = await load("onboarding.js");
+    fakeDom();
+    const m = new Map<string, unknown>();
+    const said: string[] = [];
+    const ob = initOnboarding({ store: { get: (k: string) => m.get(k) ?? null, set: (k: string, v: unknown) => void m.set(k, v) }, announce: (t: string) => said.push(t), now: () => 1 });
+    ob.setLimb("JQUERY");
+    expect(el("tutorial-progress").textContent).toBe("Getting started, step 1 of 7");
+    ob.signal("ci-green");
+    expect(el("tutorial-progress").textContent).toBe("Getting started, step 6 of 7");
+    expect(el("tutorial-step").textContent).toContain("Type SEAL CRYPT");
+    expect(said.at(-1)).toContain("Step done. Next:");
+    // A signal for a step that is already done changes nothing.
+    ob.signal("ci-green");
+    expect(el("tutorial-progress").textContent).toBe("Getting started, step 6 of 7");
+  });
+
+  it("the Try chip only fills the command box and announces it", async () => {
+    fakeDom();
+    files = { "game/index.json": "[]", "game/demo.json": demo, "game/demo.payloads.json": JSON.stringify({ JQUERY: { title: "t" } }), "game/demo.z8": "story" };
+    await load("app.js");
+    await flush();
+    const chip = el("try-chip");
+    expect(chip.hidden).toBe(false);
+    expect(chip.textContent).toBe("Try: GRAFT JQUERY");
+    const sent: string[] = [];
+    el("input-form").addEventListener("submit", () => sent.push(el("cmd").value));
+    chip.click();
+    expect(el("cmd").value).toBe("GRAFT JQUERY");
+    expect(sent).toEqual([]); // nothing was submitted
+    expect(el("payload").textContent).toBe("");
+  });
+
   it("opens a gallery creature only when its slug is listed", async () => {
     fakeDom("?creature=axios__axios");
     files = { "game/index.json": JSON.stringify([{ slug: "axios__axios", repo: "axios/axios" }]), "game/axios__axios.json": demo, "game/axios__axios.z8": "story" };

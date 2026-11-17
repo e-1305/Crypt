@@ -4,6 +4,22 @@ Part 1 is the live raid. Part 2 is the 3D bench. This is the exact order for the
 
 CRYPT never merges. It has no merge call, no merge endpoint and no merge command. The one merge in the demo is a human clicking a button.
 
+## Shot list (3:00)
+
+Audio is off by default. Keep it off for the take. Whenever a graft is on screen, the dry-run label ("Dry run. Nothing was sent." or SIMULATED CI) must be in frame. Never use a real token for the first five beats.
+
+| Time | On screen | Say | Command or button | Fallback |
+|---|---|---|---|---|
+| 0:00 to 0:15 | The landing: title, pitch, `npx` line, the plate | "Every app is a Frankenstein. CRYPT turns the list of rotting parts into a game." | Open `/` | No GPU: load `/?theatre=off` |
+| 0:15 to 0:45 | Terminal, the ranked list | "One command. Ranked by CISA KEV and EPSS, not by alarm count." | `npx --no-install crypt raid fixtures/vulnerable-npm --offline` | No network: `--offline` is already set |
+| 0:45 to 1:15 | The game prompt and the dry-run payload | "I type GRAFT. The game only asks. The payload is a preview." | `GRAFT JQUERY` (or the "Try: GRAFT JQUERY" chip, then Enter) | `/?theatre=off` shows the same payload panel |
+| 1:15 to 1:40 | The plate, the SIMULATED CI label | "Green CI heals the limb. This one is simulated, and the label says so." | "Simulate CI: green" | `?simulate=green` on the URL |
+| 1:40 to 2:10 | Terminal: the seal, the refusal, the audit log | "SEAL CRYPT blocks every graft. The refusal is written down." | `SEAL CRYPT`, then `GRAFT LODASH`, then `cat crypt-audit.log` | The page shows the SEAL badge if the terminal is unavailable |
+| 2:10 to 2:40 | `.kiro/specs/`, a hook run, `.kiro/steering/failsafe.md` | "Specs first, steering that binds, hooks on save." | `ls .kiro/specs`, `bash scripts/hooks/failsafe-check.sh src/necromancer/index.ts` | Open [KIRO.md](KIRO.md) and show the hook table |
+| 2:40 to 3:00 | The pull request on `e-1305/crypt-demo`, merged by a person | "CRYPT has no merge call. A human clicked this." | Beat 2 below | Show a PR already merged in an earlier take |
+
+The hook run in the 2:10 beat is a by-hand run of the same script. No hook has fired inside a Kiro session yet, so do not say it did.
+
 ## Prerequisites
 
 - Node.js 20 or newer and git.
@@ -194,7 +210,7 @@ Before the take: clear site data for the page (`localStorage` remembers healed l
 | 1:50 to 2:20 | The raid | Click "Start the 15 minute raid" (or pull the lever on the bench, or type `RAID`). Heal two or three limbs through GRAFT and the simulated CI | The board on the wall: timer, team risk removed, rank, Nights Without Possession |
 | 2:20 to 2:35 | End-of-raid card | Let the raid end, or use a short pre-recorded run. Click "Download the raid card (PNG)" | The end card with rank, score, praise lines (names only in praise) |
 | 2:35 to 2:45 | Sound toggle | Click "Sound: off" so it reads "Sound: on" | Hum, heartbeat that speeds up with possessed limbs. Sound is off by default |
-| 2:45 to 3:00 | 2D fallback and accessibility | Load `/?theatre=off`, then toggle "High-contrast reader mode" | The same game as plain text, a text twin of the plate, announced events. Mention axe-core 0 violations and that reduced motion selects this page |
+| 2:45 to 3:00 | 2D fallback and accessibility | Load `/?theatre=off`, then toggle "High-contrast reader mode" | The same game as plain text, a text twin of the plate, announced events. Mention axe-core 0 violations (re-run on the 2D page, see [ACCESSIBILITY.md](ACCESSIBILITY.md)) and that reduced motion selects this page |
 
 ### Tips
 

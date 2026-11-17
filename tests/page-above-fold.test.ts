@@ -18,7 +18,7 @@ describe("index.html above the fold", () => {
     expect([...order].sort((a, b) => a - b)).toEqual(order);
     expect(html).toContain("npx @e-1305/crypt raid &lt;path-or-github-url&gt;");
     expect(html).toContain("Built with Kiro");
-    expect(html).toContain('href="manual.html#built-with-kiro"');
+    expect(html).toContain('href="manual.html#how-it-works"');
   });
 
   it("does not steal focus or scroll on load", () => {

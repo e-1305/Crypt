@@ -79,7 +79,9 @@ describe("bosses", () => {
     expect(bossLimbs([c])).toEqual([]);
   });
   it("property: every boss is KEV, and some KEV limb always yields at least one boss", () => {
-    fc.assert(fc.property(limbs, (l) => {
+    // Real limbs have unique ecosystem:name keys. Equal keys with different state tie in the sort, so the generator is deduplicated.
+    const unique = limbs.map((all) => all.filter((x, i) => all.findIndex((y) => y.ecosystem === x.ecosystem && y.name === x.name) === i));
+    fc.assert(fc.property(unique, (l) => {
       const bosses = bossLimbs(l as RaidLimb[]);
       for (const x of bosses) expect(x.kev).toBe(true);
       if ((l as RaidLimb[]).some((x) => x.kev === true)) expect(bosses.length).toBeGreaterThan(0);

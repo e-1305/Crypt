@@ -237,6 +237,136 @@ await scenario("bench-board", {}, async (page, out) => {
   await shot(page, "11-bench-drawer");
 });
 
+
+// Round 2. Each check records `ok` so the report shows pass or fail, not only numbers.
+const overlaps = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+
+// 10. Prompt in reach (R2 item 5): #cmd position at both viewports, tutorial open and closed, and the tutorial height.
+for (const [label, viewport, mobile] of [["desktop", { width: 1280, height: 720 }, false], ["mobile", { width: 390, height: 780 }, true]]) {
+  await scenario(`prompt-in-reach-${label}`, { viewport, isMobile: mobile }, async (page, out) => {
+    await page.goto(BASE + "?theatre=off", { waitUntil: "load" });
+    await page.waitForTimeout(2500);
+    const rect = (sel) => page.evaluate((q) => { const r = document.querySelector(q)?.getBoundingClientRect(); return r ? { top: Math.round(r.top), bottom: Math.round(r.bottom), height: Math.round(r.height), vh: innerHeight } : null; }, sel);
+    out.tutorialOpen = { cmd: await rect("#cmd"), tutorial: await rect("#tutorial") };
+    out.tutorialClosed = null;
+    await page.click("#tutorial-skip");
+    await page.waitForTimeout(300);
+    out.tutorialClosed = { cmd: await rect("#cmd") };
+    const c = out.tutorialClosed.cmd;
+    out.checks = {
+      cmdInFirstViewportAfterTutorialClosed: !!c && c.top >= 0 && c.bottom <= c.vh,
+      tutorialAtMost25PercentOnDesktop: mobile ? "not required on mobile" : out.tutorialOpen.tutorial.height <= out.tutorialOpen.tutorial.vh * 0.25,
+    };
+    await shot(page, `12-prompt-${label}-closed`);
+  });
+}
+
+// 11. Try chip: fills the box, does not run, announces.
+await scenario("try-chip", {}, async (page, out) => {
+  await page.goto(BASE + "?theatre=off", { waitUntil: "load" });
+  await page.waitForTimeout(2500);
+  out.chipText = await text(page, "#try-chip");
+  const before = (await text(page, "#event-log")) ?? "";
+  await page.focus("#try-chip");
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(400);
+  out.cmdValue = await page.inputValue("#cmd");
+  out.announcer = await text(page, "#announcer");
+  out.payloadAfterChip = (await text(page, "#payload")) ?? "";
+  out.eventLogUnchanged = ((await text(page, "#event-log")) ?? "") === before;
+  out.checks = { fills: out.cmdValue === "GRAFT JQUERY", announces: /Command box filled with GRAFT JQUERY/.test(out.announcer ?? ""), doesNotRun: out.eventLogUnchanged && out.payloadAfterChip === "" };
+});
+
+// 12. Tutorial after green: the strip must move on from step 1.
+await scenario("tutorial-after-green", {}, async (page, out) => {
+  await page.goto(BASE + "?theatre=off", { waitUntil: "load" });
+  await page.waitForTimeout(2500);
+  out.before = await text(page, "#tutorial-progress");
+  await page.fill("#cmd", "GRAFT JQUERY");
+  await page.press("#cmd", "Enter");
+  await page.waitForTimeout(1200);
+  await page.click("#sim-green");
+  await page.waitForTimeout(2500);
+  out.after = await text(page, "#tutorial-progress");
+  out.afterStep = await text(page, "#tutorial-step");
+  out.checks = { advanced: out.before !== out.after && /step 6 of 7/i.test(out.after ?? "") && /SEAL CRYPT/.test(out.afterStep ?? "") };
+});
+
+// 13. 3D caption: present on the first frame, not over any visible control, hidden by Recording mode.
+await scenario("caption-3d", {}, async (page, out) => {
+  await page.goto(BASE, { waitUntil: "load" });
+  await page.waitForTimeout(6000);
+  out.bodyClass = await page.evaluate(() => document.body.className);
+  const boxes = () => page.evaluate(() => {
+    const vis = (e) => { const r = e.getBoundingClientRect(); return r.width > 4 && r.height > 4 && getComputedStyle(e).visibility !== "hidden" && getComputedStyle(e).display !== "none"; };
+    const cap = document.getElementById("theatre-caption");
+    const b = (e) => { const r = e.getBoundingClientRect(); return { id: e.id || e.textContent.trim().slice(0, 24), left: r.left, right: r.right, top: r.top, bottom: r.bottom }; };
+    const others = [...document.querySelectorAll("body.theatre button, body.theatre a[id], #bench-drawer, #seal-badge")].filter(vis).filter((e) => !cap.contains(e)).map(b);
+    return { caption: vis(cap) ? b(cap) : null, others, text: cap.textContent };
+  });
+  const on = await boxes();
+  out.caption = on.caption; out.captionText = on.text;
+  out.collisions = on.caption ? on.others.filter((o) => overlaps(on.caption, o)).map((o) => o.id) : ["caption not visible"];
+  await shot(page, "13-caption-3d");
+  if (process.env.SHOT_README === "1") {
+    mkdirSync(join(process.cwd(), "docs", "img"), { recursive: true });
+    await page.screenshot({ path: join(process.cwd(), "docs", "img", "bench-3d.png") });
+  }
+  await page.goto(BASE + "?record=1", { waitUntil: "load" });
+  await page.waitForTimeout(4000);
+  out.hiddenInRecording = (await boxes()).caption === null;
+  out.checks = { visibleOn3D: !!on.caption && out.bodyClass.includes("theatre"), noCollisions: out.collisions.length === 0, hiddenInRecording: out.hiddenInRecording };
+});
+
+// 14. How it works: clicks from "/" (and from the bench drawer) to each fact, and every .kiro link on the page.
+await scenario("how-it-works-clicks", {}, async (page, out) => {
+  const targets = { zmachine: /Why a Z-machine/, failsafe: /The failsafe/, humanMerge: /A person merges every pull request/, specs: /\.kiro\/specs\/$/, steering: /\.kiro\/steering\/$/, hooks: /\.kiro\/hooks\/$/, agents: /\.kiro\/agents\/$/ };
+  await page.goto(BASE + "?theatre=off", { waitUntil: "load" });
+  await page.waitForTimeout(1500);
+  await page.click("#kiro-link"); // click 1
+  await page.waitForLoadState("load");
+  out.url = page.url().replace(BASE, "/");
+  const section = await page.evaluate(() => {
+    const h = document.getElementById("how-it-works");
+    const words = []; let e = h?.nextElementSibling;
+    while (e && e.tagName !== "H2") { words.push(e.innerText); e = e.nextElementSibling; }
+    return { present: !!h, words: words.join(" ").split(/\s+/).filter(Boolean).length };
+  });
+  out.section = section;
+  const links = await page.evaluate(() => [...document.querySelectorAll("#how-it-works ~ * a")].map((a) => ({ text: a.textContent, href: a.href })));
+  const body = await page.evaluate(() => document.body.innerText);
+  const clicks = {};
+  for (const [k, re] of Object.entries(targets)) {
+    if (k === "zmachine" || k === "failsafe" || k === "humanMerge") clicks[k] = re.test(body) ? 1 : null; // on the section: click 1 only
+    else { const l = links.find((x) => re.test(x.href)); clicks[k] = l ? 2 : null; } // one more click on the link
+  }
+  out.clicksFromLanding = clicks;
+  out.kiroLinks = links.filter((l) => /\.kiro\//.test(l.href)).map((l) => l.href.replace(/^.*\/e-1305\/Crypt\//, ""));
+  await shot(page, "14-how-it-works");
+  // Bench drawer: toggle (1), link (2).
+  const ctx2 = page.context();
+  const p2 = await ctx2.newPage();
+  await p2.goto(BASE, { waitUntil: "load" });
+  await p2.waitForTimeout(5000);
+  await p2.click("#bench-drawer-toggle");
+  out.drawerLinkHref = await p2.getAttribute("#bench-kiro", "href");
+  out.checks = { allWithinTwoClicks: Object.values(clicks).every((n) => n !== null && n <= 2), sectionAtMost450Words: section.words <= 450, drawerLinkReachable: out.drawerLinkHref === "manual.html#how-it-works" };
+});
+
+// 15. axe-core on the 2D page, when AXE_CORE points at axe.min.js.
+if (process.env.AXE_CORE) {
+  await scenario("axe-2d", {}, async (page, out) => {
+    await page.goto(BASE + "?theatre=off", { waitUntil: "load" });
+    await page.waitForTimeout(2500);
+    await page.addScriptTag({ path: process.env.AXE_CORE });
+    const r = await page.evaluate(() => axe.run());
+    out.violations = r.violations.map((v) => ({ id: v.id, impact: v.impact, nodes: v.nodes.map((n) => n.target.join(" ")) }));
+    out.passes = r.passes.length;
+    out.axeVersion = await page.evaluate(() => axe.version);
+  });
+}
+
+
 await browser.close();
 writeFileSync(join(OUT, "report.json"), JSON.stringify(report, null, 2));
 console.log(JSON.stringify(report, null, 2));

@@ -232,12 +232,31 @@ Limits of the 3D bench, stated plainly:
 | `--live` is refused | Set `GITHUB_TOKEN` to a fine-grained token limited to the one target repository. |
 | Offline run has no data for a package | `--offline` answers only from the cache in `data/cache/osv/`. Run once with network access to fill it. |
 
-## Built with Kiro
+## How it works
 
-CRYPT was built with Kiro, using three of its features together:
+One lockfile in, one playable story out, and a human at the end. Each arrow is a file you can read.
 
-- **Specs.** Every feature began as requirements, a design and a task list under `.kiro/specs/` before any code. [KIRO.md](KIRO.md) lists each spec and its outcome.
-- **Steering.** Five files in `.kiro/steering/` hold the rules that bind every change: no merge call, SEAL blocks grafts, one team score, blameless wording. Tests check them.
-- **Hooks.** Hooks in `.kiro/hooks/` run when a file is saved and catch drift in the generated files and the copy.
+```
+lockfile --> OSV + CISA KEV + EPSS --> creature.json --> Inform 6 --> creature.z8
+   (Z-machine story) --prints--> [[CRYPT GRAFT JQUERY]] --> watcher --> Necromancer
+   --> fix PR (dry run by default) --> CI --> a person merges --> reraise --> limb HEALED
+```
 
-The playtest loop in [PLAYTEST_LOG.md](PLAYTEST_LOG.md) and [BACKLOG.md](BACKLOG.md) shows how a judge persona and a product manager persona drive each round of fixes.
+**Why a Z-machine.** The story is one small file that runs anywhere. Infocom's interpreters (Frotz, Lectrote, Parchment) open the `.z8` you download from the page. The game is the interface, so there is no dashboard to build.
+
+**Only the game triggers anything.** The watcher reacts to `[[CRYPT ...]]` markers that the story prints after it accepts a command. Text you type never counts as a marker, and the command grammar is strict (capitals, one space).
+
+**The failsafe.** There is no merge call anywhere in the code. `SEAL CRYPT` blocks every graft. Every agent action goes to `crypt-audit.log`. Without `GITHUB_TOKEN`, a graft is a dry run and writes its payload to `out/prs/`. A person merges every pull request. [failsafe.md](../.kiro/steering/failsafe.md) lists the rules, and property-based tests enforce them.
+
+**One file format, two front ends.** The Pages site and the CLI read the same `creature.json`. The page can rehearse: play the story, read dry-run payloads and simulate CI. Only the CLI can open a real pull request (`crypt raid <url> --live`). Tier 1 scope: npm and pip lockfiles.
+
+### Built with Kiro
+
+CRYPT was built with Kiro, using four of its features together:
+
+- **Specs** in [`.kiro/specs/`](../.kiro/specs/): every feature began as requirements, a design and tasks. [necromancer/requirements.md](../.kiro/specs/necromancer/requirements.md) is the one behind the graft flow.
+- **Steering** in [`.kiro/steering/`](../.kiro/steering/): the rules that bind every change (no merge call, SEAL blocks grafts, one team score, blameless wording). Tests check them.
+- **Hooks** in [`.kiro/hooks/`](../.kiro/hooks/): checks that run when a file is saved. [failsafe-guard-on-save.json](../.kiro/hooks/failsafe-guard-on-save.json) fails a save that adds a merge call.
+- **Agents** in [`.kiro/agents/`](../.kiro/agents/): the Necromancer and the Inquisitor.
+
+[KIRO.md](KIRO.md) has the evidence and the limits. The playtest loop in [PLAYTEST_LOG.md](PLAYTEST_LOG.md) and [BACKLOG.md](BACKLOG.md) shows how a judge persona and a product manager persona drive each round of fixes.

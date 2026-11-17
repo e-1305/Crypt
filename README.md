@@ -8,6 +8,19 @@
 
 **Zork that patches your code, and can never break it.**
 
+**Live demo: [e-1305.github.io/Crypt](https://e-1305.github.io/Crypt/)** · [How it works in 60 seconds](https://e-1305.github.io/Crypt/manual.html#how-it-works) · [Pitch](docs/PITCH.md)
+
+```bash
+npx @e-1305/crypt raid <path-or-github-url>     # dry run by default: nothing is sent, a human lands every PR
+npm ci && npx --no-install crypt raid fixtures/vulnerable-npm --offline     # from a checkout, no network after the first toolchain build
+```
+
+The package is not published to npm yet, so use the checkout form until it is.
+
+![The CRYPT bench: the creature plate, the game on the CRT and the simulated CI buttons](docs/img/bench-3d.png)
+
+Screenshot from the headless harness (`scripts/playtest/judge.mjs`, software WebGL, 1280x720). Scope: Tier 1, npm and pip lockfiles only.
+
 CRYPT turns your dependency tree into a creature, one limb per package.
 Limbs with known vulnerabilities rot. Limbs with actively exploited vulnerabilities (CISA KEV) are *possessed*.
 You heal them by playing a real **Z-machine** text adventure (Infocom's 1979 virtual machine).
@@ -18,6 +31,14 @@ Each command dispatches AI agents built with [Kiro](https://kiro.dev) that open 
 ---
 
 **New here? Read the [user manual](docs/USER_MANUAL.md), also hosted at [e-1305.github.io/Crypt/manual.html](https://e-1305.github.io/Crypt/manual.html).**
+
+## Live demo
+
+**[e-1305.github.io/Crypt](https://e-1305.github.io/Crypt/)**: the first vulnerability report you can play. The page opens on a demo creature built from `fixtures/vulnerable-npm`, with its plate and a playable story. A gallery lists 20 public projects, each with its own creature. "Download the playable report" saves the loaded `.z8`, which any Z-machine interpreter (Frotz, Lectrote, Parchment) opens.
+
+GRAFT on the page is a rehearsal: it shows the dry-run pull request payload and sends nothing.
+
+Maintainers: set Settings > Pages > Source to **GitHub Actions** once. `.github/workflows/pages.yml` then deploys on every push to `main`.
 
 ## Install
 
@@ -73,14 +94,6 @@ npm run necromancer:check                     # offline acceptance: GRAFT JQUERY
 ```
 
 `exhume` reads `package-lock.json` (v2/v3) and `requirements.txt` (`==` pins only), asks OSV once per `package@version` (cached in `data/cache/osv/`), ranks with local KEV/EPSS files and prints totals (dependencies, findings, limbs that spawn, findings below the noise line). A limb whose status cannot be established is reported as unknown, never as clean. Schema: `.kiro/specs/exhume-and-rank/design.md`.
-## Live demo
-
-**[e-1305.github.io/Crypt](https://e-1305.github.io/Crypt/)**: the first vulnerability report you can play. The page opens on a demo creature built from `fixtures/vulnerable-npm`, with its plate and a playable story. A gallery lists 20 public projects, each with its own creature. "Download the playable report" saves the loaded `.z8`, which any Z-machine interpreter (Frotz, Lectrote, Parchment) opens.
-
-GRAFT on the page is a rehearsal: it shows the dry-run pull request payload and sends nothing.
-
-Maintainers: set Settings > Pages > Source to **GitHub Actions** once. `.github/workflows/pages.yml` then deploys on every push to `main`.
-
 ## Live raid
 
 `crypt raid https://github.com/<owner>/<repo> --live` opens a real fix pull request through the GitHub API, the Inquisitor watches its `test` check, a human lands it on GitHub, and `crypt reraise --live` shows the limb HEALED. Step by step for the video, including how to create the token: [docs/DEMO.md](docs/DEMO.md).
@@ -145,7 +158,7 @@ Each guarantee is enforced by a property-based test. See [`.kiro/steering/failsa
 ## Built with Kiro
 
 Specs, steering, hooks, custom agents and property-based tests live in [`.kiro/`](.kiro/).
-See [`docs/KIRO.md`](docs/KIRO.md) for how Kiro was used.
+[How it works](https://e-1305.github.io/Crypt/manual.html#how-it-works) shows the seams on one page. [`docs/KIRO.md`](docs/KIRO.md) has the evidence and its limits.
 
 ## Accessibility
 

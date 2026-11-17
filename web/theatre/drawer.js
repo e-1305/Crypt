@@ -21,7 +21,7 @@ export function makeDrawer() {
     '<p class="drawer-pitch">Each vulnerable dependency is a limb on a creature. Type GRAFT to write the fix as a pull request for a human to review and land.</p>' +
     '<div class="drawer-install"><span>Try it on your own repo:</span><code id="bench-install-cmd">npx @e-1305/crypt raid &lt;path-or-github-url&gt;</code>' +
     '<button id="bench-install-copy" type="button">Copy command</button></div>' +
-    '<p><a id="bench-kiro" href="manual.html#built-with-kiro" target="_blank" rel="noopener">Built with Kiro: specs, steering and hooks (opens in a new tab)</a></p>' +
+    '<p><a id="bench-kiro" href="manual.html#how-it-works" target="_blank" rel="noopener">Built with Kiro: specs, steering and hooks (opens in a new tab)</a></p>' +
     '<p class="muted">On the screen: <span id="bench-drawer-creature"></span>.</p>' +
     '<button id="bench-download" type="button">Download the playable report</button>' +
     '<form id="bench-exhume" autocomplete="off">' +

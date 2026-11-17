@@ -95,3 +95,13 @@ Acceptance criteria:
 - Real-GPU performance work and a Lighthouse score. Needs hardware or tooling this sandbox does not have. Re-check before the demo recording and state the result as measured or not verified.
 - A voiced or music-driven trailer. Sound is off by default and unverified here.
 - Anything that opens a live PR from the Pages site. The page is a rehearsal by design.
+
+## Round 2 status
+
+| # | Item | Status | Evidence |
+|---|---|---|---|
+| 1 | Devpost front door | Done. GIF not recorded (no recording in this sandbox) | `docs/PITCH.md`, README top, `docs/DEVPOST.md`, `docs/img/bench-3d.png` |
+| 2 | Shot list | Done. The axe claim was re-run | `docs/DEMO.md`, `docs/ACCESSIBILITY.md` |
+| 3 | How it works | Done | `docs/USER_MANUAL.md#how-it-works`, harness `how-it-works-clicks` |
+| 4 | KIRO.md | Done | `docs/KIRO.md`, `tests/devpost-docs.test.ts` |
+| 5 | Prompt in reach, caption, tutorial | Done. On a 390x780 phone `#cmd` is out of the first screen while the tutorial is open | harness `prompt-in-reach-*`, `try-chip`, `caption-3d`, `tutorial-after-green` |
