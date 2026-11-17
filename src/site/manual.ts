@@ -1,5 +1,5 @@
 // A small markdown renderer for docs/USER_MANUAL.md, so the manual can be published on the site with no new dependency.
-// It handles only what the manual uses: headings, paragraphs, bullet and numbered lists, tables, fenced code, inline
+// It handles only what the manual uses: headings (levels 1 to 4), paragraphs, bullet and numbered lists, tables, fenced code, inline
 // code, bold and links. All text is escaped. The output is one static page: no script, relative URLs for site files.
 import { posix } from "node:path";
 
@@ -40,7 +40,7 @@ export function rewriteLink(href: string, o: ManualOptions, ids: ReadonlySet<str
   throw new Error(`manual: relative link ${href} is neither a repo file nor a site file`);
 }
 
-const INLINE = /`([^`]+)`|\[((?:[^\]`]|`[^`]*`)+)\]\(([^)\s]+)\)|\*\*([^*]+)\*\*/g;
+const INLINE = /`([^`]+)`|\[((?:[^\]`]|`[^`]*`)+)\]\(([^)\s]+)\)|\*\*([^*]+)\*\*|(?<![\w*])\*([^*\s](?:[^*]*[^*\s])?)\*(?![\w*])|(?<![\w])_([^_\s](?:[^_]*[^_\s])?)_(?![\w])/g;
 
 function inline(text: string, o: ManualOptions, ids: ReadonlySet<string> | null): string {
   let out = "";
@@ -50,7 +50,8 @@ function inline(text: string, o: ManualOptions, ids: ReadonlySet<string> | null)
     last = m.index + m[0].length;
     if (m[1] !== undefined) out += `<code>${esc(m[1])}</code>`;
     else if (m[2] !== undefined && m[3] !== undefined) out += `<a href="${esc(rewriteLink(m[3], o, ids))}">${inline(m[2], o, ids)}</a>`;
-    else out += `<strong>${inline(m[4] ?? "", o, ids)}</strong>`;
+    else if (m[4] !== undefined) out += `<strong>${inline(m[4], o, ids)}</strong>`;
+    else out += `<em>${inline(m[5] ?? m[6] ?? "", o, ids)}</em>`;
   }
   return out + esc(text.slice(last));
 }
@@ -64,7 +65,7 @@ function headingsOf(lines: string[]): Heading[] {
   let fence = false;
   for (const l of lines) {
     if (l.startsWith("```")) fence = !fence;
-    const m = !fence && /^(#{1,3}) (.+)$/.exec(l);
+    const m = !fence && /^(#{1,4}) (.+)$/.exec(l);
     if (m) {
       const text = m[2]!.replace(/`/g, "");
       out.push({ level: m[1]!.length, text, id: slugify(text) });
@@ -101,7 +102,7 @@ export function renderBody(md: string, o: ManualOptions): { html: string; title:
       html.push(`<pre tabindex="0"><code>${esc(body.join("\n"))}</code></pre>`);
       continue;
     }
-    const h = /^(#{1,3}) (.+)$/.exec(line);
+    const h = /^(#{1,4}) (.+)$/.exec(line);
     if (h) {
       flush();
       const level = h[1]!.length;
@@ -133,12 +134,16 @@ export function renderBody(md: string, o: ManualOptions): { html: string; title:
         const m = /^(?:- |\d+\. )(.*)$/.exec(lines[i]!);
         if (!m) break;
         const parts = [m[1]!];
-        for (i++; i < lines.length && /^ +\S/.test(lines[i]!); i++) parts.push(lines[i]!.trim());
+        for (i++; i < lines.length && /^ +\S/.test(lines[i]!); i++) {
+          if (/^ +(?:[-*+] |\d+\. )/.test(lines[i]!)) throw new Error(`manual: nested lists are not supported: ${lines[i]!.trim()}`);
+          parts.push(lines[i]!.trim());
+        }
         items.push(`<li>${inline(parts.join(" "), o, ids)}</li>`);
       }
       html.push(`<${tag}>${items.join("")}</${tag}>`);
       continue;
     }
+    if (/^\s*>/.test(line) || /!\[[^\]]*\]\(/.test(line)) throw new Error(`manual: unsupported syntax (block quote or image): ${line}`);
     if (line.trim() === "") flush();
     else para.push(line.trim());
     i++;

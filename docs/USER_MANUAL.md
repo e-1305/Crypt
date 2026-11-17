@@ -12,7 +12,7 @@ The demo shows a small project as a creature. Each package the project depends o
 2. Type `GRAFT JQUERY` and press Enter. This asks for a fix. The page shows a dry-run pull request in the "Dry-run PR payload" panel. It is a preview only. Nothing is sent anywhere, and a person would still have to merge a real one.
 3. Read the plate (the picture of the creature). Each limb has a glyph and a word, so colour is never the only clue. `#` POSSESSED (orange) means the vulnerability is being used by attackers right now. `%` ROTTING (yellow-green) means a known vulnerability exists. `.` HEALTHY (dim green) means none is known. HEALED (bright green) means the fix was merged.
 4. Type `RAID` and press Enter to start the 15 minute timer and the team score.
-5. Type `SEAL CRYPT` and press Enter to freeze every agent action. After that, any `GRAFT` is rejected.
+5. Type `SEAL CRYPT` and press Enter to freeze every agent action. After that, any `GRAFT` or `RAID` is rejected. In the browser the seal lasts until you reload the page.
 
 Commands use capital letters only and exactly one space between words. Anything else is rejected, and nothing happens. The rest of this manual has the details.
 
@@ -73,12 +73,12 @@ Commands are matched against a strict grammar. Capital letters only, one space b
 | `EXAMINE <LIMB>` | Describes the limb: state, number of CVEs, top EPSS score and the surgeon of record (from CODEOWNERS). |
 | `ASSIGN <LIMB>` | Names the owner of the limb. |
 | `GRAFT <LIMB>` | Asks for a fix. In the terminal and in the browser this writes a dry-run pull request payload (`out/prs/` in the terminal, the "Dry-run PR payload" panel in the browser). With `--live` it opens a real pull request. |
-| `SEAL CRYPT` | Freezes every agent action. Later `GRAFT` commands are rejected. |
+| `SEAL CRYPT` | Freezes every agent action. Later `GRAFT` and `RAID` commands are rejected. In the browser the seal lasts until the page is reloaded. |
 | `RAID` | Starts the 15-minute raid timer (see section 5). |
 
 `<LIMB>` is the package name in capitals, up to 32 letters, for example `GRAFT JQUERY`. Try the offline check with `npm run necromancer:check`: `GRAFT JQUERY` gives one payload, and after `SEAL CRYPT` a `GRAFT LODASH` gives none.
 
-`crypt seal` writes `.crypt-seal` in the current directory and `crypt unseal` removes it. While it exists, every graft is rejected.
+`crypt seal` writes `.crypt-seal` in the current directory and `crypt unseal` removes it. While it exists, every graft is rejected. If the story file fails to load in the browser, no command works, including `RAID`: reload the page.
 
 ## 3. Reading the creature
 
