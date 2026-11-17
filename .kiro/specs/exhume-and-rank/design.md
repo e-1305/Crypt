@@ -65,6 +65,10 @@ EPSS has 5 decimals, so one EPSS step is at least 1e2 in score, above the severi
 
 State: `Possessed` if kev; `Rotting` if it has a vulnerability; else `Healthy`. Unknown handling (fail-safe): a limb is `unknown: true` when its OSV answer is unavailable, its OSV answer is stale (`osv-stale`), its version is `unknown`, or any feed is missing. An unknown Healthy limb becomes `Rotting`. Sort key: state rank (Possessed, Rotting, Healthy), score desc, known before unknown, `ecosystem:name@version` asc. `spawned = Possessed || (Rotting && epss !== null && epss >= 0.1)`. `findings = limbs - healthy`. `exorcised` counts findings that are not spawned and not unknown (noise below the threshold). `unresolved` counts unknown findings that are not spawned; they are never exorcised, because their score could not be computed. `exorcised + spawned + unresolved = findings`.
 
+### Merging rows for one limb
+
+When several rows describe the same `ecosystem:name@version`, they merge to the worst case (`mergeOsvAnswers` in `src/exhume/rank.ts`): the OSV answer is unknown if any row is unknown (unknown wins over known-clean), vulns are the union by id, and KEV and EPSS then follow from that union (KEV if any row is KEV, max EPSS). The result does not depend on row order. Property tests run 1000 cases each; fast-check prints the seed and path of any failure.
+
 ## Ownership
 
 `parseCodeowners(text)` returns rules `{pattern, owners}` (comments and blank lines dropped). Pattern to regex: leading `/` anchors to the root, a pattern without `/` (except trailing) matches at any depth, trailing `/` matches everything below, `*` stays inside a segment, `**` crosses segments, `?` is one non-`/` character. The last matching rule wins. The CODEOWNERS file is the first existing of `.github/CODEOWNERS`, `CODEOWNERS`, `docs/CODEOWNERS`. Owners are copied verbatim from that file (team or user handles); nothing else is consulted.
