@@ -20,6 +20,7 @@ and using third-party SDKs, APIs and data in line with their terms. Keep this fi
 | axe-core (dev-time) | Tool (dev-time only) | Approximates the Lighthouse accessibility audit inside Playwright because Lighthouse cannot launch Chrome in the build sandbox; not a project dependency and not committed | MPL-2.0 | https://github.com/dequelabs/axe-core |
 | Model Context Protocol TypeScript SDK (`@modelcontextprotocol/sdk` 1.32.2) | Code | Stdio MCP server and in-process test client in `src/mcp/` and `scripts/mcp.ts` | MIT | https://github.com/modelcontextprotocol/typescript-sdk |
 | zod (4.6.7) | Code | Input schemas for MCP tools (dependency of the SDK, used directly in `src/mcp/server.ts`) | MIT | https://github.com/colinhacks/zod |
+| Sound effects (`web/theatre/sound.js`) | Code | CRT hum, heartbeat, thunder and needle clicks are original, synthesised at runtime with WebAudio oscillators and filtered noise by project code. No audio files, samples or third-party sound assets are used. Sound is off on load and starts only after the user clicks the toggle | MIT (project license) | n/a |
 
 ## Ideas and references (not code)
 
