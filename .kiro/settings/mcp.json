@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "crypt": {
+      "command": "npm",
+      "args": ["run", "mcp", "--silent"],
+      "env": {},
+      "disabled": false,
+      "autoApprove": ["list_limbs", "get_limb", "census_summary", "audit_tail"]
+    }
+  }
+}
