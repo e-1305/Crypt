@@ -28,6 +28,9 @@ if (r.error || r.status !== 0) {
 }
 const text = buildTranscript(commands, r.stdout);
 const events = parseGameOutput(text);
+const afterSeal = text.slice(text.indexOf("[[CRYPT SEAL]]"));
+if (!afterSeal.includes("The crypt is sealed. No needle moves.")) errors.push("after SEAL CRYPT, GRAFT did not print 'The crypt is sealed. No needle moves.'");
+if (afterSeal.includes("The surgeon begins the graft.")) errors.push("after SEAL CRYPT, GRAFT still began a graft");
 const seen = events.map((e) => (e.ok ? e.command : "REJECTED"));
 const expected = ["EXAMINE JQUERY", "ASSIGN JQUERY", "GRAFT JQUERY", "SEAL CRYPT", "GRAFT LODASH"];
 if (seen.join("|") !== expected.join("|")) errors.push(`expected events ${expected.join(", ")}; got ${seen.join(", ")}`);

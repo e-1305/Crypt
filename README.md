@@ -17,7 +17,19 @@ Each command dispatches AI agents built with [Kiro](https://kiro.dev) that open 
 
 ---
 
+## Install
+
+```bash
+npm install --global @e-1305/crypt     # gives the `crypt` command
+crypt raid <path-or-github-url>
+```
+
+Or run it once without installing: `npx @e-1305/crypt raid <path-or-github-url>`.
+Node 20 or newer. The package is `@e-1305/crypt` because the names `crypt` and `crypt-cli` belong to unrelated packages on the npm registry. The command it installs is still `crypt`.
+
 ## Quickstart
+
+From a checkout of this repository:
 
 ```bash
 npm ci
@@ -28,8 +40,9 @@ Type `GRAFT JQUERY` at the game prompt: a dry-run fix payload lands in `out/prs/
 `crypt raid` builds the Inform 6 and dfrotz toolchain once into `~/.cache/crypt/toolchain` (override with `CRYPT_TOOLCHAIN_DIR`; needs git, make, a C compiler and network the first time).
 Run it from any directory: `out/`, `crypt-audit.log` and `.crypt-seal` are written to the current one.
 
-Always use `npx --no-install crypt` (or `npm run crypt --`). The names `crypt` and `crypt-cli` both exist on the npm registry as unrelated packages, and `--no-install` makes sure npx runs this checkout and never downloads one of them.
+Inside a checkout or a project that has the package installed, use `npx --no-install crypt`: it runs the local command and never downloads another package. Outside a project, use `npx @e-1305/crypt`.
 `crypt --help` lists every command and flag. `exhume` of a GitHub URL shallow-clones it into a temporary directory, reads the lockfile and CODEOWNERS only, runs nothing from it, installs nothing, and removes the clone.
+`bash scripts/ci/pack-install-test.sh` packs the package, installs the tarball into an empty project and runs the installed command, the same check CI runs on Node 20 and 22.
 
 | Exit code | Meaning |
 |---|---|
@@ -58,24 +71,49 @@ npm run necromancer:check                     # offline acceptance: GRAFT JQUERY
 ```
 
 `exhume` reads `package-lock.json` (v2/v3) and `requirements.txt` (`==` pins only), asks OSV once per `package@version` (cached in `data/cache/osv/`), ranks with local KEV/EPSS files and prints totals (findings, exorcised, spawned). A limb whose status cannot be established is reported as unknown, never as clean. Schema: `.kiro/specs/exhume-and-rank/design.md`.
+## Live demo
+
+**[e-1305.github.io/Crypt](https://e-1305.github.io/Crypt/)**: the first vulnerability report you can play. The page opens on a demo creature built from `fixtures/vulnerable-npm`, with its plate and a playable story. A gallery lists 20 public projects, each with its own creature. "Download the playable report" saves the loaded `.z8`, which any Z-machine interpreter (Frotz, Lectrote, Parchment) opens.
+
+GRAFT on the page is a rehearsal: it shows the dry-run pull request payload and sends nothing.
+
+Maintainers: set Settings > Pages > Source to **GitHub Actions** once. `.github/workflows/pages.yml` then deploys on every push to `main`.
+
+## Live raid
+
+`crypt raid https://github.com/<owner>/<repo> --live` opens a real fix pull request through the GitHub API, the Inquisitor watches its `test` check, a human lands it on GitHub, and `crypt reraise --live` shows the limb HEALED. Step by step for the video, including how to create the token: [docs/DEMO.md](docs/DEMO.md).
+
+| Flag | Where | Meaning |
+|---|---|---|
+| `--live` | `raid`, `graft`, `inquisit`, `reraise` | talk to GitHub for real; needs `GITHUB_TOKEN` |
+| `--timeout <seconds>` | `raid`, `inquisit`, `reraise` | how long to wait for the `test` check (10 to 3600, default 600) |
+| `--sabotage --i-know-this-is-a-demo` | `graft`, with `--live` | demo only: adds a failing test so CI goes red |
+
+Safety notes:
+
+- Use a fine-grained token limited to the target repository (Contents, Pull requests: read and write; Checks: read). Classic tokens are refused, and so is a token that can see other repositories.
+- CRYPT has no merge capability. A person lands the pull request on GitHub.
+- `--sabotage` is refused unless `--live` and `--i-know-this-is-a-demo` are both given.
+- Every live API call is written to `crypt-audit.log` (method and path, never the token). Any error leaves the state unchanged.
+- `npm run live-raid:check` runs the whole raid offline against a mocked GitHub and registry.
+
 ## Play in the browser
 
 ```bash
 npm ci
-npm run web        # builds spike.z5 if needed, then serves http://127.0.0.1:8080/
+npm run web        # builds the site (needs the toolchain: npm run setup), serves http://127.0.0.1:8080/
 ```
 
-Type `GRAFT ARM` and the event log on the right shows `[[CRYPT GRAFT ARM]]` as detected. Text you type never counts as a marker. Set `PORT` to change the port.
+Type `GRAFT JQUERY` and the event log shows `[[CRYPT GRAFT JQUERY]]` as detected, and the dry-run payload appears below it. Text you type never counts as a marker. Set `PORT` to change the port.
 
 ### Deploy as static files
 
 No server code is needed.
 
-1. `npm run build:game && npm run build:web`
-2. `mkdir -p web/game && cp spike.z5 web/game/spike.z5`
-3. Upload the contents of `web/` to any static host: `index.html`, `app.js`, `style.css`, `vendor/` (the interpreter and its licence), `js/` (compiled marker reader) and `game/spike.z5`.
+1. `npm run build:site` (writes `_site/`; offline, no network use)
+2. Upload `_site/` to any static host. All URLs are relative, so a sub-path such as `/Crypt/` works.
 
-The page requests only these files from its own origin.
+The page requests only its own files under `game/`. To refresh the gallery, run `npm run census` then `npm run gallery:snapshot` and commit `web/gallery-data/`.
 
 ## The three pillars
 

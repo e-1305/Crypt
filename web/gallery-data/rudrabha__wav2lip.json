@@ -1,0 +1,408 @@
+{
+  "schemaVersion": 1,
+  "repo": "Rudrabha/Wav2Lip",
+  "sha": "bac9a81e63ecc153202353372e5724b83d9e6322",
+  "scannedLimbs": 8,
+  "counts": {
+    "unresolved": 1
+  },
+  "limbs": [
+    {
+      "rank": 1,
+      "ecosystem": "PyPI",
+      "name": "opencv-python",
+      "version": "4.1.0.25",
+      "state": "Rotting",
+      "spawned": true,
+      "kev": false,
+      "epss": 0.21108,
+      "vulns": [
+        {
+          "id": "GHSA-3448-vrgh-85xr",
+          "cves": [
+            "CVE-2019-14493"
+          ]
+        },
+        {
+          "id": "GHSA-8849-5h85-98qw",
+          "cves": [
+            "CVE-2019-9423"
+          ]
+        },
+        {
+          "id": "GHSA-fm39-cw8h-3p63",
+          "cves": [
+            "CVE-2019-14491"
+          ]
+        },
+        {
+          "id": "GHSA-fw99-f933-rgh8",
+          "cves": [
+            "CVE-2019-14492"
+          ]
+        },
+        {
+          "id": "GHSA-hxfw-jm98-v4mq",
+          "cves": [
+            "CVE-2019-15939"
+          ]
+        },
+        {
+          "id": "GHSA-m6vm-8g8v-xfjh",
+          "cves": [
+            "CVE-2019-5063"
+          ]
+        },
+        {
+          "id": "GHSA-q799-q27x-vp7w",
+          "cves": [
+            "CVE-2019-5064"
+          ]
+        },
+        {
+          "id": "GHSA-qr4w-53vh-m672",
+          "cves": []
+        },
+        {
+          "id": "GHSA-x3rm-644h-67m8",
+          "cves": [
+            "CVE-2019-16249"
+          ]
+        },
+        {
+          "id": "PYSEC-2023-183",
+          "cves": []
+        },
+        {
+          "id": "PYSEC-2026-2806",
+          "cves": [
+            "CVE-2019-14493"
+          ]
+        },
+        {
+          "id": "PYSEC-2026-2811",
+          "cves": [
+            "CVE-2019-9423"
+          ]
+        },
+        {
+          "id": "PYSEC-2026-2818",
+          "cves": [
+            "CVE-2019-14491"
+          ]
+        },
+        {
+          "id": "PYSEC-2026-2821",
+          "cves": [
+            "CVE-2019-14492"
+          ]
+        },
+        {
+          "id": "PYSEC-2026-2822",
+          "cves": [
+            "CVE-2019-15939"
+          ]
+        },
+        {
+          "id": "PYSEC-2026-2826",
+          "cves": [
+            "CVE-2019-5063"
+          ]
+        },
+        {
+          "id": "PYSEC-2026-2828",
+          "cves": [
+            "CVE-2019-5064"
+          ]
+        },
+        {
+          "id": "PYSEC-2026-2833",
+          "cves": [
+            "CVE-2019-16249"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 2,
+      "ecosystem": "PyPI",
+      "name": "torch",
+      "version": "1.1.0",
+      "state": "Rotting",
+      "spawned": false,
+      "kev": false,
+      "epss": 0.02369,
+      "vulns": [
+        {
+          "id": "GHSA-3749-ghw9-m3mg",
+          "cves": [
+            "CVE-2025-2953"
+          ]
+        },
+        {
+          "id": "GHSA-47fc-vmwq-366v",
+          "cves": [
+            "CVE-2022-45907"
+          ]
+        },
+        {
+          "id": "GHSA-53q9-r3pm-6pq6",
+          "cves": [
+            "CVE-2025-32434"
+          ]
+        },
+        {
+          "id": "GHSA-5pcm-hx3q-hm94",
+          "cves": [
+            "CVE-2024-31580"
+          ]
+        },
+        {
+          "id": "GHSA-63cw-57p8-fm3p",
+          "cves": [
+            "CVE-2026-24747"
+          ]
+        },
+        {
+          "id": "GHSA-887c-mr87-cxwp",
+          "cves": [
+            "CVE-2025-3730"
+          ]
+        },
+        {
+          "id": "GHSA-c678-jfcj-6jmf",
+          "cves": [
+            "CVE-2025-2148"
+          ]
+        },
+        {
+          "id": "GHSA-f4hp-rmr7-r7v8",
+          "cves": [
+            "CVE-2025-2998"
+          ]
+        },
+        {
+          "id": "GHSA-pg7h-5qx3-wjr3",
+          "cves": [
+            "CVE-2024-31583"
+          ]
+        },
+        {
+          "id": "GHSA-qfhq-4f3w-5fph",
+          "cves": [
+            "CVE-2025-3001"
+          ]
+        },
+        {
+          "id": "GHSA-rrmf-rvhw-rf47",
+          "cves": [
+            "CVE-2025-3000"
+          ]
+        },
+        {
+          "id": "GHSA-vgrw-7cvw-pwgx",
+          "cves": [
+            "CVE-2025-2999"
+          ]
+        },
+        {
+          "id": "GHSA-x3gm-94wq-g975",
+          "cves": [
+            "CVE-2025-2149"
+          ]
+        },
+        {
+          "id": "PYSEC-2022-43015",
+          "cves": [
+            "CVE-2022-45907"
+          ]
+        },
+        {
+          "id": "PYSEC-2024-250",
+          "cves": [
+            "CVE-2024-31584"
+          ]
+        },
+        {
+          "id": "PYSEC-2024-251",
+          "cves": [
+            "CVE-2024-31583"
+          ]
+        },
+        {
+          "id": "PYSEC-2024-252",
+          "cves": [
+            "CVE-2024-31580"
+          ]
+        },
+        {
+          "id": "PYSEC-2024-259",
+          "cves": [
+            "CVE-2024-48063"
+          ]
+        },
+        {
+          "id": "PYSEC-2025-191",
+          "cves": [
+            "CVE-2025-2953"
+          ]
+        },
+        {
+          "id": "PYSEC-2025-198",
+          "cves": [
+            "CVE-2025-46148"
+          ]
+        },
+        {
+          "id": "PYSEC-2025-203",
+          "cves": [
+            "CVE-2025-55551"
+          ]
+        },
+        {
+          "id": "PYSEC-2025-204",
+          "cves": [
+            "CVE-2025-55552"
+          ]
+        },
+        {
+          "id": "PYSEC-2025-205",
+          "cves": [
+            "CVE-2025-55553"
+          ]
+        },
+        {
+          "id": "PYSEC-2025-206",
+          "cves": [
+            "CVE-2025-55554"
+          ]
+        },
+        {
+          "id": "PYSEC-2025-207",
+          "cves": [
+            "CVE-2025-55557"
+          ]
+        },
+        {
+          "id": "PYSEC-2025-208",
+          "cves": [
+            "CVE-2025-55558"
+          ]
+        },
+        {
+          "id": "PYSEC-2025-209",
+          "cves": [
+            "CVE-2025-55560"
+          ]
+        },
+        {
+          "id": "PYSEC-2025-41",
+          "cves": [
+            "CVE-2025-32434"
+          ]
+        },
+        {
+          "id": "PYSEC-2026-139",
+          "cves": [
+            "CVE-2026-4538"
+          ]
+        },
+        {
+          "id": "PYSEC-2026-1970",
+          "cves": [
+            "CVE-2025-3730"
+          ]
+        },
+        {
+          "id": "PYSEC-2026-2286",
+          "cves": [
+            "CVE-2026-24747"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 3,
+      "ecosystem": "PyPI",
+      "name": "numpy",
+      "version": "1.17.1",
+      "state": "Rotting",
+      "spawned": false,
+      "kev": false,
+      "epss": 0.01679,
+      "vulns": [
+        {
+          "id": "GHSA-5545-2q6w-2gh6",
+          "cves": [
+            "CVE-2021-41495"
+          ]
+        },
+        {
+          "id": "GHSA-6p56-wp2h-9hxr",
+          "cves": [
+            "CVE-2021-33430"
+          ]
+        },
+        {
+          "id": "GHSA-f7c7-j99h-c22f",
+          "cves": [
+            "CVE-2021-41496"
+          ]
+        },
+        {
+          "id": "GHSA-fpfv-jqm9-f5jm",
+          "cves": [
+            "CVE-2021-34141"
+          ]
+        },
+        {
+          "id": "PYSEC-2021-856",
+          "cves": [
+            "CVE-2021-41495"
+          ]
+        },
+        {
+          "id": "PYSEC-2021-857",
+          "cves": [
+            "CVE-2021-41496"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 4,
+      "ecosystem": "PyPI",
+      "name": "tqdm",
+      "version": "4.45.0",
+      "state": "Rotting",
+      "spawned": false,
+      "kev": false,
+      "epss": 0.00436,
+      "vulns": [
+        {
+          "id": "GHSA-g7vv-2v7x-gj9p",
+          "cves": [
+            "CVE-2024-34062"
+          ]
+        },
+        {
+          "id": "PYSEC-2026-1976",
+          "cves": [
+            "CVE-2024-34062"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 5,
+      "ecosystem": "PyPI",
+      "name": "opencv-contrib-python",
+      "version": "unknown",
+      "state": "Rotting",
+      "spawned": false,
+      "kev": false,
+      "epss": null,
+      "vulns": []
+    }
+  ]
+}

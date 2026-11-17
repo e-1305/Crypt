@@ -10,15 +10,19 @@
 - [x] A1.7 README CI badge
 
 ## A2 Kiro hooks
-- [ ] A2.1 Hook definitions in `.kiro/hooks/` (guard on save, tests on spec change)
-- [ ] A2.2 `docs/KIRO.md` documents the hooks
+- [x] A2.1 Hook scripts in `scripts/hooks/` and tests in `tests/hooks.test.ts`
+- [x] A2.2 Five hook definitions in `.kiro/hooks/` (tests, failsafe, traceability, attribution, blameless copy)
+- [x] A2.3 `docs/KIRO.md` documents the hooks with real captured output, traceability table and numbers
 
 ## A3 GitHub Pages demo
-- [ ] A3.1 Demo creature built from the fixture
-- [ ] A3.2 Pages workflow (build, upload, deploy)
-- [ ] A3.3 CORS check recorded in `design.md`
+- [x] A3.1 Demo creature built from the fixture
+- [x] A3.2 Pages workflow (build, upload, deploy)
+- [x] A3.3 CORS check recorded in `design.md`
+- [x] A3.4 Gallery of the 20 census creatures (snapshots, alphabetical, aggregate-safe, blameless)
+- [x] A3.5 Grafts show the dry-run payload; download button; subtitle
+- [x] A3.6 `tests/site.test.ts` and README Live demo
 
 ## A4 npm packaging
-- [ ] A4.1 `npm pack --dry-run` matches the whitelist
-- [ ] A4.2 Tarball smoke test in a clean directory
-- [ ] A4.3 `docs/ATTRIBUTION.md` updated
+- [x] A4.1 `npm pack --dry-run` matches the whitelist
+- [x] A4.2 Tarball smoke test in a clean directory
+- [x] A4.3 `docs/ATTRIBUTION.md` updated

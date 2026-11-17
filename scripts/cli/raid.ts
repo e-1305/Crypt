@@ -4,10 +4,12 @@ import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { Parsed } from "../../src/cli/parse.js";
 import type { AdvisoryLookup } from "../../src/necromancer/index.js";
+import { parseGithubUrl } from "../../src/cli/url.js";
 import { renderPlate } from "../../src/render/plate.js";
 import { raiseCreature } from "../compile.js";
 import { fixtureAdvisories, osvAdvisories } from "../osv-advisory.js";
 import { PACKAGE_ROOT } from "../toolchain-dir.js";
+import { preflightedClients, timeoutMsFrom, writeTargetRecord } from "./live.js";
 import { runScriptOrFail } from "./run.js";
 import { playStory } from "./session.js";
 import { openTarget, type Target } from "./target.js";
@@ -59,11 +61,16 @@ export async function exhumeCommand(p: Parsed): Promise<number> {
 }
 
 export async function raidCommand(p: Parsed): Promise<number> {
+  const live = p.flags.live === true;
+  const gh = live ? parseGithubUrl(p.args[0]!) : null;
+  // Live: every check runs before anything is cloned or written.
+  const lc = live && gh ? await preflightedClients(`${gh.owner}/${gh.repo}`, process.env.GITHUB_TOKEN ?? "") : null;
   const t = await openTarget(p.args[0]!);
   try {
     await ensureToolchain();
     const cwd = process.cwd();
     const creature = await exhumeTarget(t, { ...p.flags, out: "out/creature.json" });
+    if (lc) writeTargetRecord(cwd, { repo: lc.repo, url: p.args[0]!, live: true });
     raiseCreature(creature, "out");
     process.stdout.write("\n" + renderPlate(JSON.parse(readFileSync(creature, "utf8")), { repo: t.name }) + "\n");
     const offline = p.flags.offline === true;
@@ -72,7 +79,13 @@ export async function raidCommand(p: Parsed): Promise<number> {
         ? fixtureAdvisories(join(FIXTURE, "advisories"))
         : async () => null
       : osvAdvisories();
-    return await playStory({ story: join(cwd, "out", "creature.z8"), cwd, targetDir: t.dir, advisories });
+    return await playStory({
+      story: join(cwd, "out", "creature.z8"),
+      cwd,
+      targetDir: t.dir,
+      advisories,
+      live: lc ? { client: lc.client, registry: lc.registry, timeoutMs: timeoutMsFrom(p.flags), repo: lc.repo } : undefined,
+    });
   } finally {
     t.cleanup();
   }

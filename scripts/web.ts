@@ -1,14 +1,12 @@
-// npm run web: build the story file, compile the hook for the browser, serve web/ on 127.0.0.1.
-// Serves GET and HEAD for files under web/ only, with a fixed content-type table.
+// npm run web: build the static site (npm run build:site), serve _site/ on 127.0.0.1.
+// Serves GET and HEAD for files under _site/ only, with a fixed content-type table.
 import { spawnSync } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { createServer } from "node:http";
 import { extname, join, resolve, sep } from "node:path";
 
-import { plateInput } from "../src/render/plate.js";
-
 const ROOT = resolve(import.meta.dirname, "..");
-const WEB = join(ROOT, "web");
+const WEB = join(ROOT, "_site");
 const PORT = Number(process.env.PORT ?? 8080);
 
 function step(name: string, cmd: string, args: string[]) {
@@ -24,6 +22,7 @@ const TYPES: Record<string, string> = {
   ".js": "text/javascript; charset=utf-8",
   ".css": "text/css; charset=utf-8",
   ".z5": "application/octet-stream",
+  ".z8": "application/octet-stream",
   ".txt": "text/plain; charset=utf-8",
   ".json": "application/json; charset=utf-8",
 };
@@ -42,20 +41,8 @@ export function resolveStatic(urlPath: string): string | null {
 }
 
 if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith("web.ts")) {
-  if (!existsSync(join(ROOT, "spike.z5"))) step("build story file (npm run build:game)", "npm", ["run", "build:game"]);
-  step("compile output hook (tsc -p tsconfig.web.json)", "npx", ["tsc", "-p", "tsconfig.web.json"]);
-  mkdirSync(join(WEB, "game"), { recursive: true });
-  copyFileSync(join(ROOT, "spike.z5"), join(WEB, "game", "spike.z5"));
-  // The plate reads the creature. Without out/creature.json the page shows an empty plate.
-  const creaturePath = join(ROOT, "out", "creature.json");
-  if (existsSync(creaturePath)) {
-    try {
-      const c = plateInput(JSON.parse(readFileSync(creaturePath, "utf8")));
-      writeFileSync(join(WEB, "game", "creature.json"), JSON.stringify(c));
-    } catch (e) {
-      console.error(`web: creature.json not copied: ${(e as Error).message}`);
-    }
-  }
+  // The same static site that Pages serves: demo creature, gallery and .z8 files.
+  step("build the site (npm run build:site)", "npm", ["run", "build:site"]);
 
   const server = createServer((req, res) => {
     if (req.method !== "GET" && req.method !== "HEAD") {

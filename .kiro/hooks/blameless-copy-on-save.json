@@ -1,0 +1,13 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Blameless copy check on save",
+      "description": "Flags game prose and UI copy that names a person in failure or phrases a prohibition (.kiro/steering/blameless.md).",
+      "trigger": "PostFileSave",
+      "matcher": "(^|/)(src/raise|web)/.*\\.(ts|js|html|css)$",
+      "action": { "type": "command", "command": "bash scripts/hooks/blameless-copy-check.sh" },
+      "timeout": 30
+    }
+  ]
+}
