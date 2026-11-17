@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "repo": "mrdoob/three.js",
+  "sha": "7bc9a0e2c31425564545d86e22608d45cf683434",
+  "scannedLimbs": 252,
+  "counts": {
+    "unresolved": 0
+  },
+  "limbs": [
+    {
+      "rank": 1,
+      "ecosystem": "npm",
+      "name": "picomatch",
+      "version": "4.0.7",
+      "state": "Rotting",
+      "spawned": false,
+      "kev": false,
+      "epss": 0.00335,
+      "vulns": [
+        {
+          "id": "GHSA-fc5q-39xc-vjpf",
+          "cves": [
+            "CVE-2026-112366"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 2,
+      "ecosystem": "npm",
+      "name": "minimatch",
+      "version": "10.2.6",
+      "state": "Rotting",
+      "spawned": false,
+      "kev": false,
+      "epss": 0.00301,
+      "vulns": [
+        {
+          "id": "GHSA-g3hv-75wg-m249",
+          "cves": [
+            "CVE-2026-118764"
+          ]
+        }
+      ]
+    }
+  ]
+}

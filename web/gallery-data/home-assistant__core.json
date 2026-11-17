@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "repo": "home-assistant/core",
+  "sha": "7291682aeb5a4fc656424b00864ee43809896589",
+  "scannedLimbs": 61,
+  "counts": {
+    "unresolved": 4
+  },
+  "limbs": [
+    {
+      "rank": 1,
+      "ecosystem": "PyPI",
+      "name": "certifi",
+      "version": "unknown",
+      "state": "Rotting",
+      "spawned": false,
+      "kev": false,
+      "epss": null,
+      "vulns": []
+    },
+    {
+      "rank": 2,
+      "ecosystem": "PyPI",
+      "name": "packaging",
+      "version": "unknown",
+      "state": "Rotting",
+      "spawned": false,
+      "kev": false,
+      "epss": null,
+      "vulns": []
+    },
+    {
+      "rank": 3,
+      "ecosystem": "PyPI",
+      "name": "typing-extensions",
+      "version": "unknown",
+      "state": "Rotting",
+      "spawned": false,
+      "kev": false,
+      "epss": null,
+      "vulns": []
+    },
+    {
+      "rank": 4,
+      "ecosystem": "PyPI",
+      "name": "urllib3",
+      "version": "unknown",
+      "state": "Rotting",
+      "spawned": false,
+      "kev": false,
+      "epss": null,
+      "vulns": []
+    }
+  ]
+}

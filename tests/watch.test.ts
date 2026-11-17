@@ -1,4 +1,5 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { numRuns } from "./runs.js";
 import fc from "fast-check";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -115,7 +116,7 @@ describe("watcher", () => {
           e.cleanup();
         }
       }),
-      { numRuns: 150 },
+      { numRuns: numRuns(150) },
     );
   });
 
@@ -135,7 +136,7 @@ describe("watcher", () => {
           e.cleanup();
         }
       }),
-      { numRuns: 100 },
+      { numRuns: numRuns(100) },
     );
   });
 
@@ -165,7 +166,7 @@ describe("watcher", () => {
           e.cleanup();
         }
       }),
-      { numRuns: 100 },
+      { numRuns: numRuns(100) },
     );
   });
 
@@ -183,7 +184,7 @@ describe("watcher", () => {
           e.cleanup();
         }
       }),
-      { numRuns: 200 },
+      { numRuns: numRuns(200) },
     );
   });
 
@@ -246,7 +247,7 @@ describe("watcher", () => {
           e.cleanup();
         }
       }),
-      { numRuns: 200 },
+      { numRuns: numRuns(200) },
     );
   });
 });

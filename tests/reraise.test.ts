@@ -1,5 +1,6 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
+import { numRuns } from "./runs.js";
 import { readFileSync } from "node:fs";
 import { nodeIo } from "../src/common/io.js";
 import { applyHealed, reraise } from "../src/reraise/index.js";
@@ -91,7 +92,7 @@ describe("reraise properties", () => {
         env.cleanup();
         return same;
       }),
-      { numRuns: 30 },
+      { numRuns: numRuns(30) },
     );
   });
   it("property: after SEAL zero API calls and no change", async () => {
@@ -103,7 +104,7 @@ describe("reraise properties", () => {
         const r = await reraise(ctx);
         return r.outcome === "REJECTED_SEALED" && m.calls.length === 0 && env.stateText() === null && readFileSync(env.paths.creaturePath, "utf8") === creatureBefore;
       }),
-      { numRuns: 20 },
+      { numRuns: numRuns(20) },
     );
     env.cleanup();
   });
@@ -116,7 +117,7 @@ describe("reraise properties", () => {
         env.cleanup();
         return ok;
       }),
-      { numRuns: 20 },
+      { numRuns: numRuns(20) },
     );
   });
 });

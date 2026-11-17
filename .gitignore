@@ -31,3 +31,4 @@ data/feeds/
 # Web player build output
 web/game/
 web/js/
+_site/

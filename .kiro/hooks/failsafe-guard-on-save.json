@@ -1,0 +1,13 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Failsafe guard on save",
+      "description": "Fails on a merge endpoint or command, or a token flowing into a log or audit call, in necromancer, inquisitor and mcp code (failsafe rules 2 and 8).",
+      "trigger": "PostFileSave",
+      "matcher": "(^|/)src/(necromancer|inquisitor|mcp)/.*\\.ts$",
+      "action": { "type": "command", "command": "bash scripts/hooks/failsafe-check.sh" },
+      "timeout": 30
+    }
+  ]
+}

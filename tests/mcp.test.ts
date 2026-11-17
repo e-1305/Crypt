@@ -6,6 +6,7 @@ import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { join } from "node:path";
 import fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";
+import { numRuns } from "./runs.js";
 import { buildCreature, serializeCreature } from "../src/exhume/creature.js";
 import { parseEpss, parseKev } from "../src/exhume/feeds.js";
 import { generate, type CreatureInput } from "../src/raise/generate.js";
@@ -140,7 +141,7 @@ describe("MCP failsafe properties", () => {
         expect(wrote).toBe(ids.includes(id) ? 1 : 0);
         expect(env.sealed()).toBe(false);
       }),
-      { numRuns: 100 },
+      { numRuns: numRuns(100) },
     );
   });
 
@@ -152,7 +153,7 @@ describe("MCP failsafe properties", () => {
         await call("request_graft", { limb_id: id });
         expect(env.requests()).toEqual([]);
       }),
-      { numRuns: 100 },
+      { numRuns: numRuns(100) },
     );
   });
 

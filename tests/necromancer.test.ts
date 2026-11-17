@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
+import { numRuns } from "./runs.js";
 import { verify } from "../src/inquisitor/index.js";
 import { MAX_PRS_PER_RAID, editManifests, graft } from "../src/necromancer/index.js";
 import { chooseVersion, compareVersions, parseVersion, type Advisory, type RangeEvent } from "../src/necromancer/version.js";
@@ -95,7 +96,7 @@ describe("version choice", () => {
           got.breaking === (g.major > cur[0]!)
         );
       }),
-      { numRuns: 300 },
+      { numRuns: numRuns(300) },
     );
   });
 });
@@ -295,7 +296,7 @@ describe("necromancer properties", () => {
         const r = await graft(ctx, env.request(limb));
         return r.outcome === "REJECTED_UNKNOWN_LIMB" && calls.length === 0 && env.lookups.length === 0 && env.payloads().length === 0 && env.audit().length === before + 1;
       }),
-      { numRuns: 150 },
+      { numRuns: numRuns(150) },
     );
     env.cleanup();
   });
@@ -310,7 +311,7 @@ describe("necromancer properties", () => {
         const r = await graft(ctx, env.request(limb));
         return r.outcome === "REJECTED_SEALED" && calls.length === 0 && env.lookups.length === 0 && env.payloads().length === 0;
       }),
-      { numRuns: 100 },
+      { numRuns: numRuns(100) },
     );
     env.cleanup();
   });
@@ -324,7 +325,7 @@ describe("necromancer properties", () => {
         await graft(ctx, env.request(limb));
         return calls.every((c) => ["createBranchWithFiles", "openPullRequest"].includes(c) && !/merge/i.test(c));
       }),
-      { numRuns: 60 },
+      { numRuns: numRuns(60) },
     );
     expect(Object.keys(client).filter((k) => /merge/i.test(k))).toEqual([]);
     expect(readFileSync(join("src", "github", "client.ts"), "utf8")).not.toMatch(/merge/i);

@@ -1,10 +1,30 @@
 {
-  "name": "crypt-cli",
+  "name": "@e-1305/crypt",
   "version": "0.1.0",
-  "private": true,
   "description": "CRYPT: your dependency tree as a Z-machine creature. One command (crypt raid) finds the rotting limbs and opens dry-run fix payloads.",
-  "type": "module",
+  "keywords": [
+    "vulnerability",
+    "dependencies",
+    "security",
+    "z-machine",
+    "text-adventure",
+    "osv",
+    "kev",
+    "epss",
+    "cli",
+    "kiro"
+  ],
+  "homepage": "https://e-1305.github.io/Crypt/",
+  "bugs": {
+    "url": "https://github.com/e-1305/Crypt/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/e-1305/Crypt.git"
+  },
+  "author": "e-1305",
   "license": "MIT",
+  "type": "module",
   "engines": {
     "node": ">=20"
   },
@@ -14,7 +34,16 @@
   "files": [
     "bin",
     "scripts",
+    "!scripts/ci",
+    "!scripts/hooks",
+    "!scripts/census",
+    "!scripts/check-*.ts",
+    "!scripts/build-site.ts",
+    "!scripts/gallery-snapshot.ts",
+    "!scripts/web.ts",
     "src",
+    "!src/web",
+    "!src/site",
     "game",
     "fixtures/vulnerable-npm",
     "data/cache/osv",
@@ -22,6 +51,9 @@
     "LICENSE",
     "docs/ATTRIBUTION.md"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "setup": "bash scripts/setup-tools.sh",
     "build:game": "bash scripts/setup-tools.sh && bash scripts/build-game.sh",
@@ -42,7 +74,10 @@
     "web": "tsx scripts/web.ts",
     "mcp": "tsx scripts/mcp.ts",
     "build:web": "tsc -p tsconfig.web.json",
-    "crypt": "node bin/crypt.mjs"
+    "build:site": "bash scripts/setup-tools.sh && tsx scripts/build-site.ts",
+    "gallery:snapshot": "tsx scripts/gallery-snapshot.ts",
+    "crypt": "node bin/crypt.mjs",
+    "prepublishOnly": "npm run typecheck && npx vitest run && bash scripts/ci/pack-install-test.sh"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",

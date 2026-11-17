@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { numRuns } from "./runs.js";
 import fc from "fast-check";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -78,7 +79,7 @@ describe("raise: determinism (R1)", () => {
       fc.property(hostileCreature, (c) => {
         expect(generate(c as CreatureInput)).toEqual(generate(JSON.parse(JSON.stringify(c))));
       }),
-      { numRuns: 100 },
+      { numRuns: numRuns(100) },
     );
   });
 });
@@ -109,7 +110,7 @@ describe("raise: limb IDs (R3)", () => {
           expect(parseCommand(`ASSIGN ${id}`)).toEqual({ ok: true, verb: "ASSIGN", limb: id });
         }
       }),
-      { numRuns: 300 },
+      { numRuns: numRuns(300) },
     );
   });
 
@@ -174,6 +175,16 @@ describe("raise: story content (R2, R5, R6)", () => {
     expect(g.inf).toContain("The slabs are bare.");
   });
 
+  it("declares the four limb properties when no limb object defines them, so Limb compiles", () => {
+    // Without a spawned limb no object sets these, and Inform rejects the Limb class that reads them.
+    for (const c of [{ limbs: [] }, { limbs: [{ rank: 1, ecosystem: "npm", name: "ms", version: "2.1.3", owner: "x", state: "Healthy", spawned: false, epss: null, vulns: [] }] }]) {
+      const { inf } = generate(c as CreatureInput);
+      for (const p of ["limbid", "limbcodes", "owner", "lore"]) expect(inf, p).toMatch(new RegExp(`^Property ${p};$`, "m"));
+    }
+    // With a spawned limb the object defines them, so the declarations must not appear twice.
+    expect(generate(fixture).inf).not.toMatch(/^Property (limbid|limbcodes|owner|lore);$/m);
+  });
+
   it("never carries a commit author field", () => {
     expect(inf).not.toMatch(/author|committer/i);
   });
@@ -188,7 +199,7 @@ describe("raise: sanitizer (R6)", () => {
         expect(t).not.toMatch(/["~^@\[\]\\]/);
         expect(t.length).toBeLessThanOrEqual(MAX_TEXT);
       }),
-      { numRuns: 1000 },
+      { numRuns: numRuns(1000) },
     );
   });
 
@@ -206,7 +217,7 @@ describe("raise: sanitizer (R6)", () => {
         // limb IDs are plain A-Z in the source
         for (const m of inf.matchAll(/limbid "([^"]*)"/g)) expect(m[1]).toMatch(/^[A-Z]{1,32}$/);
       }),
-      { numRuns: 200 },
+      { numRuns: numRuns(200) },
     );
   });
 });

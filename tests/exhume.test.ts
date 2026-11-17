@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { numRuns } from "./runs.js";
 import fc from "fast-check";
 import { execFileSync, spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
@@ -210,7 +211,7 @@ describe("ranking properties (sla-policy)", () => {
 
 // Enough runs to catch rare collisions (two rows with the same name@version).
 // fast-check prints the seed and path of any failure; replay with { seed, path }.
-fc.configureGlobal({ numRuns: 1000 });
+fc.configureGlobal({ numRuns: numRuns(1000) });
 
 const arbScenario = fc.record({
   rows: fc.array(
