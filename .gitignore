@@ -28,3 +28,6 @@ crypt-audit.log
 
 # Downloaded exploit-intel feeds (large); fixtures keep their own snapshot
 data/feeds/
+# Web player build output
+web/game/
+web/js/

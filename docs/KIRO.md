@@ -10,6 +10,8 @@
 | exhume-and-rank | `.kiro/specs/exhume-and-rank/` | requirements (E1 to E9), design (creature.json schema, ranking formula, fail-safe unknown state, fixture data policy) and tasks written and committed before any code; implemented. Driven by issue #5: `npx crypt exhume <path-or-url>` gives a deterministic KEV/EPSS ranking, offline once cached |
 | raise-the-creature | `.kiro/specs/raise-the-creature/` | requirements, design (ID scheme, sanitizer, marker templates) and tasks committed before code; implemented. Driven by issue #8: `npx crypt raise out/creature.json` compiles `creature.json` to a playable `.z8` story with an ASSIGN verb |
 | necromancer | `.kiro/specs/necromancer/` | requirements (N1 to N8), design (module layout, version selection, state schema, audit outcomes, static-test constraint) and tasks committed before any code. Driven by issue #11: GRAFT leads to a fix PR, CI check, human landing and re-raise. Implemented: complete mediation in the watcher (N1), Necromancer, GithubClient with dry-run, Inquisitor, re-raise, SEAL, acceptance script |
+| web-player | `.kiro/specs/web-player/` | requirements (W1 to W9), design (interpreter comparison, pure output hook, Glk shim, spoofing analysis) and tasks written before coding; implemented. Issue #6: play `spike.z5` in the browser with an event log fed only by `parseGameOutput` |
+| mcp-server | `.kiro/specs/mcp-server/` | requirements (M1 to M6), design (core handlers, write path through the watcher, allowlisted outputs, redaction) and tasks written before coding; implemented. Issue #19: any MCP client can query the creature and request a graft under the failsafe rules |
 
 ## Steering
 | File | Purpose |
@@ -33,7 +35,32 @@
 | Inquisitor | Verifies the fix. `.kiro/agents/inquisitor.json`: read-only, no write, no shell (separation of privilege, failsafe 3) |
 
 ## MCP
-TODO
+`npm run mcp` starts the CRYPT MCP server on stdio. Kiro reads `.kiro/settings/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "crypt": {
+      "command": "npm",
+      "args": ["run", "mcp", "--silent"],
+      "env": {},
+      "disabled": false,
+      "autoApprove": ["list_limbs", "get_limb", "census_summary", "audit_tail"]
+    }
+  }
+}
+```
+
+| Tool | Kind | What it does |
+|---|---|---|
+| `list_limbs` | read | Every limb: id, state, CVEs, KEV, EPSS, owner, spawned |
+| `get_limb(id)` | read | One limb by ID |
+| `census_summary` | read | `docs/census/RESULTS.md` when present |
+| `audit_tail(n)` | read | Last n audit lines (1 to 100), token-looking strings redacted |
+| `request_graft(limb_id)` | write | Grammar, `out/limbs.json`, seal check, request file, audit. Never calls GitHub. A human lands the PR |
+| `seal()` | write | Seals the crypt; every later graft is refused |
+
+Run `npm run exhume` and `npm run raise` first so `out/creature.json` and `out/limbs.json` exist.
 
 ## Property-based tests
 | Invariant | Test file |
@@ -72,6 +99,11 @@ TODO
 | After SEAL zero API calls for any input: Necromancer, Inquisitor, re-raise (rule 7, N6) | `tests/necromancer.test.ts`, `tests/inquisitor.test.ts`, `tests/reraise.test.ts` |
 | Any GitHub or CI error leaves `out/state.json` byte-identical; red, timeout and missing CI keep the limb Rotting (rule 1, N4, N5) | `tests/inquisitor.test.ts`, `tests/reraise.test.ts` |
 | A landed PR heals its limb and the regenerated creature no longer spawns it (N5) | `tests/reraise.test.ts` |
+| For any typed input and any interpreter output, the input echo yields no event (web-player W4.4) | `tests/output-hook.test.ts` |
+| `request_graft` with any string writes a request only for an ID in `limbs.json` while unsealed (rules 1, 5, M3) | `tests/mcp.test.ts` |
+| After `seal()` zero requests for any input through MCP (rule 7, M3) | `tests/mcp.test.ts` |
+| No MCP tool output contains a token-looking string or a git author (blameless, M4) | `tests/mcp.test.ts` |
+| Any chunk split of interpreter text yields the same lines and events as the whole text (W2.2) | `tests/output-hook.test.ts` |
 
 ## Spec → code traceability
 | Task | Commit | Test |
@@ -129,5 +161,15 @@ TODO
 | 13 `scripts/check-necromancer.ts` | same | `npm run necromancer:check`: GRAFT JQUERY gives 1 payload (jquery 3.4.1 to 3.5.0, breaking false), 0 after SEAL CRYPT |
 | 14 docs | `docs: necromancer usage and KIRO.md` | n/a |
 
+### web-player (issue #6)
+| Task | Commit | Test |
+|---|---|---|
+| 2, 3 `src/web/output-hook.ts` and tests | `feat: web player` | `tests/output-hook.test.ts` |
+| 4 vendored ZVM, `src/web/glk-shim.ts`, `src/web/player.ts` | same | real `spike.z5` run in `tests/output-hook.test.ts` (skipped when `spike.z5` is not built) |
+| 5, 6 `web/index.html`, `web/app.js`, `web/style.css` | same | headless Chromium check (not in CI): `GRAFT ARM` logs `[[CRYPT GRAFT ARM]]`, typing the marker logs nothing, only same-origin requests |
+| 7, 8 `scripts/web.ts`, `tsconfig.web.json`, `npm run web` | same | curl of page, `.z5`, traversal (404) and POST (405) |
+| 10 docs | same | review |
+
 ## Numbers
-- Specs: 5 · Hooks: TODO · Steering files: 5 · Property tests: 40 (16 bridge, 9 exhume, 4 raise, 11 necromancer, inquisitor and re-raise) · Tests: 143
+- Specs: 6 · Hooks: TODO · Steering files: 5 · Property tests: 40 (16 bridge, 9 exhume, 4 raise, 11 necromancer, inquisitor and re-raise) · Tests: 143
+
