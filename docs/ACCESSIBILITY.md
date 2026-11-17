@@ -56,3 +56,21 @@ Measured with Playwright and Chromium 159, 1280x720, page from `npm run web`.
 | Accessibility on the 2D fallback (`?theatre=off`) | axe-core 4.x: 0 violations, 37 rules passed |
 
 Lighthouse could not launch Chrome in the sandbox used for B1, so no new Lighthouse number is claimed. The axe-core result above approximates its accessibility audit (Lighthouse uses axe-core internally). The earlier Lighthouse score of 100 was for the same 2D page, which B1 leaves unchanged apart from one extra script tag and CSS rules scoped to `body.theatre`. Re-run Lighthouse against `/?theatre=off` on a machine with Chrome to confirm.
+
+## B5 polish: title card, dolly-in, recording mode
+
+Re-measured on the B5 branch with Playwright and Chromium, 1280x720, page from `PORT=8099 npm run web`.
+
+| Check | Result |
+|---|---|
+| Accessibility on the 2D fallback (`?theatre=off`), axe-core 4.x in Playwright | 0 violations, 38 rules passed |
+| Lighthouse | Not run. Lighthouse cannot launch Chrome in this sandbox. axe-core is the engine Lighthouse uses for this category, so it is the closest available measure. The recorded Lighthouse 100 on the default page is from an earlier machine. Re-run Lighthouse on `/?theatre=off` with a local Chrome before submission |
+| First-load weight, 3D path | 762,257 bytes (about 0.73 MiB). Budget: 5 MB |
+| First-load weight, 2D path | 143,458 bytes, no three.js request |
+| Frame rate | 26 fps in headless Chromium with software WebGL (SwiftShader). Earlier runs gave 25 to 28 fps. This is a floor for a machine with no GPU. 60 fps on a laptop with a GPU has NOT been measured |
+
+Rules for the new pieces:
+
+- **Title card** (`CRYPT — Don't abandon your creature.`): 3D path only, 3 seconds, `aria-hidden`. Any key or click skips it. It never appears on the 2D page or under `prefers-reduced-motion`, and reduced motion already selects the 2D page.
+- **Dolly-in**: the camera moves toward the CRT at the first key pressed in the command input. It is instant under reduced motion (which never mounts the bench in the first place).
+- **Recording mode** (`?record=1` or the "Recording mode" button): hides the header, event log, plain-page link, sound toggle and the raid and simulated CI buttons. The CRT and the plate stay. Escape leaves it. The toggle button stays in the tab order and shows when it has focus, so keyboard users can leave without knowing the shortcut. The game input keeps working. Recording mode is for screen capture, not for everyday use, because it removes the event log and its announcements from view (the announcer region still speaks).

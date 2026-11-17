@@ -2,6 +2,7 @@
 // The 2D page is the default: when anything blocks the 3D path this file does nothing and
 // three.js is never requested. Only the 3D path dynamically imports ./vendor/three.module.min.js.
 import { decideTheatre } from "./js/theatre/capability.js";
+import { parseRecordFlag, recordModeAfterKey } from "./js/theatre/polish.js";
 
 function hasWebgl2() {
   try {
@@ -36,3 +37,21 @@ if (decision.mode === "3d") {
       document.documentElement.dataset.theatre = "2d:error";
     });
 }
+
+// Recording mode (B5.3): hides UI chrome for screen capture, keeps the CRT and the plate.
+// Works on the 3D bench and the 2D page. Reversible: Escape, or the visually hidden button (keyboard focus shows it).
+const recordBtn = document.getElementById("record-toggle");
+function setRecord(on) {
+  document.body.classList.toggle("record", on);
+  if (recordBtn) {
+    recordBtn.setAttribute("aria-pressed", String(on));
+    recordBtn.textContent = on ? "Exit recording mode" : "Recording mode";
+  }
+}
+setRecord(parseRecordFlag(location.search));
+recordBtn?.addEventListener("click", () => setRecord(!document.body.classList.contains("record")));
+document.addEventListener("keydown", (e) => {
+  const now = document.body.classList.contains("record");
+  const next = recordModeAfterKey(now, e.key);
+  if (next !== now) setRecord(next);
+});

@@ -1,5 +1,5 @@
 // Live heal glue (Epic B3). The rules live in js/theatre/heal-events.js (compiled from src/theatre/heal-events.ts).
-// Two sources feed the same pipeline: the real one (app.js sees a limb turn Healed in game/creature.json)
+// Two sources feed the same pipeline: the real one (app.js sees a limb turn Healed in game/<id>.json)
 // and the simulated one (replays a dry-run style payload, always labelled SIMULATED CI). No network, no token.
 // Fail-safe: any error, malformed event or ambiguity leaves the limb as it was.
 import { applyHealEvent, demoPayload, simulateFromPayload, SIMULATED_LABEL } from "./js/theatre/heal-events.js";
@@ -71,7 +71,7 @@ export function initHeal({ addLine, announce, getLimbs, redraw }) {
   simRed?.addEventListener("click", () => run("red"));
   const q = new URLSearchParams(location.search).get("simulate");
   return {
-    /** Real source: limbs app.js saw turn from sick to Healthy in creature.json (the plate remembers they were sick). */
+    /** Real source: limbs app.js saw turn from sick to Healthy in game/<id>.json (the plate remembers they were sick). */
     real: (keys) => { for (const k of keys) handle({ type: "healed", limb: k }, false, { [k]: "Rotting" }); },
     /** The simulated heal is a view only: applied on top of whatever the page last loaded. */
     overlay: (limbs) => limbs.map((l) => (sim[keyOf(l)] === "Healed" ? { ...l, state: "Healed" } : l)),
