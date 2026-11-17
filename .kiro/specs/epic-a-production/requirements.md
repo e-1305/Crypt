@@ -32,7 +32,8 @@ Terms. **CI**: GitHub Actions on this repository. **Guard**: `scripts/ci/failsaf
 9. Gallery data SHALL be committed snapshots (`web/gallery-data/`), so the Pages build uses no network.
 
 ## A4 npm packaging
-1. `npm pack --dry-run` SHALL list exactly the files in the `files` whitelist, and SHALL exclude `web/`, `.toolchain/` and `out/`.
+1. `npm pack --dry-run` SHALL list exactly the files in the `files` whitelist, and SHALL exclude `web/`, `.toolchain/`, `out/` and `tests/`.
 2. A packed tarball installed in a clean directory SHALL answer `crypt --help` and `crypt --version`.
-3. The package SHALL stay `private: true` until a human removes it. No step publishes.
-4. `docs/ATTRIBUTION.md` SHALL list every new dependency and action.
+3. The package SHALL be ready to publish (no `private` flag, `bin`, `files`, `engines`, `repository`, `license`) under the first free name of `crypt`, `crypt-cli`, `@e-1305/crypt`. No step publishes; the owner runs `npm publish`.
+4. CI SHALL pack the package, install the tarball into an empty project and run the installed CLI on Node 20 and 22.
+5. `docs/ATTRIBUTION.md` SHALL list every new dependency and action.

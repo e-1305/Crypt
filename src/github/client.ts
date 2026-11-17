@@ -36,9 +36,14 @@ export interface PrState {
 export interface GithubClient {
   /** True when no call leaves the machine. */
   readonly dryRun: boolean;
+  /** Reads a file from the default branch at the base commit pinned for this run. */
+  readBaseFile(path: string): Promise<string>;
   createBranchWithFiles(req: BranchRequest): Promise<void>;
-  openPullRequest(req: PrRequest): Promise<{ number: number; url: string }>;
-  getCheckRuns(branch: string): Promise<CheckRun[]>;
+  openPullRequest(req: PrRequest): Promise<{ number: number; url: string; headSha: string }>;
+  /** `ref` is a commit SHA (a branch name also works for the real adapter). */
+  getCheckRuns(ref: string): Promise<CheckRun[]>;
+  /** Best effort cleanup of a branch this tool created. Refuses names outside crypt/. */
+  deleteBranch?(branch: string): Promise<void>;
   getPullRequestState(ref: { number: number; branch: string }): Promise<PrState>;
 }
 
@@ -47,6 +52,9 @@ export function dryRunClient(io: Io, prsDir: string, now: () => Date): GithubCli
   const staged = new Map<string, BranchRequest>();
   return {
     dryRun: true,
+    async readBaseFile() {
+      throw new Error("not available in dry-run");
+    },
     async createBranchWithFiles(req) {
       staged.set(req.branch, req);
     },
@@ -67,7 +75,7 @@ export function dryRunClient(io: Io, prsDir: string, now: () => Date): GithubCli
       };
       io.mkdirp(prsDir);
       io.writeText(`${prsDir}/${branchFile(req.branch)}`, JSON.stringify(payload, null, 2) + "\n");
-      return { number: 0, url: "-" };
+      return { number: 0, url: "-", headSha: "-" };
     },
     async getCheckRuns() {
       return [];

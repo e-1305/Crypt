@@ -18,7 +18,7 @@ pull_request / push main
 | `tests/runs.ts` | `numRuns(default)` returns `max(default, CRYPT_NUM_RUNS)` when the variable is a positive integer, else `default` |
 | `tests/failsafe-guard.test.ts` | runs the guard on a clean temp tree and on one tree per violation |
 
-Guard rules, applied after removing the state label `awaiting-human-merge`: the merge patterns of `tests/static.test.ts`, `gh pr merge`, `git blame` (also as spawn arguments `"git", "blame"`), and `.kiro/` ignored by git. The guard never weakens `tests/static.test.ts`; it is a second, independent check that also covers `bin/` and runs without Node.
+Guard rules, applied after removing the state label `awaiting-human-merge`: the merge patterns of `tests/static.test.ts`, `gh pr merge`, `git blame`, and `.kiro/` ignored by git. The rules live in `scripts/ci/failsafe-rules.sh`, shared with the on-save hook `scripts/hooks/failsafe-check.sh`. Each rule runs per line and on the whole file folded to one line, so calls split over lines are caught. Quoted standalone merge and blame tokens catch argument arrays (`spawn("gh", ["pr", "<merge>"])`, `execFile("git", ["-C", d, "blame", f])`), and `git` followed by flags then blame catches command strings. The `.kiro` check probes `.kiro/`, `.kiro/hooks`, `.kiro/steering` and `.kiro/specs` paths with `git check-ignore` and also fails on any `.kiro` pattern in `.gitignore`. The hook adds token-in-log detection for one line, a call split over lines, and a variable assigned from a secret and logged later. The guard never weakens `tests/static.test.ts`; it is a second, independent check that also covers `bin/` and runs without Node.
 
 Toolchain cache: `CRYPT_TOOLCHAIN_DIR=$HOME/.cache/crypt/toolchain` for every step, cached with key `toolchain-${{ runner.os }}-${{ hashFiles('scripts/setup-tools.sh') }}`.
 
@@ -83,8 +83,32 @@ Page rules: GRAFT is a rehearsal. The marker still goes through `parseGameOutput
 
 Raise fix found by the gallery: a creature with no spawned limb produced Inform source that did not compile (the `Limb` class used properties no object defined). `generate` now declares the four properties when there are no monsters; output for creatures with limbs is unchanged.
 
+### Owner decisions and notes (review v1)
+- **Gallery data needs owner approval (open).** `web/gallery-data/*.json` names 20 third-party repositories with their unpatched package versions, KEV flags and EPSS scores, which `census` C3 kept out of the repository. Record the approval before the Pages URL is published or put in Devpost. Until then the branch is local only.
+- **Nothing has run on GitHub (open).** The workflows, the Pages URL and the README badge are unverified; branches are local. After the first push, check that `ci.yml` is green and that `pages.yml` deploys.
+- **`npm run web` changed.** `scripts/web.ts` no longer builds `spike.z5` or copies a creature. It delegates to `build:site`, so it now needs the Inform/Frotz toolchain (`npm run setup`) and the gallery data in `web/gallery-data/`.
+- **CI time.** `tests/site.test.ts` builds the site twice for the determinism check. The build count does not scale with `CRYPT_NUM_RUNS`; measured locally, the whole file takes about 3 s. The 1000-run property tests are the cost to watch on the first CI run, inside the 30-minute job limit.
+- **Hook format.** The `.kiro/hooks/*.json` schema follows the Kiro hooks documentation linked above. No hook has fired inside a Kiro session; the runs in `docs/KIRO.md` are manual invocations of the scripts.
+
 ### Workflow (`.github/workflows/pages.yml`)
-Triggers: push to `main`, `workflow_dispatch`. Top-level `permissions: contents: read`. Job `build`: checkout, Node 22, `npm ci`, toolchain cache (same key as CI), `bash scripts/setup-tools.sh`, `npm run build:site`, `configure-pages`, `upload-pages-artifact` (`_site`). Job `deploy` (needs `build`): `pages: write`, `id-token: write`, `environment: github-pages`, `deploy-pages`. Concurrency group `pages`, no cancel of a running deploy.
+Triggers: `workflow_run` of the `CI` workflow on `main` (the build job runs only when CI concluded `success` for a push, and checks out the commit CI tested, so a push that fails CI never publishes), and `workflow_dispatch` (a manual deploy that skips the gate on purpose). Top-level `permissions: contents: read`. Job `build`: checkout, Node 22, `npm ci`, toolchain cache (same key as CI), `bash scripts/setup-tools.sh`, `npm run build:site`, `configure-pages`, `upload-pages-artifact` (`_site`). Job `deploy` (needs `build`): `pages: write`, `id-token: write`, `environment: github-pages`, `deploy-pages`. Concurrency group `pages`, no cancel of a running deploy.
 
 ## A4 Packaging
-To be designed in the A4 milestone.
+
+### Name availability (checked 2026-11-17 with `npm view <name> name version description`)
+| Name | Result |
+|---|---|
+| `crypt` | taken: 0.0.2, "utilities for encryption and hashing" (unrelated) |
+| `crypt-cli` | taken: 1.0.0, "CLI tool to encrypt or decrypt JWT" (unrelated) |
+| `@e-1305/crypt` | E404, free |
+
+The package is named `@e-1305/crypt`. The `bin` entry stays `crypt`, so after install the command is `crypt`. Publishing a scoped package needs the `@e-1305` npm scope owned by the publisher, which the owner confirms; `publishConfig.access` is `public`. Run it with `npx @e-1305/crypt raid <dir>` (npx runs the only bin) or, once installed, `npx --no-install crypt`.
+
+### Files whitelist
+`files` ships `bin`, `scripts`, `src`, `game`, `fixtures/vulnerable-npm`, `data/cache/osv`, README, LICENSE and `docs/ATTRIBUTION.md`. Negations drop what only maintainers use: `scripts/ci`, `scripts/hooks`, `scripts/census`, `scripts/check-*.ts`, `scripts/build-site.ts`, `scripts/gallery-snapshot.ts`, `scripts/web.ts`, `src/web` and `src/site` (the web gallery and Pages build). Result: 108 files, 64 kB packed (131 files before the negations). `tsx` stays a runtime dependency because the launcher runs TypeScript through it.
+
+### Path audit
+`PACKAGE_ROOT` comes from `import.meta.url` (`scripts/toolchain-dir.ts`), so the fixture, OSV cache and `setup-tools.sh` resolve inside `node_modules`. `out/`, `crypt-audit.log` and `.crypt-seal` use `process.cwd()`. No change was needed.
+
+### Install test
+`scripts/ci/pack-install-test.sh` runs `npm pack`, checks the tarball for required and forbidden paths, installs it into an empty project, runs `crypt --help`, `crypt --version` and an offline exhume of the packaged fixture. With `CRYPT_PACK_RAID=1` it also plays the scripted raid. CI job `pack-install` runs it on Node 20 and 22. `prepublishOnly` runs typecheck, tests and the same script.

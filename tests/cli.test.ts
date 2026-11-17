@@ -69,9 +69,9 @@ describe("parseCli: commands and flags", () => {
     expect(() => parseCli(["exhume", "git@github.com:a/b.git"])).toThrow(UsageError);
     expect(() => parseCli(["exhume", `${GITHUB_BASE}/a/b/extra`])).toThrow(UsageError);
   });
-  it("graft --live needs GITHUB_TOKEN and --repo", () => {
+  it("graft --live needs GITHUB_TOKEN; --repo may come from out/target.json (resolved by the command)", () => {
     expect(() => parseCli(["graft", "JQUERY", "--live", "--repo", "o/n"], {})).toThrow(/GITHUB_TOKEN/);
-    expect(() => parseCli(["graft", "JQUERY", "--live"], { GITHUB_TOKEN: "t" })).toThrow(/--repo/);
+    expect(parseCli(["graft", "JQUERY", "--live"], { GITHUB_TOKEN: "t" }).flags).toEqual({ live: true });
     expect(parseCli(["graft", "JQUERY", "--live", "--repo", "o/n"], { GITHUB_TOKEN: "t" }).flags).toEqual({ live: true, repo: "o/n" });
     expect(parseCli(["graft", "JQUERY"], {}).flags).toEqual({});
   });

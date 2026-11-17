@@ -51,3 +51,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: bash scripts/ci/failsafe-guard.sh
+
+  pack-install:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - name: Cache toolchain
+        uses: actions/cache@v4
+        with:
+          path: .toolchain
+          key: toolchain-${{ runner.os }}-${{ hashFiles('scripts/setup-tools.sh') }}
+      - name: Build toolchain
+        run: bash scripts/setup-tools.sh
+      - name: Pack, install into an empty project, run the installed CLI
+        run: bash scripts/ci/pack-install-test.sh
+        env:
+          CRYPT_PACK_RAID: "1"

@@ -3,15 +3,15 @@
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { defaultPaths } from "../../src/common/agent.js";
+import { defaultPaths, readPrRecords } from "../../src/common/agent.js";
 import { nodeIo } from "../../src/common/io.js";
 import { CliError, EXIT, exitCodeFor } from "../../src/cli/exit.js";
 import { helpText, versionText } from "../../src/cli/help.js";
 import { parseCli, type Parsed } from "../../src/cli/parse.js";
 import { dryRunClient } from "../../src/github/client.js";
 import { graft } from "../../src/necromancer/index.js";
-import { githubClient } from "../github-client.js";
 import { fixtureAdvisories, osvAdvisories } from "../osv-advisory.js";
+import { preflightedClients, resolveRepo } from "./live.js";
 import { exhumeCommand, raidCommand } from "./raid.js";
 import { runScript, runScriptOrFail } from "./run.js";
 import { seal, unseal } from "./seal.js";
@@ -26,7 +26,9 @@ async function graftCommand(p: Parsed): Promise<number> {
   const paths = defaultPaths(cwd);
   const now = () => new Date();
   const live = p.flags.live === true;
-  const client = live ? githubClient(String(p.flags.repo), process.env.GITHUB_TOKEN ?? "") : dryRunClient(nodeIo, paths.prsDir, now);
+  const sabotage = p.flags.sabotage === true;
+  const lc = live ? await preflightedClients(resolveRepo(p.flags, cwd), process.env.GITHUB_TOKEN ?? "", cwd) : null;
+  const client = lc ? lc.client : dryRunClient(nodeIo, paths.prsDir, now);
   const tmp = mkdtempSync(join(tmpdir(), "crypt-graft-"));
   try {
     const file = join(tmp, "request.json");
@@ -38,10 +40,17 @@ async function graftCommand(p: Parsed): Promise<number> {
       advisories: advisoriesFor(p.flags.advisories),
       targetDir: resolve(typeof p.flags.target === "string" ? p.flags.target : "."),
       now,
+      registry: lc?.registry,
+      sabotage,
     };
     const r = await graft(ctx, file);
     const where = r.branch ? ` ${r.branch}${r.breaking ? " (breaking: true)" : ""}${live ? "" : " (dry-run payload in out/prs/)"}` : "";
     console.log(`${limb}: ${r.outcome}${where}`);
+    if (live && r.outcome === "PR_OPENED" && r.branch) {
+      const rec = readPrRecords(nodeIo, paths.prsDir).find((x) => x.branch === r.branch);
+      if (rec) console.log(`Pull request: ${rec.url}`);
+      if (sabotage) console.log("DEMO SABOTAGE: this pull request adds a failing test on purpose so CI goes red. Close it on GitHub when the demo is over.");
+    }
     return r.outcome === "ERROR" ? EXIT.FAILURE : EXIT.OK;
   } finally {
     rmSync(tmp, { recursive: true, force: true });
@@ -51,8 +60,9 @@ async function graftCommand(p: Parsed): Promise<number> {
 function agentArgs(p: Parsed): string[] {
   return [
     ...p.args,
-    ...(p.flags["dry-run"] === true ? ["--dry-run"] : []),
-    ...(typeof p.flags.repo === "string" ? ["--repo", p.flags.repo] : []),
+    ...(p.flags.live === true ? ["--live", "--repo", resolveRepo(p.flags, process.cwd())] : p.flags["dry-run"] === true ? [] : ["--dry-run"]),
+    ...(p.flags.live !== true && typeof p.flags.repo === "string" ? ["--repo", p.flags.repo] : []),
+    ...(typeof p.flags.timeout === "string" ? ["--timeout", p.flags.timeout] : []),
   ];
 }
 

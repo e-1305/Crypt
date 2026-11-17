@@ -23,6 +23,6 @@
 - [x] A3.6 `tests/site.test.ts` and README Live demo
 
 ## A4 npm packaging
-- [ ] A4.1 `npm pack --dry-run` matches the whitelist
-- [ ] A4.2 Tarball smoke test in a clean directory
-- [ ] A4.3 `docs/ATTRIBUTION.md` updated
+- [x] A4.1 `npm pack --dry-run` matches the whitelist
+- [x] A4.2 Tarball smoke test in a clean directory
+- [x] A4.3 `docs/ATTRIBUTION.md` updated

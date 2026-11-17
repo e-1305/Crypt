@@ -12,6 +12,7 @@
 | necromancer | `.kiro/specs/necromancer/` | requirements (N1 to N8), design (module layout, version selection, state schema, audit outcomes, static-test constraint) and tasks committed before any code. Driven by issue #11: GRAFT leads to a fix PR, CI check, human landing and re-raise. Implemented: complete mediation in the watcher (N1), Necromancer, GithubClient with dry-run, Inquisitor, re-raise, SEAL, acceptance script |
 | web-player | `.kiro/specs/web-player/` | requirements (W1 to W9), design (interpreter comparison, pure output hook, Glk shim, spoofing analysis) and tasks written before coding; implemented. Issue #6: play `spike.z5` in the browser with an event log fed only by `parseGameOutput` |
 | mcp-server | `.kiro/specs/mcp-server/` | requirements (M1 to M6), design (core handlers, write path through the watcher, allowlisted outputs, redaction) and tasks written before coding; implemented. Issue #19: any MCP client can query the creature and request a graft under the failsafe rules |
+| live-raid | `.kiro/specs/live-raid/` | requirements (L1 to L8), design and tasks committed before any code. Driven by issue #24: `crypt raid <url> --live` opens a real PR on crypt-demo through the Git Data API with a registry-backed lockfile bump, the Inquisitor polls the `test` check, a human lands it, `crypt reraise` shows HEALED; demo-only `--sabotage`; every API call audited. Implemented; script in `docs/DEMO.md` |
 
 ## Steering
 | File | Purpose |
@@ -98,6 +99,20 @@ The `failsafe-check` matcher covers `src/(necromancer|inquisitor|mcp)/` only, so
 
 The failure A3 did hit came from running the build, not from a hook. The first `npm run build:site` over the gallery snapshots stopped with `inform6 failed (exit 1)`: `line 19: Error: No such constant as "limbcodes"`. A creature with no spawned limb produced Inform source whose `Limb` class used properties no object defined. `raise` had never been run on such a creature. `generate` now declares the four properties in that case (`src/raise/generate.ts`), and 17 of the 20 gallery creatures have no spawned limb and depend on it.
 
+Runs while building A4 (npm packaging), on the files that milestone changed. All passed, so no hook caught anything there:
+```
+$ bash scripts/hooks/deps-check.sh
+deps-check: ok (7 dependencies attributed)
+$ bash scripts/ci/failsafe-guard.sh
+failsafe-guard: ok (37 files checked)
+$ bash scripts/hooks/blameless-copy-check.sh
+blameless-copy-check: ok (25 files checked)
+```
+A4 changed no file under `src/`, so `related-tests` and `failsafe-check` had nothing to run on; the full `npx vitest run` (345 tests) passed. The renamed package (`crypt-cli` to `@e-1305/crypt`) touched `package.json`, which is the `attribution-on-package-save` trigger: no dependency changed, and `deps-check` confirmed it.
+
+What the new check caught: the first dry run of `npm pack` listed 131 files including `scripts/ci`, `scripts/hooks`, `scripts/census`, the Pages build and `src/web`. Negations in `files` cut that to 108 files (64 kB). `scripts/ci/pack-install-test.sh` fails when the tarball lacks a runtime file or carries `tests/`, `.kiro/`, `web/` or `out/`.
+Install runs (tarball into an empty project, `crypt --help`, `--version`, offline exhume, scripted raid with `CRYPT_PACK_RAID=1`): `pack-install: ok` on Node 20.20.2, 22.23.4 and 24.22.1.
+
 ## Custom agents
 | Agent | Role |
 |---|---|
@@ -175,6 +190,13 @@ Run `npm run exhume` and `npm run raise` first so `out/creature.json` and `out/l
 | After `seal()` zero requests for any input through MCP (rule 7, M3) | `tests/mcp.test.ts` |
 | No MCP tool output contains a token-looking string or a git author (blameless, M4) | `tests/mcp.test.ts` |
 | Any chunk split of interpreter text yields the same lines and events as the whole text (W2.2) | `tests/output-hook.test.ts` |
+| Lockfile bump changes exactly one `node_modules` entry plus the root range, keeps `^`/`~`, version >= fixed, integrity equals registry metadata (L2) | `tests/live-graft.test.ts` |
+| Any GitHub or registry error at any request number opens no PR and leaves state unchanged (rule 1, L2) | `tests/live-graft.test.ts` |
+| `--sabotage` is refused without both `--live` and `--i-know-this-is-a-demo` (L6) | `tests/live-wiring.test.ts` |
+| Every live API call is audited with method and path, and the audit log equals the request log (L7) | `tests/live-graft.test.ts`, `tests/live-raid.test.ts` |
+| The token never appears in output, audit log, errors or `out/` files (L8) | `tests/live-graft.test.ts`, `tests/live-raid.test.ts` |
+| No request to a merge endpoint in the full mocked raid; the fake GitHub has none; `src/` and `scripts/` contain none (rule 2, L8) | `tests/live-raid.test.ts`, `tests/static.test.ts` |
+| Full raid: PR per limb, `test` green, awaiting human, human lands, HEALED; red check gives GRAFT_REJECTED and the limb stays rotting; SEAL gives zero API calls (L3, L5, L6) | `tests/live-raid.test.ts`, `npm run live-raid:check` |
 
 ## Spec → code traceability
 | Task | Commit | Test |
@@ -255,22 +277,31 @@ Task, commit and test for the production-readiness spec, generated by the `trace
 | A1.5 scripts/ci/failsafe-guard.sh and tests/failsafe-guard.test.ts | `b7cc099` | `tests/failsafe-guard.test.ts` |
 | A1.6 .github/workflows/ci.yml with jobs test and failsafe-guard | `b7cc099` | n/a |
 | A1.7 README CI badge | `b7cc099` | n/a |
-| A2.1 Hook scripts in scripts/hooks/ and tests in tests/hooks.test.ts | `a03d288` | `tests/hooks.test.ts` |
-| A2.2 Five hook definitions in .kiro/hooks/ (tests, failsafe, traceabilit... | `a03d288` | n/a |
-| A2.3 docs/KIRO.md documents the hooks with real captured output, traceab... | `a03d288` | n/a |
-| A3.1 Demo creature built from the fixture | `471b5b5` | n/a |
-| A3.2 Pages workflow (build, upload, deploy) | `471b5b5` | n/a |
-| A3.3 CORS check recorded in design.md | `471b5b5` | n/a |
-| A3.4 Gallery of the 20 census creatures (snapshots, alphabetical, aggreg... | `471b5b5` | n/a |
-| A3.5 Grafts show the dry-run payload; download button; subtitle | `471b5b5` | n/a |
-| A3.6 tests/site.test.ts and README Live demo | `471b5b5` | `tests/site.test.ts` |
-| A4.1 npm pack --dry-run matches the whitelist | open | n/a |
-| A4.2 Tarball smoke test in a clean directory | open | n/a |
-| A4.3 docs/ATTRIBUTION.md updated | open | n/a |
+| A2.1 Hook scripts in scripts/hooks/ and tests in tests/hooks.test.ts | `771e8be` | `tests/hooks.test.ts` |
+| A2.2 Five hook definitions in .kiro/hooks/ (tests, failsafe, traceabilit... | `771e8be` | n/a |
+| A2.3 docs/KIRO.md documents the hooks with real captured output, traceab... | `771e8be` | n/a |
+| A3.1 Demo creature built from the fixture | `2d92b87` | n/a |
+| A3.2 Pages workflow (build, upload, deploy) | `2d92b87` | n/a |
+| A3.3 CORS check recorded in design.md | `2d92b87` | n/a |
+| A3.4 Gallery of the 20 census creatures (snapshots, alphabetical, aggreg... | `2d92b87` | n/a |
+| A3.5 Grafts show the dry-run payload; download button; subtitle | `2d92b87` | n/a |
+| A3.6 tests/site.test.ts and README Live demo | `2d92b87` | `tests/site.test.ts` |
+| A4.1 npm pack --dry-run matches the whitelist | `57c5423` | n/a |
+| A4.2 Tarball smoke test in a clean directory | `57c5423` | n/a |
+| A4.3 docs/ATTRIBUTION.md updated | `57c5423` | n/a |
 
 <!-- kiro-trace:end -->
 
+## Epic A outcomes
+- A1 CI: `ci.yml` jobs `test`, `failsafe-guard` and `pack-install`; `CRYPT_NUM_RUNS=1000` for property tests.
+- A2 hooks: 5 hooks with testable scripts in `scripts/hooks/`, documented above with captured runs.
+- A3 Pages: demo creature and a 20-creature gallery, deployed by `pages.yml`; CORS measured and recorded in design.md.
+- A4 npm: `@e-1305/crypt` (`crypt` and `crypt-cli` are taken, checked 2026-11-17), 108 files and 64 kB packed, tarball install tested on Node 20 and 22 in CI. Not published: the owner runs `npm publish` after confirming the `@e-1305` scope.
+
 ## Numbers
 - Specs: 11 (`ls .kiro/specs | wc -l`) · Hooks: 5 (`ls .kiro/hooks | wc -l`) · Steering files: 5 (`ls .kiro/steering | wc -l`) · Custom agents: 2
-- Property tests: 60 (`grep -rhoE "fc\.assert\(" tests | wc -l`, in 15 files)
-- Tests: 324 (`npx vitest run`)
+- Property tests: 63 (`grep -rhoE "fc\.assert\(" tests | wc -l`, in 16 files)
+- Tests: 345 (`npx vitest run`)
+
+## Numbers
+- Specs: 6 · Hooks: TODO · Steering files: 5 · Property tests: 40 (16 bridge, 9 exhume, 4 raise, 11 necromancer, inquisitor and re-raise) · Tests: 143

@@ -10,8 +10,11 @@ import { nodeIo } from "../../src/common/io.js";
 import { CliError, EXIT, ToolchainError } from "../../src/cli/exit.js";
 import { dryRunClient } from "../../src/github/client.js";
 import { graft, type AdvisoryLookup } from "../../src/necromancer/index.js";
+import type { GithubClient } from "../../src/github/client.js";
+import type { RegistryClient } from "../../src/registry/types.js";
 import { STATUS_LINE } from "../play.js";
 import { dfrotzPath } from "../toolchain-dir.js";
+import { handleLiveGraft } from "./live-graft.js";
 import { onInterrupt } from "./signals.js";
 
 export interface SessionOpts {
@@ -21,7 +24,11 @@ export interface SessionOpts {
   targetDir: string;
   advisories: AdvisoryLookup;
   out?: { write(s: string): unknown };
+  /** Live mode: a real GitHub client and registry; the Inquisitor watches each opened pull request. */
+  live?: { client: GithubClient; registry: RegistryClient; timeoutMs: number; repo: string };
 }
+
+const POLL_INTERVAL_MS = 20_000;
 
 const MARKER_LINE = /^\[\[CRYPT [A-Z ]+\]\]$/;
 const REQUEST_FILE = /^graft-.*\.json$/;
@@ -34,11 +41,13 @@ export function playStory(o: SessionOpts): Promise<number> {
   const ctx = {
     ...paths,
     io: nodeIo,
-    client: dryRunClient(nodeIo, paths.prsDir, now),
+    client: o.live ? o.live.client : dryRunClient(nodeIo, paths.prsDir, now),
+    registry: o.live?.registry,
     advisories: o.advisories,
     targetDir: o.targetDir,
     now,
   };
+  const watching = new Set<Promise<void>>();
   const watcher = createWatcher(defaultCtx(o.cwd));
   const requestsDir = join(o.cwd, "out", "requests");
   // A new session numbers its requests from 1 again, so requests of an earlier session are cleared.
@@ -60,7 +69,17 @@ export function playStory(o: SessionOpts): Promise<number> {
       }
       try {
         const res = await graft(ctx, file);
-        if (res.outcome === "PR_OPENED" && res.branch) {
+        if (res.outcome === "PR_OPENED" && res.branch && o.live) {
+          const p: Promise<void> = handleLiveGraft(
+            { ...paths, io: nodeIo, client: o.live.client, now, sleep: (ms) => new Promise<void>((r) => setTimeout(r, ms)), timeoutMs: o.live.timeoutMs, intervalMs: POLL_INTERVAL_MS },
+            limb,
+            res.branch,
+            out,
+          )
+            .catch((e: unknown) => void out.write(`${limb}: ERROR while checking the pull request (${(e as Error).message})\n`))
+            .finally(() => void watching.delete(p));
+          watching.add(p);
+        } else if (res.outcome === "PR_OPENED" && res.branch) {
           const payload = relative(o.cwd, join(paths.prsDir, branchFile(res.branch)));
           out.write(`Graft ${limb}: dry-run payload written to ${payload}${res.breaking ? " (breaking: true)" : ""}\n`);
         } else {
@@ -114,7 +133,8 @@ export function playStory(o: SessionOpts): Promise<number> {
         buf = "";
       });
       chain
-        .then(() => {
+        .then(async () => {
+          while (watching.size > 0) await Promise.all([...watching]);
           off();
           resolve(signal ? EXIT.INTERRUPTED : code === 0 ? EXIT.OK : EXIT.FAILURE);
         })
