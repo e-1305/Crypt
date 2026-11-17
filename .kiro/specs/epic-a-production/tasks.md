@@ -10,8 +10,9 @@
 - [x] A1.7 README CI badge
 
 ## A2 Kiro hooks
-- [ ] A2.1 Hook definitions in `.kiro/hooks/` (guard on save, tests on spec change)
-- [ ] A2.2 `docs/KIRO.md` documents the hooks
+- [x] A2.1 Hook scripts in `scripts/hooks/` and tests in `tests/hooks.test.ts`
+- [x] A2.2 Five hook definitions in `.kiro/hooks/` (tests, failsafe, traceability, attribution, blameless copy)
+- [x] A2.3 `docs/KIRO.md` documents the hooks with real captured output, traceability table and numbers
 
 ## A3 GitHub Pages demo
 - [ ] A3.1 Demo creature built from the fixture

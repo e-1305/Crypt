@@ -15,9 +15,10 @@ Terms. **CI**: GitHub Actions on this repository. **Guard**: `scripts/ci/failsaf
 8. The README SHALL show the CI badge at the top.
 
 ## A2 Kiro hooks
-1. `.kiro/hooks/` SHALL hold hook definitions that run the guard on save of files under `src/` and `bin/`, and run the matching tests when a spec or steering file changes.
-2. Hooks SHALL be documented in `docs/KIRO.md`.
-3. Hooks SHALL only read and report. They SHALL never write, commit or call the network.
+1. `.kiro/hooks/` SHALL hold hook definitions in the documented Kiro format (`version: v1`, `trigger`, `matcher`, `action`) for five saves: `src/**/*.ts` runs the related tests, `src/necromancer|inquisitor|mcp` runs the failsafe check, `.kiro/specs/*/tasks.md` refreshes the traceability table, `package.json` reminds to attribute new dependencies, `src/raise` and `web/` run the blameless copy check.
+2. Hooks SHALL be documented in `docs/KIRO.md`, each with its trigger, action and a real example of what it caught or saved.
+3. Command hooks SHALL only read and report. They SHALL never write, commit or call the network. Agent hooks MAY ask the agent to edit `docs/` files and SHALL never commit.
+4. Every hook script SHALL have tests that pass on clean input and fail on a violation.
 
 ## A3 GitHub Pages demo
 1. A workflow SHALL build `web/` with a demo creature from the fixture and deploy it to GitHub Pages on push to `main`.
