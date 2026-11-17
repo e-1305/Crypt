@@ -5,7 +5,7 @@
 ## Specs
 | Spec | Folder | Outcome |
 |---|---|---|
-| transcript-bridge-spike | `.kiro/specs/transcript-bridge-spike/` | TODO |
+| transcript-bridge-spike | `.kiro/specs/transcript-bridge-spike/` | requirements, design (with interpreter limitations and fallbacks) and tasks written; implementation in progress |
 
 ## Steering
 | File | Purpose |
