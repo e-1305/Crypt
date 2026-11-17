@@ -78,6 +78,15 @@
   </div>
   <p class="muted">Type RAID in the game input to start as well.</p>
 </section>
+<section id="sim" class="pane sim" aria-labelledby="sim-h">
+  <h2 id="sim-h">Simulated CI</h2>
+  <p class="muted">Replays a dry-run graft for the first sick limb. No token, no network, nothing real changes.</p>
+  <div class="raid-actions">
+    <button id="sim-green" type="button">Simulate CI: green</button>
+    <button id="sim-red" type="button">Simulate CI: red</button>
+  </div>
+  <p id="sim-label" class="sim-label" hidden></p>
+</section>
 <div id="announcer" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
 <script src="vendor/zvm.min.js"></script>
 <script type="module" src="app.js"></script>
