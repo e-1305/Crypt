@@ -65,6 +65,21 @@ async function scenario(name, opts, fn) {
   await ctx.close();
 }
 
+// Where the first-viewport items sit, and whether the page scrolled on load (Round 1 finding F1).
+const aboveFold = (page) => page.evaluate(() => {
+  const box = (sel) => {
+    const r = document.querySelector(sel)?.getBoundingClientRect();
+    return r ? { top: Math.round(r.top), bottom: Math.round(r.bottom), inViewport: r.top >= 0 && r.bottom <= innerHeight } : null;
+  };
+  const rec = document.getElementById("record-toggle")?.getBoundingClientRect();
+  const h1 = document.querySelector("h1")?.getBoundingClientRect();
+  return {
+    scrollY: Math.round(scrollY), viewportHeight: innerHeight,
+    h1: box("h1"), subtitle: box(".subtitle"), pitch: box("#pitch"), installCmd: box("#install-cmd"), kiroLink: box("#kiro-link"), cmd: box("#cmd"),
+    recordOverlapsHeading: !!(rec && h1 && rec.left < h1.right && h1.left < rec.right && rec.top < h1.bottom && h1.top < rec.bottom),
+    recordName: document.getElementById("record-toggle")?.getAttribute("aria-label"),
+  };
+});
 const shot = (page, n) => page.screenshot({ path: join(OUT, `${n}.png`) });
 const text = (page, sel) => page.locator(sel).first().innerText({ timeout: 2000 }).catch(() => null);
 
@@ -95,6 +110,9 @@ await scenario("landing-2d", {}, async (page, out) => {
   out.tutorialVisible = await page.locator("#tutorial").isVisible();
   out.tutorial = await text(page, "#tutorial");
   out.dailyBanner = await text(page, "#daily-banner");
+  out.aboveFold = await aboveFold(page);
+  out.plateFooter = (await text(page, "#plate"))?.split("\n").filter((l) => /DEPENDENCIES|LIMBS THAT SPAWN/.test(l));
+  out.plateLegend = await text(page, "#plate-legend");
   await shot(page, "02-landing-2d");
   // Demo path: how many actions from landing to a dry-run payload.
   await page.fill("#cmd", "examine");
@@ -114,8 +132,9 @@ await scenario("keyboard-only", {}, async (page, out) => {
   await page.goto(BASE + "?theatre=off", { waitUntil: "load" });
   await page.waitForTimeout(2500);
   const stops = [];
+  // Focus starts in the game input, so walk backwards with Shift+Tab to list every control above it, nearest first.
   for (let i = 0; i < 14; i++) {
-    await page.keyboard.press("Tab");
+    await page.keyboard.press("Shift+Tab");
     stops.push(await page.evaluate(() => {
       const e = document.activeElement;
       if (!e || e === document.body) return "(body)";
@@ -160,6 +179,7 @@ await scenario("mobile", { viewport: { width: 390, height: 780 }, isMobile: true
   await page.goto(BASE + "?theatre=off", { waitUntil: "load" });
   await page.waitForTimeout(2500);
   out.horizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1);
+  out.aboveFold = await aboveFold(page);
   out.cmdInViewport = await page.evaluate(() => {
     const r = document.getElementById("cmd")?.getBoundingClientRect();
     return r ? { top: Math.round(r.top), bottom: Math.round(r.bottom), vh: innerHeight } : null;
@@ -177,11 +197,44 @@ await scenario("sim-and-raid", {}, async (page, out) => {
   await page.click("#sim-green");
   await page.waitForTimeout(2500);
   out.simLabel = await text(page, "#sim-label");
+  out.plateAfterGreen = (await text(page, "#plate-summary"));
+  out.eventLogAfterGreen = await text(page, "#event-log");
+  out.announcerAfterGreen = await text(page, "#announcer");
+  out.tutorialAfterGreen = await text(page, "#tutorial-step");
   await page.click("#raid-start");
   await page.waitForTimeout(1500);
   out.raidState = await text(page, "#raid-state");
   out.raidScore = await text(page, "#raid-score");
   await shot(page, "08-sim-raid");
+});
+
+// 8. SEAL on the page: badge, refused graft, Unseal.
+await scenario("seal", {}, async (page, out) => {
+  await page.goto(BASE + "?theatre=off", { waitUntil: "load" });
+  await page.waitForTimeout(2500);
+  out.badgeBefore = await page.locator("#seal-badge").isVisible();
+  for (const c of ["seal crypt", "graft jquery"]) {
+    await page.fill("#cmd", c);
+    await page.press("#cmd", "Enter");
+    await page.waitForTimeout(800);
+  }
+  out.badgeAfterSeal = await text(page, "#seal-badge");
+  out.refusal = (await text(page, "#transcript"))?.slice(-200);
+  await shot(page, "09-sealed");
+  await page.click("#unseal");
+  out.badgeAfterUnseal = await page.locator("#seal-badge").isVisible();
+});
+
+// 9. High-contrast announcement and the raid board on the bench.
+await scenario("bench-board", {}, async (page, out) => {
+  await page.goto(BASE, { waitUntil: "load" });
+  await page.waitForTimeout(6000);
+  out.bodyClass = await page.evaluate(() => document.body.className);
+  await shot(page, "10-bench-board");
+  await page.click("#bench-drawer-toggle").catch(() => {});
+  await page.waitForTimeout(500);
+  out.drawerInstall = await text(page, "#bench-install-cmd");
+  await shot(page, "11-bench-drawer");
 });
 
 await browser.close();

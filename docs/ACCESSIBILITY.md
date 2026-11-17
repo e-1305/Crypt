@@ -77,7 +77,7 @@ Rules for the new pieces:
 
 ## Round 1 playtest fixes: keyboard order and announcements
 
-Tab order on the 2D page, from the top: "Skip to the game input" (skip link), Sound, Recording mode, "How to play (manual)", High-contrast reader mode, "Copy command", the "Built with Kiro" link, the tutorial buttons (Got it, Skip, Hide for good), then the game input. The game input no longer has `autofocus`. The script focuses it with `preventScroll`, so the title and pitch stay in view. Shift+Tab from the game input walks the same list backwards.
+Tab order on the 2D page, from the top: "Skip to the game input" (skip link), Sound, Recording mode, "Copy command", the "Built with Kiro" link, "How to play (manual)", High-contrast reader mode, the tutorial buttons (Got it, Skip, Hide for good), then the game input. The game input no longer has `autofocus`. The script focuses it with `preventScroll`, so the title and pitch stay in view. Shift+Tab from the game input walks the same list backwards.
 
 - The high-contrast toggle announces "High-contrast reader mode on" and "High-contrast reader mode off" through the status region.
 - The SEAL badge ("SEALED: no graft will run.") is a status region with an "Unseal" button. Unseal affects this page only.

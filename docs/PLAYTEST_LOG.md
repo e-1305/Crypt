@@ -113,3 +113,28 @@ No PR was opened: the console says "dry-run payload written to out/prs/crypt-gra
 - Live mode (`--live`), real pull requests, and the Inquisitor on real CI.
 - Safari and Firefox.
 - Screen reader output. I read ARIA attributes only.
+
+---
+
+## Round 1 after-fix check
+
+Same harness (`scripts/playtest/judge.mjs`, now with scenarios for above the fold, SEAL and the bench board), local build, 1280x720 and 390x780. This is a re-check of the findings, not a new scored round.
+
+| Finding | What the harness now shows |
+|---|---|
+| F1 pitch above the fold | `scrollY` is 0 on load. At 1280x720 the `h1` (top 45), subtitle, pitch, install command and "Built with Kiro" link all sit inside the viewport. At 390x780 they do too (Kiro link bottom at 304). `#cmd` is focused with no scroll |
+| F2 recording button | `recordOverlapsHeading` is false on the 2D page. Its accessible name is "Recording mode: hide the page controls for screen capture" |
+| F3 counts | Plate footer: "DEPENDENCIES 7 ... " and "LIMBS THAT SPAWN 2 OF 5 FINDINGS, 3 BELOW THE NOISE LINE". Game intro: "7 dependencies, 5 findings, 2 limbs spawn, 3 below the noise line." Same numbers on the 3D wall plate |
+| F4 health | The raid panel carries "Creature health falls with every unhealed limb, weighted by risk." |
+| F5 bench board | Screenshot `10-bench-board.png`: no overlap. "Nights Without Possession" is squeezed to fit its column, so it is small. `tests/raid-board-layout.test.ts` checks that no text boxes intersect |
+| F6 heal | After graft and "Simulate CI: green", the plate summary reads "jquery 3.4.1: Healed", the event log shows "SIMULATED: jquery healed" and `#announcer` reads "SIMULATED CI. Healed: jquery." |
+| F7 audit | CLI audit log reads `REQUEST_WRITTEN`, `DRYRUN_WRITTEN`, `SEALED`, `REJECTED_SEALED` |
+| F8 keyboard | Shift+Tab from `#cmd` walks: Download, plate, Hide for good, Skip, Got it, high-contrast, manual, Kiro link, Copy command, Recording mode, Sound, skip link. Every stop has a 2px outline |
+| F11 contrast | `#announcer` reads "High-contrast reader mode on" |
+| F14 Kiro | "Built with Kiro" link on the page and in the bench drawer, pointing to a manual section |
+| F15 SEAL | Typing `seal crypt` then `graft jquery` shows the badge "SEALED: no graft will run." and a rejection line. "Unseal" hides the badge |
+
+Page weight: 3D path 969,340 bytes, 2D path 251,308 bytes. Console errors: none on the 2D page.
+
+Still not verified: real GPU, audio, Lighthouse, axe-core (not re-run), screen readers, Safari and Firefox, the live Pages site. On the 2D page the game input is still below the plate, about 1500 px down. The tutorial step "Simulate CI: green" and the seal step were checked in the test suite, not by the harness.
+
