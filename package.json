@@ -23,11 +23,15 @@
     "reraise": "tsx scripts/reraise.ts",
     "necromancer:check": "tsx scripts/check-necromancer.ts",
     "plate": "tsx scripts/plate.ts",
+    "census": "npm run feeds:update && tsx scripts/census/run.ts",
     "web": "tsx scripts/web.ts",
+    "mcp": "tsx scripts/mcp.ts",
     "build:web": "tsc -p tsconfig.web.json"
   },
   "dependencies": {
-    "tsx": "^4.23.15"
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "tsx": "^4.23.15",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
