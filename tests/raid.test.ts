@@ -155,8 +155,10 @@ describe("blameless output", () => {
     }));
   });
   it("card and epitaphs contain no blame wording, owners or per-person figures", () => {
-    fc.assert(fc.property(fc.array(limb, { maxLength: 10 }), fc.string(), fc.nat(RAID_MS * 2), (limbs, repo, ms) => {
-      const text = cardLines(cardData(repo, limbs, ms)).join("\n");
+    fc.assert(fc.property(fc.array(limb, { maxLength: 10 }), fc.nat(RAID_MS * 2), (limbs, ms) => {
+      // The repo name is user input echoed verbatim, so it is held fixed: the check covers
+      // the wording the game itself adds, not whatever a repo happens to be called.
+      const text = cardLines(cardData("my-repo", limbs, ms)).join("\n");
       expect(text).not.toMatch(banned);
       expect(text).not.toMatch(/@[\w-]+\//);
     }));
