@@ -164,6 +164,9 @@ function drawPlate(real, fresh, convulse) {
   plateSummaryEl.textContent = summary.length === 0 ? "The slab is bare. No limbs are possessed or rotting." : "Limbs: " + summary.join("; ") + ".";
 }
 
+// ?simulate= runs once, not on every raid poll.
+let simStarted = false;
+
 async function loadPlate() {
   try {
     const res = await fetch("game/" + creatureId + ".json");
@@ -178,7 +181,7 @@ async function loadPlate() {
     raid.setLimbs(creature.limbs, creature.repo);
     // Real source: each limb that turned Healed goes through the same fail-safe pipeline as the simulation.
     heal.real(fresh);
-    heal.start();
+    if (!simStarted) { simStarted = true; heal.start(); }
   } catch (err) {
     plateEl.textContent = "";
     plateSummaryEl.textContent = "The plate could not be loaded. Reload the page to try again.";

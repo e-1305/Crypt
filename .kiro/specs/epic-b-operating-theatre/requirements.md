@@ -40,3 +40,11 @@ Steering that applies: `blameless.md` (no individual leaderboard, names only in 
 
 ## Done when
 Playable end-to-end on the demo creature when deployed via Epic A's Pages workflow; raid mode works; simulated live-heal works; sounds licensed; 2D fallback a11y >= 95. `docs/KIRO.md` updated; `docs/DEMO.md` has the video shot list.
+
+## Known limitations (review follow-up)
+
+- B2.1: `RAID` is handled client-side before the game grammar parser. It only starts a local timer, reaches no agent, merge endpoint or audit log, and does not consult the kill switch. This is a deliberate exception to "every command passes the strict parser".
+- B2.2: `healedBy` and limb `status: "awaiting-human-merge"` are read by the web if present in `creature.json`. No producer writes them yet (reraise and inquisitor code are outside this epic's scope), so praise lines and the awaiting-merge score term are inert on a live repo. Score and risk-removed are per browser (localStorage), not shared.
+- B2.4: Nights Without Possession starts from the browser's first visit, not from scan history, and the label says so.
+- B3: only the simulation shows red CI (convulse and rejection line). The real source handles `healed` only, because no CI verdict is present in `creature.json`.
+- The raid baseline is the limbs loaded at click time. Starting before the first plate load counts already healed limbs as gained.

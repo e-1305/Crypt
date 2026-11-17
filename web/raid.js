@@ -60,7 +60,7 @@ export function initRaid({ store, announce, onRunning, now = () => Date.now() })
     setText("raid-state", v.status === "idle" ? "Ready. Start the raid when the team is together." : v.status === "running" ? "Raid in progress." : "Raid complete.");
     setText("raid-score", "Team risk removed: " + score.toFixed(2));
     setText("raid-rank", "Rank: " + rankFor(healedCount(limbs)));
-    setText("raid-nights", "Nights Without Possession: " + nightsWithoutPossession(limbs, now(), scanStart));
+    setText("raid-nights", "Nights Without Possession (counted from this browser's first visit): " + nightsWithoutPossession(limbs, now(), scanStart));
     setText("raid-praise", praiseLines(limbs).join("; "));
     const start = $("raid-start");
     if (start) start.disabled = v.status === "running";
