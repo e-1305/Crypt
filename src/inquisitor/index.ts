@@ -3,6 +3,7 @@
 import type { Io } from "../common/io.js";
 import {
   audit,
+  branchFile,
   isSealed,
   lookupLimb,
   readPrRecords,
@@ -56,13 +57,31 @@ export async function verify(ctx: InquisitorCtx, limb: string): Promise<VerifyRe
     }
     const state = readState(io, ctx.statePath); // unreadable state: throw, change nothing
     let verdict: "green" | "red" | "pending" = "pending";
+    let previous: string | null = null; // green needs the same completed set on two polls in a row
     for (let i = 0; i < ctx.maxAttempts; i++) {
-      verdict = judge(await ctx.client.getCheckRuns(rec.branch));
-      if (verdict !== "pending") break;
+      const runs = await ctx.client.getCheckRuns(rec.branch);
+      const v = judge(runs);
+      if (v === "red") {
+        verdict = "red";
+        break;
+      }
+      const key = v === "green" ? JSON.stringify(runs.map((r) => r.name).sort()) : null;
+      if (key !== null && key === previous) {
+        verdict = "green";
+        break;
+      }
+      previous = key;
       if (i < ctx.maxAttempts - 1) await ctx.sleep(ctx.intervalMs);
     }
     if (verdict !== "green") {
       log("GRAFT_REJECTED", rec.url);
+      if (verdict === "red") {
+        // Free the limb for a second attempt. A pending timeout keeps its record: the PR may still turn green.
+        const file = branchFile(rec.branch);
+        io.mkdirp(`${ctx.prsDir}/rejected`);
+        io.writeText(`${ctx.prsDir}/rejected/${file}`, io.readText(`${ctx.prsDir}/${file}`));
+        io.remove(`${ctx.prsDir}/${file}`);
+      }
       return { outcome: "GRAFT_REJECTED", message: REJECTED_TEXT };
     }
     const current = state.limbs[limb];

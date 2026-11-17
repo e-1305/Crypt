@@ -46,7 +46,7 @@ Input: current version `c`; for every spawned vuln of the limb, the OSV `affecte
 
 ## State schema
 
-`out/state.json`: `{ "schemaVersion": 1, "limbs": { "<LIMBID>": { "state": "awaiting-human-merge" | "healed", "pr": "<branch>", "updatedAt": "<ISO>", "ecosystem"?, "name"?, "to"? } } }`. The extra fields on healed entries let re-raise find the limb again after its ID left `out/limbs.json`. The PRs of a raid are counted from the records in `out/prs/` instead of a counter. Written to a temp file then renamed. Written only on a real change.
+`out/state.json`: `{ "schemaVersion": 1, "limbs": { "<LIMBID>": { "state": "awaiting-human-merge" | "healed", "pr": "<branch>", "updatedAt": "<ISO>", "ecosystem"?, "name"?, "from"?, "to"? } } }`. The extra fields on healed entries let re-raise find the limb again after its ID left `out/limbs.json`. A raid is the set of PRs not yet healed: the cap of 5 counts records in `out/prs/` whose limb is not healed in state, so it frees up as humans land PRs. Dry-run payloads (`dryRun: true`) in `out/prs/` are ignored by every reader. Re-raise heals only limbs whose version equals the PR's `from`. The Inquisitor reports green only when two consecutive polls return the same set of completed, successful check runs. On red it moves the record to `out/prs/rejected/`, which allows a second graft; the adapter then resets the leftover `crypt/` branch and reuses an open PR for it (close the old PR first if a fresh one is wanted). A timeout keeps the record. The adapter deletes a branch whose file commits failed. Written to a temp file then renamed. Written only on a real change.
 
 ## Audit outcomes
 

@@ -27,7 +27,7 @@ export function githubClient(repo: string, token: string, f: Fetcher = fetch as 
       body: body === undefined ? undefined : JSON.stringify(body),
       signal: AbortSignal.timeout(20_000),
     });
-    if (!res.ok) throw new Error(`GitHub ${method} ${path} failed (${res.status})`);
+    if (!res.ok) throw Object.assign(new Error(`GitHub ${method} ${path} failed (${res.status})`), { status: res.status });
     return res.json();
   }
   return {
@@ -36,19 +36,34 @@ export function githubClient(repo: string, token: string, f: Fetcher = fetch as 
       const info = await call("GET", "");
       const base = String(info.default_branch);
       const head = await call("GET", `/git/ref/heads/${refPath(base)}`);
-      await call("POST", "/git/refs", { ref: `refs/heads/${req.branch}`, sha: head.object.sha });
-      for (const file of req.files) {
-        const existing = await call("GET", `/contents/${refPath(file.path)}?ref=${encodeURIComponent(req.branch)}`);
-        await call("PUT", `/contents/${refPath(file.path)}`, {
-          message: req.message,
-          content: Buffer.from(file.content, "utf8").toString("base64"),
-          branch: req.branch,
-          sha: existing.sha,
-        });
+      if (!req.branch.startsWith("crypt/")) throw new Error("refusing to write a branch outside crypt/");
+      try {
+        await call("POST", "/git/refs", { ref: `refs/heads/${req.branch}`, sha: head.object.sha });
+      } catch (e) {
+        if ((e as { status?: number }).status !== 422) throw e;
+        // Leftover of an earlier failed or rejected attempt: reset our own crypt/ branch to the base.
+        await call("PATCH", `/git/refs/heads/${refPath(req.branch)}`, { sha: head.object.sha, force: true });
+      }
+      try {
+        for (const file of req.files) {
+          const existing = await call("GET", `/contents/${refPath(file.path)}?ref=${encodeURIComponent(req.branch)}`);
+          await call("PUT", `/contents/${refPath(file.path)}`, {
+            message: req.message,
+            content: Buffer.from(file.content, "utf8").toString("base64"),
+            branch: req.branch,
+            sha: existing.sha,
+          });
+        }
+      } catch (e) {
+        await call("DELETE", `/git/refs/heads/${refPath(req.branch)}`).catch(() => undefined); // no orphan branch
+        throw e;
       }
     },
     async openPullRequest(req) {
       const info = await call("GET", "");
+      const owner = repo.split("/")[0]!;
+      const open = await call("GET", `/pulls?state=open&head=${encodeURIComponent(`${owner}:${req.branch}`)}`);
+      if (Array.isArray(open) && open.length > 0) return { number: Number(open[0].number), url: String(open[0].html_url) };
       const pr = await call("POST", "/pulls", { title: req.title, head: req.branch, base: String(info.default_branch), body: req.body });
       return { number: Number(pr.number), url: String(pr.html_url) };
     },

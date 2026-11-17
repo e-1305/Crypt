@@ -48,6 +48,22 @@ describe("reraise", () => {
     expect(env.stateText()).toBeNull();
     env.cleanup();
   });
+  it("applyHealed heals only the limb version that the PR fixed", () => {
+    const c = { limbs: [
+      { ecosystem: "npm", name: "a", version: "1.0.0", state: "Rotting", spawned: true },
+      { ecosystem: "npm", name: "a", version: "2.0.0", state: "Rotting", spawned: true },
+    ] };
+    const r = applyHealed(c, [{ ecosystem: "npm", name: "a", from: "1.0.0", to: "1.0.1" }]) as any;
+    expect(r.limbs.map((l: any) => l.state)).toEqual(["Healthy", "Rotting"]);
+  });
+  it("ignores dry-run records, so a stale payload cannot abort the run", async () => {
+    const { env, ctx, m } = setup({ prState: () => ({ open: false, landed: false }) });
+    const { writeFileSync } = await import("node:fs");
+    writeFileSync(`${env.paths.prsDir}/crypt-graft-zzz-1.json`, JSON.stringify({ dryRun: true, branch: "b", limb: "ZZZ", name: "z", number: 0, url: "-" }));
+    expect((await reraise(ctx)).outcome).toBe("OK");
+    expect(m.calls).toHaveLength(2);
+    env.cleanup();
+  });
   it("applyHealed is pure and recomputes counts", () => {
     const c = { counts: { spawned: 1 }, limbs: [{ ecosystem: "npm", name: "a", version: "1.0.0", state: "Rotting", spawned: true }] };
     const copy = JSON.stringify(c);

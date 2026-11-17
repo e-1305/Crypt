@@ -93,6 +93,7 @@ export interface LimbStateEntry {
   updatedAt: string;
   ecosystem?: string;
   name?: string;
+  from?: string;
   to?: string;
 }
 
@@ -130,6 +131,7 @@ export interface PrRecord {
   [k: string]: unknown;
 }
 
+/** Real PR records only. Records of rejected grafts are archived in out/prs/rejected/ and not read. */
 export function readPrRecords(io: Io, prsDir: string): PrRecord[] {
   const out: PrRecord[] = [];
   for (const f of io.listDir(prsDir)) {
@@ -137,6 +139,7 @@ export function readPrRecords(io: Io, prsDir: string): PrRecord[] {
     const r: unknown = JSON.parse(io.readText(`${prsDir}/${f}`));
     if (typeof r !== "object" || r === null) throw new Error(`invalid PR record ${f}`);
     const x = r as Record<string, unknown>;
+    if (x.dryRun === true) continue; // dry-run payloads are not PRs
     if (typeof x.branch !== "string" || typeof x.limb !== "string" || typeof x.name !== "string") throw new Error(`invalid PR record ${f}`);
     out.push(x as unknown as PrRecord);
   }

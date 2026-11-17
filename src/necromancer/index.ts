@@ -7,6 +7,7 @@ import {
   isSealed,
   lookupLimb,
   readPrRecords,
+  readState,
   tryAudit,
   type AgentOutcome,
   type AgentPaths,
@@ -193,7 +194,10 @@ export async function graft(ctx: NecromancerCtx, requestPath: string): Promise<G
     const branch = `crypt/graft-${limb.toLowerCase()}-${choice.version}`;
     const records: PrRecord[] = readPrRecords(io, ctx.prsDir);
     if (records.some((r) => r.branch === branch || r.limb === limb)) return done("PR_EXISTS");
-    if (records.length >= MAX_PRS_PER_RAID) return done("RAID_LIMIT");
+    // A raid is the set of PRs not yet healed: healed and rejected records do not count.
+    const state = readState(io, ctx.statePath);
+    const open = records.filter((r) => state.limbs[r.limb]?.state !== "healed");
+    if (open.length >= MAX_PRS_PER_RAID) return done("RAID_LIMIT");
 
     const edited = editManifests(
       io.readText(`${ctx.targetDir}/package.json`),

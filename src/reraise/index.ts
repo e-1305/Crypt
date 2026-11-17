@@ -27,13 +27,14 @@ export interface ReraiseResult {
 interface HealedRef {
   ecosystem: string;
   name: string;
+  from?: string;
   to: string;
 }
 
 /** Pure: healed limbs become Healthy and do not spawn. Counts that depend on those fields are recomputed. */
 export function applyHealed(creature: Record<string, unknown>, healed: HealedRef[]): Record<string, unknown> {
   const limbs = (Array.isArray(creature.limbs) ? creature.limbs : []).map((l: Record<string, unknown>) => {
-    const h = healed.find((x) => x.ecosystem === l.ecosystem && x.name === l.name);
+    const h = healed.find((x) => x.ecosystem === l.ecosystem && x.name === l.name && (x.from === undefined || x.from === l.version));
     if (!h) return l;
     return { ...l, version: h.to, state: "Healthy", spawned: false, kev: false, vulns: [] };
   });
@@ -74,6 +75,7 @@ export async function reraise(ctx: ReraiseCtx): Promise<ReraiseResult> {
           updatedAt: ctx.now().toISOString(),
           ecosystem: r.ecosystem,
           name: r.name,
+          from: r.from,
           to: r.to,
         };
       }
@@ -88,7 +90,7 @@ export async function reraise(ctx: ReraiseCtx): Promise<ReraiseResult> {
     }
     const healedRefs: HealedRef[] = Object.values(state.limbs)
       .filter((e) => e.state === "healed" && e.ecosystem && e.name && e.to)
-      .map((e) => ({ ecosystem: e.ecosystem!, name: e.name!, to: e.to! }));
+      .map((e) => ({ ecosystem: e.ecosystem!, name: e.name!, from: e.from, to: e.to! }));
     const raw = io.readText(ctx.creaturePath);
     const next = JSON.stringify(applyHealed(JSON.parse(raw), healedRefs), null, 2) + "\n";
     const changed = next !== raw;

@@ -48,10 +48,37 @@ describe("inquisitor", () => {
   });
   it("polls while pending, then goes green", async () => {
     let n = 0;
-    const { env, limb, ctx, sleeps, m } = setup({ checkRuns: () => (++n < 3 ? [run("in_progress", null)] : [run("completed", "success")]) });
+    const { env, limb, ctx, sleeps, m } = setup({ checkRuns: () => (++n < 3 ? [run("in_progress", null)] : [run("completed", "success")]) }, 4);
     expect((await verify(ctx, limb)).outcome).toBe("AWAITING_HUMAN_MERGE");
-    expect(sleeps).toEqual([10, 10]);
-    expect(m.calls).toEqual(["getCheckRuns", "getCheckRuns", "getCheckRuns"]);
+    expect(sleeps).toEqual([10, 10, 10]);
+    expect(m.calls).toEqual(["getCheckRuns", "getCheckRuns", "getCheckRuns", "getCheckRuns"]);
+    env.cleanup();
+  });
+  it("a single green poll is not enough: the set of runs must be stable across two polls", async () => {
+    let n = 0;
+    const { env, limb, ctx } = setup({ checkRuns: () => (++n === 1 ? [run("completed", "success")] : [run("completed", "success"), { name: "lint", status: "in_progress", conclusion: null }]) }, 2);
+    expect((await verify(ctx, limb)).outcome).toBe("GRAFT_REJECTED");
+    expect(env.stateText()).toBeNull();
+    env.cleanup();
+  });
+  it("red archives the record, a timeout keeps it", async () => {
+    const red = setup({ checkRuns: () => [run("completed", "failure")] });
+    await verify(red.ctx, red.limb);
+    expect(red.env.payloads()).toEqual(["rejected"]);
+    red.env.cleanup();
+    const slow = setup({ checkRuns: () => [run("in_progress", null)] });
+    await verify(slow.ctx, slow.limb);
+    expect(slow.env.payloads()).toEqual(["crypt-graft-alpha-1.0.1.json"]);
+    slow.env.cleanup();
+  });
+  it("ignores dry-run records", async () => {
+    const { env, limb, ctx, m } = setup({});
+    const f = env.payloads()[0]!;
+    const rec = env.payload(f);
+    const { writeFileSync } = await import("node:fs");
+    writeFileSync(`${env.paths.prsDir}/${f}`, JSON.stringify({ ...rec, dryRun: true, number: 0 }));
+    expect((await verify(ctx, limb)).outcome).toBe("NO_ACTION");
+    expect(m.calls).toEqual([]);
     env.cleanup();
   });
   it("red, timeout and no CI: GRAFT_REJECTED, limb stays Rotting, no state file", async () => {

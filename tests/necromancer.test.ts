@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
+import { verify } from "../src/inquisitor/index.js";
 import { MAX_PRS_PER_RAID, editManifests, graft } from "../src/necromancer/index.js";
 import { chooseVersion, compareVersions, parseVersion, type Advisory, type RangeEvent } from "../src/necromancer/version.js";
 import { dryRunClient } from "../src/github/client.js";
@@ -176,10 +177,43 @@ describe("necromancer graft", () => {
   });
   it("does not open a second PR for the same limb", async () => {
     const env = makeAgentEnv();
-    const ctx = env.ctxFor(dryRunClient(nodeIo, env.paths.prsDir, env.now));
+    const ctx = env.ctxFor(mockClient().client);
     await graft(ctx, env.request(env.idOf("alpha")));
     expect((await graft(ctx, env.request(env.idOf("alpha"), "graft-002.json"))).outcome).toBe("PR_EXISTS");
     expect(env.payloads()).toHaveLength(1);
+    env.cleanup();
+  });
+  it("dry-run payloads do not block a later real run", async () => {
+    const env = makeAgentEnv();
+    await graft(env.ctxFor(dryRunClient(nodeIo, env.paths.prsDir, env.now)), env.request(env.idOf("alpha")));
+    const m = mockClient();
+    expect((await graft(env.ctxFor(m.client), env.request(env.idOf("alpha"), "g2.json"))).outcome).toBe("PR_OPENED");
+    expect(m.calls).toEqual(["createBranchWithFiles", "openPullRequest"]);
+    env.cleanup();
+  });
+  it("a rejected graft can be retried once its record is archived", async () => {
+    const env = makeAgentEnv();
+    const limb = env.idOf("alpha");
+    env.writeRecord(limb, "alpha", 7);
+    const m = mockClient({ checkRuns: () => [{ name: "ci", status: "completed", conclusion: "failure" }] });
+    const iq = { ...env.paths, io: nodeIo, client: m.client, now: env.now, sleep: async () => {}, maxAttempts: 2, intervalMs: 1 };
+    expect((await verify(iq, limb)).outcome).toBe("GRAFT_REJECTED");
+    expect(env.payloads()).toEqual(["rejected"]);
+    expect((await graft(env.ctxFor(mockClient().client), env.request(limb))).outcome).toBe("PR_OPENED");
+    env.cleanup();
+  });
+  it("healed PRs do not count toward the cap", async () => {
+    const env = makeAgentEnv(["a", "b", "c", "d", "e", "f"].map((s) => ({ name: `pkg${s}`, version: "1.0.0", fixed: "1.0.1" })));
+    const ctx = env.ctxFor(mockClient().client);
+    const healed: Record<string, unknown> = {};
+    let n = 0;
+    for (const id of env.ids.slice(0, 5)) {
+      await graft(ctx, env.request(id, `g${n++}.json`));
+      healed[id] = { state: "healed", pr: "x", updatedAt: "t" };
+    }
+    expect((await graft(ctx, env.request(env.ids[5]!, "g9.json"))).outcome).toBe("RAID_LIMIT");
+    env.writeState(JSON.stringify({ schemaVersion: 1, limbs: healed }));
+    expect((await graft(ctx, env.request(env.ids[5]!, "g10.json"))).outcome).toBe("PR_OPENED");
     env.cleanup();
   });
   it("a client error opens nothing and is audited ERROR", async () => {
@@ -210,18 +244,21 @@ describe("necromancer properties", () => {
   it("at most 5 PRs per raid, one dependency per PR, no merge-like call", async () => {
     const names = ["a", "b", "c", "d", "e", "f", "g"].map((s) => `pkg${s}`);
     const env = makeAgentEnv(names.map((name) => ({ name, version: "1.0.0", fixed: "1.0.1" })));
-    const ctx = env.ctxFor(dryRunClient(nodeIo, env.paths.prsDir, env.now));
+    const sent: { files: { path: string; content: string }[] }[] = [];
+    const m = mockClient();
+    const client = { ...m.client, createBranchWithFiles: async (r: { files: { path: string; content: string }[] }) => void sent.push(r) };
+    const ctx = env.ctxFor(client);
     const outcomes: string[] = [];
     let n = 0;
-    for (const id of env.ids) outcomes.push((await graft({ ...ctx, client: dryRunClient(nodeIo, env.paths.prsDir, env.now) }, env.request(id, `g${n++}.json`))).outcome);
+    for (const id of env.ids) outcomes.push((await graft(ctx, env.request(id, `g${n++}.json`))).outcome);
     expect(env.payloads()).toHaveLength(MAX_PRS_PER_RAID);
     expect(outcomes.filter((o) => o === "PR_OPENED")).toHaveLength(5);
     expect(outcomes.filter((o) => o === "RAID_LIMIT")).toHaveLength(2);
-    for (const f of env.payloads()) {
-      const p = env.payload(f);
-      const pkg = JSON.parse(p.files.find((x: { path: string }) => x.path === "package.json").content).dependencies as Record<string, string>;
+    expect(sent).toHaveLength(MAX_PRS_PER_RAID);
+    for (const p of sent) {
+      const pkg = JSON.parse(p.files.find((x: { path: string }) => x.path === "package.json")!.content).dependencies as Record<string, string>;
       expect(Object.entries(pkg).filter(([, v]) => v !== "1.0.0")).toHaveLength(1);
-      const lock = JSON.parse(p.files.find((x: { path: string }) => x.path === "package-lock.json").content).packages as Record<string, { version?: string }>;
+      const lock = JSON.parse(p.files.find((x: { path: string }) => x.path === "package-lock.json")!.content).packages as Record<string, { version?: string }>;
       expect(Object.entries(lock).filter(([k, v]) => k.startsWith("node_modules/") && v.version !== "1.0.0")).toHaveLength(1);
     }
     env.cleanup();
