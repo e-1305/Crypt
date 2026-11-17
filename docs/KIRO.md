@@ -12,6 +12,7 @@
 | necromancer | `.kiro/specs/necromancer/` | requirements (N1 to N8), design (module layout, version selection, state schema, audit outcomes, static-test constraint) and tasks committed before any code. Driven by issue #11: GRAFT leads to a fix PR, CI check, human landing and re-raise. Implemented: complete mediation in the watcher (N1), Necromancer, GithubClient with dry-run, Inquisitor, re-raise, SEAL, acceptance script |
 | web-player | `.kiro/specs/web-player/` | requirements (W1 to W9), design (interpreter comparison, pure output hook, Glk shim, spoofing analysis) and tasks written before coding; implemented. Issue #6: play `spike.z5` in the browser with an event log fed only by `parseGameOutput` |
 | mcp-server | `.kiro/specs/mcp-server/` | requirements (M1 to M6), design (core handlers, write path through the watcher, allowlisted outputs, redaction) and tasks written before coding; implemented. Issue #19: any MCP client can query the creature and request a graft under the failsafe rules |
+| epic-b-operating-theatre | `.kiro/specs/epic-b-operating-theatre/` | requirements (B1 to B5), design (capability decision, fallback rules, budgets, branching) and tasks written and committed before any code (`docs: add Epic B spec`); implemented as five stacked milestone branches. Result: a 3D bench around the CRT that falls back to the plain 2D page, a 15 minute team raid, simulated live heals, synthesised sound and a recording mode for the demo video |
 
 ## Steering
 | File | Purpose |
@@ -170,6 +171,18 @@ Run `npm run exhume` and `npm run raise` first so `out/creature.json` and `out/l
 | 7, 8 `scripts/web.ts`, `tsconfig.web.json`, `npm run web` | same | curl of page, `.z5`, traversal (404) and POST (405) |
 | 10 docs | same | review |
 
+### epic-b-operating-theatre (Epic B)
+| Milestone | Branch | Content | Test |
+|---|---|---|---|
+| B0 | n/a | baseline: `npm ci`, `npm run typecheck`, `npm test`, `npm run web` | all green before B1 |
+| B1 | `feat/b1-bench` | Three.js bench, CRT shader, plate texture, 2D fallback, budgets, a11y notes, ATTRIBUTION | `tests/theatre-capability.test.ts`, Playwright load check, axe-core on the 2D page |
+| B2 | `feat/b2-raid` | `src/theatre/raid.ts`, 15 minute timer, team score, rank, nights counter, end card PNG | `tests/raid.test.ts` |
+| B3 | `feat/b3-live-heal` | heal events, plate glow and convulsion, simulated CI replay labelled SIMULATED CI, lamp thunder | `tests/heal-events.test.ts` |
+| B4 | `feat/b4-sound` | synthesised audio, muted by default toggle, heartbeat tied to possessed count | `tests/audio-plan.test.ts` |
+| B5 | `feat/b5-polish` | title card, camera dolly-in, recording mode, `docs/DEMO.md`, this section | `tests/polish.test.ts`, Playwright check |
+
+Pure decision logic (capability, raid scoring, heal events, audio plan, title card timing, record flag, dolly easing) lives in `src/theatre/*.ts` with vitest tests. The browser files in `web/` only read the DOM and the clock. Each branch was stacked on the previous one because none had merged into `main` yet.
+
 ## Numbers
-- Specs: 6 · Hooks: TODO · Steering files: 5 · Property tests: 40 (16 bridge, 9 exhume, 4 raise, 11 necromancer, inquisitor and re-raise) · Tests: 143
+- Specs: 6 · Hooks: TODO · Steering files: 5 · Property tests: 40 (16 bridge, 9 exhume, 4 raise, 11 necromancer, inquisitor and re-raise) · Tests: 143 at the web-player milestone, **319 after Epic B** (`npm test`: 23 test files, 319 tests passed; B5 added 8 in `tests/polish.test.ts`). The property test split above was not re-counted after Epic B.
 
