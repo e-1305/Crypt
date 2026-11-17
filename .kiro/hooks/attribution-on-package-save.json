@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Attribution reminder on package.json save",
+      "description": "Reminds the agent to add every new dependency to docs/ATTRIBUTION.md with licence and link (Kiroween disclosure rule).",
+      "trigger": "PostFileSave",
+      "matcher": "(^|/)package\\.json$",
+      "action": {
+        "type": "agent",
+        "prompt": "package.json was saved. Run `bash scripts/hooks/deps-check.sh`. For every dependency it reports as missing, add a row to docs/ATTRIBUTION.md with the component, what it is used for, its licence (read it from node_modules/<name>/package.json) and a link. Run the script again until it prints ok. Do not add dependencies that nobody asked for."
+      }
+    }
+  ]
+}

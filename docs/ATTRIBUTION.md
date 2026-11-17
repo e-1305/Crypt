@@ -18,6 +18,11 @@ and using third-party SDKs, APIs and data in line with their terms. Keep this fi
 | Lighthouse 13.6.0, Playwright Chromium | Tool (dev-time only) | Measure the accessibility score of the web page; not a project dependency and not committed | Apache-2.0 (Lighthouse), Apache-2.0 (Playwright), BSD-3-Clause (Chromium) | https://github.com/GoogleChrome/lighthouse |
 | Model Context Protocol TypeScript SDK (`@modelcontextprotocol/sdk` 1.32.2) | Code | Stdio MCP server and in-process test client in `src/mcp/` and `scripts/mcp.ts` | MIT | https://github.com/modelcontextprotocol/typescript-sdk |
 | zod (4.6.7) | Code | Input schemas for MCP tools (dependency of the SDK, used directly in `src/mcp/server.ts`) | MIT | https://github.com/colinhacks/zod |
+| tsx (4.23.15) | Tool (runtime dependency) | Runs the TypeScript scripts and the CLI without a build step (`bin/crypt.mjs`, `npm run` scripts) | MIT | https://github.com/privatenumber/tsx |
+| typescript (7.0.2) | Tool (dev-time only) | `npm run typecheck` (`tsc --noEmit`) and the web build (`tsconfig.web.json`) | Apache-2.0 | https://github.com/microsoft/TypeScript |
+| vitest (5.1.0) | Tool (dev-time only) | Test runner for `tests/**/*.test.ts` | MIT | https://github.com/vitest-dev/vitest |
+| fast-check (4.10.2) | Tool (dev-time only) | Property-based tests for the failsafe and blameless invariants | MIT | https://github.com/dubzzz/fast-check |
+| @types/node (26.6.6) | Types (dev-time only) | Node.js type declarations for `tsc --noEmit` | MIT | https://github.com/DefinitelyTyped/DefinitelyTyped |
 
 ## Ideas and references (not code)
 
