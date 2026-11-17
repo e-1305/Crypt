@@ -48,6 +48,32 @@ function cvesOf(v: OsvVuln): string[] {
   return [...new Set([v.id, ...v.aliases].map((s) => s.toUpperCase()).filter((s) => s.startsWith("CVE-")))].sort(cmp);
 }
 
+/**
+ * Combine several OSV answers for the same limb, worst case. Any unknown answer
+ * (undefined) makes the result unknown; otherwise the vulns are unioned by id.
+ * Order of the inputs does not matter.
+ */
+export function combineOsvAnswers(answers: (OsvVuln[] | undefined)[]): OsvVuln[] | undefined {
+  if (answers.length === 0 || answers.some((a) => a === undefined)) return undefined;
+  const byId = new Map<string, OsvVuln>();
+  for (const list of answers as OsvVuln[][]) {
+    for (const v of list) {
+      const prev = byId.get(v.id);
+      byId.set(
+        v.id,
+        prev === undefined
+          ? { id: v.id, aliases: [...new Set(v.aliases)].sort(cmp), severity: v.severity }
+          : {
+              id: v.id,
+              aliases: [...new Set([...prev.aliases, ...v.aliases])].sort(cmp),
+              severity: severityNumber(prev.severity) >= severityNumber(v.severity) ? prev.severity : v.severity,
+            },
+      );
+    }
+  }
+  return [...byId.values()].sort((a, b) => cmp(a.id, b.id));
+}
+
 export function rankLimbs(input: RankInput): RankedLimb[] {
   const feedMissing = input.kev === null || input.epss === null;
   const rows = input.limbs.map((l) => {

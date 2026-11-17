@@ -9,7 +9,7 @@ import { parseEpss, parseKev } from "../src/exhume/feeds.js";
 import { LockfileError, parsePackageLock, parseRequirements } from "../src/exhume/lockfile.js";
 import { ownerOf, parseCodeowners } from "../src/exhume/owners.js";
 import { OSV_TTL_MS, cachePath, resolveOsv } from "../src/exhume/osv.js";
-import { countLimbs, rankLimbs, scoreOf } from "../src/exhume/rank.js";
+import { countLimbs, combineOsvAnswers, rankLimbs, scoreOf } from "../src/exhume/rank.js";
 import type { ExhumeFs, Limb, OsvVuln } from "../src/exhume/types.js";
 import { limbKey } from "../src/exhume/types.js";
 import { nodeFs } from "../scripts/node-fs.js";
@@ -207,6 +207,10 @@ describe("ranking properties (sla-policy)", () => {
   });
 });
 
+// Enough runs to catch rare collisions (two rows with the same name@version).
+// fast-check prints the seed and path of any failure; replay with { seed, path }.
+fc.configureGlobal({ numRuns: 1000 });
+
 const arbScenario = fc.record({
   rows: fc.array(
     fc.record({
@@ -224,17 +228,30 @@ const arbScenario = fc.record({
 });
 
 type Scenario = typeof arbScenario extends fc.Arbitrary<infer T> ? T : never;
+type Row = Scenario["rows"][number];
+
+const answerOf = (r: Row): OsvVuln[] | undefined =>
+  r.osvKnown ? r.vulns.map(([n, sev]) => ({ id: `GHSA-${n}`, aliases: [`CVE-2020-${n}`], severity: sev })) : undefined;
+
+/** Rows grouped by limb key; worst-case OSV answer per key. */
+function mergedAnswers(rows: Row[]): Map<string, OsvVuln[] | undefined> {
+  const groups = new Map<string, Row[]>();
+  for (const r of rows) {
+    const k = limbKey(limb(r.name, r.version));
+    groups.set(k, [...(groups.get(k) ?? []), r]);
+  }
+  return new Map([...groups].map(([k, g]) => [k, combineOsvAnswers(g.map(answerOf))]));
+}
 
 async function run(s: Scenario, order: "asc" | "desc" = "asc") {
   const seen = new Set<string>();
   let limbs = s.rows.map((r) => limb(r.name, r.version)).filter((l) => !seen.has(limbKey(l)) && seen.add(limbKey(l)));
   if (order === "desc") limbs = [...limbs].reverse();
-  const byKey = new Map(s.rows.map((r) => [limbKey(limb(r.name, r.version)), r]));
+  const merged = mergedAnswers(s.rows);
   const fs = memFs();
   const lookup = async () => {
     const out = new Map<string, OsvVuln[]>();
-    for (const [k, r] of byKey)
-      if (r.osvKnown) out.set(k, r.vulns.map(([n, sev]) => ({ id: `GHSA-${n}`, aliases: [`CVE-2020-${n}`], severity: sev })));
+    for (const [k, v] of merged) if (v !== undefined) out.set(k, v);
     return out;
   };
   const feeds = feedsOf(s.kev.map((n) => `CVE-2020-${n}`), s.epss);
@@ -272,13 +289,56 @@ describe("exhume properties", () => {
     await fc.assert(
       fc.asyncProperty(arbScenario, async (s) => {
         for (const l of await run(s)) {
-          const r = s.rows.find((x) => x.name === l.name && x.version === l.version)!;
-          if (!s.kevPresent || !s.epssPresent || !r.osvKnown || l.version === "unknown") {
+          const group = s.rows.filter((x) => x.name === l.name && x.version === l.version);
+          if (!s.kevPresent || !s.epssPresent || group.some((x) => !x.osvKnown) || l.version === "unknown") {
             expect(l.state).not.toBe("Healthy");
             expect(l.unknown).toBe(true);
           }
         }
       }),
+    );
+  });
+  it("regression: unknown row and known-clean row for one limb is never Healthy (seed -2062331921)", async () => {
+    const s: Scenario = {
+      rows: [
+        { name: "q", version: "1.0.0", vulns: [], osvKnown: false },
+        { name: "q", version: "1.0.0", vulns: [], osvKnown: true },
+      ],
+      kev: [],
+      epss: {},
+      kevPresent: true,
+      epssPresent: true,
+    };
+    for (const rows of [s.rows, [...s.rows].reverse()]) {
+      const ranked = await run({ ...s, rows });
+      expect(ranked).toHaveLength(1);
+      expect(ranked[0]!.state).not.toBe("Healthy");
+      expect(ranked[0]!.unknown).toBe(true);
+    }
+  });
+  it("merging rows of one limb is order-independent and worst-case", () => {
+    fc.assert(
+      fc.property(
+        fc.array(
+          fc.record({
+            name: fc.constant("q"),
+            version: fc.constant("1.0.0"),
+            vulns: fc.array(fc.tuple(fc.integer({ min: 0, max: 20 }), fc.constantFrom("LOW", "HIGH", null)), { maxLength: 3 }),
+            osvKnown: fc.boolean(),
+          }),
+          { minLength: 1, maxLength: 6 },
+        ),
+        fc.infiniteStream(fc.nat()),
+        (rows, stream) => {
+          const keyed = rows.map((r) => ({ r, k: stream.next().value as number }));
+          const shuffled = keyed.sort((x, y) => x.k - y.k).map((x) => x.r);
+          const a = combineOsvAnswers(rows.map(answerOf));
+          const b = combineOsvAnswers(shuffled.map(answerOf));
+          expect(JSON.stringify(b)).toBe(JSON.stringify(a));
+          if (rows.some((r) => !r.osvKnown)) expect(a).toBeUndefined();
+          else for (const r of rows) for (const [n] of r.vulns) expect(a!.some((v) => v.id === `GHSA-${n}`)).toBe(true);
+        },
+      ),
     );
   });
   it("counts add up: exorcised + spawned + unresolved = findings", async () => {
