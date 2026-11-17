@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "repo": "axios/axios",
+  "sha": "c0d4c900515a55bd1e258eee16adb25c404d56ed",
+  "scannedLimbs": 680,
+  "counts": {
+    "unresolved": 0
+  },
+  "limbs": [
+    {
+      "rank": 1,
+      "ecosystem": "npm",
+      "name": "picomatch",
+      "version": "2.3.2",
+      "state": "Rotting",
+      "spawned": false,
+      "kev": false,
+      "epss": 0.00335,
+      "vulns": [
+        {
+          "id": "GHSA-fc5q-39xc-vjpf",
+          "cves": [
+            "CVE-2026-112366"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 2,
+      "ecosystem": "npm",
+      "name": "picomatch",
+      "version": "4.0.7",
+      "state": "Rotting",
+      "spawned": false,
+      "kev": false,
+      "epss": 0.00335,
+      "vulns": [
+        {
+          "id": "GHSA-fc5q-39xc-vjpf",
+          "cves": [
+            "CVE-2026-112366"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 3,
+      "ecosystem": "npm",
+      "name": "minimatch",
+      "version": "10.2.6",
+      "state": "Rotting",
+      "spawned": false,
+      "kev": false,
+      "epss": 0.00301,
+      "vulns": [
+        {
+          "id": "GHSA-g3hv-75wg-m249",
+          "cves": [
+            "CVE-2026-118764"
+          ]
+        }
+      ]
+    }
+  ]
+}

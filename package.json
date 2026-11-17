@@ -41,6 +41,8 @@
     "web": "tsx scripts/web.ts",
     "mcp": "tsx scripts/mcp.ts",
     "build:web": "tsc -p tsconfig.web.json",
+    "build:site": "bash scripts/setup-tools.sh && tsx scripts/build-site.ts",
+    "gallery:snapshot": "tsx scripts/gallery-snapshot.ts",
     "crypt": "node bin/crypt.mjs"
   },
   "dependencies": {

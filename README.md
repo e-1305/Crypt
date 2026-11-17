@@ -58,24 +58,31 @@ npm run necromancer:check                     # offline acceptance: GRAFT JQUERY
 ```
 
 `exhume` reads `package-lock.json` (v2/v3) and `requirements.txt` (`==` pins only), asks OSV once per `package@version` (cached in `data/cache/osv/`), ranks with local KEV/EPSS files and prints totals (findings, exorcised, spawned). A limb whose status cannot be established is reported as unknown, never as clean. Schema: `.kiro/specs/exhume-and-rank/design.md`.
+## Live demo
+
+**[e-1305.github.io/Crypt](https://e-1305.github.io/Crypt/)**: the first vulnerability report you can play. The page opens on a demo creature built from `fixtures/vulnerable-npm`, with its plate and a playable story. A gallery lists 20 public projects, each with its own creature. "Download the playable report" saves the loaded `.z8`, which any Z-machine interpreter (Frotz, Lectrote, Parchment) opens.
+
+GRAFT on the page is a rehearsal: it shows the dry-run pull request payload and sends nothing.
+
+Maintainers: set Settings > Pages > Source to **GitHub Actions** once. `.github/workflows/pages.yml` then deploys on every push to `main`.
+
 ## Play in the browser
 
 ```bash
 npm ci
-npm run web        # builds spike.z5 if needed, then serves http://127.0.0.1:8080/
+npm run web        # builds the site (needs the toolchain: npm run setup), serves http://127.0.0.1:8080/
 ```
 
-Type `GRAFT ARM` and the event log on the right shows `[[CRYPT GRAFT ARM]]` as detected. Text you type never counts as a marker. Set `PORT` to change the port.
+Type `GRAFT JQUERY` and the event log shows `[[CRYPT GRAFT JQUERY]]` as detected, and the dry-run payload appears below it. Text you type never counts as a marker. Set `PORT` to change the port.
 
 ### Deploy as static files
 
 No server code is needed.
 
-1. `npm run build:game && npm run build:web`
-2. `mkdir -p web/game && cp spike.z5 web/game/spike.z5`
-3. Upload the contents of `web/` to any static host: `index.html`, `app.js`, `style.css`, `vendor/` (the interpreter and its licence), `js/` (compiled marker reader) and `game/spike.z5`.
+1. `npm run build:site` (writes `_site/`; offline, no network use)
+2. Upload `_site/` to any static host. All URLs are relative, so a sub-path such as `/Crypt/` works.
 
-The page requests only these files from its own origin.
+The page requests only its own files under `game/`. To refresh the gallery, run `npm run census` then `npm run gallery:snapshot` and commit `web/gallery-data/`.
 
 ## The three pillars
 

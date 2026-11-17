@@ -179,6 +179,8 @@ export function generate(creature: CreatureInput): Generated {
   out.push("    rtrue;");
   out.push("];");
   out.push("");
+  // With no spawned limb no object defines these properties, and the Limb class would not compile.
+  if (monsters.length === 0) for (const p of ["limbid", "limbcodes", "owner", "lore"]) out.push(`Property ${p};`);
   out.push("! The only code that prints markers. Data strings are plain game text.");
   out.push("Class Limb");
   out.push("  with parse_name [ i len wa;");

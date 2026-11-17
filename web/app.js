@@ -1,9 +1,11 @@
 // Page wiring only. Marker logic lives in js/web/output-hook.js (compiled from src/web/output-hook.ts).
 // Plate drawing lives in js/render/plate.js (compiled from src/render/plate.ts).
-// The only requests this page makes are for its own files: game/spike.z5 and game/creature.json.
+// The only requests this page makes are for its own files under game/: index.json, <id>.z8, <id>.json, <id>.payloads.json.
+// Grafts are rehearsals here: GRAFT shows a prebuilt dry-run payload and sends nothing.
 import { startPlayer } from "./js/web/player.js";
 import { markHealed } from "./js/web/healed.js";
-import { layoutPlate, plateSummary } from "./js/render/plate.js";
+import { layoutPlate, plateSummary, creatureName } from "./js/render/plate.js";
+import { parseRepoUrl, repoSlug } from "./js/web/repo-url.js";
 
 const transcript = document.getElementById("transcript");
 const form = document.getElementById("input-form");
@@ -14,6 +16,19 @@ const plateEl = document.getElementById("plate");
 const plateSummaryEl = document.getElementById("plate-summary");
 const announcer = document.getElementById("announcer");
 const hcToggle = document.getElementById("hc-toggle");
+const downloadBtn = document.getElementById("download");
+const creatureNameEl = document.getElementById("creature-name");
+const payloadEl = document.getElementById("payload");
+const galleryList = document.getElementById("gallery-list");
+const lookupForm = document.getElementById("lookup-form");
+const lookupInput = document.getElementById("lookup");
+const lookupStatus = document.getElementById("lookup-status");
+
+// Which creature to play: the demo, or a gallery slug from game/index.json. Only listed slugs are used in paths.
+let creatureId = "demo";
+let payloads = {};
+let storyBytes = null;
+let downloadName = "crypt-demo.z8";
 
 const store = {
   get(k) {
@@ -23,6 +38,13 @@ const store = {
     try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* storage unavailable: the page still works */ }
   },
 };
+
+function scopedStore() {
+  return {
+    get: (k) => store.get("crypt." + creatureId + "." + k),
+    set: (k, v) => store.set("crypt." + creatureId + "." + k, v),
+  };
+}
 
 // Messages queued in the same tick are spoken together, so none is overwritten.
 let pending = [];
@@ -68,7 +90,18 @@ function addEvent(e) {
   }
   eventLog.appendChild(li);
   eventEmpty.hidden = true;
+  if (e.ok && e.parsed.verb === "GRAFT") showPayload(e.parsed.limb);
   announce(spoken);
+}
+
+function showPayload(limb) {
+  const p = payloads[limb];
+  if (p) {
+    payloadEl.textContent = "Dry run. Nothing was sent.\n\n" + JSON.stringify(p, null, 2);
+    announce("Dry-run pull request payload for " + limb + " is shown.");
+  } else {
+    payloadEl.textContent = "No pull request opens for " + limb + " in this rehearsal. Only spawned npm limbs have a payload.";
+  }
 }
 
 function onResult(result) {
@@ -102,23 +135,89 @@ function drawPlate(creature, fresh) {
 
 async function loadPlate() {
   try {
-    const res = await fetch("game/creature.json");
+    const res = await fetch("game/" + creatureId + ".json");
     if (!res.ok) throw new Error("HTTP " + res.status);
     const creature = await res.json();
     if (!creature || !Array.isArray(creature.limbs)) throw new Error("no limbs");
-    const fresh = markHealed(creature.limbs, store);
+    const fresh = markHealed(creature.limbs, scopedStore());
     drawPlate(creature, fresh);
+    const name = creatureName(creature.repo || "demo");
+    creatureNameEl.textContent = name + (creatureId === "demo" ? " (the demo creature)" : " (" + creature.repo + ")");
+    downloadName = "crypt-" + name.toLowerCase() + ".z8";
     if (fresh.length > 0) announce("Healed: " + fresh.map((k) => k.split(":").slice(1).join(":")).join(", ") + ".");
   } catch (err) {
     plateEl.textContent = "";
-    plateSummaryEl.textContent = "No plate yet. Run npm run exhume, then reload this page.";
+    plateSummaryEl.textContent = "The plate could not be loaded. Reload the page to try again.";
   }
 }
 
+async function loadIndex() {
+  try {
+    const res = await fetch("game/index.json");
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const list = await res.json();
+    if (!Array.isArray(list)) throw new Error("bad index");
+    return list.filter((x) => x && typeof x.slug === "string" && typeof x.repo === "string");
+  } catch {
+    return [];
+  }
+}
+
+function drawGallery(list) {
+  for (const g of list) {
+    const li = document.createElement("li");
+    const a = document.createElement("a");
+    a.href = "?creature=" + encodeURIComponent(g.slug);
+    a.textContent = g.repo;
+    if (g.slug === creatureId) a.setAttribute("aria-current", "page");
+    li.appendChild(a);
+    galleryList.appendChild(li);
+  }
+  lookupForm.addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    const ref = parseRepoUrl(lookupInput.value);
+    if (!ref) {
+      lookupStatus.textContent = "Enter an address like https://github.com/owner/repo.";
+      return;
+    }
+    const hit = list.find((g) => g.slug === repoSlug(ref));
+    if (!hit) {
+      lookupStatus.textContent = ref.owner + "/" + ref.repo + " is not in the gallery. Run crypt raid on your own checkout to meet its creature.";
+      return;
+    }
+    lookupStatus.textContent = "Opening " + hit.repo + ".";
+    location.search = "?creature=" + encodeURIComponent(hit.slug);
+  });
+}
+
+downloadBtn.addEventListener("click", () => {
+  if (!storyBytes) return;
+  const url = URL.createObjectURL(new Blob([storyBytes], { type: "application/octet-stream" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = downloadName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  announce("Downloaded " + downloadName + ". Open it in any Z-machine interpreter.");
+});
+
 async function main() {
-  const res = await fetch("game/spike.z5");
-  if (!res.ok) throw new Error("game/spike.z5 not found (HTTP " + res.status + ")");
+  const list = await loadIndex();
+  const wanted = new URLSearchParams(location.search).get("creature");
+  if (wanted !== null && list.some((g) => g.slug === wanted)) creatureId = wanted;
+  drawGallery(list);
+  loadPlate();
+  try {
+    const p = await fetch("game/" + creatureId + ".payloads.json");
+    if (p.ok) payloads = await p.json();
+  } catch { /* no payloads: GRAFT shows the plain message */ }
+  const res = await fetch("game/" + creatureId + ".z8");
+  if (!res.ok) throw new Error("game/" + creatureId + ".z8 not found (HTTP " + res.status + ")");
   const story = new Uint8Array(await res.arrayBuffer());
+  storyBytes = story;
+  downloadBtn.disabled = false;
   const player = startPlayer(new window.ZVM(), story, {
     onResult,
     onExit: () => { cmd.disabled = true; addLine("The story has ended."); },
@@ -134,5 +233,4 @@ async function main() {
   });
 }
 
-loadPlate();
 main().catch((err) => addLine("Story file could not be loaded: " + err.message));

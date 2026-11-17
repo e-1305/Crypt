@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "repo": "freqtrade/freqtrade",
+  "sha": "56a3326fa7a2850a57e0548c210247334be31e82",
+  "scannedLimbs": 45,
+  "counts": {
+    "unresolved": 1
+  },
+  "limbs": [
+    {
+      "rank": 1,
+      "ecosystem": "PyPI",
+      "name": "httpx",
+      "version": "unknown",
+      "state": "Rotting",
+      "spawned": false,
+      "kev": false,
+      "epss": null,
+      "vulns": []
+    }
+  ]
+}
