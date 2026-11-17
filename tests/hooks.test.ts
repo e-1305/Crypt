@@ -21,6 +21,7 @@ function repo(files: Record<string, string>): string {
   const d = mkdtempSync(join(tmpdir(), "crypt-hooks-"));
   mkdirSync(join(d, "scripts"), { recursive: true });
   cpSync(HOOKS, join(d, "scripts", "hooks"), { recursive: true });
+  cpSync(join(ROOT, "scripts", "ci"), join(d, "scripts", "ci"), { recursive: true });
   for (const [p, c] of Object.entries(files)) {
     mkdirSync(dirname(join(d, p)), { recursive: true });
     writeFileSync(join(d, p), c);
@@ -55,6 +56,12 @@ describe("failsafe-check.sh (hook 2)", () => {
     ["a token in console.log", "console.log(process.env.GITHUB_TOKEN);\n"],
     ["a token value in an audit call", 'audit("ghp_abcdefghijklmnopqrstuvwxyz0123456789");\n'],
     ["an Authorization header in a log", "logger.info(`Authorization: ${h}`);\n"],
+    ["a token held in a variable then logged", "const h = process.env.GITHUB_TOKEN;\nconsole.log(h);\n"],
+    ["a token in a multi-line log call", "console.log(\n  'x',\n  process.env.GITHUB_TOKEN,\n);\n"],
+    ["a token held in a typed variable then audited", "const t: string = process.env.GITHUB_TOKEN ?? '';\nauditWrite(`got ${t}`);\n"],
+    ["a git blame call", 'run("git blame f");\n'],
+    ["a git blame call with -C", 'execFile("git", ["-C", d, "blame", f]);\n'],
+    ["a quoted merge token in an argument array", 'spawn("gh", ["pr", "' + M + '", "5"]);\n'],
   ];
   for (const [name, line] of bad) {
     it(`fails on ${name}`, () => {
@@ -63,6 +70,10 @@ describe("failsafe-check.sh (hook 2)", () => {
       expect(r.stderr).toContain("failsafe-check:");
     });
   }
+  it("does not flag a variable that is logged but holds no secret", () => {
+    const r = run("failsafe-check.sh", { "src/mcp/a.ts": "const h = 1;\nconsole.log(h);\nconst t = process.env.GITHUB_TOKEN;\nuse(t);\n" }, ["src/mcp/a.ts"]);
+    expect(r.status, r.stderr).toBe(0);
+  });
   it("reads the saved file from the Kiro event on STDIN", () => {
     const event = JSON.stringify({ hook_event_name: "PostFileSave", tool_input: { path: "src/inquisitor/a.ts" } });
     const r = run("failsafe-check.sh", { "src/inquisitor/a.ts": "console.error(GITHUB_TOKEN);\n" }, [], {}, event);
