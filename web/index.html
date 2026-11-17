@@ -3,25 +3,40 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="CRYPT: heal a dependency creature by playing a text adventure.">
 <title>CRYPT</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<a class="skip" href="#cmd">Skip to the game input</a>
+<header class="top">
+  <h1>CRYPT</h1>
+  <button id="hc-toggle" type="button" aria-pressed="false" aria-describedby="hc-help">High-contrast reader mode</button>
+  <span id="hc-help" class="sr-only">Plain text, no effects, game events announced.</span>
+</header>
 <main class="crt">
-  <section class="pane game" aria-label="Game">
-    <h1>CRYPT</h1>
-    <div id="transcript" class="transcript" role="log" aria-live="polite"></div>
-    <form id="input-form" class="input-row" autocomplete="off">
-      <label for="cmd" class="prompt">&gt;</label>
-      <input id="cmd" type="text" spellcheck="false" autocapitalize="off" autofocus disabled>
-    </form>
-  </section>
-  <aside class="pane events" aria-label="Event log">
-    <h2>Event log</h2>
+  <div class="left">
+    <section class="pane plate-pane" aria-labelledby="plate-h">
+      <h2 id="plate-h">Plate I: the creature</h2>
+      <pre id="plate" class="plate" role="img" aria-labelledby="plate-h plate-summary"></pre>
+      <p id="plate-summary" class="plate-summary">Loading the plate.</p>
+    </section>
+    <section class="pane game" aria-labelledby="game-h">
+      <h2 id="game-h">The crypt</h2>
+      <div id="transcript" class="transcript" role="log" aria-live="polite" aria-label="Game text" tabindex="0"></div>
+      <form id="input-form" class="input-row" autocomplete="off">
+        <label for="cmd" class="prompt">Command &gt;</label>
+        <input id="cmd" type="text" spellcheck="false" autocapitalize="off" autofocus disabled>
+      </form>
+    </section>
+  </div>
+  <aside class="pane events" aria-labelledby="events-h">
+    <h2 id="events-h">Event log</h2>
     <ol id="event-log" class="event-log"></ol>
     <p id="event-empty" class="muted">No markers detected yet.</p>
   </aside>
 </main>
+<div id="announcer" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
 <script src="vendor/zvm.min.js"></script>
 <script type="module" src="app.js"></script>
 </body>

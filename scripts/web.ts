@@ -1,9 +1,9 @@
 // npm run web: build the story file, compile the hook for the browser, serve web/ on 127.0.0.1.
 // Serves GET and HEAD for files under web/ only, with a fixed content-type table.
 import { spawnSync } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, readFileSync, statSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
-import { extname, join, resolve, sep } from "node:path";
+import { basename, extname, join, resolve, sep } from "node:path";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const WEB = join(ROOT, "web");
@@ -23,6 +23,7 @@ const TYPES: Record<string, string> = {
   ".css": "text/css; charset=utf-8",
   ".z5": "application/octet-stream",
   ".txt": "text/plain; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
 };
 
 export function resolveStatic(urlPath: string): string | null {
@@ -43,6 +44,17 @@ if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith
   step("compile output hook (tsc -p tsconfig.web.json)", "npx", ["tsc", "-p", "tsconfig.web.json"]);
   mkdirSync(join(WEB, "game"), { recursive: true });
   copyFileSync(join(ROOT, "spike.z5"), join(WEB, "game", "spike.z5"));
+  // The plate reads the creature. Without out/creature.json the page shows an empty plate.
+  const creaturePath = join(ROOT, "out", "creature.json");
+  if (existsSync(creaturePath)) {
+    try {
+      const c = JSON.parse(readFileSync(creaturePath, "utf8"));
+      if (c && typeof c === "object" && typeof c.repo !== "string") c.repo = basename(ROOT);
+      writeFileSync(join(WEB, "game", "creature.json"), JSON.stringify(c));
+    } catch (e) {
+      console.error(`web: creature.json not copied: ${(e as Error).message}`);
+    }
+  }
 
   const server = createServer((req, res) => {
     if (req.method !== "GET" && req.method !== "HEAD") {

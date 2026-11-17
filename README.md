@@ -82,6 +82,10 @@ Each guarantee is enforced by a property-based test. See [`.kiro/steering/failsa
 Specs, steering, hooks, custom agents and property-based tests live in [`.kiro/`](.kiro/).
 See [`docs/KIRO.md`](docs/KIRO.md) for how Kiro was used.
 
+## Accessibility
+
+See [`docs/ACCESSIBILITY.md`](docs/ACCESSIBILITY.md) for the plate's text equivalents, reader mode and the Lighthouse score.
+
 ## Attribution
 
 Third-party data, tools and code are listed in [`docs/ATTRIBUTION.md`](docs/ATTRIBUTION.md).
