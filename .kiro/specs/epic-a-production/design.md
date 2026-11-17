@@ -18,7 +18,7 @@ pull_request / push main
 | `tests/runs.ts` | `numRuns(default)` returns `max(default, CRYPT_NUM_RUNS)` when the variable is a positive integer, else `default` |
 | `tests/failsafe-guard.test.ts` | runs the guard on a clean temp tree and on one tree per violation |
 
-Guard rules, applied after removing the state label `awaiting-human-merge`: the merge patterns of `tests/static.test.ts`, `gh pr merge`, `git blame` (also as spawn arguments `"git", "blame"`), and `.kiro/` ignored by git. The guard never weakens `tests/static.test.ts`; it is a second, independent check that also covers `bin/` and runs without Node.
+Guard rules, applied after removing the state label `awaiting-human-merge`: the merge patterns of `tests/static.test.ts`, `gh pr merge`, `git blame`, and `.kiro/` ignored by git. The rules live in `scripts/ci/failsafe-rules.sh`, shared with the on-save hook `scripts/hooks/failsafe-check.sh`. Each rule runs per line and on the whole file folded to one line, so calls split over lines are caught. Quoted standalone merge and blame tokens catch argument arrays (`spawn("gh", ["pr", "<merge>"])`, `execFile("git", ["-C", d, "blame", f])`), and `git` followed by flags then blame catches command strings. The `.kiro` check probes `.kiro/`, `.kiro/hooks`, `.kiro/steering` and `.kiro/specs` paths with `git check-ignore` and also fails on any `.kiro` pattern in `.gitignore`. The hook adds token-in-log detection for one line, a call split over lines, and a variable assigned from a secret and logged later. The guard never weakens `tests/static.test.ts`; it is a second, independent check that also covers `bin/` and runs without Node.
 
 Toolchain cache: `CRYPT_TOOLCHAIN_DIR=$HOME/.cache/crypt/toolchain` for every step, cached with key `toolchain-${{ runner.os }}-${{ hashFiles('scripts/setup-tools.sh') }}`.
 
@@ -83,8 +83,15 @@ Page rules: GRAFT is a rehearsal. The marker still goes through `parseGameOutput
 
 Raise fix found by the gallery: a creature with no spawned limb produced Inform source that did not compile (the `Limb` class used properties no object defined). `generate` now declares the four properties when there are no monsters; output for creatures with limbs is unchanged.
 
+### Owner decisions and notes (review v1)
+- **Gallery data needs owner approval (open).** `web/gallery-data/*.json` names 20 third-party repositories with their unpatched package versions, KEV flags and EPSS scores, which `census` C3 kept out of the repository. Record the approval before the Pages URL is published or put in Devpost. Until then the branch is local only.
+- **Nothing has run on GitHub (open).** The workflows, the Pages URL and the README badge are unverified; branches are local. After the first push, check that `ci.yml` is green and that `pages.yml` deploys.
+- **`npm run web` changed.** `scripts/web.ts` no longer builds `spike.z5` or copies a creature. It delegates to `build:site`, so it now needs the Inform/Frotz toolchain (`npm run setup`) and the gallery data in `web/gallery-data/`.
+- **CI time.** `tests/site.test.ts` builds the site twice for the determinism check. The build count does not scale with `CRYPT_NUM_RUNS`; measured locally, the whole file takes about 3 s. The 1000-run property tests are the cost to watch on the first CI run, inside the 30-minute job limit.
+- **Hook format.** The `.kiro/hooks/*.json` schema follows the Kiro hooks documentation linked above. No hook has fired inside a Kiro session; the runs in `docs/KIRO.md` are manual invocations of the scripts.
+
 ### Workflow (`.github/workflows/pages.yml`)
-Triggers: push to `main`, `workflow_dispatch`. Top-level `permissions: contents: read`. Job `build`: checkout, Node 22, `npm ci`, toolchain cache (same key as CI), `bash scripts/setup-tools.sh`, `npm run build:site`, `configure-pages`, `upload-pages-artifact` (`_site`). Job `deploy` (needs `build`): `pages: write`, `id-token: write`, `environment: github-pages`, `deploy-pages`. Concurrency group `pages`, no cancel of a running deploy.
+Triggers: `workflow_run` of the `CI` workflow on `main` (the build job runs only when CI concluded `success` for a push, and checks out the commit CI tested, so a push that fails CI never publishes), and `workflow_dispatch` (a manual deploy that skips the gate on purpose). Top-level `permissions: contents: read`. Job `build`: checkout, Node 22, `npm ci`, toolchain cache (same key as CI), `bash scripts/setup-tools.sh`, `npm run build:site`, `configure-pages`, `upload-pages-artifact` (`_site`). Job `deploy` (needs `build`): `pages: write`, `id-token: write`, `environment: github-pages`, `deploy-pages`. Concurrency group `pages`, no cancel of a running deploy.
 
 ## A4 Packaging
 
