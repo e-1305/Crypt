@@ -1,6 +1,6 @@
 // DOM glue of the page (web/raid.js, web/app.js) run against a minimal fake DOM. The glue is plain browser JS, so the
 // test compiles web/ into a temp directory (never touching web/js, which other tests rebuild) and imports it from there.
-// There is no web/heal.js: healing display lives in src/web/healed.ts (tests/healed.test.ts) and is wired by app.js.
+// web/heal.js (live and simulated heal events) is covered here too; its pure rules are in tests/heal-events.test.ts.
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import fc from "fast-check";
 import { spawnSync } from "node:child_process";
@@ -48,8 +48,10 @@ let tmp = "";
 let files: Record<string, string> = {};
 const load = async (name: string) => import(/* @vite-ignore */ pathToFileURL(join(tmp, name)).href + "?v=" + Math.random());
 
+const dispatched: { detail: Record<string, unknown> }[] = [];
 function fakeDom(search = "") {
   els = new Map();
+  dispatched.length = 0;
   const mem = new Map<string, string>();
   const body = new El();
   Object.assign(globalThis, {
@@ -59,10 +61,14 @@ function fakeDom(search = "") {
       createTextNode: (t: string) => Object.assign(new El(), { textContent: t }),
       body,
       documentElement: new El(),
+      dispatched,
+      dispatchEvent: (e: unknown) => void dispatched.push(e as { detail: Record<string, unknown> }),
+      addEventListener() {},
     },
+    CustomEvent: class { constructor(public type: string, public init: { detail: Record<string, unknown> }) {} get detail() { return this.init.detail; } },
     localStorage: { getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, v: string) => void mem.set(k, v) },
     location: { search },
-    window: { ZVM: class { prepare() {} start() {} resume() {} } },
+    window: { matchMedia: () => ({ matches: false }), ZVM: class { prepare() {} start() {} resume() {} } },
     fetch: async (url: string) => {
       const body = files[url];
       return { ok: body !== undefined, status: body === undefined ? 404 : 200, json: async () => JSON.parse(body), arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer };
@@ -74,7 +80,7 @@ function fakeDom(search = "") {
 beforeAll(() => {
   tmp = mkdtempSync(join(tmpdir(), "crypt-glue-"));
   cpSync(join(ROOT, "web", "theatre"), join(tmp, "theatre"), { recursive: true });
-  for (const f of ["app.js", "raid.js"]) cpSync(join(ROOT, "web", f), join(tmp, f));
+  for (const f of ["app.js", "raid.js", "heal.js"]) cpSync(join(ROOT, "web", f), join(tmp, f));
   writeFileSync(join(tmp, "package.json"), '{"type":"module"}');
   const r = spawnSync("npx", ["tsc", "-p", "tsconfig.web.json", "--outDir", join(tmp, "js")], { cwd: ROOT, encoding: "utf8" });
   if (r.status !== 0) throw new Error(r.stdout + r.stderr);
@@ -147,7 +153,7 @@ describe("web/raid.js", () => {
     raid.setLimbs(limbs(true), "acme/app");
     expect(el("raid-score").textContent).toBe("Team risk removed: 1.10");
     expect(el("raid-rank").textContent).toBe("Rank: Apprentice");
-    expect(el("raid-nights").textContent).toMatch(/^Nights Without Possession: \d+$/);
+    expect(el("raid-nights").textContent).toMatch(/^Nights Without Possession.*: \d+$/);
     expect(el("raid-praise").textContent).toBe("jquery healed by Ada");
   });
 
@@ -232,5 +238,96 @@ describe("web/app.js", () => {
     expect(body.classes.has("hc")).toBe(true);
     expect(el("hc-toggle").attrs["aria-pressed"]).toBe("true");
     expect(mem.get("crypt.hc")).toBe("true");
+  });
+});
+
+describe("web/heal.js", () => {
+  const sick = [{ ecosystem: "npm", name: "jquery", version: "1.0.0", fixedIn: "3.5.0", state: "Rotting" }, { ecosystem: "npm", name: "ok", state: "Healthy" }];
+  let lines: [string, string | undefined][];
+  let said: string[];
+  let redraws: unknown[][];
+  let live: unknown[];
+
+  async function make(search = "") {
+    fakeDom(search);
+    vi.useFakeTimers();
+    lines = [];
+    said = [];
+    redraws = [];
+    live = sick;
+    const { initHeal } = await load("heal.js");
+    const heal = initHeal({ addLine: (t: string, c?: string) => lines.push([t, c]), announce: (t: string) => said.push(t), getLimbs: () => live, redraw: (...a: unknown[]) => redraws.push(a) });
+    return heal;
+  }
+  const kinds = () => dispatched.map((e) => e.detail.kind);
+
+  it("a real heal event writes one line, announces, and emits the heal effect", async () => {
+    try {
+      const heal = await make();
+      heal.real(["npm:jquery"]);
+      expect(lines).toEqual([["The creature stirs. jquery is healed.", undefined]]);
+      expect(said).toEqual(["Healed: jquery."]);
+      expect(kinds()).toEqual(["heal"]);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it("a malformed real event changes nothing", async () => {
+    try {
+      const heal = await make();
+      heal.real(["nonsense", "", "npm:"]);
+      expect(lines).toEqual([]);
+      expect(dispatched).toEqual([]);
+      expect(heal.overlay(sick as never)).toEqual(sick);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it("simulate green: replays labelled steps, heals only the overlay and never the real state", async () => {
+    try {
+      const heal = await make();
+      el("sim-green").click();
+      expect(el("sim-label").hidden).toBe(false);
+      expect(el("sim-label").textContent).toContain("SIMULATED CI");
+      vi.advanceTimersByTime(5000);
+      expect(lines.map((l) => l[0]).every((t) => t.startsWith("[SIMULATED CI]"))).toBe(true);
+      expect(kinds()).toEqual(["heal"]);
+      expect((heal.overlay(sick as never) as { state: string }[])[0].state).toBe("Healed");
+      expect(sick[0].state).toBe("Rotting");
+    } finally { vi.useRealTimers(); }
+  });
+
+  it("simulate red: convulses, rejects in the transcript and leaves the limb rotting", async () => {
+    try {
+      const heal = await make();
+      el("sim-red").click();
+      vi.advanceTimersByTime(5000);
+      expect(kinds()).toEqual(["convulse"]);
+      expect(lines.some(([, c]) => c === "reject")).toBe(true);
+      expect((heal.overlay(sick as never) as { state: string }[])[0].state).toBe("Rotting");
+    } finally { vi.useRealTimers(); }
+  });
+
+  it("with nothing sick, simulating says so and emits no effect", async () => {
+    try {
+      const heal = await make();
+      live = [{ ecosystem: "npm", name: "ok", state: "Healthy" }];
+      void heal;
+      el("sim-green").click();
+      vi.advanceTimersByTime(5000);
+      expect(el("sim-label").textContent).toBe("SIMULATED CI: nothing sick to heal.");
+      expect(dispatched).toEqual([]);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it("?simulate=red starts a replay, any other value does not", async () => {
+    try {
+      const a = await make("?simulate=red");
+      a.start();
+      vi.advanceTimersByTime(5000);
+      expect(kinds()).toEqual(["convulse"]);
+      const b = await make("?simulate=maybe");
+      b.start();
+      vi.advanceTimersByTime(5000);
+      expect(dispatched).toEqual([]);
+    } finally { vi.useRealTimers(); }
   });
 });

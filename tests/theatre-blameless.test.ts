@@ -76,7 +76,7 @@ describe("theatre is blameless", () => {
 
   it("the page and theatre sources (comments removed) hold no leaderboard, ranking of people or blame wording", () => {
     const strip = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
-    for (const f of ["src/theatre/raid.ts", "src/theatre/card.ts", "src/theatre/screen-text.ts", "web/raid.js", "web/theatre/board.js", "web/theatre/wall.js", "web/theatre/card-draw.js"]) {
+    for (const f of ["src/theatre/raid.ts", "src/theatre/card.ts", "src/theatre/screen-text.ts", "src/theatre/heal-events.ts", "src/theatre/polish.ts", "src/theatre/audio-plan.ts", "web/raid.js", "web/heal.js", "web/theatre/sound.js", "web/theatre/board.js", "web/theatre/wall.js", "web/theatre/card-draw.js"]) {
       expect(strip(readFileSync(join(ROOT, f), "utf8")), f).not.toMatch(BANNED);
     }
     expect(readFileSync(join(ROOT, "web", "index.html"), "utf8").replace(/<!--[\s\S]*?-->/g, "")).not.toMatch(BANNED);
