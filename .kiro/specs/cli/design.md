@@ -33,7 +33,7 @@ crypt raid <target> [--offline]
 | `scripts/cli/main.ts` | dispatch, top-level catch |
 | `scripts/cli/toolchain.ts` | cache dir, preflight, build |
 | `scripts/cli/target.ts` | clone, symlink refusal, cleanup |
-| `scripts/cli/play.ts`, `raid.ts`, `seal.ts` | session and flow |
+| `scripts/cli/session.ts`, `raid.ts`, `seal.ts`, `run.ts`, `signals.ts` | dfrotz session, flow, seal, child scripts, interrupt cleanup |
 | `scripts/toolchain-dir.ts` | the one shared helper that resolves the toolchain location |
 
 `src/` stays free of network code, the word for landing a PR, and `http(s)://` literals (`tests/static.test.ts`).
@@ -72,7 +72,7 @@ The codes are listed in `--help` and the README. `main.ts` catches everything, p
 ### (c) Package name and npx resolution
 `crypt` and `crypt-cli` are both taken on the registry. The package is named `crypt-cli` (the fallback in the issue), the bin stays `crypt`, `private: true` stays, so it cannot be published by accident. Added: `files` whitelist (`bin`, `scripts`, `src`, `game`, `fixtures/vulnerable-npm`, `data/cache/osv`, `README.md`, `LICENSE`, `docs/ATTRIBUTION.md`; not `web/`, not `.toolchain/`) and `engines.node` `>=20`. `tsx` stays in `dependencies` because the launcher needs it at run time.
 
-`npx crypt` without `--no-install` could fetch the unrelated registry package, so every documented invocation uses `npx --no-install crypt`. npm does not link a package's own bin into `node_modules/.bin`, so FEAT-003 verifies after `npm ci` whether `npx --no-install crypt --help` resolves in the repo root. IF it does not, the fix is a `prepare` script that links `node_modules/.bin/crypt` to `bin/crypt.mjs` plus an `npm run crypt --` alias. The verified result is recorded in the README and in tasks.md.
+`npx crypt` without `--no-install` could fetch the unrelated registry package, so every documented invocation uses `npx --no-install crypt`. npm does not link a package's own bin into `node_modules/.bin`, so this was checked. Result (npm 11.4.2, Node 22.23.4): `node_modules/.bin/crypt` is not created, yet `npx --no-install crypt --help` runs this checkout from the repo root and from its subdirectories, because npm exec resolves the bin of the current project. It does not work from an unrelated directory (use `node <checkout>/bin/crypt.mjs`). No `prepare` link was needed. An `npm run crypt --` alias (`node bin/crypt.mjs`) is added as a second documented form.
 
 ### (d) Toolchain cache
 Location, first match wins: `CRYPT_TOOLCHAIN_DIR`, `$XDG_CACHE_HOME/crypt/toolchain`, `~/.cache/crypt/toolchain`. The npm scripts keep the repo `.toolchain` by default so nothing changes for contributors: `scripts/setup-tools.sh` takes `TC="${CRYPT_TOOLCHAIN_DIR:-$ROOT/.toolchain}"`, and the CLI always passes an explicit `CRYPT_TOOLCHAIN_DIR`. `scripts/toolchain-dir.ts` is the single place that reads the variable; `scripts/compile.ts` and `scripts/play.ts` import it instead of hardcoding `.toolchain`. `build-game.sh` reads the same variable with the same default.

@@ -15,6 +15,7 @@ export function parseGithubUrl(text: string): GithubRepo | null {
   if (!m) return null;
   const [, owner, repo] = m as unknown as [string, string, string];
   if (/^\.+$/.test(owner) || /^\.+$/.test(repo)) return null;
+  if (owner.startsWith("-") || repo.startsWith("-")) return null; // never option-like
   return { owner, repo };
 }
 
