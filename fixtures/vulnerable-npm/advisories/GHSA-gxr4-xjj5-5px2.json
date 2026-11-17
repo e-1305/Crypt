@@ -1,0 +1,28 @@
+{
+  "id": "GHSA-gxr4-xjj5-5px2",
+  "aliases": [
+    "BIT-drupal-2020-11022",
+    "CVE-2020-11022"
+  ],
+  "affected": [
+    {
+      "package": {
+        "ecosystem": "npm",
+        "name": "jquery"
+      },
+      "ranges": [
+        {
+          "type": "SEMVER",
+          "events": [
+            {
+              "introduced": "1.12.0"
+            },
+            {
+              "fixed": "3.5.0"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

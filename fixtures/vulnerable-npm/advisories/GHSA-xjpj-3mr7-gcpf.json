@@ -1,0 +1,27 @@
+{
+  "id": "GHSA-xjpj-3mr7-gcpf",
+  "aliases": [
+    "CVE-2026-33941"
+  ],
+  "affected": [
+    {
+      "package": {
+        "ecosystem": "npm",
+        "name": "handlebars"
+      },
+      "ranges": [
+        {
+          "type": "SEMVER",
+          "events": [
+            {
+              "introduced": "4.0.0"
+            },
+            {
+              "fixed": "4.7.9"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

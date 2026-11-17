@@ -1,0 +1,27 @@
+{
+  "id": "GHSA-2qvq-rjwj-gvw9",
+  "aliases": [
+    "CVE-2026-33916"
+  ],
+  "affected": [
+    {
+      "package": {
+        "ecosystem": "npm",
+        "name": "handlebars"
+      },
+      "ranges": [
+        {
+          "type": "SEMVER",
+          "events": [
+            {
+              "introduced": "4.0.0"
+            },
+            {
+              "fixed": "4.7.9"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

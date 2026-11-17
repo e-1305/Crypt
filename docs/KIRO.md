@@ -9,6 +9,7 @@
 | bridge-v2 | `.kiro/specs/bridge-v2/` | requirements (V1 to V7), design (marker syntax, `GameEvent`, Tier 1 browser reading, threat notes) and tasks written before coding; implemented. Driven by issue #3: the game now prints `[[CRYPT ...]]` markers on accepted actions and the watcher triggers only on those, not on `> ` input lines |
 | exhume-and-rank | `.kiro/specs/exhume-and-rank/` | requirements (E1 to E9), design (creature.json schema, ranking formula, fail-safe unknown state, fixture data policy) and tasks written and committed before any code; implemented. Driven by issue #5: `npx crypt exhume <path-or-url>` gives a deterministic KEV/EPSS ranking, offline once cached |
 | raise-the-creature | `.kiro/specs/raise-the-creature/` | requirements, design (ID scheme, sanitizer, marker templates) and tasks committed before code; implemented. Driven by issue #8: `npx crypt raise out/creature.json` compiles `creature.json` to a playable `.z8` story with an ASSIGN verb |
+| necromancer | `.kiro/specs/necromancer/` | requirements (N1 to N8), design (module layout, version selection, state schema, audit outcomes, static-test constraint) and tasks committed before any code. Driven by issue #11: GRAFT leads to a fix PR, CI check, human landing and re-raise. Implemented: complete mediation in the watcher (N1), Necromancer, GithubClient with dry-run, Inquisitor, re-raise, SEAL, acceptance script |
 
 ## Steering
 | File | Purpose |
@@ -28,8 +29,8 @@
 | Agent | Role |
 |---|---|
 | Oracle | Wraps the deterministic scorer |
-| Necromancer | Drafts the fix PR |
-| Inquisitor | Verifies the fix |
+| Necromancer | Drafts the fix PR. `.kiro/agents/necromancer.json`: read and write tools, no shell, no web |
+| Inquisitor | Verifies the fix. `.kiro/agents/inquisitor.json`: read-only, no write, no shell (separation of privilege, failsafe 3) |
 
 ## MCP
 TODO
@@ -62,6 +63,15 @@ TODO
 | Hostile names, CVE IDs, owners and versions never add a marker, bracket, control character or Inform special; removing the sanitizer fails these tests (R6) | `tests/raise.test.ts` |
 | Markers appear in generated source only as the four fixed templates; in a compiled game they come only from verb routines for the actual noun (R4, R6) | `tests/raise.test.ts` |
 | `ASSIGN <limb>` is accepted by the grammar, lowercase and near misses are rejected (R5) | `tests/grammar.test.ts` |
+| Unknown limb IDs never write a request; every rejection is audited `REJECTED_UNKNOWN_LIMB` (rules 5, 8, N1) | `tests/watch.test.ts` |
+| A missing, unreadable or invalid `out/limbs.json` rejects every GRAFT and ASSIGN (rule 1, N1) | `tests/watch.test.ts` |
+| Unknown limb IDs never produce a PR, a client call or an advisory lookup; every rejection is audited (rules 5, 8, N2) | `tests/necromancer.test.ts` |
+| Chosen version is above current, outside every affected range, and the minimum candidate (brute-force comparison), same major preferred (N2) | `tests/necromancer.test.ts` |
+| At most 5 PRs per raid, one dependency per PR; PR body has the required fields and no commit author (rule 6, blameless, N2) | `tests/necromancer.test.ts` |
+| The mocked client records zero merge-like calls for random inputs; `src/` and `scripts/` contain no merge endpoint or command, and the check fails on planted offenders (rule 2, N3) | `tests/necromancer.test.ts`, `tests/inquisitor.test.ts`, `tests/reraise.test.ts`, `tests/static.test.ts` |
+| After SEAL zero API calls for any input: Necromancer, Inquisitor, re-raise (rule 7, N6) | `tests/necromancer.test.ts`, `tests/inquisitor.test.ts`, `tests/reraise.test.ts` |
+| Any GitHub or CI error leaves `out/state.json` byte-identical; red, timeout and missing CI keep the limb Rotting (rule 1, N4, N5) | `tests/inquisitor.test.ts`, `tests/reraise.test.ts` |
+| A landed PR heals its limb and the regenerated creature no longer spawns it (N5) | `tests/reraise.test.ts` |
 
 ## Spec → code traceability
 | Task | Commit | Test |
@@ -102,5 +112,22 @@ TODO
 | 6, 8 `scripts/raise.ts`, `scripts/play.ts`, `scripts/check-raise.ts`, `bin/crypt.mjs` | `feat: raise script, z8 compile and acceptance check` | `npm run raise:check`: EXAMINE, ASSIGN, GRAFT JQUERY, SEAL CRYPT, GRAFT LODASH give 1 graft request for jquery and 0 after seal |
 | 9 docs | `docs: update KIRO.md and README for raise` | n/a |
 
+### necromancer (issue #11)
+| Task | Commit | Test |
+|---|---|---|
+| 1 spec | `docs: add necromancer spec` | n/a (committed before code) |
+| 2 `.kiro/agents/*.json` | `feat: necromancer and inquisitor agents, complete mediation` | n/a |
+| 3 `src/bridge/watch.ts` mediation, `scripts/reset.ts`, `scripts/check-raise.ts` | same | `tests/watch.test.ts`, `npm run spike`, `npm run raise:check` |
+| 5 `src/necromancer/version.ts`, `advisory.ts` | `feat: necromancer version choice, PR builder and GithubClient` | `tests/necromancer.test.ts` (brute-force comparison) |
+| 6 `src/github/client.ts`, `scripts/github-client.ts` | same | `tests/static.test.ts`, mocked client in `tests/agent-helpers.ts` |
+| 7 `src/necromancer/index.ts` | same | `tests/necromancer.test.ts` |
+| 8 `src/inquisitor/index.ts` | `feat: inquisitor and re-raise` | `tests/inquisitor.test.ts` |
+| 9 `src/reraise/index.ts`, `scripts/reraise.ts`, `scripts/compile.ts` | same | `tests/reraise.test.ts`, manual: reraise then `out/limbs.json` lacks JQUERY |
+| 10 `scripts/necromancer.ts`, `inquisitor.ts`, npm scripts | `feat: CLIs, fixture advisories and acceptance check` | `npm run necromancer:check` |
+| 11 `fixtures/vulnerable-npm/advisories/` | same | `docs/ATTRIBUTION.md` row |
+| 12 tests, static extension | with each feature commit | `npm test` |
+| 13 `scripts/check-necromancer.ts` | same | `npm run necromancer:check`: GRAFT JQUERY gives 1 payload (jquery 3.4.1 to 3.5.0, breaking false), 0 after SEAL CRYPT |
+| 14 docs | `docs: necromancer usage and KIRO.md` | n/a |
+
 ## Numbers
-- Specs: 4 · Hooks: TODO · Steering files: 5 · Property tests: 29 (16 bridge, 9 exhume, 4 raise) · Tests: 94
+- Specs: 5 · Hooks: TODO · Steering files: 5 · Property tests: 40 (16 bridge, 9 exhume, 4 raise, 11 necromancer, inquisitor and re-raise) · Tests: 143

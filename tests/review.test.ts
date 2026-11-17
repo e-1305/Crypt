@@ -4,7 +4,7 @@ import { appendFileSync, writeFileSync } from "node:fs";
 import { createWatcher, tail } from "../src/bridge/watch.js";
 import { parseGameOutput } from "../src/bridge/parse-output.js";
 import { buildTranscript } from "../scripts/play.js";
-import { makeEnv, transcript } from "./helpers.js";
+import { KNOWN_LIMBS, makeEnv, transcript } from "./helpers.js";
 
 beforeAll(() => {
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
@@ -17,7 +17,7 @@ function env() {
   return e;
 }
 
-const limb = fc.stringMatching(/^[A-Z]{1,32}$/);
+const limb = fc.constantFrom(...KNOWN_LIMBS);
 const line = fc.oneof(
   fc.constant("SEAL CRYPT"),
   fc.constant("GRAFT ARM"),

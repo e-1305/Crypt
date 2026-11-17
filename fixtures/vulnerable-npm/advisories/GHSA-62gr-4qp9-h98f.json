@@ -1,0 +1,28 @@
+{
+  "id": "GHSA-62gr-4qp9-h98f",
+  "aliases": [
+    "CVE-2019-20922",
+    "SNYK-JS-HANDLEBARS-480388"
+  ],
+  "affected": [
+    {
+      "package": {
+        "ecosystem": "npm",
+        "name": "handlebars"
+      },
+      "ranges": [
+        {
+          "type": "SEMVER",
+          "events": [
+            {
+              "introduced": "4.0.0"
+            },
+            {
+              "fixed": "4.4.5"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

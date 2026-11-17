@@ -1,0 +1,46 @@
+{
+  "id": "GHSA-w7rc-rwvf-8q5r",
+  "aliases": [
+    "CVE-2020-15168"
+  ],
+  "affected": [
+    {
+      "package": {
+        "ecosystem": "npm",
+        "name": "node-fetch"
+      },
+      "ranges": [
+        {
+          "type": "SEMVER",
+          "events": [
+            {
+              "introduced": "2.0.0"
+            },
+            {
+              "fixed": "2.6.1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "package": {
+        "ecosystem": "npm",
+        "name": "node-fetch"
+      },
+      "ranges": [
+        {
+          "type": "SEMVER",
+          "events": [
+            {
+              "introduced": "3.0.0-beta.1"
+            },
+            {
+              "fixed": "3.0.0-beta.9"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
