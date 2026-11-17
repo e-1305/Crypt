@@ -1,5 +1,5 @@
 import { mkdirSync, writeFileSync } from "node:fs";
-import { dirname } from "node:path";
+import { dirname, isAbsolute } from "node:path";
 import { NoManifestError, buildCreature, serializeCreature, summarize } from "../src/exhume/creature.js";
 import { parseEpss, parseKev } from "../src/exhume/feeds.js";
 import { LockfileError } from "../src/exhume/lockfile.js";
@@ -70,7 +70,7 @@ async function main(): Promise<void> {
   const epss = epssText === null ? null : parseEpss(epssText);
   const creature = await buildCreature({
     repo,
-    cacheFs: nodeFs("."),
+    cacheFs: nodeFs(isAbsolute(a.cache) ? "/" : "."), // an absolute --cache must not be re-rooted under the cwd
     cacheDir: a.cache,
     kev,
     epss,
