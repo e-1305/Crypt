@@ -13,7 +13,9 @@
     "build:game": "bash scripts/setup-tools.sh && bash scripts/build-game.sh",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "spike": "bash scripts/setup-tools.sh && bash scripts/build-game.sh && tsx scripts/reset.ts && tsx scripts/play.ts && tsx src/bridge/watch.ts --once && tsx scripts/check-spike.ts"
+    "spike": "bash scripts/setup-tools.sh && bash scripts/build-game.sh && tsx scripts/reset.ts && tsx scripts/play.ts && tsx src/bridge/watch.ts --once && tsx scripts/check-spike.ts",
+    "web": "tsx scripts/web.ts",
+    "build:web": "tsc -p tsconfig.web.json"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

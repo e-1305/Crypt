@@ -25,3 +25,7 @@ crypt-audit.log
 
 # Local toolchain built by scripts/setup-tools.sh
 .toolchain/
+
+# Web player build output
+web/game/
+web/js/

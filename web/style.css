@@ -1,0 +1,21 @@
+:root { --fg: #33ff33; --dim: #1c9a1c; --bg: #000; --warn: #ffb000; }
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; background: var(--bg); color: var(--fg);
+  font-family: "Courier New", ui-monospace, Menlo, Consolas, monospace; font-size: 16px; line-height: 1.35; }
+.crt { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 1rem; height: 100%; padding: 1rem; }
+.pane { border: 1px solid var(--dim); padding: .75rem 1rem; display: flex; flex-direction: column; min-height: 0; }
+h1, h2 { margin: 0 0 .5rem; font-size: 1rem; letter-spacing: .2em; text-transform: uppercase; }
+.transcript, .event-log { flex: 1; overflow-y: auto; min-height: 0; }
+.line { white-space: pre-wrap; text-shadow: 0 0 4px rgba(51, 255, 51, .5); }
+.line.echo { color: var(--dim); }
+.input-row { display: flex; gap: .5rem; margin-top: .5rem; }
+.input-row input { flex: 1; background: transparent; border: 0; border-bottom: 1px solid var(--dim);
+  color: var(--fg); font: inherit; outline: none; caret-color: var(--fg); }
+.event-log { margin: 0; padding-left: 0; list-style: none; }
+.event-log li { margin-bottom: .25rem; }
+.event-log li.rejected { color: var(--warn); }
+.muted { color: var(--dim); margin: 0; }
+/* Scanlines: CSS only, ignores the pointer, never covers text opaquely. */
+body::after { content: ""; position: fixed; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0) 0, rgba(0, 0, 0, 0) 2px, rgba(0, 0, 0, .22) 3px); }
+@media (max-width: 700px) { .crt { grid-template-columns: 1fr; grid-template-rows: 2fr 1fr; } }

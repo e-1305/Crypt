@@ -35,7 +35,9 @@ Candidates (license and dates checked on npm and GitHub on the day of writing):
 
 **Choice: ifvms.js (ZVM) with our own minimal Glk shim.** Reasons: MIT is compatible with the project's MIT license, the engine has no network code, and the Glk boundary gives one place where every printed character passes. Parchment would work but hides output in DOM code and can load remote stories (W6). emglken adds GPL.
 
-Risk: ifvms 1.1.x expects a fuller Glk API than a toy shim gives (window open, `glk_select` event loop, line input, status window calls). The shim implements the subset ZVM calls for a v5 story and returns safe no-ops for the rest. If that proves too costly in task 3, the fallback is to drive ifvms through the `glkote` and `glkapi` files from the same author and wrap `glk_put_buffer` there. The hook contract does not change.
+Outcome: the shim was enough. A real run of `spike.z5` under Node (`tests/output-hook.test.ts`) and in headless Chromium plays every verb, and save/restore answer "Save failed." The fallback was not needed. The shim lives in `src/web/glk-shim.ts` (not `web/glk-shim.js`) so tsc type-checks it and vitest can drive it; `src/web/player.ts` wires interpreter, shim and hook for both Node and the page. The vendored UMD file sets `window.ZVM` through a plain script tag.
+
+Risk (original): ifvms 1.1.x expects a fuller Glk API than a toy shim gives (window open, `glk_select` event loop, line input, status window calls). The shim implements the subset ZVM calls for a v5 story and returns safe no-ops for the rest. If that proves too costly in task 3, the fallback is to drive ifvms through the `glkote` and `glkapi` files from the same author and wrap `glk_put_buffer` there. The hook contract does not change.
 
 ## Output hook (pure module)
 

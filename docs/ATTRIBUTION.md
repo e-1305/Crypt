@@ -11,7 +11,7 @@ and using third-party SDKs, APIs and data in line with their terms. Keep this fi
 | Inform 6 compiler (6.45) | Tool | Compile story source to Z-machine `.z5` | Artistic License 2.0 or original Inform licence (user's choice) | https://github.com/DavidKinder/Inform6 |
 | Inform 6 standard library (6.12.2) | Code | Parser and verbs included by `game/spike.inf` at compile time | Artistic License 2.0 or traditional Inform licence (user's choice) | https://github.com/DavidGriffith/inform6lib |
 | Frotz `dfrotz` (2.44) | Tool | Headless Z-machine interpreter that plays `spike.z5` in the spike; run as a separate process, not bundled | GPL-2.0 | https://github.com/DavidGriffith/frotz |
-| Web Z-machine interpreter | Code | Play `.z5` in the browser | TODO: confirm license (not used in the transcript-bridge spike) | TODO |
+| ifvms.js ZVM (1.1.6) | Code | Z-machine interpreter that plays `spike.z5` in the browser; vendored unmodified as `web/vendor/zvm.min.js` (licence text in `web/vendor/ZVM-LICENSE.txt`), driven through our own Glk shim in `src/web/glk-shim.ts` | MIT | https://github.com/curiousdannii/ifvms.js |
 
 ## Ideas and references (not code)
 
