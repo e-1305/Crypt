@@ -17,6 +17,8 @@ Each command dispatches AI agents built with [Kiro](https://kiro.dev) that open 
 
 ---
 
+**New here? Read the [user manual](docs/USER_MANUAL.md).**
+
 ## Install
 
 ```bash
