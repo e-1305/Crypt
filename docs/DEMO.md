@@ -16,9 +16,10 @@ PORT=8099 npm run web    # prints the address; use PORT=8080 if it is free
 |---|---|
 | (none) | 3D bench when WebGL2 is available, otherwise the plain 2D page |
 | `?theatre=off` | Plain 2D page. Use it for the accessibility shot |
+| `?simulate=green` or `?simulate=red` | Runs the simulated CI once on load, same as the buttons |
 | `?record=1` | Recording mode: hides the header, event log, plain-page link, sound toggle and the raid and CI buttons. The CRT and the plate stay. Escape leaves it |
 
-There is no `?simulate=` flag. Simulated CI is run from the two buttons "Simulate CI: green" and "Simulate CI: red" (bottom right on the bench). It replays a dry-run graft for the first sick limb, needs no token and no network, and always shows the label SIMULATED CI.
+Simulated CI is run from the two buttons "Simulate CI: green" and "Simulate CI: red" (bottom right on the bench). It replays a dry-run graft for the first sick limb, needs no token and no network, and always shows the label SIMULATED CI. For a deterministic take, load `/?simulate=green` or `/?simulate=red`: the run starts once after the first plate load and is not restarted by the raid's 5 second refresh.
 
 Before the take: clear site data for the page (`localStorage` remembers healed limbs and raid history), reload, leave sound off.
 
@@ -43,3 +44,10 @@ Before the take: clear site data for the page (`localStorage` remembers healed l
 - The title card is skippable by any key or click. Do not touch the keyboard for the first 3 seconds of the take.
 - Software WebGL only reaches about 26 fps. Record on real hardware.
 - The CI shots are simulated. Keep the SIMULATED CI label in frame.
+
+## Known limits
+
+- Real red CI is not routed to the convulse effect. Only the simulation shows it, because nothing writes a CI verdict into `game/creature.json`.
+- Praise lines need a `healedBy` field on a limb in `creature.json`. The web reads it if present. The reraise and inquisitor code does not write it yet, so praise is empty on a live repo.
+- The `awaiting-human-merge` score term needs `status: "awaiting-human-merge"` on a limb in `creature.json`. Inquisitor state is a separate file and is not bridged yet.
+- Risk removed and Nights Without Possession are per browser (they are remembered in localStorage), not shared team numbers. The counter starts at the browser's first visit.
