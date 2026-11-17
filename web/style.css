@@ -88,8 +88,17 @@ body.theatre .top, body.theatre .crt { position: absolute; width: 1px; height: 1
 #theatre-plain { position: fixed; right: 1rem; bottom: 1rem; z-index: 5; color: var(--fg); background: #000; border: 1px solid var(--dim); padding: .25rem .75rem; }
 
 /* Bench drawer (web/theatre/drawer.js): the A3 actions inside the 3D theatre. */
-#bench-drawer { position: fixed; left: 1rem; bottom: 1rem; z-index: 5; max-width: min(24rem, calc(100vw - 2rem)); color: var(--fg); background: #000; border: 1px solid var(--dim); padding: .25rem .75rem; }
+#bench-drawer { position: fixed; right: 1rem; bottom: 3.25rem; z-index: 5; max-width: min(24rem, calc(100vw - 2rem)); color: var(--fg); background: #000; border: 1px solid var(--dim); padding: .25rem .75rem; }
 #bench-drawer-body { padding: .5rem 0; }
 #bench-drawer h2 { margin: 0 0 .25rem; font-size: 1rem; }
 #bench-drawer input { width: 100%; box-sizing: border-box; background: transparent; border: 1px solid var(--dim); color: var(--fg); font: inherit; padding: .25rem; margin: .25rem 0; }
 #bench-drawer a { color: var(--fg); }
+/* The raid (web/raid.js). On the 2D page it is a labelled region; on the 3D bench the wall board shows the
+   same text and only the buttons stay on screen. */
+.raid { margin: 0 1rem 1rem; }
+.raid-readout p { margin: .15rem 0; }
+.raid-actions { display: flex; gap: .75rem; margin: .5rem 0; flex-wrap: wrap; }
+.raid-actions button { font: inherit; color: var(--fg); background: #000; border: 1px solid var(--dim); padding: .35rem .75rem; cursor: pointer; }
+.raid-actions button:disabled { opacity: .5; cursor: default; }
+body.theatre #raid { position: fixed; left: 1rem; bottom: 1rem; z-index: 5; margin: 0; padding: .5rem; background: rgba(0,0,0,.7); }
+body.theatre #raid > h2, body.theatre #raid > p, body.theatre .raid-readout { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
