@@ -138,3 +138,57 @@ Page weight: 3D path 969,340 bytes, 2D path 251,308 bytes. Console errors: none 
 
 Still not verified: real GPU, audio, Lighthouse, axe-core (not re-run), screen readers, Safari and Firefox, the live Pages site. On the 2D page the game input is still below the plate, about 1500 px down. The tutorial step "Simulate CI: green" and the seal step were checked in the test suite, not by the harness.
 
+
+---
+
+## Round 2
+
+Build: `feat/h1-judge-loop` at the Round 1 fixes (`81af39e`), site rebuilt with `npm run build:site`, served by `npm run web`, driven by `scripts/playtest/judge.mjs` at 1280x720 and 390x780. I read the screenshots `01-landing-default.png`, `02-landing-2d.png` and the JSON report, then the README top section, `docs/KIRO.md`, `docs/DEMO.md` and `docs/DEVPOST.md` as a Devpost reader would. Same rubric, same persona: three minutes, never played interactive fiction, judging the Frankenstein track.
+
+### Scores
+
+| Criterion | R1 | R2 | Reason, including why a score did not move |
+|---|---|---|---|
+| First-minute clarity | 6 | 7 | The 2D page now opens on the title, a one-sentence pitch and a copyable `npx` line. Still 7: the default 3D view shows no title and no pitch (they are in the drawer), and the first-run tutorial box is a full-width block with empty space that pushes the plate down |
+| Wow factor | 7 | 7 | Unchanged. The bench, the plate on the wall and "Simulate CI: green" are good, but nothing in the README or Devpost notes shows them. A reader who does not open the page never sees the wow |
+| Technical credibility | 6 | 7 | One count vocabulary, the audit log says `DRYRUN_WRITTEN`. Not higher: the Z-machine, failsafe and human-merge story is spread across README, manual and KIRO.md, with no one-screen "how it works" |
+| Kiro usage story | 5 | 6 | A "Built with Kiro" link is on the page. It lands on three bullets in the manual, and only two `.kiro/steering/` files are linked from there. Specs, hooks and agents have no link from the site. `docs/KIRO.md` still opens with "Fill this in as you go" and says no hook has fired inside a Kiro session. A judge scoring Kiro use sees a draft |
+| Polish | 5 | 6 | Bench board and recording button are fixed (F2, F5 held). New: the 2D game input is about 1500 px down on desktop (about 1900 px on a 390 px phone), so a visitor must scroll past the plate to type. The 3D "Nights Without Possession" label is tiny |
+| Accessibility | 7 | 7 | Tab order and announcer fixed, reduced motion still drops to the plain page. Not higher: axe-core was not run, and no screen reader was used |
+| Safety story | 7 | 8 | The visible SEALED badge, the rejection text and the honest audit outcome make the claim demonstrable in 20 seconds. Not 9: the live-mode path is not exercised in this harness |
+
+Mean 6.9 (Round 1: 6.1).
+
+### What I saw
+
+- 2D page, first viewport: "CRYPT", "The first vulnerability report you can play", "Each vulnerable dependency is a limb on a creature, and you heal it by typing GRAFT, which writes a fix pull request for a human to review and land." Then `npx @e-1305/crypt raid <path-or-github-url>` with a Copy button, then "Built with Kiro: specs, steering and hooks". A cold reader can say what it does. Good.
+- Same viewport: the tutorial ("GETTING STARTED, STEP 1 OF 7") takes the lower half, with a gap between the sentence and the buttons. The game prompt, which is the thing the pitch tells me to use, is not on screen.
+- 3D default: no title, no pitch. The only text that explains the scene is the plate. "Recording mode" sits top left with no hint. The raid board still has a 15:00 timer and "Nights Without Possession" in very small type.
+- Sealing works: `SEALED: no graft will run. Unseal` appears, the refusal reads "The crypt is sealed. The graft is rejected and no payload is made." Unseal clears it.
+- "Simulate CI: green": `SIMULATED: jquery healed` in the event log, the announcer reads "SIMULATED CI. Healed: jquery." The tutorial text after green still reads "Look at the creature in Plate I", so step progress did not move in this scenario (the tutorial is probably waiting for a different step; I did not trace it).
+- Page weight: 3D path 969,356 bytes in 41 requests, 2D path 251,324 bytes in 33. Under the budget. No console errors on the 2D page. The 3D page logs four "GPU stall due to ReadPixels" warnings from software GL.
+
+### How-it-works discoverability (2 clicks from the landing)
+
+| Question | Click path | Result |
+|---|---|---|
+| What is the Z-machine part? | Landing, "How to play (manual)" | The manual mentions Z-machine interpreters only in the download line. No explanation of why a 1979 VM, how the page reads game output, or that the `[[CRYPT ...]]` markers are the only trigger. Fail |
+| What is the failsafe? | Landing, "Built with Kiro", then the manual's safety list | Present: no merge capability, SEAL, audit log. Reachable in 2 clicks. Pass, but buried under "Built with Kiro" and "Awaiting human merge" |
+| Human merge guarantee | Same | Pass, same list |
+| Kiro specs, steering, hooks, agents with links to `.kiro/` | Landing, "Built with Kiro" | Three bullets. Links only to two steering files and `KIRO.md`. No link to `.kiro/specs/`, `.kiro/hooks/` or `.kiro/agents/`. Fail |
+| One-click demo | Landing, type `GRAFT JQUERY` | Works with no install, but the input is below the fold, so it is one scroll plus one click, not one click. The README has no GIF or screenshot, so a reader of the README sees no product at all before step 3 |
+
+### Devpost reader's pass
+
+- README top: strong tagline and the Z-machine claim. No image, no GIF. The first code block is an install command, the "Live demo" link is far down the page (after Quickstart and exit codes). A Devpost reader who clicks through to GitHub has to scroll about 60 lines to find the link they came for.
+- `docs/KIRO.md` (316 lines): the content is real (nine specs, five steering files, five hooks with captured runs), which is the best Kiro evidence in the repo. It starts with a draft note, the specs table is dense, and the judge-relevant claim ("what Kiro changed about how this was built") is not stated up front. The line "None of these has fired inside a Kiro session yet" is honest and should stay, but moved to a "Limits" line so it does not read as the headline.
+- `docs/DEMO.md` (212 lines): starts with token setup. It is a runbook, not a shot list. There is no timed list of shots for a 3 minute video.
+- `docs/DEVPOST.md` (6 lines): a link list. No story, no "what it does / how we built it / what we learned", no pitch paragraph.
+
+### What I did not verify
+
+- Real GPU rendering and frame rate, audio, Lighthouse, axe-core, screen readers, Safari and Firefox.
+- The live GitHub Pages site (all checks on the local build), and whether `.kiro/` links resolve on the default branch after merge.
+- Live mode (`--live`), real pull requests, the Inquisitor on real CI.
+- The 3D tutorial overlay (still not visible in the 3D screenshot; I did not check if that is intended).
+- Why the tutorial text does not advance after "Simulate CI: green". I saw the text only.
