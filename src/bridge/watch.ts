@@ -1,9 +1,10 @@
-// Transcript watcher. Parses "> COMMAND" lines with the strict grammar and acts on them.
+// Transcript watcher. Acts on marker lines printed by the game ("[[CRYPT GRAFT ARM]]" etc.),
+// found by parseGameOutput and gated by the strict grammar. "> COMMAND" input lines never trigger anything.
 // Fail-safe: on any error, nothing further is changed and the command is treated as sealed.
 // No network access. Only GRAFT ARM writes a request; other grammatical limbs are audited only.
 import * as nodeFs from "node:fs";
 import { dirname, join } from "node:path";
-import { parseCommand } from "./grammar.js";
+import { parseGameOutput, type GameEvent } from "./parse-output.js";
 
 export type PathState = "present" | "absent";
 
@@ -124,14 +125,12 @@ export function createWatcher(ctx: Ctx): Watcher {
     }
   }
 
-  function processLine(line: string): void {
-    if (!line.startsWith("> ")) return; // game output, ignored
-    const parsed = parseCommand(line.slice(2));
-    if (!parsed.ok) {
-      process.stderr.write(`watch: rejected command line: ${JSON.stringify(line.slice(2, 80))}\n`);
-      return; // parse error writes nothing
+  function handleEvent(ev: GameEvent): void {
+    if (!ev.ok) {
+      process.stderr.write(`watch: rejected marker at line ${ev.lineNo}: ${ev.reason}\n`);
+      return; // writes nothing else
     }
-    const command = parsed.verb === "SEAL" ? "SEAL CRYPT" : `${parsed.verb} ${parsed.limb}`;
+    const { command, parsed } = ev;
     try {
       switch (parsed.verb) {
         case "EXAMINE":
@@ -156,12 +155,11 @@ export function createWatcher(ctx: Ctx): Watcher {
     }
   }
 
-  return {
-    processLine,
-    processText(text) {
-      for (const line of text.split("\n")) processLine(line);
-    },
-  };
+  function processText(text: string): void {
+    for (const ev of parseGameOutput(text)) handleEvent(ev);
+  }
+
+  return { processLine: processText, processText };
 }
 
 /** Polls a transcript and feeds complete lines to the watcher. Returns a stop function. */

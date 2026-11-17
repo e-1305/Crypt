@@ -16,14 +16,20 @@ Object Crypt "The Crypt"
 
 Object arm "arm" Crypt
   with name 'arm' 'limb' 'rotting',
-       description "A rotting limb, grey and slack, begging for a graft.",
+       description [;
+           print "[[CRYPT EXAMINE ARM]]^";
+           print "A rotting limb, grey and slack, begging for a graft.^";
+           rtrue;
+       ],
   has static;
 
 [ GraftSub;
+    print "[[CRYPT GRAFT ARM]]^";
     "The surgeon begins the graft.";
 ];
 
 [ SealSub;
+    print "[[CRYPT SEAL]]^";
     "The crypt is sealed.";
 ];
 

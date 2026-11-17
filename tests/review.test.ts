@@ -2,8 +2,9 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import fc from "fast-check";
 import { appendFileSync, writeFileSync } from "node:fs";
 import { createWatcher, tail } from "../src/bridge/watch.js";
+import { parseGameOutput } from "../src/bridge/parse-output.js";
 import { buildTranscript } from "../scripts/play.js";
-import { makeEnv } from "./helpers.js";
+import { makeEnv, transcript } from "./helpers.js";
 
 beforeAll(() => {
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
@@ -24,7 +25,7 @@ const line = fc.oneof(
   limb.map((l) => `GRAFT ${l}`),
   fc.string(),
 );
-const lines = fc.array(line, { maxLength: 12 }).map((cs) => cs.map((c) => `> ${c}\n`).join(""));
+const lines = fc.array(line, { maxLength: 12 }).map((cs) => transcript(cs));
 
 describe("failsafe rule 2 (least privilege): no network or merge call", () => {
   it("property: no fetch is ever made while processing any transcript", () => {
@@ -69,7 +70,7 @@ describe("failsafe rules 3 and 6 (invariants only, waiver in design.md)", () => 
       fc.property(lines, (t) => {
         const e = env();
         createWatcher(e.ctx).processText(t);
-        const n = t.split("\n").filter((l) => l === "> GRAFT ARM").length;
+        const n = t.split("\n").filter((l) => l === "[[CRYPT GRAFT ARM]]").length;
         const ok = e.requests().length <= n && e.requests().every((r) => /^graft-\d{3}-arm\.json$/.test(r));
         e.cleanup();
         return ok;
@@ -83,11 +84,11 @@ describe("tail mode starts at end-of-file (review issue 2)", () => {
   it("does not replay existing GRAFT lines, handles new ones", async () => {
     const e = env();
     const path = `${e.dir}/transcript.txt`;
-    writeFileSync(path, "> GRAFT ARM\nout\n");
+    writeFileSync(path, "> GRAFT ARM\n[[CRYPT GRAFT ARM]]\nout\n");
     const stop = tail(path, createWatcher(e.ctx), 10);
     await new Promise((r) => setTimeout(r, 60));
     expect(e.requests()).toEqual([]);
-    appendFileSync(path, "> GRAFT ARM\nout\n");
+    appendFileSync(path, "> GRAFT ARM\n[[CRYPT GRAFT ARM]]\nout\n");
     await new Promise((r) => setTimeout(r, 80));
     stop();
     expect(e.requests().length).toBe(1);
@@ -101,5 +102,18 @@ describe("play driver segmentation (review issue 5)", () => {
   });
   it("accepts the expected segment count", () => {
     expect(buildTranscript(["EXAMINE ARM"], "intro\n> \nA limb.\n")).toBe("> EXAMINE ARM\nA limb.\n");
+  });
+  it("keeps a marker line from dfrotz-style stdout in the transcript", () => {
+    const out = "intro\n> \n[[CRYPT EXAMINE ARM]]\nA limb.\n> \n[[CRYPT GRAFT ARM]]\nThe surgeon begins the graft.\n> \n";
+    const t = buildTranscript(["EXAMINE ARM", "GRAFT ARM"], out);
+    expect(t).toBe(
+      "> EXAMINE ARM\n[[CRYPT EXAMINE ARM]]\nA limb.\n> GRAFT ARM\n[[CRYPT GRAFT ARM]]\nThe surgeon begins the graft.\n",
+    );
+    expect(parseGameOutput(t).map((ev) => ev.ok && ev.command)).toEqual(["EXAMINE ARM", "GRAFT ARM"]);
+  });
+  it("a rejected command's output contains no marker", () => {
+    const t = buildTranscript(["GRAFT FOO"], "intro\n> \nYou can't see any such thing.\n> \n");
+    expect(t).toBe("> GRAFT FOO\nYou can't see any such thing.\n");
+    expect(parseGameOutput(t)).toEqual([]);
   });
 });
