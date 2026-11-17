@@ -6,6 +6,7 @@ import { startPlayer } from "./js/web/player.js";
 import { markHealed } from "./js/web/healed.js";
 import { layoutPlate, plateSummary, creatureName } from "./js/render/plate.js";
 import { parseRepoUrl, repoSlug } from "./js/web/repo-url.js";
+import { initRaid } from "./raid.js";
 
 const transcript = document.getElementById("transcript");
 const form = document.getElementById("input-form");
@@ -58,6 +59,17 @@ function announce(text) {
   }
   pending.push(text);
 }
+
+// RAID is a client-side command: the game grammar stays strict and never sees it.
+let pollTimer = 0;
+const raid = initRaid({
+  store: scopedStore(), // per creature, like the healed marks, so a gallery creature has its own raid state
+  announce,
+  onRunning(on) {
+    clearInterval(pollTimer);
+    pollTimer = on ? setInterval(() => loadPlate(), 5000) : 0;
+  },
+});
 
 // High-contrast / screen-reader mode.
 function setHc(on) {
@@ -144,6 +156,7 @@ async function loadPlate() {
     const name = creatureName(creature.repo || "demo");
     creatureNameEl.textContent = name + (creatureId === "demo" ? " (the demo creature)" : " (" + creature.repo + ")");
     downloadName = "crypt-" + name.toLowerCase() + ".z8";
+    raid.setLimbs(creature.limbs, creature.repo);
     if (fresh.length > 0) announce("Healed: " + fresh.map((k) => k.split(":").slice(1).join(":")).join(", ") + ".");
   } catch (err) {
     plateEl.textContent = "";
@@ -229,6 +242,11 @@ async function main() {
     ev.preventDefault();
     const text = cmd.value;
     cmd.value = "";
+    if (raid.handleCommand(text)) {
+      addLine("> " + text.trim(), "echo");
+      addLine("The raid begins. Fifteen minutes. Heal what you can.");
+      return;
+    }
     player.submit(text);
   });
 }

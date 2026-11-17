@@ -140,6 +140,6 @@ describe("plateInput", () => {
     const { plateInput } = await import("../src/render/plate.js");
     const out = plateInput({ repo: "r", secret: 1, limbs: [{ ...FIXTURE.limbs[0], owner: "@x/y" }] });
     expect(JSON.stringify(out)).not.toContain("@x/y");
-    expect(Object.keys(out.limbs[0]).sort()).toEqual(["ecosystem", "name", "rank", "spawned", "state", "version"]);
+    expect(Object.keys(out.limbs[0]).sort()).toEqual(["ecosystem", "epss", "kev", "name", "rank", "spawned", "state", "version"]);
   });
 });
