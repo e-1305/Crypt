@@ -21,8 +21,9 @@ Terms: **transcript** is `transcript.txt`. **Watcher** is `src/bridge/watch.ts`.
 3. The watcher SHALL pass every `> ` command line of the transcript through the parser before taking any action. Game output lines are not commands and are ignored.
 
 ## R4 Graft request
-1. WHEN an accepted `GRAFT <limb>` is read and no seal file exists, the watcher SHALL write one JSON file to `out/requests/` containing the limb, the command and a timestamp.
-2. The watcher SHALL make no network call and SHALL NOT contain any GitHub merge call (failsafe 2).
+1. WHEN an accepted `GRAFT ARM` is read and no seal file exists, the watcher SHALL write one JSON file to `out/requests/` containing the limb, the command and a timestamp.
+2. WHEN an accepted `GRAFT <limb>` names a limb other than ARM, the watcher SHALL write no request and SHALL audit it as `NO_ACTION`.
+3. The watcher SHALL make no network call and SHALL NOT contain any GitHub merge call (failsafe 2).
 
 ## R5 Seal (failsafe 7, kill switch)
 1. WHEN an accepted `SEAL CRYPT` is read, the watcher SHALL create the seal file.

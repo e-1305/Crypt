@@ -59,7 +59,7 @@ command := ("EXAMINE" | "GRAFT") " " limb | "SEAL CRYPT"
 limb    := [A-Z]{1,32}
 ```
 
-Implemented as one anchored regex per production, tested against the whole string (no trimming, no case folding, no multi-line). Returns `{ ok: true, verb, limb }` or `{ ok: false }`. `SEAL CRYPT` has limb `-`. A `GRAFT` for any grammatical limb writes a request; the spike game only knows ARM.
+Implemented as one anchored regex per production, tested against the whole string (no trimming, no case folding, no multi-line). Returns `{ ok: true, verb, limb }` or `{ ok: false }`. `SEAL CRYPT` has limb `-`. Any grammatical limb passes the parser and is audited, but only `GRAFT ARM` writes a request (per the issue). `GRAFT <other limb>` is audited as `NO_ACTION`.
 
 ## Watcher (`src/bridge/watch.ts`)
 
@@ -68,9 +68,9 @@ Implemented as one anchored regex per production, tested against the whole strin
 - For each `> ` line: parse. On reject: write nothing (stderr note only). On accept:
   - `EXAMINE`: audit `OK`.
   - `SEAL`: create `.crypt-seal` (flag `wx`; already existing is fine), audit `SEALED`.
-  - `GRAFT`: check seal. If it exists or cannot be determined: audit `REJECTED_SEALED`, no request. Else write the request, then audit `REQUEST_WRITTEN`.
+  - `GRAFT`: check seal. If it exists or cannot be determined: audit `REJECTED_SEALED`, no request (any limb). Else if the limb is `ARM`: write the request, then audit `REQUEST_WRITTEN`. Else audit `NO_ACTION`, no request.
 - Any thrown error inside handling: no further writes for that command, error to stderr, continue to next line only after re-checking the seal (fail safe).
-- Order for GRAFT: request file written before the audit line; if the request write fails, audit `ERROR` is attempted and no retry.
+- Order for GRAFT: request file written before the audit line; if the request write fails, audit `ERROR` is attempted and no retry. If the audit write fails after the request was written, the request file is removed and the watcher stays sealed.
 
 ## Files
 
@@ -89,7 +89,7 @@ Tab-separated, one line per accepted command:
 <ISO-8601 timestamp>\t<COMMAND>\t<LIMB or ->\t<OUTCOME>\t<PR URL or ->
 ```
 
-Outcomes: `OK`, `REQUEST_WRITTEN`, `SEALED`, `REJECTED_SEALED`, `ERROR`. PR URL is always `-` in this spike.
+Outcomes: `OK`, `NO_ACTION`, `REQUEST_WRITTEN`, `SEALED`, `REJECTED_SEALED`, `ERROR`. PR URL is always `-` in this spike.
 Expected acceptance log: 4 lines (`EXAMINE ARM OK`, `GRAFT ARM REQUEST_WRITTEN`, `SEAL CRYPT SEALED`, `GRAFT ARM REJECTED_SEALED`).
 
 ## Failsafe mapping
