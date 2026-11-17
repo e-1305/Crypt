@@ -1,0 +1,138 @@
+{
+  "ecosystem": "npm",
+  "name": "handlebars",
+  "version": "4.0.11",
+  "fetchedAt": "2026-11-17T13:01:41.710Z",
+  "vulns": [
+    {
+      "id": "GHSA-2cf5-4w76-r9qv",
+      "aliases": [],
+      "severity": "HIGH"
+    },
+    {
+      "id": "GHSA-2qvq-rjwj-gvw9",
+      "aliases": [
+        "CVE-2026-33916"
+      ],
+      "severity": "MODERATE"
+    },
+    {
+      "id": "GHSA-2w6w-674q-4c4q",
+      "aliases": [
+        "CVE-2026-33937"
+      ],
+      "severity": "CRITICAL"
+    },
+    {
+      "id": "GHSA-3cqr-58rm-57f8",
+      "aliases": [
+        "CVE-2019-20920",
+        "SNYK-JS-HANDLEBARS-534478"
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "id": "GHSA-3mfm-83xf-c92r",
+      "aliases": [
+        "CVE-2026-33938"
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "id": "GHSA-442j-39wm-28r2",
+      "aliases": [],
+      "severity": "LOW"
+    },
+    {
+      "id": "GHSA-62gr-4qp9-h98f",
+      "aliases": [
+        "CVE-2019-20922",
+        "SNYK-JS-HANDLEBARS-480388"
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "id": "GHSA-765h-qjxv-5f44",
+      "aliases": [
+        "CVE-2021-23383"
+      ],
+      "severity": "CRITICAL"
+    },
+    {
+      "id": "GHSA-8r5x-fm3f-whwj",
+      "aliases": [
+        "CVE-2026-106446"
+      ],
+      "severity": "CRITICAL"
+    },
+    {
+      "id": "GHSA-9cx6-37pm-9jff",
+      "aliases": [
+        "CVE-2026-33939"
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "id": "GHSA-f2jv-r9rf-7988",
+      "aliases": [
+        "CVE-2021-23369"
+      ],
+      "severity": "CRITICAL"
+    },
+    {
+      "id": "GHSA-f52g-6jhx-586p",
+      "aliases": [],
+      "severity": "MODERATE"
+    },
+    {
+      "id": "GHSA-g9r4-xpmj-mj65",
+      "aliases": [],
+      "severity": "HIGH"
+    },
+    {
+      "id": "GHSA-p8wg-vrv2-v86f",
+      "aliases": [
+        "CVE-2026-106445"
+      ],
+      "severity": "CRITICAL"
+    },
+    {
+      "id": "GHSA-q2c6-c6pm-g3gh",
+      "aliases": [],
+      "severity": "HIGH"
+    },
+    {
+      "id": "GHSA-q42p-pg8m-cqh6",
+      "aliases": [],
+      "severity": "HIGH"
+    },
+    {
+      "id": "GHSA-w457-6q6x-cgp9",
+      "aliases": [
+        "CVE-2019-19919"
+      ],
+      "severity": "CRITICAL"
+    },
+    {
+      "id": "GHSA-xhpv-hc6g-r9c6",
+      "aliases": [
+        "CVE-2026-33940"
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "id": "GHSA-xjpj-3mr7-gcpf",
+      "aliases": [
+        "CVE-2026-33941"
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "id": "GHSA-xw65-4hp5-5hc7",
+      "aliases": [
+        "CVE-2026-106444"
+      ],
+      "severity": "MODERATE"
+    }
+  ]
+}
