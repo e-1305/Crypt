@@ -1,0 +1,3 @@
+# Owners come from this file only (blameless rules)
+*                      @crypt-fixture/maintainers
+/package-lock.json     @crypt-fixture/supply-chain

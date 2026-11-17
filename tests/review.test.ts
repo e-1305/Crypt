@@ -4,7 +4,7 @@ import { appendFileSync, writeFileSync } from "node:fs";
 import { createWatcher, tail } from "../src/bridge/watch.js";
 import { parseGameOutput } from "../src/bridge/parse-output.js";
 import { buildTranscript } from "../scripts/play.js";
-import { makeEnv, transcript } from "./helpers.js";
+import { KNOWN_LIMBS, makeEnv, transcript } from "./helpers.js";
 
 beforeAll(() => {
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
@@ -17,12 +17,13 @@ function env() {
   return e;
 }
 
-const limb = fc.stringMatching(/^[A-Z]{1,32}$/);
+const limb = fc.constantFrom(...KNOWN_LIMBS);
 const line = fc.oneof(
   fc.constant("SEAL CRYPT"),
   fc.constant("GRAFT ARM"),
   limb.map((l) => `EXAMINE ${l}`),
   limb.map((l) => `GRAFT ${l}`),
+  limb.map((l) => `ASSIGN ${l}`),
   fc.string(),
 );
 const lines = fc.array(line, { maxLength: 12 }).map((cs) => transcript(cs));
@@ -65,13 +66,13 @@ describe("failsafe rule 4 (economy of mechanism): deterministic", () => {
 });
 
 describe("failsafe rules 3 and 6 (invariants only, waiver in design.md)", () => {
-  it("property: requests are only GRAFT ARM, at most one per GRAFT ARM line, and carry no verification or merge fields", () => {
+  it("property: requests are only GRAFT requests, at most one per GRAFT marker line, and carry no verification or merge fields", () => {
     fc.assert(
       fc.property(lines, (t) => {
         const e = env();
         createWatcher(e.ctx).processText(t);
-        const n = t.split("\n").filter((l) => l === "[[CRYPT GRAFT ARM]]").length;
-        const ok = e.requests().length <= n && e.requests().every((r) => /^graft-\d{3}-arm\.json$/.test(r));
+        const n = t.split("\n").filter((l) => /^\[\[CRYPT GRAFT [A-Z]{1,32}\]\]$/.test(l)).length;
+        const ok = e.requests().length <= n && e.requests().every((r) => /^graft-\d{3}-[a-z]{1,32}\.json$/.test(r));
         e.cleanup();
         return ok;
       }),

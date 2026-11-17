@@ -1,0 +1,25 @@
+{
+  "id": "GHSA-442j-39wm-28r2",
+  "aliases": [],
+  "affected": [
+    {
+      "package": {
+        "ecosystem": "npm",
+        "name": "handlebars"
+      },
+      "ranges": [
+        {
+          "type": "SEMVER",
+          "events": [
+            {
+              "introduced": "4.0.0"
+            },
+            {
+              "fixed": "4.7.9"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

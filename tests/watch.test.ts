@@ -1,8 +1,9 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import fc from "fast-check";
-import { readFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { createWatcher } from "../src/bridge/watch.js";
-import { makeEnv, markerFor, transcript } from "./helpers.js";
+import { KNOWN_LIMBS, makeEnv, markerFor, transcript } from "./helpers.js";
 
 beforeAll(() => {
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
@@ -18,11 +19,14 @@ function env(o?: Parameters<typeof makeEnv>[0]) {
   return e;
 }
 
-const limb = fc.stringMatching(/^[A-Z]{1,32}$/);
+const anyLimb = fc.stringMatching(/^[A-Z]{1,32}$/);
+const limb = fc.constantFrom(...KNOWN_LIMBS);
+const unknownLimb = anyLimb.filter((l) => !KNOWN_LIMBS.includes(l));
 const accepted = fc.oneof(
   fc.constant("SEAL CRYPT"),
   limb.map((l) => `EXAMINE ${l}`),
   limb.map((l) => `GRAFT ${l}`),
+  limb.map((l) => `ASSIGN ${l}`),
   fc.constant("GRAFT ARM"),
 );
 const garbage = fc.oneof(fc.string(), fc.string().map((s) => s.toLowerCase() + " ARM"), fc.constant("GRAFT ARM "));
@@ -49,11 +53,90 @@ describe("watcher", () => {
     expect(e.auditLines()[0]).toBe("2026-01-01T00:00:00.000Z\tGRAFT ARM\tARM\tREQUEST_WRITTEN\t-");
   });
 
-  it("GRAFT of another grammatical limb is audited but writes no request", () => {
+  it("GRAFT of any grammatical limb writes a request named for the limb", () => {
     const e = env();
-    createWatcher(e.ctx).processText(transcript(["GRAFT LEG"]));
+    createWatcher(e.ctx).processText(transcript(["GRAFT JQUERY", "GRAFT LODASH"]));
+    expect(e.requests()).toEqual(["graft-001-jquery.json", "graft-002-lodash.json"]);
+    expect(e.auditLines()).toHaveLength(2);
+  });
+
+  it("ASSIGN is audited OK and writes no request", () => {
+    const e = env();
+    createWatcher(e.ctx).processText(transcript(["ASSIGN JQUERY"]));
     expect(e.requests()).toEqual([]);
-    expect(e.auditLines()).toHaveLength(1);
+    expect(e.auditLines().map((l) => l.split("\t").slice(1).join("\t"))).toEqual(["ASSIGN JQUERY\tJQUERY\tOK\t-"]);
+  });
+
+  it("GRAFT of an unknown limb writes nothing and is audited REJECTED_UNKNOWN_LIMB", () => {
+    const e = env();
+    createWatcher(e.ctx).processText(transcript(["GRAFT NOSUCH"]));
+    expect(e.requests()).toEqual([]);
+    expect(e.auditLines()).toEqual(["2026-01-01T00:00:00.000Z\tGRAFT NOSUCH\tNOSUCH\tREJECTED_UNKNOWN_LIMB\t-"]);
+  });
+
+  it("ASSIGN of an unknown limb is audited REJECTED_UNKNOWN_LIMB; a known one stays OK", () => {
+    const e = env();
+    createWatcher(e.ctx).processText(transcript(["ASSIGN NOSUCH", "ASSIGN JQUERY"]));
+    expect(e.auditLines().map((l) => l.split("\t")[3])).toEqual(["REJECTED_UNKNOWN_LIMB", "OK"]);
+  });
+
+  it("a missing, unparseable or wrongly shaped out/limbs.json rejects every GRAFT and ASSIGN", () => {
+    const bad = [null, "not json", "[]", "null", "42", '"ARM"'];
+    for (const content of bad) {
+      const e = makeEnv(undefined, null);
+      envs.push(e);
+      if (content !== null) {
+        mkdirSync(join(e.dir, "out"), { recursive: true });
+        writeFileSync(e.ctx.limbsPath, content);
+      }
+      createWatcher(e.ctx).processText(transcript(["GRAFT ARM", "ASSIGN ARM"]));
+      expect(e.requests()).toEqual([]);
+      expect(e.auditLines().map((l) => l.split("\t")[3])).toEqual(["REJECTED_UNKNOWN_LIMB", "REJECTED_UNKNOWN_LIMB"]);
+    }
+  });
+
+  it("an ID that is only an inherited property name is unknown", () => {
+    const e = env();
+    createWatcher(e.ctx).processText(transcript(["GRAFT CONSTRUCTOR"]));
+    expect(e.requests()).toEqual([]);
+  });
+
+  it("property (complete mediation): unknown IDs never write a request and every rejection is audited", () => {
+    fc.assert(
+      fc.property(fc.array(fc.oneof(unknownLimb.map((l) => `GRAFT ${l}`), unknownLimb.map((l) => `ASSIGN ${l}`)), { minLength: 1, maxLength: 15 }), (cmds) => {
+        const e = makeEnv();
+        try {
+          createWatcher(e.ctx).processText(transcript(cmds));
+          expect(e.requests()).toEqual([]);
+          const lines = e.auditLines().map((l) => l.split("\t"));
+          expect(lines.map((f) => f[3])).toEqual(cmds.map(() => "REJECTED_UNKNOWN_LIMB"));
+          expect(lines.map((f) => f[1])).toEqual(cmds);
+        } finally {
+          e.cleanup();
+        }
+      }),
+      { numRuns: 150 },
+    );
+  });
+
+  it("property (complete mediation): an unusable limbs.json rejects all GRAFTs, with one audit line each", () => {
+    fc.assert(
+      fc.property(fc.array(anyLimb.map((l) => `GRAFT ${l}`), { minLength: 1, maxLength: 8 }), fc.constantFrom("missing", "garbage", "array"), (cmds, kind) => {
+        const e = makeEnv(undefined, null);
+        try {
+          if (kind !== "missing") {
+            mkdirSync(join(e.dir, "out"), { recursive: true });
+            writeFileSync(e.ctx.limbsPath, kind === "garbage" ? "{{" : "[]");
+          }
+          createWatcher(e.ctx).processText(transcript(cmds));
+          expect(e.requests()).toEqual([]);
+          expect(e.auditLines().map((l) => l.split("\t")[3])).toEqual(cmds.map(() => "REJECTED_UNKNOWN_LIMB"));
+        } finally {
+          e.cleanup();
+        }
+      }),
+      { numRuns: 100 },
+    );
   });
 
   it("ignores game output lines that are not commands", () => {
@@ -89,7 +172,7 @@ describe("watcher", () => {
   it("property (rule 1): parse errors write nothing", () => {
     fc.assert(
       fc.property(fc.array(garbage, { maxLength: 20 }), (cmds) => {
-        const lines = cmds.filter((c) => !/^(EXAMINE|GRAFT) [A-Z]{1,32}$|^SEAL CRYPT$/.test(c));
+        const lines = cmds.filter((c) => !/^(EXAMINE|ASSIGN|GRAFT) [A-Z]{1,32}$|^SEAL CRYPT$/.test(c));
         const e = makeEnv();
         try {
           createWatcher(e.ctx).processText(lines.map((c) => `> ${c}\n${markerFor(c)}`).join("\n"));
@@ -154,7 +237,7 @@ describe("watcher", () => {
   it("property (rule 8): each accepted command yields exactly one audit line", () => {
     fc.assert(
       fc.property(fc.array(fc.oneof(accepted, garbage), { maxLength: 25 }), (cmds) => {
-        const ok = /^\[\[CRYPT ((EXAMINE|GRAFT) [A-Z]{1,32}|SEAL)\]\]$/;
+        const ok = /^\[\[CRYPT ((EXAMINE|ASSIGN|GRAFT) [A-Z]{1,32}|SEAL)\]\]$/;
         const e = makeEnv();
         try {
           createWatcher(e.ctx).processText(transcript(cmds));
@@ -168,7 +251,6 @@ describe("watcher", () => {
   });
 });
 
-import { writeFileSync } from "node:fs";
 function nodeWrite(path: string, data: string) {
   writeFileSync(path, data, { flag: "wx" });
 }

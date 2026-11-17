@@ -14,14 +14,27 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "spike": "bash scripts/setup-tools.sh && bash scripts/build-game.sh && tsx scripts/reset.ts && tsx scripts/play.ts && tsx src/bridge/watch.ts --once && tsx scripts/check-spike.ts",
+    "feeds:update": "tsx scripts/feeds-update.ts",
+    "exhume": "tsx scripts/exhume.ts",
+    "raise": "bash scripts/setup-tools.sh && tsx scripts/raise.ts",
+    "raise:check": "tsx scripts/check-raise.ts",
+    "necromancer": "tsx scripts/necromancer.ts",
+    "inquisitor": "tsx scripts/inquisitor.ts",
+    "reraise": "tsx scripts/reraise.ts",
+    "necromancer:check": "tsx scripts/check-necromancer.ts",
     "web": "tsx scripts/web.ts",
     "build:web": "tsc -p tsconfig.web.json"
+  },
+  "dependencies": {
+    "tsx": "^4.23.15"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
     "fast-check": "^4.10.2",
-    "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vitest": "^5.1.0"
+  },
+  "bin": {
+    "crypt": "bin/crypt.mjs"
   }
 }

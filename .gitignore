@@ -26,6 +26,8 @@ crypt-audit.log
 # Local toolchain built by scripts/setup-tools.sh
 .toolchain/
 
+# Downloaded exploit-intel feeds (large); fixtures keep their own snapshot
+data/feeds/
 # Web player build output
 web/game/
 web/js/

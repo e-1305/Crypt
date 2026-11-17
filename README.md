@@ -18,10 +18,21 @@ Each command dispatches AI agents built with [Kiro](https://kiro.dev) that open 
 ## Quickstart
 
 ```bash
-# coming soon
-npx crypt exhume <github-repo-url>
+npm ci
+npm run feeds:update                          # download CISA KEV and FIRST EPSS into data/feeds/
+npx crypt exhume <path-or-github-url>         # writes out/creature.json, prints totals
+# offline demo with the committed fixture (OSV answers cached, feeds snapshot from the fixture):
+npm run exhume -- fixtures/vulnerable-npm --feeds fixtures/vulnerable-npm/feeds --offline
+npm run raise -- out/creature.json            # writes out/creature.inf, out/limbs.json, out/creature.z8
+npm run raise:check                           # plays the story with dfrotz and checks the graft bridge
+# GRAFT requests become fix PRs (dry-run by default without GITHUB_TOKEN: payloads go to out/prs/, nothing is sent)
+npm run necromancer -- --dry-run --target fixtures/vulnerable-npm --advisories fixtures/vulnerable-npm/advisories
+npm run inquisitor -- JQUERY --dry-run        # checks the PR's CI; green means awaiting a human to land it
+npm run reraise                               # after a human landed PRs: marks limbs healed, recompiles the creature
+npm run necromancer:check                     # offline acceptance: GRAFT JQUERY gives 1 payload, SEAL CRYPT then GRAFT LODASH gives 0
 ```
 
+`exhume` reads `package-lock.json` (v2/v3) and `requirements.txt` (`==` pins only), asks OSV once per `package@version` (cached in `data/cache/osv/`), ranks with local KEV/EPSS files and prints totals (findings, exorcised, spawned). A limb whose status cannot be established is reported as unknown, never as clean. Schema: `.kiro/specs/exhume-and-rank/design.md`.
 ## Play in the browser
 
 ```bash
@@ -53,7 +64,7 @@ The page requests only these files from its own origin.
 
 1. **Exhume**: scan lockfiles (npm, pip) with [OSV](https://osv.dev).
 2. **Exorcise the noise**: deterministic ranking using [CISA KEV](https://www.cisa.gov/known-exploited-vulnerabilities-catalog) and [FIRST EPSS](https://www.first.org/epss/). Only what matters spawns.
-3. **Operate**: play the generated `.z5` story file. `EXAMINE`, `ASSIGN`, `GRAFT`, `SEAL CRYPT`.
+3. **Operate**: play the generated `.z8` story file (`npm run raise -- out/creature.json`). `EXAMINE`, `ASSIGN`, `GRAFT`, `SEAL CRYPT`.
 4. **Prove it**: agents open a PR → CI → a human merges → the creature is recompiled, healed.
 
 ## Safety guarantees

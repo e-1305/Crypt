@@ -16,7 +16,7 @@ function env() {
 }
 const commandsOf = (text: string) => parseGameOutput(text).flatMap((ev) => (ev.ok ? [ev.command] : []));
 
-const validMarker = fc.constantFrom("[[CRYPT GRAFT ARM]]", "[[CRYPT EXAMINE ARM]]", "[[CRYPT SEAL]]");
+const validMarker = fc.constantFrom("[[CRYPT GRAFT ARM]]", "[[CRYPT EXAMINE ARM]]", "[[CRYPT ASSIGN ARM]]", "[[CRYPT SEAL]]");
 const markerLooking = fc.oneof(
   validMarker,
   fc.string().map((s) => `[[CRYPT ${s}]]`),
