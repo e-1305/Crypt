@@ -19,6 +19,15 @@ describe("seal gate", () => {
     expect(r.allowed.map((e) => e.parsed?.verb)).toEqual(["EXAMINE"]);
     expect(r.refused.map((e) => e.parsed?.verb)).toEqual(["GRAFT", "RAID"]);
   });
+  it("unseal lifts the seal for the page, and a later SEAL seals again", () => {
+    const g = createSealGate();
+    g.apply([ev("SEAL")]);
+    g.unseal();
+    expect(g.sealed).toBe(false);
+    expect(g.apply([ev("GRAFT")]).refused).toHaveLength(0);
+    g.apply([ev("SEAL")]);
+    expect(g.apply([ev("GRAFT")]).refused).toHaveLength(1);
+  });
   it("judges events in order within one result", () => {
     const r = createSealGate().apply([ev("GRAFT"), ev("SEAL"), ev("GRAFT")]);
     expect(r.allowed).toHaveLength(2);

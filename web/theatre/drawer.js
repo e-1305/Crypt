@@ -2,6 +2,8 @@
 // so the A3 actions get real, visible, keyboard-reachable controls here: download the playable report and
 // exhume (open) a public repo from the gallery. The drawer holds no logic of its own. Each control
 // forwards to the page element that app.js already wires, so 2D and 3D behave the same.
+import { wireCopy } from "../copy.js";
+
 export function makeDrawer() {
   const downloadBtn = document.getElementById("download");
   const lookupForm = document.getElementById("lookup-form");
@@ -16,6 +18,10 @@ export function makeDrawer() {
     '<button id="bench-drawer-toggle" type="button" aria-expanded="false" aria-controls="bench-drawer-body">Bench drawer</button>' +
     '<div id="bench-drawer-body" hidden>' +
     '<h2 id="bench-drawer-h">Bench drawer</h2>' +
+    '<p class="drawer-pitch">Each vulnerable dependency is a limb on a creature. Type GRAFT to write the fix as a pull request for a human to review and land.</p>' +
+    '<div class="drawer-install"><span>Try it on your own repo:</span><code id="bench-install-cmd">npx @e-1305/crypt raid &lt;path-or-github-url&gt;</code>' +
+    '<button id="bench-install-copy" type="button">Copy command</button></div>' +
+    '<p><a id="bench-kiro" href="manual.html#built-with-kiro" target="_blank" rel="noopener">Built with Kiro: specs, steering and hooks (opens in a new tab)</a></p>' +
     '<p class="muted">On the screen: <span id="bench-drawer-creature"></span>.</p>' +
     '<button id="bench-download" type="button">Download the playable report</button>' +
     '<form id="bench-exhume" autocomplete="off">' +
@@ -36,6 +42,8 @@ export function makeDrawer() {
   const status = root.querySelector("#bench-exhume-status");
   const creature = root.querySelector("#bench-drawer-creature");
   const listeners = [];
+  const say = (t) => { const a = document.getElementById("announcer"); if (a) { a.textContent = ""; setTimeout(() => { a.textContent = t; }, 50); } };
+  wireCopy(root.querySelector("#bench-install-copy"), root.querySelector("#bench-install-cmd"), say);
   const on = (t, ev, fn) => { t.addEventListener(ev, fn); listeners.push([t, ev, fn]); };
 
   const setOpen = (open) => {

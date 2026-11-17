@@ -79,7 +79,7 @@ export function playStory(o: SessionOpts): Promise<number> {
             .catch((e: unknown) => void out.write(`${limb}: ERROR while checking the pull request (${(e as Error).message})\n`))
             .finally(() => void watching.delete(p));
           watching.add(p);
-        } else if (res.outcome === "PR_OPENED" && res.branch) {
+        } else if (res.outcome === "DRYRUN_WRITTEN" && res.branch) {
           const payload = relative(o.cwd, join(paths.prsDir, branchFile(res.branch)));
           out.write(`Graft ${limb}: dry-run payload written to ${payload}${res.breaking ? " (breaking: true)" : ""}\n`);
         } else {

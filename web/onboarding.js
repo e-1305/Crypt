@@ -32,7 +32,7 @@ export function initOnboarding({ store, announce, now = () => Date.now() }) {
     const cmd = tutorialCommand(step, limb);
     setText("tutorial-command", cmd === null ? "" : "Type: " + cmd);
     const next = $("tutorial-next");
-    if (next) next.hidden = step.verb !== null;
+    if (next) next.hidden = step.verb !== null || step.event !== undefined;
     hint();
   }
 
@@ -72,6 +72,11 @@ export function initOnboarding({ store, announce, now = () => Date.now() }) {
         if (i >= 0 && e?.ok && e.parsed && tutorialSteps[i].verb === e.parsed.verb) finishStep(i);
       }
       render();
+    },
+    /** A page event (simulated CI green, a graft refused by the seal) finishes the step that waits for it. */
+    signal(name) {
+      const i = done.findIndex((d) => !d);
+      if (i >= 0 && tutorialSteps[i].event === name) finishStep(i);
     },
     stop() { clearInterval(timer); },
   };

@@ -286,6 +286,8 @@ export async function graft(ctx: NecromancerCtx, requestPath: string): Promise<G
         return done("ERROR", {}, pr.url);
       }
     }
+    // A dry run opened nothing: it never claims PR_OPENED and has no URL to record.
+    if (ctx.client.dryRun) return done("DRYRUN_WRITTEN", { branch, breaking: choice.breaking });
     return done("PR_OPENED", { branch, breaking: choice.breaking }, pr.url);
   } catch (e) {
     process.stderr.write(`necromancer: ${(e as Error).message}\n`);

@@ -114,6 +114,8 @@ The game answers `The crypt is sealed. No needle moves.` and nothing is requeste
 
 ## The audit log
 
+Dry-run grafts log `DRYRUN_WRITTEN`, never `PR_OPENED`. `PR_OPENED` appears only with `--live`, when a real pull request exists, and its last column holds that pull request's URL.
+
 Every live API call (GitHub and the npm registry) is appended to `crypt-audit.log` before the request is sent: method and path, never the token, a body or a query string.
 
 ```bash

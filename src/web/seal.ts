@@ -15,12 +15,15 @@ export interface SealOutcome {
 export interface SealGate {
   readonly sealed: boolean;
   apply(events: readonly SealEvent[]): SealOutcome;
+  /** Lifts the seal for this page only. Nothing outside the page changes. */
+  unseal(): void;
 }
 
 export function createSealGate(): SealGate {
   let sealed = false;
   return {
     get sealed() { return sealed; },
+    unseal() { sealed = false; },
     apply(events) {
       const allowed: SealEvent[] = [];
       const refused: SealEvent[] = [];

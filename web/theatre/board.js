@@ -1,6 +1,7 @@
 // The raid board on the wall: mirrors the #raid readout (timer, team score, rank, nights counter).
 // The DOM stays the source of truth.
 const W = 640, H = 420;
+const LEFT_W = 380, RIGHT_W = 174; // right column: x 430 to 604, inside the frame
 const MONO = "ui-monospace, 'DejaVu Sans Mono', Menlo, Consolas, monospace";
 const IDS = ["raid-timer", "raid-score", "raid-rank", "raid-nights", "raid-state", "raid-epitaph", "raid-combo", "raid-shelf", "raid-vitals"];
 
@@ -30,13 +31,16 @@ export function makeBoard() {
     ctx.fillText(t["raid-timer"], 36, 68);
     ctx.fillStyle = "#d8c590";
     ctx.font = "26px " + MONO;
-    ctx.fillText(t["raid-score"], 36, 214);
-    ctx.fillText(t["raid-rank"], 36, 254);
-    ctx.fillText(t["raid-nights"], 36, 294);
+    // Left column is 380 px wide so it never reaches the right column that starts at x=430.
+    ctx.fillText(t["raid-score"], 36, 214, LEFT_W);
+    ctx.fillText(t["raid-rank"], 36, 254, LEFT_W);
+    ctx.font = "20px " + MONO;
+    ctx.fillText(t["raid-nights"], 36, 298, LEFT_W);
+    ctx.font = "26px " + MONO;
     ctx.fillStyle = "#ffb000";
     ctx.font = "18px " + MONO;
-    ctx.fillText((t["raid-combo"].split(".")[0] || "").slice(0, 22), 430, 214);
-    ctx.fillText(t["raid-shelf"].split(":")[0], 430, 254);
+    ctx.fillText((t["raid-combo"].split(".")[0] || "").slice(0, 22), 430, 214, RIGHT_W);
+    ctx.fillText(t["raid-shelf"].split(":")[0], 430, 254, RIGHT_W);
     const health = Number((t["raid-vitals"].match(/health (\d+)/) || [])[1]);
     if (Number.isFinite(health)) {
       ctx.strokeStyle = "#8c8366";
@@ -45,11 +49,11 @@ export function makeBoard() {
       ctx.fillStyle = "#33ff33";
       ctx.fillRect(432, 296, 166 * Math.min(100, health) / 100, 14);
       ctx.fillStyle = "#d8c590";
-      ctx.fillText("Health " + health, 430, 318);
+      ctx.fillText("Health " + health, 430, 318, RIGHT_W);
     }
     ctx.fillStyle = "#8c8366";
     ctx.font = "italic 20px " + MONO;
-    ctx.fillText(t["raid-epitaph"] || t["raid-state"], 36, 350, W - 72);
+    ctx.fillText(t["raid-epitaph"] || t["raid-state"], 36, 356, W - 72);
     dirty = false;
   }
   return {

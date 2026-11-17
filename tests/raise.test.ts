@@ -136,8 +136,9 @@ describe("raise: story content (R2, R5, R6)", () => {
   });
 
   it("summarises exorcised findings in one line", () => {
-    expect(inf).toContain("Crypt: 3 findings, 1 exorcised, 2 spawned");
-    expect(inf).toContain("1 lesser finding rests below the spawn line.");
+    expect(inf).toContain("Crypt: ");
+    expect(inf).toContain("3 findings, 2 limbs spawn, 1 below the noise line");
+    expect(inf).toContain("A limb spawns for a finding above the noise line.");
   });
 
   it("describes possessed with KEV, rotting with CVE count and top EPSS", () => {

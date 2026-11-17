@@ -71,7 +71,8 @@ describe("plate renderer", () => {
     expect(t).toContain(`The Creature of crypt-demo, called ${creatureName("crypt-demo")}`);
     expect(t).toContain("jquery 3.4.1 \u2014 POSSESSED");
     expect(t).toContain("lodash 4.17.15 \u2014 ROTTING");
-    expect(t).toContain("LIMBS 7  POSSESSED 1  ROTTING 4  HEALED 0  HEALTHY 2");
+    expect(t).toContain("DEPENDENCIES 7  POSSESSED 1  ROTTING 4  HEALED 0  HEALTHY 2");
+    expect(t).toContain("LIMBS THAT SPAWN 2 OF 5 FINDINGS, 3 BELOW THE NOISE LINE");
   });
 
   it("names the creature deterministically from the repo name", () => {
@@ -99,8 +100,8 @@ describe("plate renderer", () => {
   });
 
   it("handles zero limbs and overflow", () => {
-    expect(renderPlate({ limbs: [] }, { repo: "r" })).toContain("LIMBS 0");
-    expect(renderPlate(null, { repo: "r" })).toContain("LIMBS 0");
+    expect(renderPlate({ limbs: [] }, { repo: "r" })).toContain("DEPENDENCIES 0");
+    expect(renderPlate(null, { repo: "r" })).toContain("DEPENDENCIES 0");
     const t = renderPlate(many(30), { repo: "r" });
     expect(t).toContain("ALSO ON THE SLAB:");
     expect(t).toContain("... and 13 more");

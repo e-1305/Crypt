@@ -10,6 +10,7 @@ import { parseRepoUrl, repoSlug } from "./js/web/repo-url.js";
 import { initRaid } from "./raid.js";
 import { initHeal } from "./heal.js";
 import { initOnboarding } from "./onboarding.js";
+import { wireCopy } from "./copy.js";
 import { initSound } from "./theatre/sound.js";
 import { countPossessed } from "./js/theatre/audio-plan.js";
 
@@ -88,8 +89,27 @@ function setHc(on) {
   hcToggle.setAttribute("aria-pressed", String(on));
   store.set("crypt.hc", on);
 }
-hcToggle.addEventListener("click", () => setHc(!document.body.classList.contains("hc")));
+hcToggle.addEventListener("click", () => {
+  const on = !document.body.classList.contains("hc");
+  setHc(on);
+  announce(on ? "High-contrast reader mode on" : "High-contrast reader mode off");
+});
 setHc(store.get("crypt.hc") === true);
+
+// The install line: one copyable command. The button copies the text shown beside it.
+const installCmd = document.getElementById("install-cmd");
+const installCopy = document.getElementById("install-copy");
+if (installCmd && installCopy) wireCopy(installCopy, installCmd, announce);
+
+// SEAL badge: visible while the page is sealed. Unseal lifts it for this page only.
+const sealBadge = document.getElementById("seal-badge");
+function showSeal() { if (sealBadge) sealBadge.hidden = !seal.sealed; }
+document.getElementById("unseal")?.addEventListener("click", () => {
+  seal.unseal();
+  showSeal();
+  announce("Unsealed. Grafts on this page run again.");
+  cmd.focus({ preventScroll: true });
+});
 
 function addLine(text, cls) {
   const div = document.createElement("div");
@@ -97,6 +117,15 @@ function addLine(text, cls) {
   div.textContent = text === "" ? "\u00a0" : text;
   transcript.appendChild(div);
   transcript.scrollTop = transcript.scrollHeight;
+}
+
+// A plain line in the event log, for page events that are not game markers (the simulated CI).
+function logEvent(text, warn) {
+  const li = document.createElement("li");
+  li.className = warn ? "rejected" : "ok";
+  li.textContent = text;
+  eventLog.appendChild(li);
+  eventEmpty.hidden = true;
 }
 
 function addEvent(e, refused) {
@@ -118,6 +147,7 @@ function addEvent(e, refused) {
     if (e.parsed.verb === "GRAFT") payloadEl.textContent = msg;
     addLine(msg);
     announce(msg);
+    if (e.parsed.verb === "GRAFT") onboarding.signal("seal-refused");
     return;
   }
   if (e.ok && e.parsed.verb === "GRAFT") showPayload(e.parsed.limb);
@@ -143,6 +173,7 @@ function onResult(result) {
   result.events.forEach((e) => addEvent(e, refused.includes(e)));
   if (allowed.some((e) => e.ok && e.command && e.command.startsWith("GRAFT"))) sound.graft();
   if (allowed.some((e) => e.ok && e.parsed.verb === "RAID")) raid.start();
+  showSeal();
   onboarding.note(allowed);
 }
 
@@ -150,6 +181,8 @@ let lastCreature = null;
 const heal = initHeal({
   addLine,
   announce,
+  logEvent,
+  signal: (name) => onboarding.signal(name),
   getLimbs: () => (lastCreature ? lastCreature.limbs : []),
   redraw: (fresh, convulse) => { if (lastCreature) drawPlate(lastCreature, fresh, convulse); },
 });
@@ -177,7 +210,7 @@ function drawPlate(real, fresh, convulse) {
     if (i < lines.length - 1) plateEl.appendChild(document.createTextNode("\n"));
   });
   const summary = plateSummary(creature);
-  plateSummaryEl.textContent = summary.length === 0 ? "The slab is bare. No limbs are possessed or rotting." : "Limbs: " + summary.join("; ") + ".";
+  plateSummaryEl.textContent = summary.length === 0 ? "The slab is bare. No limbs are possessed or rotting." : "Limbs that spawn: " + summary.join("; ") + ".";
 }
 
 // ?simulate= runs once, not on every raid poll.
@@ -282,7 +315,7 @@ async function main() {
     onError: (m) => addLine("Interpreter stopped: " + m),
   });
   cmd.disabled = false;
-  cmd.focus();
+  cmd.focus({ preventScroll: true });
   form.addEventListener("submit", (ev) => {
     ev.preventDefault();
     const text = cmd.value;

@@ -131,7 +131,8 @@ describe("necromancer graft", () => {
     const env = makeAgentEnv();
     const ctx = env.ctxFor(dryRunClient(nodeIo, env.paths.prsDir, env.now));
     const r = await graft(ctx, env.request(env.idOf("alpha")));
-    expect(r.outcome).toBe("PR_OPENED");
+    expect(r.outcome).toBe("DRYRUN_WRITTEN");
+    expect(env.outcomes()).toEqual(["DRYRUN_WRITTEN"]);
     expect(env.payloads()).toEqual(["crypt-graft-alpha-1.0.1.json"]);
     const p = env.payload(env.payloads()[0]!);
     expect(p).toMatchObject({ dryRun: true, limb: env.idOf("alpha"), from: "1.0.0", to: "1.0.1", breaking: false });
@@ -143,11 +144,28 @@ describe("necromancer graft", () => {
     expect(JSON.parse(p.files[0].content).dependencies.alpha).toBe("1.0.1");
     env.cleanup();
   });
+  it("property: a dry run never audits PR_OPENED, whatever the versions", async () => {
+    await fc.assert(
+      fc.asyncProperty(fc.integer({ min: 0, max: 9 }), fc.integer({ min: 0, max: 3 }), async (minor, major) => {
+        const env = makeAgentEnv([{ name: "alpha", version: `${major}.${minor}.0`, fixed: `${major}.${minor + 1}.0` }]);
+        try {
+          const ctx = env.ctxFor(dryRunClient(nodeIo, env.paths.prsDir, env.now));
+          const r = await graft(ctx, env.request(env.idOf("alpha")));
+          expect(r.outcome).toBe("DRYRUN_WRITTEN");
+          expect(env.outcomes()).not.toContain("PR_OPENED");
+          expect(readFileSync(env.paths.auditPath, "utf8")).not.toContain("PR_OPENED");
+        } finally {
+          env.cleanup();
+        }
+      }),
+      { numRuns: numRuns(25) },
+    );
+  });
   it("sets breaking: true in the body for a major bump", async () => {
     const env = makeAgentEnv([{ name: "alpha", version: "1.4.0", fixed: "2.0.0" }]);
     const ctx = env.ctxFor(dryRunClient(nodeIo, env.paths.prsDir, env.now));
     const r = await graft(ctx, env.request(env.idOf("alpha")));
-    expect(r).toMatchObject({ outcome: "PR_OPENED", breaking: true });
+    expect(r).toMatchObject({ outcome: "DRYRUN_WRITTEN", breaking: true });
     expect(env.payload(env.payloads()[0]!).body).toContain("breaking: true");
     env.cleanup();
   });

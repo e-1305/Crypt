@@ -1,3 +1,4 @@
+import { countsPhrase } from "../common/counts.js";
 import { CODEOWNERS_LOCATIONS, ownerOf, parseCodeowners } from "./owners.js";
 import type { EpssFeed, KevFeed } from "./feeds.js";
 import { parsePackageLock, parseRequirements } from "./lockfile.js";
@@ -107,7 +108,7 @@ export function serializeCreature(c: Creature): string {
 export function summarize(c: Creature, top = 5): string {
   const n = c.counts;
   const lines = [
-    `CRYPT exhume: ${n.limbs} limbs, ${n.findings} findings, ${n.exorcised} exorcised, ${n.spawned} spawned, ${n.unresolved} unresolved`,
+    `CRYPT exhume: ${countsPhrase({ dependencies: n.limbs, findings: n.findings, spawned: n.spawned, noise: n.exorcised, unresolved: n.unresolved })}`,
     `  possessed ${n.possessed}, rotting ${n.rotting}, healthy ${n.healthy}, unknown ${n.unknown}`,
     `  KEV feed: ${c.feeds.kev.status}${c.feeds.kev.date ? ` (${c.feeds.kev.date})` : ""}`,
     `  EPSS feed: ${c.feeds.epss.status}${c.feeds.epss.date ? ` (${c.feeds.epss.date})` : ""}`,

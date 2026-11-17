@@ -85,7 +85,7 @@ function fakeDom(search = "") {
 beforeAll(() => {
   tmp = mkdtempSync(join(tmpdir(), "crypt-glue-"));
   cpSync(join(ROOT, "web", "theatre"), join(tmp, "theatre"), { recursive: true });
-  for (const f of ["app.js", "raid.js", "heal.js", "onboarding.js"]) cpSync(join(ROOT, "web", f), join(tmp, f));
+  for (const f of ["app.js", "raid.js", "heal.js", "onboarding.js", "copy.js"]) cpSync(join(ROOT, "web", f), join(tmp, f));
   writeFileSync(join(tmp, "package.json"), '{"type":"module"}');
   const r = spawnSync("npx", ["tsc", "-p", "tsconfig.web.json", "--outDir", join(tmp, "js")], { cwd: ROOT, encoding: "utf8" });
   if (r.status !== 0) throw new Error(r.stdout + r.stderr);
@@ -276,7 +276,7 @@ describe("web/app.js", () => {
     await load("app.js");
     await flush();
     expect(el("plate").children.length).toBeGreaterThan(0);
-    expect(el("plate-summary").textContent).toMatch(/^Limbs: /);
+    expect(el("plate-summary").textContent).toMatch(/^Limbs that spawn: /);
     expect(el("creature-name").textContent).toContain("(the demo creature)");
     expect(el("gallery-list").children).toHaveLength(1);
     expect(el("download").disabled).toBe(false);
@@ -304,7 +304,7 @@ describe("web/app.js", () => {
     await flush();
     expect(el("daily-banner").textContent).toMatch(/^Today in the crypt: /);
     expect(el("tutorial").hidden).toBe(false);
-    expect(el("tutorial-progress").textContent).toBe("Getting started, step 1 of 5");
+    expect(el("tutorial-progress").textContent).toBe("Getting started, step 1 of 7");
     expect(el("tutorial-command").textContent).toBe("");
     el("tutorial-next").click();
     expect(el("tutorial-command").textContent).toBe("Type: EXAMINE JQUERY");
@@ -318,6 +318,16 @@ describe("web/app.js", () => {
     expect(el("tutorial-step").textContent).toContain("yourself");
     // No tutorial code path submits input: the command row is still empty and the payload stays unread.
     expect(el("cmd").value).toBe("");
+    glkOf!.glk_put_jstring("[[CRYPT GRAFT JQUERY]]\n");
+    // The next two steps finish on page events: the simulated CI going green, then a graft refused by the seal.
+    expect(el("tutorial-step").textContent).toContain("Simulate CI: green");
+    expect(el("tutorial-next").hidden).toBe(true);
+    el("sim-green").click();
+    await new Promise((r) => setTimeout(r, 1400));
+    expect(el("tutorial-command").textContent).toBe("Type: SEAL CRYPT");
+    expect(el("tutorial-step").textContent).toContain("GRAFT JQUERY");
+    glkOf!.glk_put_jstring("[[CRYPT SEAL]]\n");
+    expect(el("seal-badge").hidden).toBe(false);
     glkOf!.glk_put_jstring("[[CRYPT GRAFT JQUERY]]\n");
     expect(el("tutorial-step").textContent).toContain("waits for a human");
     el("tutorial-next").click();
@@ -398,6 +408,11 @@ describe("web/app.js", () => {
     expect(body.classes.has("hc")).toBe(true);
     expect(el("hc-toggle").attrs["aria-pressed"]).toBe("true");
     expect(mem.get("crypt.hc")).toBe("true");
+    await new Promise((r) => setTimeout(r, 80));
+    expect(el("announcer").textContent).toBe("High-contrast reader mode on");
+    el("hc-toggle").click();
+    await new Promise((r) => setTimeout(r, 80));
+    expect(el("announcer").textContent).toBe("High-contrast reader mode off");
   });
 });
 

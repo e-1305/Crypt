@@ -74,3 +74,14 @@ Rules for the new pieces:
 - **Title card** (`CRYPT — Don't abandon your creature.`): 3D path only, 3 seconds, `aria-hidden`. Any key or click skips it. It never appears on the 2D page or under `prefers-reduced-motion`, and reduced motion already selects the 2D page.
 - **Dolly-in**: the camera moves toward the CRT at the first key pressed in the command input. It is instant under reduced motion (which never mounts the bench in the first place).
 - **Recording mode** (`?record=1` or the "Recording mode" button): hides the header, event log, plain-page link, sound toggle and the raid and simulated CI buttons. The CRT and the plate stay. Escape leaves it. The toggle button stays in the tab order and shows when it has focus, so keyboard users can leave without knowing the shortcut. The game input keeps working. Recording mode is for screen capture, not for everyday use, because it removes the event log and its announcements from view (the announcer region still speaks).
+
+## Round 1 playtest fixes: keyboard order and announcements
+
+Tab order on the 2D page, from the top: "Skip to the game input" (skip link), Sound, Recording mode, "How to play (manual)", High-contrast reader mode, "Copy command", the "Built with Kiro" link, the tutorial buttons (Got it, Skip, Hide for good), then the game input. The game input no longer has `autofocus`. The script focuses it with `preventScroll`, so the title and pitch stay in view. Shift+Tab from the game input walks the same list backwards.
+
+- The high-contrast toggle announces "High-contrast reader mode on" and "High-contrast reader mode off" through the status region.
+- The SEAL badge ("SEALED: no graft will run.") is a status region with an "Unseal" button. Unseal affects this page only.
+- The Recording mode button has the accessible name "Recording mode: hide the page controls for screen capture".
+- A simulated heal adds "SIMULATED: jquery healed" to the event log and announces it. A simulated red result adds "SIMULATED: jquery stays ROTTING, CI was red".
+- `tests/page-above-fold.test.ts` and `tests/web-glue.test.ts` check the order and the announcements. axe-core was not re-run for this round. Re-run it on `/?theatre=off` before the demo.
+

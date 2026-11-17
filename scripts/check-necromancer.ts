@@ -74,7 +74,7 @@ async function main(): Promise<void> {
   if (requests().length !== 1) errors.push("a graft request was written after SEAL");
   if (payloads().length !== 1) errors.push(`expected still 1 payload after SEAL, found ${payloads().length}`);
   const outcomes = readFileSync(paths.auditPath, "utf8").split("\n").filter(Boolean).map((l) => l.split("\t")[3]);
-  const expected = "REQUEST_WRITTEN,PR_OPENED,SEALED,REJECTED_SEALED,REJECTED_SEALED";
+  const expected = "REQUEST_WRITTEN,DRYRUN_WRITTEN,SEALED,REJECTED_SEALED,REJECTED_SEALED";
   if (outcomes.join(",") !== expected) errors.push(`audit outcomes ${outcomes.join(",")}, expected ${expected}`);
   if (errors.length > 0) {
     console.error("necromancer check FAILED:\n  " + errors.join("\n  "));

@@ -5,6 +5,7 @@ export type AgentOutcome =
   | "REJECTED_SEALED"
   | "REJECTED_UNKNOWN_LIMB"
   | "PR_OPENED"
+  | "DRYRUN_WRITTEN"
   | "PR_EXISTS"
   | "NO_FIX_AVAILABLE"
   | "REFUSED_NOT_SPAWNED"
