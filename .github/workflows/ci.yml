@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  CRYPT_TOOLCHAIN_DIR: ${{ github.workspace }}/.toolchain
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - name: Cache toolchain
+        uses: actions/cache@v4
+        with:
+          path: .toolchain
+          key: toolchain-${{ runner.os }}-${{ hashFiles('scripts/setup-tools.sh') }}
+      - name: Build toolchain
+        run: bash scripts/setup-tools.sh
+      # Spike builds the story that the integration tests play, so it runs before vitest.
+      - run: npm run spike
+      - name: Exhume and raise the fixture creature
+        run: |
+          npm run exhume -- fixtures/vulnerable-npm --feeds fixtures/vulnerable-npm/feeds --offline
+          npm run raise -- out/creature.json
+      - run: npm run raise:check
+      - run: npm run necromancer:check
+      - name: Unit and property tests (1000 runs)
+        run: npx vitest run
+        env:
+          CRYPT_NUM_RUNS: "1000"
+      - name: Offline raid
+        run: bash scripts/ci/raid-offline.sh
+
+  failsafe-guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/ci/failsafe-guard.sh

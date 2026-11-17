@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { numRuns } from "./runs.js";
 import fc from "fast-check";
 import { parseCommand } from "../src/bridge/grammar.js";
 
@@ -20,7 +21,7 @@ describe("grammar (failsafe 5, complete mediation)", () => {
         fc.pre(!GRAMMAR.test(s));
         expect(parseCommand(s)).toEqual({ ok: false });
       }),
-      { numRuns: 2000 },
+      { numRuns: numRuns(2000) },
     );
   });
 

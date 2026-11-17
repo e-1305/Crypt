@@ -1,4 +1,5 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { numRuns } from "./runs.js";
 import fc from "fast-check";
 import { parseGameOutput } from "../src/bridge/parse-output.js";
 import { createWatcher } from "../src/bridge/watch.js";
@@ -75,7 +76,7 @@ describe("parseGameOutput properties", () => {
       fc.property(fc.string({ unit: "binary" }), (s) => {
         expect(parseGameOutput(s)).toEqual(parseGameOutput(s));
       }),
-      { numRuns: 300 },
+      { numRuns: numRuns(300) },
     );
   });
 
@@ -107,7 +108,7 @@ describe("spoofing (V4)", () => {
           e.cleanup();
         }
       }),
-      { numRuns: 200 },
+      { numRuns: numRuns(200) },
     );
   });
 
@@ -154,7 +155,7 @@ describe("spoofing (V4)", () => {
           b.cleanup();
         }
       }),
-      { numRuns: 200 },
+      { numRuns: numRuns(200) },
     );
   });
 });

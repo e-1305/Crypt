@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
+import { numRuns } from "./runs.js";
 import { CliError, EXIT, EXIT_CODES, EXIT_TABLE, TargetError, ToolchainError, UsageError, exitCodeFor } from "../src/cli/exit.js";
 import { helpText, versionText } from "../src/cli/help.js";
 import { deriveRepoName } from "../src/cli/name.js";
@@ -92,7 +93,7 @@ describe("parseCli: properties", () => {
           expect(exitCodeFor(e)).toBe(EXIT.USAGE);
         }
       }),
-      { numRuns: 500 },
+      { numRuns: numRuns(500) },
     );
   });
   it("a parsed command only carries flags its command declares and the right argument count", () => {
@@ -110,7 +111,7 @@ describe("parseCli: properties", () => {
         expect(p.args.length).toBeGreaterThanOrEqual(spec.positional.filter((x) => x.required).length);
         expect(p.args.length).toBeLessThanOrEqual(spec.positional.length);
       }),
-      { numRuns: 500 },
+      { numRuns: numRuns(500) },
     );
   });
   it("exitCodeFor always gives a documented code", () => {

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { numRuns } from "./runs.js";
 import fc from "fast-check";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -78,7 +79,7 @@ describe("raise: determinism (R1)", () => {
       fc.property(hostileCreature, (c) => {
         expect(generate(c as CreatureInput)).toEqual(generate(JSON.parse(JSON.stringify(c))));
       }),
-      { numRuns: 100 },
+      { numRuns: numRuns(100) },
     );
   });
 });
@@ -109,7 +110,7 @@ describe("raise: limb IDs (R3)", () => {
           expect(parseCommand(`ASSIGN ${id}`)).toEqual({ ok: true, verb: "ASSIGN", limb: id });
         }
       }),
-      { numRuns: 300 },
+      { numRuns: numRuns(300) },
     );
   });
 
@@ -177,7 +178,7 @@ describe("raise: sanitizer (R6)", () => {
         expect(t).not.toMatch(/["~^@\[\]\\]/);
         expect(t.length).toBeLessThanOrEqual(MAX_TEXT);
       }),
-      { numRuns: 1000 },
+      { numRuns: numRuns(1000) },
     );
   });
 
@@ -195,7 +196,7 @@ describe("raise: sanitizer (R6)", () => {
         // limb IDs are plain A-Z in the source
         for (const m of inf.matchAll(/limbid "([^"]*)"/g)) expect(m[1]).toMatch(/^[A-Z]{1,32}$/);
       }),
-      { numRuns: 200 },
+      { numRuns: numRuns(200) },
     );
   });
 });

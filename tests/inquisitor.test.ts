@@ -1,5 +1,6 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
+import { numRuns } from "./runs.js";
 import { REJECTED_TEXT } from "../src/common/agent.js";
 import { nodeIo } from "../src/common/io.js";
 import { judge, verify, type InquisitorCtx } from "../src/inquisitor/index.js";
@@ -144,7 +145,7 @@ describe("inquisitor properties", () => {
         env.cleanup();
         return same;
       }),
-      { numRuns: 80 },
+      { numRuns: numRuns(80) },
     );
   });
 
@@ -156,7 +157,7 @@ describe("inquisitor properties", () => {
         const r = await verify(ctx, limb);
         return r.outcome === "REJECTED_SEALED" && m.calls.length === 0 && env.stateText() === null;
       }),
-      { numRuns: 100 },
+      { numRuns: numRuns(100) },
     );
     env.cleanup();
   });
@@ -170,7 +171,7 @@ describe("inquisitor properties", () => {
         env.cleanup();
         return ok;
       }),
-      { numRuns: 50 },
+      { numRuns: numRuns(50) },
     );
   });
 });

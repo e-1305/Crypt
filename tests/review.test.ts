@@ -1,4 +1,5 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { numRuns } from "./runs.js";
 import fc from "fast-check";
 import { appendFileSync, writeFileSync } from "node:fs";
 import { createWatcher, tail } from "../src/bridge/watch.js";
@@ -39,7 +40,7 @@ describe("failsafe rule 2 (least privilege): no network or merge call", () => {
         e.cleanup();
         return f.mock.calls.length === 0;
       }),
-      { numRuns: 50 },
+      { numRuns: numRuns(50) },
     );
     vi.unstubAllGlobals();
   });
@@ -60,7 +61,7 @@ describe("failsafe rule 4 (economy of mechanism): deterministic", () => {
         b.cleanup();
         return same;
       }),
-      { numRuns: 50 },
+      { numRuns: numRuns(50) },
     );
   });
 });
@@ -76,7 +77,7 @@ describe("failsafe rules 3 and 6 (invariants only, waiver in design.md)", () => 
         e.cleanup();
         return ok;
       }),
-      { numRuns: 50 },
+      { numRuns: numRuns(50) },
     );
   });
 });
