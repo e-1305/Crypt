@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Build the Inform 6 compiler, Inform 6 library and dfrotz into .toolchain/ (git-ignored).
+# Build the Inform 6 compiler, Inform 6 library and dfrotz into .toolchain/ (git-ignored), or into $CRYPT_TOOLCHAIN_DIR when set.
 # Idempotent: exits early when all three outputs exist. Needs git, make, a C compiler, network.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-TC="$ROOT/.toolchain"
+TC="${CRYPT_TOOLCHAIN_DIR:-$ROOT/.toolchain}"
 
 INFORM_REV=624aabb   # Inform 6 compiler 6.45
 LIB_REV=33aebe6      # Inform 6 standard library 6.12.2
