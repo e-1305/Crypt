@@ -46,6 +46,7 @@ export function makeWorld(o: WorldOpts = {}) {
   const refs = new Map<string, string>();
   const prs: { number: number; head: string; title: string; body: string; sha: string }[] = [];
   const outside: string[] = [];
+  const landed = new Set<number>();
   let seq = 1;
   const baseCommit = hex(0xabc);
   const baseTree = hex(0xdef);
@@ -140,7 +141,7 @@ export function makeWorld(o: WorldOpts = {}) {
       return reply(201, { number, html_url: `https://github.com/${REPO}/pull/${number}`, head: { sha } });
     }
     if (method === "GET" && (m = /^\/commits\/([0-9a-f]+)\/check-runs$/.exec(rest))) return reply(200, { check_runs: o.checkRuns ?? [] });
-    if (method === "GET" && (m = /^\/pulls\/(\d+)$/.exec(rest))) return reply(200, { state: "open" });
+    if (method === "GET" && (m = /^\/pulls\/(\d+)$/.exec(rest))) return reply(200, landed.has(Number(m[1])) ? { state: "closed", merged_at: "2026-01-02T00:00:00Z" } : { state: "open" });
     return reply(404);
   };
 
@@ -169,6 +170,8 @@ export function makeWorld(o: WorldOpts = {}) {
     blobs,
     outside,
     baseCommit,
+    /** Test-only: a human landed the PR on github.com. The fake has no merge endpoint; this only flips the state it reports. */
+    land: (n: number) => void landed.add(n),
     cryptRefs: () => [...refs.keys()].filter((r) => r.startsWith("refs/heads/crypt/")),
     /** Files of the commit a ref points to, by path. */
     filesAt(ref: string): Record<string, string> {
