@@ -34,10 +34,18 @@ Object arm "arm" Crypt
     "The crypt is sealed.";
 ];
 
+[ RaidSub;
+    print "[[CRYPT RAID]]^";
+    "The raid begins. Fifteen minutes. Heal what you can.";
+];
+
 Include "Grammar";
 
 Verb 'graft'
     * noun                      -> Graft;
+
+Verb 'raid'
+    *                           -> Raid;
 
 Verb 'seal'
     * 'crypt'                   -> Seal;

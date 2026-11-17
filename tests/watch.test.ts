@@ -25,6 +25,7 @@ const limb = fc.constantFrom(...KNOWN_LIMBS);
 const unknownLimb = anyLimb.filter((l) => !KNOWN_LIMBS.includes(l));
 const accepted = fc.oneof(
   fc.constant("SEAL CRYPT"),
+  fc.constant("RAID"),
   limb.map((l) => `EXAMINE ${l}`),
   limb.map((l) => `GRAFT ${l}`),
   limb.map((l) => `ASSIGN ${l}`),
@@ -46,6 +47,13 @@ describe("watcher", () => {
     expect(e.sealed()).toBe(true);
     const req = JSON.parse(readFileSync(`${e.ctx.requestsDir}/graft-001-arm.json`, "utf8"));
     expect(req).toMatchObject({ action: "GRAFT", limb: "ARM", command: "GRAFT ARM" });
+  });
+
+  it("RAID is audited as NO_ACTION and writes no request, even after a seal", () => {
+    const e = env();
+    createWatcher(e.ctx).processText(transcript(["RAID", "SEAL CRYPT", "RAID"]));
+    expect(e.requests()).toEqual([]);
+    expect(e.auditLines().map((l) => l.split("\t").slice(1).join("|"))).toEqual(["RAID|-|NO_ACTION|-", "SEAL CRYPT|-|SEALED|-", "RAID|-|NO_ACTION|-"]);
   });
 
   it("audit lines have timestamp, command, limb, outcome and PR URL", () => {
@@ -173,7 +181,7 @@ describe("watcher", () => {
   it("property (rule 1): parse errors write nothing", () => {
     fc.assert(
       fc.property(fc.array(garbage, { maxLength: 20 }), (cmds) => {
-        const lines = cmds.filter((c) => !/^(EXAMINE|ASSIGN|GRAFT) [A-Z]{1,32}$|^SEAL CRYPT$/.test(c));
+        const lines = cmds.filter((c) => !/^(EXAMINE|ASSIGN|GRAFT) [A-Z]{1,32}$|^SEAL CRYPT$|^RAID$/.test(c));
         const e = makeEnv();
         try {
           createWatcher(e.ctx).processText(lines.map((c) => `> ${c}\n${markerFor(c)}`).join("\n"));
@@ -238,7 +246,7 @@ describe("watcher", () => {
   it("property (rule 8): each accepted command yields exactly one audit line", () => {
     fc.assert(
       fc.property(fc.array(fc.oneof(accepted, garbage), { maxLength: 25 }), (cmds) => {
-        const ok = /^\[\[CRYPT ((EXAMINE|ASSIGN|GRAFT) [A-Z]{1,32}|SEAL)\]\]$/;
+        const ok = /^\[\[CRYPT ((EXAMINE|ASSIGN|GRAFT) [A-Z]{1,32}|SEAL|RAID)\]\]$/;
         const e = makeEnv();
         try {
           createWatcher(e.ctx).processText(transcript(cmds));

@@ -96,7 +96,7 @@ describe("output hook: input never triggers (W4)", () => {
 
 describe("output hook: chunking (W2.2)", () => {
   const text = fc.array(
-    fc.oneof(fc.constantFrom(GRAFT, "[[CRYPT SEAL]]", "[[CRYPT EXAMINE ARM]]", "[[CRYPT BOGUS]]", "> x", "plain"), fc.string()),
+    fc.oneof(fc.constantFrom(GRAFT, "[[CRYPT SEAL]]", "[[CRYPT RAID]]", "[[CRYPT EXAMINE ARM]]", "[[CRYPT BOGUS]]", "> x", "plain"), fc.string()),
     { maxLength: 8 },
   );
   it("property: any chunk split yields the same lines and events as the whole text", () => {
@@ -144,6 +144,11 @@ describe.skipIf(!existsSync(story))("real interpreter plays spike.z5 in Node (in
   });
   it("typing the marker as input shows nothing", () => {
     expect(play([GRAFT, "[[CRYPT SEAL]]"]).events).toEqual([]);
+  });
+  it("RAID shows [[CRYPT RAID]] as detected", () => {
+    const { events, errors } = play(["raid"]);
+    expect(errors).toEqual([]);
+    expect(events.map((e) => (e.ok ? e.command : e.reason))).toEqual(["RAID"]);
   });
   it("accepted actions log in order", () => {
     const { events } = play(["examine arm", "graft arm", "seal crypt"]);

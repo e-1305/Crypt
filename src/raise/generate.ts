@@ -39,7 +39,7 @@ export const FALLBACK_ID = "LIMB";
 /** Words that must never become a limb ID: our verbs, the room, and library verbs and directions. */
 const RESERVED = new Set(
   (
-    "EXAMINE X GRAFT ASSIGN SEAL CRYPT THE " +
+    "EXAMINE X GRAFT ASSIGN SEAL CRYPT RAID THE " +
     "LOOK L INVENTORY I TAKE GET DROP GO WALK ENTER EXIT OPEN CLOSE LOCK UNLOCK PUSH PULL TURN WAIT Z " +
     "SAVE RESTORE RESTART QUIT Q VERBOSE BRIEF SCORE UNDO VERSION SCRIPT UNSCRIPT NOTIFY " +
     "ME SELF ALL IT THEM N S E W NE NW SE SW U D NORTH SOUTH EAST WEST UP DOWN IN OUT"
@@ -240,6 +240,11 @@ export function generate(creature: CreatureInput): Generated {
   out.push('    "The crypt falls silent. Every needle rests.";');
   out.push("];");
   out.push("");
+  out.push("[ RaidSub;");
+  out.push('    print "[[CRYPT RAID]]^";');
+  out.push('    "The raid begins. Fifteen minutes. Heal what you can.";');
+  out.push("];");
+  out.push("");
   out.push('Include "Grammar";');
   out.push("");
   out.push("Verb 'graft'");
@@ -247,6 +252,9 @@ export function generate(creature: CreatureInput): Generated {
   out.push("");
   out.push("Verb 'assign'");
   out.push("    * noun                      -> Assign;");
+  out.push("");
+  out.push("Verb 'raid'");
+  out.push("    *                           -> Raid;");
   out.push("");
   out.push("Verb 'seal'");
   out.push("    * 'crypt'                   -> Seal;");

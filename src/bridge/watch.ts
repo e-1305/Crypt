@@ -172,6 +172,9 @@ export function createWatcher(ctx: Ctx): Watcher {
           }
           audit(command, "-", "SEALED");
           break;
+        case "RAID":
+          audit(command, "-", "NO_ACTION"); // a page-side event: no GitHub action, only the audit line
+          break;
         case "GRAFT":
           handleGraft(command, parsed.limb);
           break;
