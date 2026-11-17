@@ -16,6 +16,8 @@ export interface RepoCounts {
   unknown: number;
   /** Limbs whose owner is "unowned" (no CODEOWNERS rule matches the manifest). */
   unowned: number;
+  /** 1 when the repository has no CODEOWNERS file in any location, else 0. */
+  noCodeowners: number;
 }
 
 export interface Aggregate {
@@ -28,6 +30,7 @@ export interface Aggregate {
   possessed: number;
   unknown: number;
   unowned: number;
+  noCodeowners: number;
   pctFindings: number;
   pctExorcised: number;
   pctSpawned: number;
@@ -79,6 +82,7 @@ export function aggregate(repos: RepoCounts[]): Aggregate {
     possessed: sum(repos, "possessed"),
     unknown: sum(repos, "unknown"),
     unowned,
+    noCodeowners: sum(repos, "noCodeowners"),
     pctFindings: pct(findings, limbs),
     pctExorcised: pct(exorcised, findings),
     pctSpawned: pct(spawned, findings),
@@ -98,7 +102,7 @@ export function renderResults(a: Aggregate, meta: Meta): string {
     "",
     `- Across ${a.repos} popular open-source projects, CRYPT's filter cut ${n(a.findings)} findings to ${n(a.spawned)} monsters.`,
     `- ${p(a.pctExorcised)} of findings were exorcised as noise, so only ${p(a.pctSpawned)} spawned: ${n(a.spawned)} limbs out of ${n(a.limbs)} dependencies.`,
-    `- ${n(a.possessed)} limbs were possessed (actively exploited, CISA KEV), and ${p(a.pctUnowned)} of all limbs had no CODEOWNERS owner to heal them.`,
+    `- ${n(a.possessed)} limbs were possessed (actively exploited, CISA KEV), and ${p(a.pctUnowned)} of all limbs had no CODEOWNERS owner to heal them. ${a.noCodeowners} of ${a.repos} repositories have no CODEOWNERS file at all.`,
     "",
     "Aggregates only. No project is named next to a finding. Per-repo data stays in a gitignored directory (blameless publication rule).",
     "",
@@ -114,6 +118,7 @@ export function renderResults(a: Aggregate, meta: Meta): string {
     `| Unresolved (status unknown, kept as findings, never called clean) | ${n(a.unresolved)} |`,
     `| Possessed limbs (CISA KEV) | ${n(a.possessed)} |`,
     `| Limbs with no CODEOWNERS owner | ${n(a.unowned)} (${p(a.pctUnowned)} of limbs) |`,
+    `| Repositories with no CODEOWNERS file at all | ${a.noCodeowners} of ${a.repos} |`,
     `| Median findings per repo, before exorcism | ${m(a.medianBefore)} |`,
     `| Median findings per repo, after exorcism (spawned) | ${m(a.medianAfter)} |`,
     "",

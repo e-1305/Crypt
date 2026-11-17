@@ -12,7 +12,7 @@ import {
 
 const meta = { scanDate: "2026-01-02", kevDate: "2026-01-01", epssDate: "2026-01-02" };
 const row = (o: Partial<RepoCounts> = {}): RepoCounts => ({
-  limbs: 10, findings: 4, exorcised: 3, spawned: 1, unresolved: 0, possessed: 0, unknown: 0, unowned: 10, ...o,
+  limbs: 10, findings: 4, exorcised: 3, spawned: 1, unresolved: 0, possessed: 0, unknown: 0, unowned: 10, noCodeowners: 0, ...o,
 });
 
 describe("repos.md", () => {
@@ -49,11 +49,11 @@ describe("median", () => {
 describe("aggregate", () => {
   it("sums counts and computes percentages and medians", () => {
     const a = aggregate([
-      row({ limbs: 100, findings: 20, exorcised: 15, spawned: 4, unresolved: 1, possessed: 2, unowned: 100 }),
+      row({ limbs: 100, findings: 20, exorcised: 15, spawned: 4, unresolved: 1, possessed: 2, unowned: 100, noCodeowners: 1 }),
       row({ limbs: 100, findings: 10, exorcised: 8, spawned: 2, unowned: 0 }),
-      row({ limbs: 200, findings: 0, exorcised: 0, spawned: 0, unowned: 100 }),
+      row({ limbs: 200, findings: 0, exorcised: 0, spawned: 0, unowned: 100, noCodeowners: 1 }),
     ]);
-    expect(a).toMatchObject({ repos: 3, limbs: 400, findings: 30, exorcised: 23, spawned: 6, unresolved: 1, possessed: 2, unowned: 200 });
+    expect(a).toMatchObject({ repos: 3, limbs: 400, findings: 30, exorcised: 23, spawned: 6, unresolved: 1, possessed: 2, unowned: 200, noCodeowners: 2 });
     expect(a.pctFindings).toBeCloseTo(7.5);
     expect(a.pctExorcised).toBeCloseTo((100 * 23) / 30);
     expect(a.pctUnowned).toBeCloseTo(50);
@@ -64,6 +64,9 @@ describe("aggregate", () => {
     const a = aggregate([row({ limbs: 0, findings: 0, exorcised: 0, spawned: 0, unowned: 0 })]);
     expect(a.pctFindings).toBe(0);
     expect(a.pctExorcised).toBe(0);
+    expect(a.noCodeowners).toBe(0);
+    expect(aggregate([]).noCodeowners).toBe(0);
+    expect(renderResults(aggregate([]), meta)).toContain("0 of 0 repositories have no CODEOWNERS file at all");
   });
 });
 
@@ -78,6 +81,11 @@ describe("renderResults (blameless publication)", () => {
     expect(bullets).toHaveLength(3);
     expect(bullets[0]).toContain("cut 400 findings to 20 monsters");
     expect(bullets[2]).toContain("3 limbs were possessed");
+  });
+  it("reports how many repositories have no CODEOWNERS file at all, next to the unowned figure", () => {
+    const t = renderResults(aggregate([row({ noCodeowners: 1 }), row({ noCodeowners: 0 }), row({ noCodeowners: 1 })]), meta);
+    expect(t.split("\n")[4]).toContain("2 of 3 repositories have no CODEOWNERS file at all");
+    expect(t).toContain("| Repositories with no CODEOWNERS file at all | 2 of 3 |");
   });
   it("states dates and limitations", () => {
     expect(text).toContain("2026-01-02");

@@ -1,7 +1,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { buildCreature, serializeCreature } from "../../src/exhume/creature.js";
 import { parseEpss, parseKev } from "../../src/exhume/feeds.js";
-import { UNOWNED } from "../../src/exhume/owners.js";
+import { CODEOWNERS_LOCATIONS, UNOWNED } from "../../src/exhume/owners.js";
 import { nodeFs } from "../node-fs.js";
 import { osvLookup } from "../osv-client.js";
 import { type RepoCounts, aggregate, leaksProjectName, parseRepos, renderResults } from "./aggregate.js";
@@ -43,8 +43,10 @@ async function main(): Promise<void> {
   let epssDate: string | null = null;
   for (const r of repos) {
     let creature;
+    let noCodeowners = 0;
     try {
       const repo = await repoAtSha(r.repo, r.sha);
+      noCodeowners = CODEOWNERS_LOCATIONS.some((loc) => repo.read(loc) !== null) ? 0 : 1;
       creature = await buildCreature({ repo, cacheFs: nodeFs("."), cacheDir: `${OUT}/osv-cache`, kev, epss, lookup, now: Date.now() });
     } catch (e) {
       fail(`${r.repo}@${r.sha}: ${(e as Error).message}`);
@@ -58,6 +60,7 @@ async function main(): Promise<void> {
       unresolved: c.unresolved,
       possessed: c.possessed,
       unknown: c.unknown,
+      noCodeowners,
       unowned: creature.limbs.filter((l) => l.owner === UNOWNED).length,
     };
     counts.push(row);
