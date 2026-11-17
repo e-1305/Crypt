@@ -213,3 +213,43 @@ Run with `scripts/playtest/judge.mjs` against `npm run web` (headless Chromium, 
 Found and fixed during this check: the Try chip made the page wider than a 390 px phone (the browser zoomed out to 529 px). The input row now wraps.
 
 Still not verified: real GPU rendering and frame rate, audio, Lighthouse, screen readers, Safari and Firefox, the live Pages site, `--live` mode. The 3D page was not run through axe-core. The four WebGL "GPU stall due to ReadPixels" warnings on the 3D landing come from software rendering.
+
+## Round 3
+
+Build: `feat/h1-judge-loop` at `d8e7a9a`, `npm run build:site`, `npm run web`, `scripts/playtest/judge.mjs` (all 15 scenarios ran with no failure; every `checks` value true). Besides the harness I ran the CLI first run by hand, read the README top, `docs/PITCH.md`, `docs/KIRO.md` and the manual's "How it works", and read screenshots `01-landing-default.png` and `02-landing-2d.png`. Same rubric and persona, scored hard.
+
+### Scores
+
+| Criterion | R1 | R2 | R3 | Reason, including why a score did not move |
+|---|---|---|---|---|
+| First-minute clarity | 6 | 7 | 8 | 3D now carries the pitch sentence as a caption, the 2D page has the `npx` line, a Try chip and the prompt in the first viewport. Not 9: the CLI first run stops without saying what to type |
+| Wow factor | 7 | 7 | 7 | The README now shows the bench, but only as a still. No motion, so the "Simulate CI: green" moment is described, not seen. Unchanged because nothing new happens on screen |
+| Technical credibility | 6 | 7 | 8 | The "How it works" section answers Z-machine, markers, failsafe and human merge in one click. Not 9: `crypt play` after `raid` answers `NO_FIX_AVAILABLE` for the limb the README tells me to graft, and the owner is `@x` on the plate and `(at)x` in the story |
+| Kiro usage story | 5 | 6 | 7 | The draft note is gone, the specs, steering, hooks and agents are one or two clicks away, and "Limits" states that no hook has fired inside a Kiro session. Not higher for exactly that reason |
+| Polish | 5 | 6 | 7 | Prompt in reach, no overlap on the bench board, no console errors on 2D. Still: on 3D the manual button covers the plate title, the "Nights Without Possession" line is tiny, and four software-GL warnings appear |
+| Accessibility | 7 | 7 | 7 | axe 0 violations on 2D, reduced motion and high contrast work. Not higher: the skip link is the second to last Tab stop (it should be first), the 3D page was not run through axe, no screen reader was used |
+| Safety story | 7 | 8 | 8 | Unchanged and still strong: SEALED badge, refusal text, audit log. A stale `.crypt-seal` also sealed my first raid. The output says so, so it is honest, but it is a surprise |
+
+Mean 7.4 (Round 2: 6.9, Round 1: 6.1). Gain 0.5, above the 0.3 plateau line, so another round is justified.
+
+### What I saw
+
+- CLI first run: `crypt raid fixtures/vulnerable-npm --offline` printed counts, the ranked list, the plate and the first story screen in a few seconds, exit 0. Wrong inputs fail plainly: no command, no target and an unreadable directory each print one line. Good.
+- The first raid in this checkout printed "The crypt is sealed. Run 'crypt unseal' to lift it." because an old `.crypt-seal` was in the directory (git-ignored, left by an earlier run). I removed it and the next raid ran unsealed.
+- `echo "GRAFT JQUERY" | crypt raid fixtures/vulnerable-npm --offline` wrote `out/prs/crypt-graft-jquery-3.5.0.json`. `echo "GRAFT JQUERY" | crypt play` gave `NO_FIX_AVAILABLE`. With `--advisories data/advisories` it gave `ERROR`. With `--advisories fixtures/vulnerable-npm/advisories --target fixtures/vulnerable-npm` it wrote the payload. A second command after `raid` does not work without two flags the README does not mention in that place.
+- `raid` ends after the opening room and prints no "what to type" line.
+- Keyboard-only: Enter on the Try chip route reaches `#cmd`, `LOOK` works. The skip link is near the end of the Tab order.
+- 3D screenshot: the caption sits bottom centre, the plate, CRT and buttons do not overlap each other. "How to play (manual)" overlaps the title of Plate I, and the Recording mode label is dim.
+- Page weight: 2D 254 KB (33 requests), 3D page within the 5 MB budget per the harness.
+
+### What I did not verify
+
+- Real GPU, frame rate, audio, Lighthouse, screen readers, Safari, Firefox.
+- The live Pages site and `--live` mode, real pull requests, the Inquisitor on real CI.
+- That `.kiro/` links resolve on the default branch after merge.
+- axe-core on the 3D page.
+- Any hook running inside a Kiro session (the repo says none has).
+
+## Round 3 PM note
+
+Four items in [BACKLOG.md](BACKLOG.md), ordered by value over effort: the 3D first-10-seconds polish (small), the CLI "next step" and `play` context (medium, the biggest credibility win for a geek who runs the README command), the `(at)` explanation (small), and the GIF plus one real Kiro hook run (small for a person, not possible here). Items 1 to 3 can be built in the sandbox. Item 4 stays marked "not recorded" until a person does it.

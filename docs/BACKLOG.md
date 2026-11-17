@@ -1,92 +1,71 @@
 # Backlog
 
-Written by the product manager role from [PLAYTEST_LOG.md](PLAYTEST_LOG.md). Items are ordered by value divided by effort. Each cites the finding it comes from. Round 2 backlog. Round 2 mean score is 6.9 (Round 1: 6.1); the scores that held (wow 7, accessibility 7) are the ones with no new work behind them.
+Written by the product manager role from [PLAYTEST_LOG.md](PLAYTEST_LOG.md). Items are ordered by value divided by effort. Each cites the finding it comes from. Round 3 backlog. Round 3 mean score is 7.4 (Round 2: 6.9, Round 1: 6.1), a gain of 0.5, so no plateau yet. The scores that held (wow 7, accessibility 7, safety 8) are the ones with no new work behind them.
 
 Constraints that apply to every item: no merge call, SEAL CRYPT blocks grafts, one team score and no leaderboard, no em dashes in user-facing copy, page weight at most 5 MB, sound off by default, the 2D page and reduced motion keep every feature. Claims that cannot be checked here (GPU, audio, Lighthouse, axe-core, screen readers) stay marked "not verified" in the text that makes them.
 
-## Round 1 status
+## Round 2 status
 
 | # | Item | Status | Evidence |
 |---|---|---|---|
-| 1 | Pitch and one command above the fold | Done on 2D. Partial on 3D | 2D: title, pitch, `npx` line, Kiro link in the first viewport at 1280x720 and 390x780. 3D default view shows none of them |
-| 2 | One count vocabulary | Done | Plate, game intro and CLI use "dependencies" and "limbs that spawn" |
-| 3 | `DRYRUN_WRITTEN` audit outcome | Done | CLI log reads `REQUEST_WRITTEN, DRYRUN_WRITTEN, SEALED, REJECTED_SEALED` |
-| 4 | Visible heal and SEAL badge | Done, one gap | Badge, refusal text, event log line and announcer all seen. The tutorial text does not advance after "Simulate CI: green" in the harness run |
-| 5 | Keyboard order and bench board | Done, axe not run | Tab order listed, announcer on high contrast, board has no overlap. axe-core still not run |
+| 1 | Devpost front door | Done. GIF still not recorded | README top, `docs/PITCH.md`, `docs/DEVPOST.md`, `docs/img/bench-3d.png` |
+| 2 | Shot list | Done | `docs/DEMO.md`, `docs/ACCESSIBILITY.md` |
+| 3 | How it works | Done | harness `how-it-works-clicks`: all within 2 clicks, section under 450 words |
+| 4 | KIRO.md | Done | `tests/devpost-docs.test.ts` |
+| 5 | Prompt in reach, caption, tutorial | Done | harness `prompt-in-reach-*`, `try-chip`, `caption-3d`, `tutorial-after-green` all true in the Round 3 run |
 
-## 1. Devpost front door: README top section, `docs/PITCH.md`, `docs/DEVPOST.md`
+## 1. Fix the three things a judge sees in the first 10 seconds of the 3D page
 
-Findings: Round 2 Devpost reader's pass, wow factor held at 7.
+Findings: Round 3 polish 7 and accessibility 7.
 
-User value: most judges read the Devpost page and the README before they open the app. Today neither shows the product. A geek who reads 200 words and sees one image should know what CRYPT is, that it is safe, and where to click.
+User value: on the default 3D view the "How to play (manual)" button sits on top of the title of Plate I, and "Nights Without Possession" on the raid board is in tiny type. In the keyboard-only harness run, "Skip to the game input" is the second-to-last Tab stop, after the tutorial and install buttons, so it skips nothing.
 
-Effort: small (writing and two captured images).
+Effort: small (CSS and DOM order).
 
 Acceptance criteria:
-- `docs/PITCH.md` exists, about 200 words (between 180 and 220, checked by `wc -w`), in plain language. It covers: the problem (every app is a Frankenstein of strangers' code), what CRYPT does (a dependency tree becomes a creature you heal by playing a Z-machine game), the guarantee (no merge call, SEAL blocks grafts, a human lands every PR), the Kiro story in one sentence, and one command to try. No em dashes, no superlatives.
-- README: the first screen after the title holds the tagline, the live demo link, the `npx` line and one image slot. The image is a screenshot taken with `scripts/playtest/judge.mjs` (the bench with the plate, 1280x720, under 300 KB) committed to `docs/img/`. A GIF is a stretch goal: record it with the Recording mode button per the shot list in item 2, under 2 MB, with a text alternative. Until the image is committed the README says nothing about it (no broken image link).
-- The "Live demo" section moves above "Quickstart". A "How it works in 60 seconds" link points at item 3.
-- `docs/DEVPOST.md` follows the Devpost headings (Inspiration, What it does, How we built it with Kiro, Challenges, What we learned, What is next, Built with) in at most 60 lines. "What is next" and "Challenges" state what is not verified (no real GPU or audio test, no live Lighthouse score).
-- A search for the em dash character (U+2014) in `README.md`, `docs/PITCH.md` and `docs/DEVPOST.md` returns nothing.
+- "Skip to the game input" is the first Tab stop on `/` and `/?theatre=off`, checked by the `keyboard-only` scenario.
+- At 1280x720 on 3D, no DOM control overlaps the plate title text. The harness records the bounding boxes of the manual button and of the plate title region, and a screenshot is read by eye.
+- The "Nights Without Possession" line is at least 12 px at 1280x720 or is moved into the bench drawer.
+- The `.crypt-seal` reminder is out of scope here (see item 2).
 
-## 2. Refresh `docs/DEMO.md` with a 3 minute shot list
+## 2. Make the CLI first run end on a next step that works
 
-Findings: Round 2 Devpost reader's pass (DEMO.md is a runbook with no shot list).
+Findings: Round 3 CLI first run. `crypt raid fixtures/vulnerable-npm --offline` prints the plate and the opening of the story, then returns with no hint of what to type. `echo "GRAFT JQUERY" | crypt play` then answers `NO_FIX_AVAILABLE`, and `crypt play --advisories data/advisories` answers `ERROR`, because `play` does not remember the target or the advisories that `raid` used. The same command piped into `raid` writes the dry-run payload. A stale `.crypt-seal` in the working directory also seals a fresh raid; the output says so, but only after the plate.
 
-User value: the demo video is the most-viewed artefact. A timed shot list makes the recording repeatable and keeps the safety beats in.
+User value: the geek who runs the one command in the README and then tries `GRAFT JQUERY` in a second command sees a failure that looks like a product bug.
+
+Effort: medium (CLI wiring and one message).
+
+Acceptance criteria:
+- `crypt raid` ends with one line, "Next: type GRAFT JQUERY at the prompt" (naming the first limb), when it is run interactively. Non-interactive runs print the same line to stderr.
+- `crypt play` with no flags in the directory where `raid` ran grafts the first limb as `raid` does (it reads the target and advisory folder from the raid output), or states in one sentence which flag is missing. `NO_FIX_AVAILABLE` and `ERROR` each get a one-line reason.
+- If `.crypt-seal` exists when `raid` starts, the first output line says "The crypt is sealed (found .crypt-seal). Run 'crypt unseal' to lift it."
+- Tests cover the three cases. A test pins that nothing is written under `out/prs/` when the seal is present.
+
+## 3. Explain what looks like a bug: the `(at)` in owner names
+
+Findings: Round 3 CLI first run. The plate shows `@crypt-fixture/supply-chain`, the game text shows `(at)crypt-fixture/supply-chain`. `src/raise/sanitize.ts` does this on purpose (the Inform source cannot carry a raw `@`), but nothing says so, and a judge who "does not trust a number that disagrees with another number" will not trust two spellings of one owner either.
+
+User value: technical credibility. It turns a visible oddity into a visible design note.
 
 Effort: small.
 
 Acceptance criteria:
-- A section at the top of `docs/DEMO.md`, "Shot list (3:00)", with a table of time, what is on screen, what is said, and which command or button. It covers, in order: the landing (0:00 to 0:15), `npx ... raid ... --offline` in a terminal with the ranked list (0:15 to 0:45), `GRAFT JQUERY` and the dry-run payload (0:45 to 1:15), "Simulate CI: green" with the SIMULATED label in frame (1:15 to 1:40), `SEAL CRYPT` then `GRAFT LODASH` rejected and `cat crypt-audit.log` (1:40 to 2:10), the Kiro beat: `.kiro/specs/`, a hook run, the steering file (2:10 to 2:40), the live PR on `e-1305/crypt-demo` merged by a person (2:40 to 3:00).
-- Each beat names its fallback if a network or GPU step fails (the 2D page with `?theatre=off`, `--offline`).
-- The runbook (token, reset, live raid) stays below the shot list unchanged. The "0 axe violations" claim is either re-run and recorded in `docs/ACCESSIBILITY.md` or removed.
-- The shot list says that audio is off by default and that the video must show the dry-run label whenever a graft is on screen.
+- Either the game prints `@` for owner names (a test compiles a creature with an owner and reads the transcript), or the manual's "How it works" says in one sentence why the story text spells it `(at)`.
+- The choice is recorded in `docs/KIRO.md` or the manual, not only in a code comment.
 
-## 3. A one-screen "How it works" with links into `.kiro/`
+## 4. Evidence that only a person can record
 
-Findings: Round 2 discoverability table (Z-machine: fail, Kiro artefacts: fail).
+Findings: Round 3 Kiro story 7 and wow 7. The README has a screenshot but no motion, and `docs/KIRO.md` still says no hook has fired inside a Kiro session.
 
-User value: the Frankenstein judge wants to see the seams: a 1979 VM, the marker protocol, the failsafe, and the specs that drove it. It is the technical-credibility and Kiro-usage score in one page.
+User value: a 20 second GIF is the wow a reader gets without opening the page. One recorded hook run inside Kiro turns the strongest honest caveat into evidence.
 
-Effort: medium (one manual section or a new `how-it-works` page, linked from the landing).
+Effort: small for a human, impossible for this sandbox (no screen recorder, no Kiro session).
 
 Acceptance criteria:
-- The landing link "Built with Kiro: specs, steering and hooks" points to a section, "How it works", reachable in one click from `/` and from the bench drawer. The section fits in about 400 words and one diagram in text (the plate or an ASCII flow: lockfile, OSV and CISA KEV, creature.json, Inform 6, Z-machine story, `[[CRYPT ...]]` marker, watcher, Necromancer, PR, CI, human merge, reraise).
-- It states: why a Z-machine (one small file, runs anywhere, Infocom interpreters open the downloadable `.z8`); that only game-printed markers trigger anything, never typed text; the failsafe list (no merge call, SEAL, audit log, dry run by default); that a human merges.
-- It links to `.kiro/specs/`, `.kiro/steering/`, `.kiro/hooks/` and `.kiro/agents/` (the folders) and to three named files: `.kiro/steering/failsafe.md`, `.kiro/specs/necromancer/requirements.md` and `.kiro/hooks/failsafe-guard-on-save.json`. A test or build step checks that each linked repository path exists.
-- The manual and the page both say that the Pages site and the CLI share one creature file format, and which parts the page can do (rehearsal) and which only the CLI can do (real PR).
-- `scripts/playtest/judge.mjs` records the click path from `/` and asserts at most 2 clicks to each of: Z-machine, failsafe, human merge, specs, steering, hooks, agents.
-
-## 4. Tighten `docs/KIRO.md`
-
-Findings: Round 2 Kiro story 5 to 6, draft note and dense table.
-
-User value: judges score Kiro use. The evidence exists; it has to be quickest to find and plainly honest.
-
-Effort: small to medium (editing, no new facts).
-
-Acceptance criteria:
-- The "Fill this in as you go" line is gone. The first 15 lines say, in plain words: spec-first (what and how many), steering that binds (and the test that enforces it), hooks (how many, what each caught), agents (`.kiro/agents/inquisitor.json`, `necromancer.json`), and one thing Kiro changed about how the work was done, with a link to the commit or run.
-- A "Limits" paragraph states what is not shown: no hook has fired inside a Kiro session yet (only by hand), and which claims rest on tests rather than on a recorded session. This is moved, not removed.
-- The specs table keeps one row per spec with a link, but each Outcome cell is at most 30 words. Long text moves under the table.
-- Every `.kiro/` path named in the file exists (checked by a test or script), and the file is at most 220 lines or the extra lines are in an appendix section marked so.
-- The page's "Built with Kiro" link and the README both point to this file or to item 3, not to different places.
-
-## 5. Put the game prompt in reach, and make the 3D landing explain itself
-
-Findings: Round 2 polish 6 (input 1500 px down on desktop), clarity 7 (3D shows no pitch), tutorial text does not advance after green.
-
-User value: the one-click demo path is "type GRAFT JQUERY". If the prompt is below the plate, the demo is a scroll hunt, and a mobile visitor must scroll about 1900 px.
-
-Effort: medium (layout and one tutorial rule).
-
-Acceptance criteria:
-- On `?theatre=off` at 1280x720 and 390x780, the `#cmd` input is inside the first viewport after the tutorial is dismissed, and while the tutorial is open its box is no taller than 25% of the viewport on desktop. A harness check records `#cmd` top and bottom for both viewports and for the tutorial open and closed.
-- A one-line "Try: GRAFT JQUERY" chip next to the input (or a button that types it) works with the keyboard and announces the result in `#announcer`. It does not run a graft by itself; it only fills the box.
-- The 3D default view shows the title and the pitch sentence as a small caption on the first frame, hidden by Recording mode, and not overlapping the board or buttons (checked by the existing board-layout test extended to the caption).
-- After "Simulate CI: green" the tutorial moves to the next step, or a test explains why it does not. The tutorial text after green is covered by a harness assertion.
-- Page weight stays under 5 MB; reduced motion and high contrast keep the caption and the chip.
+- A GIF under 2 MB of "Simulate CI: green" and the SEAL rejection, committed to `docs/img/` with a text alternative, linked from README below the screenshot.
+- One hook run from a real Kiro session, with a captured log committed under `.kiro/` and the "Limits" paragraph in `docs/KIRO.md` updated to say what was and was not seen.
+- Until both exist the text says "not recorded". Nobody writes them as done.
 
 ## Not now
 
@@ -95,13 +74,3 @@ Acceptance criteria:
 - Real-GPU performance work and a Lighthouse score. Needs hardware or tooling this sandbox does not have. Re-check before the demo recording and state the result as measured or not verified.
 - A voiced or music-driven trailer. Sound is off by default and unverified here.
 - Anything that opens a live PR from the Pages site. The page is a rehearsal by design.
-
-## Round 2 status
-
-| # | Item | Status | Evidence |
-|---|---|---|---|
-| 1 | Devpost front door | Done. GIF not recorded (no recording in this sandbox) | `docs/PITCH.md`, README top, `docs/DEVPOST.md`, `docs/img/bench-3d.png` |
-| 2 | Shot list | Done. The axe claim was re-run | `docs/DEMO.md`, `docs/ACCESSIBILITY.md` |
-| 3 | How it works | Done | `docs/USER_MANUAL.md#how-it-works`, harness `how-it-works-clicks` |
-| 4 | KIRO.md | Done | `docs/KIRO.md`, `tests/devpost-docs.test.ts` |
-| 5 | Prompt in reach, caption, tutorial | Done. On a 390x780 phone `#cmd` is out of the first screen while the tutorial is open | harness `prompt-in-reach-*`, `try-chip`, `caption-3d`, `tutorial-after-green` |
