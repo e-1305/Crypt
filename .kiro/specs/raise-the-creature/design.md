@@ -6,7 +6,7 @@
 out/creature.json (from exhume)
    |  scripts/raise.ts (I/O: read creature, write files, run inform6)
    v
-src/raise/generate.ts   generateStory(creature) --> { source, limbs }
+src/raise/generate.ts   generate(creature) --> { inf, limbs }
    |                    (pure, no I/O)
    +--> out/creature.inf   Inform 6 source
    +--> out/limbs.json     { "<LIMBID>": { ecosystem, name, version } }
@@ -110,7 +110,7 @@ The intro prints `Crypt: N findings, M exorcised, K spawned` (plus `, U unresolv
 
 | Property | Rule |
 |---|---|
-| `generateStory` is deterministic and pure | R1 |
+| `generate` is deterministic and pure | R1 |
 | IDs are unique, match `[A-Z]{1,32}`, pass `parseCommand` | R3 |
 | every spawned limb has one object, no non-spawned limb has one | R2 |
 | sanitizer output has no specials, no control chars, length <= 80 | R6 |
