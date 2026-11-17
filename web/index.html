@@ -9,6 +9,8 @@
 </head>
 <body>
 <a class="skip" href="#cmd">Skip to the game input</a>
+<button id="sound-toggle" class="sound-toggle" type="button" aria-pressed="false">Sound: off</button>
+<button id="record-toggle" class="record-toggle" type="button" aria-pressed="false">Recording mode</button>
 <header class="top">
   <div>
     <h1>CRYPT</h1>
@@ -77,6 +79,15 @@
     <button id="raid-download" type="button" hidden>Download the raid card (PNG)</button>
   </div>
   <p class="muted">Type RAID in the game input to start as well.</p>
+</section>
+<section id="sim" class="pane sim" aria-labelledby="sim-h">
+  <h2 id="sim-h">Simulated CI</h2>
+  <p class="muted">Replays a dry-run graft for the first sick limb. No token, no network, nothing real changes.</p>
+  <div class="raid-actions">
+    <button id="sim-green" type="button">Simulate CI: green</button>
+    <button id="sim-red" type="button">Simulate CI: red</button>
+  </div>
+  <p id="sim-label" class="sim-label" hidden></p>
 </section>
 <div id="announcer" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
 <script src="vendor/zvm.min.js"></script>

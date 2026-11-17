@@ -46,6 +46,16 @@ button:hover, button[aria-pressed="true"] { background: var(--fg); color: #000; 
   95% { transform: translateX(-1px); }
   97% { transform: none; text-shadow: 2px 0 rgba(0, 255, 255, .6), -2px 0 rgba(255, 0, 80, .6); }
 }
+.plate .convulsing { display: inline-block; animation: convulse .5s linear 3; color: #ff4d4d; }
+.line.reject { color: #ff6a3d; }
+.sim-label { color: var(--hot); font-weight: bold; }
+@keyframes convulse {
+  0%, 100% { transform: none; }
+  20% { transform: translate(2px, -1px) skewX(6deg); }
+  40% { transform: translate(-2px, 1px) skewX(-6deg); }
+  60% { transform: translate(2px, 1px); }
+  80% { transform: translate(-1px, -1px); }
+}
 @keyframes healed {
   0% { color: #fff; text-shadow: 0 0 14px #fff; }
   100% { color: var(--fg); text-shadow: 0 0 5px rgba(51, 255, 51, .45); }
@@ -88,7 +98,7 @@ body.theatre .top, body.theatre .crt { position: absolute; width: 1px; height: 1
 #theatre-plain { position: fixed; right: 1rem; bottom: 1rem; z-index: 5; color: var(--fg); background: #000; border: 1px solid var(--dim); padding: .25rem .75rem; }
 
 /* Bench drawer (web/theatre/drawer.js): the A3 actions inside the 3D theatre. */
-#bench-drawer { position: fixed; right: 1rem; bottom: 3.25rem; z-index: 5; max-width: min(24rem, calc(100vw - 2rem)); color: var(--fg); background: #000; border: 1px solid var(--dim); padding: .25rem .75rem; }
+#bench-drawer { position: fixed; left: 1rem; bottom: 6rem; z-index: 5; max-width: min(24rem, calc(100vw - 2rem)); color: var(--fg); background: #000; border: 1px solid var(--dim); padding: .25rem .75rem; }
 #bench-drawer-body { padding: .5rem 0; }
 #bench-drawer h2 { margin: 0 0 .25rem; font-size: 1rem; }
 #bench-drawer input { width: 100%; box-sizing: border-box; background: transparent; border: 1px solid var(--dim); color: var(--fg); font: inherit; padding: .25rem; margin: .25rem 0; }
@@ -102,3 +112,26 @@ body.theatre .top, body.theatre .crt { position: absolute; width: 1px; height: 1
 .raid-actions button:disabled { opacity: .5; cursor: default; }
 body.theatre #raid { position: fixed; left: 1rem; bottom: 1rem; z-index: 5; margin: 0; padding: .5rem; background: rgba(0,0,0,.7); }
 body.theatre #raid > h2, body.theatre #raid > p, body.theatre .raid-readout { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* Simulated CI controls (web/heal.js). In 3D the buttons float bottom right; the label is drawn on the wall plate. */
+body.theatre #sim { position: fixed; right: 1rem; bottom: 3.5rem; z-index: 5; margin: 0; padding: .5rem; background: rgba(0,0,0,.7); }
+body.theatre #sim > h2, body.theatre #sim > p { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.sim { margin: 0 1rem 1rem; }
+
+/* Sound toggle (web/theatre/sound.js): visible in the 2D page and over the 3D bench. */
+.sound-toggle { position: fixed; top: .5rem; right: .5rem; z-index: 6; font: inherit; color: var(--fg); background: #000; border: 1px solid var(--dim); padding: .25rem .75rem; cursor: pointer; }
+.sound-toggle[aria-pressed="true"] { border-color: var(--fg); }
+.sound-toggle:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+body:not(.theatre) .sound-toggle { position: static; display: block; margin: .5rem 1rem 0 auto; }
+
+/* Title card (web/theatre/stage.js): 3D path only, 3 seconds, any key or click skips it. */
+#title-card { position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center; text-align: center; padding: 2rem;
+  background: #000; color: var(--fg); font-size: clamp(1.4rem, 4vw, 3rem); letter-spacing: .08em; text-shadow: 0 0 12px rgba(51, 255, 51, .6);
+  animation: card-out .6s ease-in 2.4s forwards; cursor: pointer; }
+@keyframes card-out { to { opacity: 0; } }
+
+/* Recording mode (web/theatre.js): hides the chrome, keeps the CRT and the plate. Escape or the hidden button reverses it. */
+.record-toggle { position: fixed; top: .5rem; left: .5rem; z-index: 6; font: inherit; font-size: .75rem; color: var(--dim); background: #000; border: 1px solid var(--dim); padding: .1rem .5rem; cursor: pointer; opacity: .6; }
+.record-toggle:focus-visible { opacity: 1; outline: 2px solid var(--fg); outline-offset: 2px; }
+body.record .top, body.record .events, body.record #theatre-plain, body.record #bench-drawer, body.record #raid, body.record #sim { display: none; }
+body.record .sound-toggle, body.record .record-toggle:not(:focus) { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
