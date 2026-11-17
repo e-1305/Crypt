@@ -36,7 +36,7 @@ export function applyHealed(creature: Record<string, unknown>, healed: HealedRef
   const limbs = (Array.isArray(creature.limbs) ? creature.limbs : []).map((l: Record<string, unknown>) => {
     const h = healed.find((x) => x.ecosystem === l.ecosystem && x.name === l.name && (x.from === undefined || x.from === l.version));
     if (!h) return l;
-    return { ...l, version: h.to, state: "Healthy", spawned: false, kev: false, vulns: [] };
+    return { ...l, version: h.to, state: "Healthy", healed: true, spawned: false, kev: false, vulns: [] };
   });
   const count = (f: (l: Record<string, unknown>) => boolean) => limbs.filter(f).length;
   const counts = {

@@ -158,6 +158,17 @@ describe("raise: story content (R2, R5, R6)", () => {
     expect(inf).toContain("Verb 'seal'");
   });
 
+  it("sets crypt_sealed on SEAL and answers GRAFT with the sealed line, keeping the marker", () => {
+    expect(inf).toContain("Global crypt_sealed = 0;");
+    const seal = inf.slice(inf.indexOf("[ SealSub;"), inf.indexOf('Include "Grammar"'));
+    expect(seal).toContain("crypt_sealed = 1;");
+    const graftSub = inf.slice(inf.indexOf("[ GraftSub;"), inf.indexOf("[ AssignSub;"));
+    expect(graftSub).toContain('print "[[CRYPT GRAFT ";');
+    expect(graftSub.indexOf("[[CRYPT GRAFT")).toBeLessThan(graftSub.indexOf("The crypt is sealed. No needle moves."));
+    expect(graftSub).toContain("The surgeon begins the graft.");
+    expect(inf.indexOf("Global crypt_sealed")).toBeLessThan(inf.indexOf("[ GraftSub;"));
+  });
+
   it("handles a creature with no spawned limbs", () => {
     const g = generate({ limbs: [] });
     expect(g.limbs).toEqual({});

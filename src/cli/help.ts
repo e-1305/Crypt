@@ -35,8 +35,13 @@ Options:
   --story <file>      play: story file (default out/creature.z8)
   --target <dir>      play, graft: checkout that the fix is written against (default .)
   --advisories <dir>  play, graft: advisory records for an offline run
-  --live              graft: open a real pull request. Needs GITHUB_TOKEN and --repo
-  --repo <owner/name> graft, inquisit, reraise: repository that receives pull requests
+  --live              raid, graft, inquisit, reraise: talk to GitHub for real. Needs GITHUB_TOKEN.
+                      raid --live opens a pull request through the GitHub API; a human lands it.
+  --timeout <seconds> raid, inquisit, reraise: how long to wait for the 'test' check (10 to 3600, default 600)
+  --repo <owner/name> graft, inquisit, reraise: repository that receives pull requests (default: the last raid target)
+  --sabotage          graft: DEMO ONLY. Adds a failing test to the pull request so CI goes red.
+                      Needs --live and --i-know-this-is-a-demo.
+  --i-know-this-is-a-demo  graft: confirms --sabotage is deliberate
   --dry-run           inquisit, reraise: touch nothing remote (the default without GITHUB_TOKEN)
   -h, --help          show this text
   -V, --version       show the version
@@ -46,7 +51,7 @@ ${codes}
 
 Environment:
   CRYPT_TOOLCHAIN_DIR  where the Inform 6 and dfrotz toolchain is built (default ~/.cache/crypt/toolchain)
-  GITHUB_TOKEN         needed only for graft --live
+  GITHUB_TOKEN         needed only for --live (fine-grained, limited to the target repository)
   CRYPT_DEBUG=1        print stack traces
 
 Try it: crypt raid fixtures/vulnerable-npm --offline

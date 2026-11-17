@@ -68,6 +68,7 @@
     "inquisitor": "tsx scripts/inquisitor.ts",
     "reraise": "tsx scripts/reraise.ts",
     "necromancer:check": "tsx scripts/check-necromancer.ts",
+    "live-raid:check": "tsx scripts/check-live-raid.ts",
     "plate": "tsx scripts/plate.ts",
     "census": "npm run feeds:update && tsx scripts/census/run.ts",
     "web": "tsx scripts/web.ts",

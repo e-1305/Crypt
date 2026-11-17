@@ -13,6 +13,7 @@ export type AgentOutcome =
   | "GRAFT_REJECTED"
   | "HEALED"
   | "NO_ACTION"
+  | "API_CALL"
   | "ERROR";
 
 export const REJECTED_TEXT = "The graft was rejected. The creature remains.";
@@ -128,6 +129,8 @@ export interface PrRecord {
   breaking: boolean;
   number: number;
   url: string;
+  headSha?: string;
+  sabotage?: boolean;
   [k: string]: unknown;
 }
 
