@@ -158,8 +158,3 @@ export function formatClock(ms: number): string {
   const m = Math.floor(total / 60), s = total % 60;
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
-
-/** True only for the exact typed command, ignoring surrounding spaces and case. */
-export function isRaidCommand(text: unknown): boolean {
-  return typeof text === "string" && text.trim().toUpperCase() === "RAID";
-}
