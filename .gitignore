@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.z5
+*.z8
+
+# Runtime artifacts
+out/
+transcript.txt
+crypt-audit.log
+.crypt-seal
+
+# Env / secrets
+.env
+.env.*
+
+# OS / editor
+.DS_Store
+*.log
+
+# IMPORTANT: never ignore .kiro/ (hackathon rule — disqualification risk)
+!.kiro/
