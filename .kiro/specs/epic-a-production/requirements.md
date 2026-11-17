@@ -25,6 +25,11 @@ Terms. **CI**: GitHub Actions on this repository. **Guard**: `scripts/ci/failsaf
 2. The workflow SHALL use `pages: write` and `id-token: write` only on the deploy job.
 3. The demo SHALL work offline from the deployed files. The CORS result for any fetch the player makes SHALL be recorded in `design.md`.
 4. The demo creature SHALL be built from `fixtures/vulnerable-npm`, never from a scanned repository.
+5. The page SHALL load the demo creature (plate and playable `.z8`) with no input, use relative URLs only, and open no connection except to its own files.
+6. GRAFT on the page SHALL show a prebuilt dry-run payload and send nothing. No network request on the page SHALL use a method other than GET.
+7. The page SHALL offer "Download the playable report", which downloads the loaded `.z8`, and the subtitle "The first vulnerability report you can play".
+8. The page SHALL offer a gallery of the 20 census creatures, listed alphabetically. A creature page SHALL show only that repository's own packages: no total, ranking or comparison across repositories, no owners and no names of people.
+9. Gallery data SHALL be committed snapshots (`web/gallery-data/`), so the Pages build uses no network.
 
 ## A4 npm packaging
 1. `npm pack --dry-run` SHALL list exactly the files in the `files` whitelist, and SHALL exclude `web/`, `.toolchain/` and `out/`.

@@ -18,6 +18,9 @@
 - [ ] A3.1 Demo creature built from the fixture
 - [ ] A3.2 Pages workflow (build, upload, deploy)
 - [ ] A3.3 CORS check recorded in `design.md`
+- [ ] A3.4 Gallery of the 20 census creatures (snapshots, alphabetical, aggregate-safe, blameless)
+- [ ] A3.5 Grafts show the dry-run payload; download button; subtitle
+- [ ] A3.6 `tests/site.test.ts` and README Live demo
 
 ## A4 npm packaging
 - [ ] A4.1 `npm pack --dry-run` matches the whitelist
