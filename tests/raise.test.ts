@@ -9,6 +9,7 @@ import { parseCommand } from "../src/bridge/grammar.js";
 import { parseGameOutput } from "../src/bridge/parse-output.js";
 import { generate, limbIds, type CreatureInput } from "../src/raise/generate.js";
 import { MAX_TEXT, sanitize } from "../src/raise/sanitize.js";
+import { EGGS } from "../src/raise/prose.js";
 
 const fixture = JSON.parse(
   JSON.stringify({
@@ -277,6 +278,39 @@ describe.skipIf(!haveToolchain)("raise: compiled story (end to end)", () => {
     expect(lines[i + 1]).toBe("Owner: (at)crypt-fixture/supply-chain");
     expect(lines[lines.indexOf("[[CRYPT ASSIGN LODASH]]") + 1]).toBe("Owner: unowned");
     expect(lines.filter((l) => l.startsWith("[[CRYPT"))).toHaveLength(2);
+  });
+
+  it("HELP and HINT work, HINT works after SEAL CRYPT, and neither prints a marker", () => {
+    const lines = play(fixture, ["HELP", "HINT", "EXAMINE JQUERY", "HINT", "SEAL CRYPT", "HINT", "GRAFT JQUERY"]);
+    expect(lines.some((l) => l.startsWith("Commands: EXAMINE"))).toBe(true);
+    expect(lines).toContain("Start with the top limb: EXAMINE JQUERY.");
+    expect(lines).toContain("The top limb is ready: GRAFT JQUERY.");
+    expect(lines).toContain("The crypt is sealed. Read on: EXAMINE JQUERY.");
+    expect(lines).toContain("The crypt is sealed. No needle moves.");
+    expect(lines.filter((l) => l.startsWith("[[CRYPT"))).toEqual(["[[CRYPT EXAMINE JQUERY]]", "[[CRYPT SEAL]]", "[[CRYPT GRAFT JQUERY]]"]);
+  });
+
+  it("easter eggs print text and never a marker", () => {
+    const eggs = ["XYZZY", "PLUGH", "HELLO", "SING", "SCREAM", "SLEEP", "WAIT", "XYZZY JQUERY"];
+    const lines = play(fixture, eggs);
+    for (const e of EGGS) expect(lines.join(" ").replace(/\s+/g, " ")).toContain(e.text);
+    expect(lines.some((l) => l.includes("[[CRYPT"))).toBe(false);
+  });
+
+  it("descriptions differ for Healthy, Rotting and Possessed", () => {
+    const mk = (state: string) => ({
+      limbs: [{ rank: 1, ecosystem: "npm", name: "lodash", version: "4.17.15", owner: "x", state, spawned: true, epss: 0.2, vulns: [] }],
+    });
+    const texts = ["Healthy", "Rotting", "Possessed"].map((s) => play(mk(s), ["EXAMINE LODASH"]).join("\n"));
+    expect(new Set(texts).size).toBe(3);
+    expect(texts[0]).toContain("is healed");
+    expect(texts[1]).toContain("is rotting");
+    expect(texts[2]).toContain("is possessed");
+  });
+
+  it("hostile package names with Inform specials still compile and play", () => {
+    const lines = play(creature, ["HINT", "EXAMINE " + ids[0]]);
+    expect(lines.some((l) => l.startsWith("Start with the top limb: EXAMINE"))).toBe(true);
   });
 });
 
