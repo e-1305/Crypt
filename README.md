@@ -19,8 +19,31 @@ Each command dispatches AI agents built with [Kiro](https://kiro.dev) that open 
 
 ```bash
 npm ci
+npx --no-install crypt raid fixtures/vulnerable-npm --offline   # or: npx --no-install crypt exhume <path-or-github-url>
+```
+
+Type `GRAFT JQUERY` at the game prompt: a dry-run fix payload lands in `out/prs/`. Type `SEAL CRYPT`, and every later graft is rejected.
+`crypt raid` builds the Inform 6 and dfrotz toolchain once into `~/.cache/crypt/toolchain` (override with `CRYPT_TOOLCHAIN_DIR`; needs git, make, a C compiler and network the first time).
+Run it from any directory: `out/`, `crypt-audit.log` and `.crypt-seal` are written to the current one.
+
+Always use `npx --no-install crypt` (or `npm run crypt --`). The names `crypt` and `crypt-cli` both exist on the npm registry as unrelated packages, and `--no-install` makes sure npx runs this checkout and never downloads one of them.
+`crypt --help` lists every command and flag. `exhume` of a GitHub URL shallow-clones it into a temporary directory, reads the lockfile and CODEOWNERS only, runs nothing from it, installs nothing, and removes the clone.
+
+| Exit code | Meaning |
+|---|---|
+| 0 | ok |
+| 1 | runtime failure |
+| 2 | usage error |
+| 3 | toolchain missing or failed to build |
+| 4 | target unreadable (clone failed, no manifest) |
+| 130 | interrupted |
+
+### More commands
+
+```bash
+npm ci
 npm run feeds:update                          # download CISA KEV and FIRST EPSS into data/feeds/
-npx crypt exhume <path-or-github-url>         # writes out/creature.json, prints totals
+npx --no-install crypt exhume <path-or-github-url>         # writes out/creature.json, prints totals
 # offline demo with the committed fixture (OSV answers cached, feeds snapshot from the fixture):
 npm run exhume -- fixtures/vulnerable-npm --feeds fixtures/vulnerable-npm/feeds --offline
 npm run raise -- out/creature.json            # writes out/creature.inf, out/limbs.json, out/creature.z8

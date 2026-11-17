@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
+import { spawnSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { creatureName, plateSummary, renderPlate } from "../src/render/plate.js";
 
 const limb = (rank: number, name: string, version: string, state: string, spawned: boolean) => ({
@@ -38,6 +42,27 @@ const many = (n: number, state = "Rotting") => ({
 describe("plate renderer", () => {
   it("matches the snapshot for the fixture creature", () => {
     expect(renderPlate(FIXTURE, { repo: "crypt-demo" })).toMatchSnapshot();
+  });
+
+  it("titles the plate from the creature's own repo, never the cwd (snapshot)", () => {
+    const text = renderPlate({ ...FIXTURE, repo: "vulnerable-npm-fixture" });
+    expect(text).toContain("THE CREATURE OF vulnerable-npm-fixture");
+    expect(text).toMatchSnapshot();
+  });
+
+  it("scripts/plate.ts prints the creature's repo from a differently named cwd", () => {
+    const cwd = join(mkdtempSync(join(tmpdir(), "crypt-")), "some-other-dir");
+    mkdirSync(cwd);
+    const file = join(cwd, "creature.json");
+    writeFileSync(file, JSON.stringify({ ...FIXTURE, repo: "vulnerable-npm-fixture" }));
+    const root = join(__dirname, "..");
+    const run = (...extra: string[]) =>
+      spawnSync(process.execPath, ["--import", join(root, "node_modules/tsx/dist/loader.mjs"), join(root, "scripts/plate.ts"), file, ...extra], { encoding: "utf8", cwd });
+    const r = run();
+    expect(r.status).toBe(0);
+    expect(r.stdout).toContain("THE CREATURE OF vulnerable-npm-fixture");
+    expect(r.stdout).not.toContain("some-other-dir");
+    expect(run("--repo", "override").stdout).toContain("THE CREATURE OF override");
   });
 
   it("has the required header, label and footer", () => {

@@ -37,3 +37,41 @@ LIMBS 7  POSSESSED 1  ROTTING 4  HEALED 0  HEALTHY 2
 ================================================================================
 "
 `;
+
+exports[`plate renderer > titles the plate from the creature's own repo, never the cwd (snapshot) 1`] = `
+"================================================================================
+PLATE I. — THE CREATURE OF vulnerable-npm-fixture
+The Creature of vulnerable-npm-fixture, called Cinder-16
+Fig. 1. Corpus ex dependentiis consutum.
+================================================================================
+
+                                    .-----.
+                                   / ##### \\
+                                   | ##### |<---------- jquery 3.4.1 — POSSESSED
+                                   \\ ##### /
+                                    \`-. .-'
+                              .------' '------.
+                             / .... |%%%%%| .... \\
+                            |  .... |%%%%%| ....  |
+                            |  .... |%%%%%| ....  |
+                             \\_...._|%%%%%|_...._/
+                                    |%%%%%|<----------- lodash 4.17.15 — ROTTING
+                                    |-----|
+                                    |.....|
+                                    |.....|
+                                    \`-+-+-'
+                                    |..|..|
+                                    |..|..|
+                                    |..|..|
+                                    |..|..|
+                                    |..|..|
+                                   _|..|..|_
+                                  (___)  (___)
+
+STITCHES: . . . . .
+# POSSESSED   % ROTTING   (clean lines) HEALED   . HEALTHY
+================================================================================
+LIMBS 7  POSSESSED 1  ROTTING 4  HEALED 0  HEALTHY 2
+================================================================================
+"
+`;

@@ -7,6 +7,7 @@ import { join } from "node:path";
 import { parseGameOutput } from "../src/bridge/parse-output.js";
 import { createWatcher, nodeFsOps } from "../src/bridge/watch.js";
 import { buildTranscript } from "./play.js";
+import { dfrotzPath } from "./toolchain-dir.js";
 
 const story = process.argv[2] ?? "out/creature.z8";
 const commands = ["EXAMINE JQUERY", "ASSIGN JQUERY", "GRAFT JQUERY", "SEAL CRYPT", "GRAFT LODASH"];
@@ -16,7 +17,7 @@ if (!existsSync(story)) {
   console.error(`raise check FAILED: ${story} not found (run npm run raise first)`);
   process.exit(1);
 }
-const r = spawnSync(".toolchain/frotz/dfrotz", ["-m", "-p", story], {
+const r = spawnSync(dfrotzPath(), ["-m", "-p", story], {
   input: commands.join("\n") + "\n",
   encoding: "utf8",
   timeout: 20000,

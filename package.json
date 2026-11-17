@@ -1,13 +1,27 @@
 {
-  "name": "crypt-transcript-bridge-spike",
-  "version": "0.0.0",
+  "name": "crypt-cli",
+  "version": "0.1.0",
   "private": true,
-  "description": "CRYPT spike: Z-machine transcript to graft request bridge",
+  "description": "CRYPT: your dependency tree as a Z-machine creature. One command (crypt raid) finds the rotting limbs and opens dry-run fix payloads.",
   "type": "module",
   "license": "MIT",
   "engines": {
     "node": ">=20"
   },
+  "bin": {
+    "crypt": "bin/crypt.mjs"
+  },
+  "files": [
+    "bin",
+    "scripts",
+    "src",
+    "game",
+    "fixtures/vulnerable-npm",
+    "data/cache/osv",
+    "README.md",
+    "LICENSE",
+    "docs/ATTRIBUTION.md"
+  ],
   "scripts": {
     "setup": "bash scripts/setup-tools.sh",
     "build:game": "bash scripts/setup-tools.sh && bash scripts/build-game.sh",
@@ -26,7 +40,8 @@
     "census": "npm run feeds:update && tsx scripts/census/run.ts",
     "web": "tsx scripts/web.ts",
     "mcp": "tsx scripts/mcp.ts",
-    "build:web": "tsc -p tsconfig.web.json"
+    "build:web": "tsc -p tsconfig.web.json",
+    "crypt": "node bin/crypt.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",
@@ -38,8 +53,5 @@
     "fast-check": "^4.10.2",
     "typescript": "^7.0.2",
     "vitest": "^5.1.0"
-  },
-  "bin": {
-    "crypt": "bin/crypt.mjs"
   }
 }

@@ -69,7 +69,7 @@ export function defaultCtx(cwd: string = process.cwd()): Ctx {
   };
 }
 
-export type Outcome = "OK" | "NO_ACTION" | "REQUEST_WRITTEN" | "SEALED" | "REJECTED_SEALED" | "REJECTED_UNKNOWN_LIMB" | "ERROR";
+export type Outcome = "OK" | "NO_ACTION" | "REQUEST_WRITTEN" | "SEALED" | "UNSEALED" | "REJECTED_SEALED" | "REJECTED_UNKNOWN_LIMB" | "ERROR";
 
 export interface Watcher {
   processLine(line: string): void;

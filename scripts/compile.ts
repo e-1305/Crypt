@@ -2,6 +2,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { generate } from "../src/raise/generate.js";
+import { includePath, inform6Path } from "./toolchain-dir.js";
 
 export function raiseCreature(input: string, outDir: string): void {
   let creature: unknown;
@@ -24,7 +25,7 @@ export function raiseCreature(input: string, outDir: string): void {
   writeFileSync(infPath, inf);
   const sorted = Object.fromEntries(Object.keys(limbs).sort().map((k) => [k, limbs[k]]));
   writeFileSync(`${outDir}/limbs.json`, JSON.stringify(sorted, null, 2) + "\n");
-  const r = spawnSync(".toolchain/Inform6/inform6", ["-v8", "+include_path=.toolchain/inc", infPath, z8Path], {
+  const r = spawnSync(inform6Path(), ["-v8", `+include_path=${includePath()}`, infPath, z8Path], {
     encoding: "utf8",
   });
   if (r.error || r.status !== 0 || !existsSync(z8Path)) {

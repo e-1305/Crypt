@@ -13,6 +13,7 @@ import { countLimbs, combineOsvAnswers, rankLimbs, scoreOf } from "../src/exhume
 import type { ExhumeFs, Limb, OsvVuln } from "../src/exhume/types.js";
 import { limbKey } from "../src/exhume/types.js";
 import { nodeFs } from "../scripts/node-fs.js";
+import { creatureRepoName, packageJsonName } from "../src/exhume/name.js";
 import { osvLookup, type Fetcher } from "../scripts/osv-client.js";
 
 function memFs(files: Record<string, string> = {}): ExhumeFs & { files: Map<string, string> } {
@@ -477,5 +478,43 @@ describe("CLI (scripts/exhume.ts)", () => {
     const r = cli(dir, "--offline", "--feeds", join(dir, "nofeeds"), "--cache", join(dir, "cache"), "--out", out);
     expect(r.status).toBe(0);
     expect(JSON.parse(readFileSync(out, "utf8")).feeds.kev.status).toBe("missing");
+  });
+});
+
+describe("creature repo name", () => {
+  const none = () => null;
+  it("takes the repo name from a GitHub URL, without .git", () => {
+    expect(creatureRepoName("https://github.com/e-1305/Crypt", none)).toBe("Crypt");
+    expect(creatureRepoName("https://github.com/e-1305/Crypt.git", none)).toBe("Crypt");
+    expect(creatureRepoName("https://github.com/e-1305/Crypt/", none)).toBe("Crypt");
+  });
+  it("takes the package.json name, stripping a scope", () => {
+    expect(creatureRepoName("/x/dir", () => "left-pad")).toBe("left-pad");
+    expect(creatureRepoName("/x/dir", () => "@scope/pkg")).toBe("pkg");
+  });
+  it("falls back to the directory name", () => {
+    expect(creatureRepoName("/x/some-dir", none)).toBe("some-dir");
+    expect(creatureRepoName("/x/some-dir", () => packageJsonName("not json"))).toBe("some-dir");
+    expect(creatureRepoName("/x/some-dir", () => packageJsonName('{"name":3}'))).toBe("some-dir");
+  });
+  it("writes repo after schemaVersion only when a name is given", async () => {
+    const repo = { read: (p: string) => (p === "package-lock.json" ? JSON.stringify({ lockfileVersion: 3, packages: { "node_modules/a": { version: "1.0.0" } } }) : null) };
+    const base = { repo, cacheFs: memFs(), cacheDir: "c", kev: null, epss: null };
+    const named = await buildCreature({ ...base, name: "demo" });
+    expect(Object.keys(named).slice(0, 2)).toEqual(["schemaVersion", "repo"]);
+    expect(named.repo).toBe("demo");
+    expect("repo" in (await buildCreature(base))).toBe(false);
+  });
+  it("exhume of fixtures/vulnerable-npm writes repo 'vulnerable-npm-fixture', whatever the cwd", () => {
+    const cwd = mkdtempSync(join(tmpdir(), "crypt-name-"));
+    const root = join(__dirname, "..");
+    const out = join(cwd, "c.json");
+    const r = spawnSync(
+      process.execPath,
+      ["--import", join(root, "node_modules/tsx/dist/loader.mjs"), join(root, "scripts/exhume.ts"), join(root, "fixtures/vulnerable-npm"), "--offline", "--feeds", join(root, "fixtures/vulnerable-npm/feeds"), "--cache", join(root, "data/cache/osv"), "--out", out],
+      { encoding: "utf8", cwd },
+    );
+    expect(r.status).toBe(0);
+    expect(JSON.parse(readFileSync(out, "utf8")).repo).toBe("vulnerable-npm-fixture");
   });
 });

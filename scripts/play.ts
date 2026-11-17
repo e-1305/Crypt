@@ -4,9 +4,9 @@
 // Those lines are a record only. The watcher triggers on marker lines the game prints (bridge-v2).
 import { spawnSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
+import { dfrotzPath } from "./toolchain-dir.js";
 
-const DFROTZ = ".toolchain/frotz/dfrotz";
-const STATUS_LINE = /^[>\s]*The Crypt\s+Score:.*$/;
+export const STATUS_LINE = /^[>\s]*The Crypt\s+Score:.*$/;
 
 export function buildTranscript(commands: string[], stdout: string): string {
   // Segment 0 is the intro. Segment k (1..n) is the output of command k (design.md L3, L5).
@@ -38,7 +38,7 @@ function main(): void {
   const commands = readFileSync(process.argv[3] ?? "game/session.txt", "utf8")
     .split("\n")
     .filter((l) => l !== "");
-  const r = spawnSync(DFROTZ, ["-m", "-p", story], {
+  const r = spawnSync(dfrotzPath(), ["-m", "-p", story], {
     input: commands.join("\n") + "\n",
     encoding: "utf8",
     timeout: 20000,

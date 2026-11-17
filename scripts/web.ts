@@ -3,7 +3,7 @@
 import { spawnSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
-import { basename, extname, join, resolve, sep } from "node:path";
+import { extname, join, resolve, sep } from "node:path";
 
 import { plateInput } from "../src/render/plate.js";
 
@@ -51,7 +51,6 @@ if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith
   if (existsSync(creaturePath)) {
     try {
       const c = plateInput(JSON.parse(readFileSync(creaturePath, "utf8")));
-      if (typeof c.repo !== "string") c.repo = basename(ROOT);
       writeFileSync(join(WEB, "game", "creature.json"), JSON.stringify(c));
     } catch (e) {
       console.error(`web: creature.json not copied: ${(e as Error).message}`);

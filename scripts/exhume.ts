@@ -1,25 +1,26 @@
 import { mkdirSync, writeFileSync } from "node:fs";
-import { dirname } from "node:path";
+import { dirname, isAbsolute, resolve } from "node:path";
 import { NoManifestError, buildCreature, serializeCreature, summarize } from "../src/exhume/creature.js";
 import { parseEpss, parseKev } from "../src/exhume/feeds.js";
 import { LockfileError } from "../src/exhume/lockfile.js";
 import { CODEOWNERS_LOCATIONS } from "../src/exhume/owners.js";
 import type { ExhumeFs } from "../src/exhume/types.js";
+import { creatureRepoName, packageJsonName } from "../src/exhume/name.js";
 import { nodeFs } from "./node-fs.js";
 import { osvLookup } from "./osv-client.js";
 
 const USAGE =
-  "usage: crypt exhume <path-or-github-url> [--out out/creature.json] [--feeds data/feeds] [--cache data/cache/osv] [--offline]";
+  "usage: crypt exhume <path-or-github-url> [--out out/creature.json] [--feeds data/feeds] [--cache data/cache/osv] [--offline] [--name repo]";
 
 function parseArgs(argv: string[]) {
-  const o = { target: "", out: "out/creature.json", feeds: "data/feeds", cache: "data/cache/osv", offline: false };
+  const o = { target: "", out: "out/creature.json", feeds: "data/feeds", cache: "data/cache/osv", offline: false, name: "" };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]!;
     if (a === "--offline") o.offline = true;
-    else if (a === "--out" || a === "--feeds" || a === "--cache") {
+    else if (a === "--out" || a === "--feeds" || a === "--cache" || a === "--name") {
       const v = argv[++i];
       if (!v) throw new Error(`${a} needs a value`);
-      o[a.slice(2) as "out" | "feeds" | "cache"] = v;
+      o[a.slice(2) as "out" | "feeds" | "cache" | "name"] = v;
     } else if (a.startsWith("--") || o.target) throw new Error(`unexpected argument ${a}`);
     else o.target = a;
   }
@@ -68,9 +69,12 @@ async function main(): Promise<void> {
   const epssText = feedFs.read("epss.csv");
   const kev = kevText === null ? null : parseKev(kevText);
   const epss = epssText === null ? null : parseEpss(epssText);
+  // The name comes from the scanned target (or --name when the CLI scans a temporary clone), never from the cwd.
+  const name = a.name || creatureRepoName(a.target, () => packageJsonName(gh ? null : nodeFs(a.target).read("package.json")), resolve(a.target));
   const creature = await buildCreature({
     repo,
-    cacheFs: nodeFs("."),
+    name,
+    cacheFs: nodeFs(isAbsolute(a.cache) ? "/" : "."), // an absolute --cache must not be re-rooted under the cwd
     cacheDir: a.cache,
     kev,
     epss,
