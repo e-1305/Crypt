@@ -1,5 +1,5 @@
 // npm run build:site [-- --out _site]: the static GitHub Pages site. Offline and deterministic: no network at build time.
-// Builds the demo creature from fixtures/vulnerable-npm (offline exhume, raise, dry-run grafts) and one creature per
+// Builds the demo creature (crypt-demo, owner @e-1305) from the committed snapshot fixtures/crypt-demo (offline exhume, raise, dry-run grafts) and one creature per
 // gallery snapshot in web/gallery-data/. Every URL the page uses is relative, so it works under /Crypt/.
 import { spawnSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
@@ -18,6 +18,8 @@ import { fixtureAdvisories } from "./osv-advisory.js";
 const ROOT = resolve(import.meta.dirname, "..");
 const WEB = join(ROOT, "web");
 const FIXTURE = join(ROOT, "fixtures", "vulnerable-npm");
+/** The committed snapshot of e-1305/crypt-demo at a pinned commit (SNAPSHOT.json records the SHA). */
+const DEMO = join(ROOT, "fixtures", "crypt-demo");
 
 function run(cmd: string, args: string[]): void {
   const r = spawnSync(cmd, args, { cwd: ROOT, stdio: "inherit" });
@@ -39,14 +41,14 @@ function emit(gameDir: string, id: string, work: string, payloads: (limbs: LimbR
   };
 }
 
-/** The real necromancer in dry-run mode over the fixture: the payloads are what `crypt raid --offline` writes. */
+/** The real necromancer in dry-run mode over the crypt-demo snapshot: the payloads are what `crypt raid --offline` writes. */
 async function demoPayloads(work: string, creaturePath: string, limbs: LimbRefs): Promise<Record<string, unknown>> {
   const dir = join(work, "demo-graft");
   const paths = { ...defaultPaths(dir), creaturePath };
   mkdirSync(join(dir, "out"), { recursive: true });
   writeFileSync(paths.limbsPath, JSON.stringify(limbs));
   const creature = JSON.parse(readFileSync(creaturePath, "utf8"));
-  // A fixed clock keeps the build byte-identical: the feed snapshot date of the fixture.
+  // A fixed clock keeps the build byte-identical: the feed snapshot date.
   const stamp = new Date(String(creature.feeds?.epss?.date ?? 0));
   const out: Record<string, unknown> = {};
   for (const id of Object.keys(limbs).sort()) {
@@ -57,7 +59,7 @@ async function demoPayloads(work: string, creaturePath: string, limbs: LimbRefs)
       io: nodeIo,
       client: dryRunClient(nodeIo, paths.prsDir, () => stamp),
       advisories: fixtureAdvisories(join(FIXTURE, "advisories")),
-      targetDir: FIXTURE,
+      targetDir: DEMO,
       now: () => stamp,
     };
     const r = await graft(ctx, req);
@@ -98,9 +100,9 @@ export async function buildSite(outDir: string): Promise<void> {
     );
     const gameDir = join(outDir, "game");
 
-    // Demo: exhume the fixture offline with its own feed snapshot.
+    // Demo: exhume the crypt-demo snapshot offline with the committed feed snapshot and OSV cache.
     const demoCreature = join(work, "demo-creature.json");
-    run("npx", ["tsx", "scripts/exhume.ts", "fixtures/vulnerable-npm", "--feeds", "fixtures/vulnerable-npm/feeds", "--offline", "--out", demoCreature]);
+    run("npx", ["tsx", "scripts/exhume.ts", "fixtures/crypt-demo", "--name", "crypt-demo", "--feeds", "fixtures/vulnerable-npm/feeds", "--offline", "--out", demoCreature]);
     await emit(gameDir, "demo", work, (limbs) => demoPayloads(work, demoCreature, limbs))(demoCreature);
 
     // Gallery: one creature per committed snapshot.

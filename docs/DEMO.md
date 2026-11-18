@@ -4,6 +4,8 @@ Part 1 is the live raid. Part 2 is the 3D bench. This is the exact order for the
 
 CRYPT never merges. It has no merge call, no merge endpoint and no merge command. The one merge in the demo is a human clicking a button.
 
+The landing page demo creature is `crypt-demo` (owner @e-1305), built offline by `npm run build:site` from the committed snapshot `fixtures/crypt-demo/` of that repository at commit `bd82e8eb00428db829ac002944f1be98f51c94df` (recorded in `fixtures/crypt-demo/SNAPSHOT.json`).
+
 ## Shot list (3:00)
 
 Audio is off by default. Keep it off for the take. Whenever a graft is on screen, the dry-run label ("Dry run. Nothing was sent." or SIMULATED CI) must be in frame. Never use a real token for the first five beats.

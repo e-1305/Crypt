@@ -45,6 +45,36 @@ jobs:
       - name: Offline raid
         run: bash scripts/ci/raid-offline.sh
 
+  visual-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Cache toolchain
+        uses: actions/cache@v4
+        with:
+          path: .toolchain
+          key: toolchain-${{ runner.os }}-${{ hashFiles('scripts/setup-tools.sh') }}
+      - run: npm run build:site
+      - run: npx playwright-core install --with-deps chromium
+      - name: Screenshots and layout checks at 390x844, 1280x800, 1440x900
+        run: npm run test:visual
+      - name: Lighthouse accessibility on the 2D page (>= 95)
+        run: npm run test:a11y
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: visual-qa
+          path: out/visual-qa
+          if-no-files-found: ignore
+
   failsafe-guard:
     runs-on: ubuntu-latest
     timeout-minutes: 5

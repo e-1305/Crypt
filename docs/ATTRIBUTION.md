@@ -19,9 +19,10 @@ and using third-party SDKs, APIs and data in line with their terms. Keep this fi
 | GitHub Pages actions (`actions/configure-pages@v5`, `actions/upload-pages-artifact@v3`, `actions/deploy-pages@v4`) | Tool (CI only) | `.github/workflows/pages.yml` publishes `_site/` to GitHub Pages | MIT | https://github.com/actions/deploy-pages |
 | Gallery snapshots (`web/gallery-data/`) | Data | Per-repository lists of packages needing attention, taken from the root lockfile or requirements of the 20 public projects in `docs/census/repos.md` at pinned commits, with OSV, KEV and EPSS data as above. No owners, no commit authors | Public package names and versions; source terms as in the OSV, KEV and EPSS rows | https://github.com/e-1305/Crypt/blob/main/docs/census/repos.md |
 | three.js (r169, `three.module.min.js`) | Code | 3D bench of the operating theatre; vendored unmodified as `web/vendor/three.module.min.js` (licence text in `web/vendor/THREE-LICENSE.txt`), loaded by dynamic import only on the 3D path (`web/theatre.js`). All scene geometry is built from primitives in code: no model, texture or audio files | MIT | https://github.com/mrdoob/three.js |
-| axe-core (dev-time) | Tool (dev-time only) | Approximates the Lighthouse accessibility audit inside Playwright because Lighthouse cannot launch Chrome in the build sandbox; not a project dependency and not committed | MPL-2.0 | https://github.com/dequelabs/axe-core |
+| axe-core (dev-time) | Tool (dev-time only) | Earlier dev-time cross-check of the accessibility audit inside Playwright; the gate itself is now Lighthouse (`npm run test:a11y`); not a project dependency and not committed | MPL-2.0 | https://github.com/dequelabs/axe-core |
 | Model Context Protocol TypeScript SDK (`@modelcontextprotocol/sdk` 1.32.2) | Code | Stdio MCP server and in-process test client in `src/mcp/` and `scripts/mcp.ts` | MIT | https://github.com/modelcontextprotocol/typescript-sdk |
 | npm registry metadata (lodash 4.17.21, lodash 4.18.0, jquery 3.5.0, handlebars 4.7.10, node-fetch 2.6.7) | Data (test fixtures) | `tests/fixtures/registry/*.json`: `name`, `version`, dependency maps and `dist.tarball`/`integrity`/`shasum` trimmed from `GET https://registry.npmjs.org/<name>/<version>`; used by offline live-raid tests | Package metadata as published by each package (MIT) | https://registry.npmjs.org |
+| e-1305/crypt-demo snapshot (`fixtures/crypt-demo/`) | Data | `package.json`, `package-lock.json` and `.github/CODEOWNERS` at commit `bd82e8eb00428db829ac002944f1be98f51c94df`, the source of the default demo creature on the site | Our own repository (MIT, see LICENSE) | https://github.com/e-1305/crypt-demo/tree/bd82e8eb00428db829ac002944f1be98f51c94df |
 | e-1305/crypt-demo (`package.json`, `package-lock.json`, `test/smoke.test.js`) | Data (test fixtures) | Copies in `tests/fixtures/demo/` of the demo patient files, used by offline live-raid tests | Our own repository (MIT, see LICENSE) | https://github.com/e-1305/crypt-demo |
 | zod (4.6.7) | Code | Input schemas for MCP tools (dependency of the SDK, used directly in `src/mcp/server.ts`) | MIT | https://github.com/colinhacks/zod |
 | tsx (4.23.15) | Tool (runtime dependency) | Runs the TypeScript scripts and the CLI without a build step (`bin/crypt.mjs`, `npm run` scripts) | MIT | https://github.com/privatenumber/tsx |
@@ -29,7 +30,8 @@ and using third-party SDKs, APIs and data in line with their terms. Keep this fi
 | vitest (5.1.0) | Tool (dev-time only) | Test runner for `tests/**/*.test.ts` | MIT | https://github.com/vitest-dev/vitest |
 | fast-check (4.10.2) | Tool (dev-time only) | Property-based tests for the failsafe and blameless invariants | MIT | https://github.com/dubzzz/fast-check |
 | @types/node (26.6.6) | Types (dev-time only) | Node.js type declarations for `tsc --noEmit` | MIT | https://github.com/DefinitelyTyped/DefinitelyTyped |
-| playwright-core (not installed by this repo) | Tool (dev-time only) | `scripts/playtest/judge.mjs` loads it from `PLAYWRIGHT_CORE` to drive headless Chromium for the playtest log. Not in `package.json`, not in the npm package, not in the site | Apache-2.0 | https://github.com/microsoft/playwright |
+| playwright-core | Tool (devDependency, dev and CI only) | `scripts/ci/visual-qa.mjs` drives headless Chromium at 390x844, 1280x800 and 1440x900 for the visual QA check (`npm run test:visual`); `scripts/playtest/judge.mjs` uses it too. Not in the npm package (`scripts/ci` is excluded), not in the site | Apache-2.0 | https://github.com/microsoft/playwright |
+| Lighthouse | Tool (run with `npx`, dev and CI only) | `scripts/ci/lighthouse-a11y.sh` checks the accessibility score of the 2D page is at least 0.95. Not a dependency, not in the npm package or the site | Apache-2.0 | https://github.com/GoogleChrome/lighthouse |
 | Sound effects (`web/theatre/sound.js`) | Code | CRT hum, heartbeat, thunder and needle clicks are original, synthesised at runtime with WebAudio oscillators and filtered noise by project code. No audio files, samples or third-party sound assets are used. Sound is off on load and starts only after the user clicks the toggle | MIT (project license) | n/a |
 
 ## Images
@@ -37,6 +39,7 @@ and using third-party SDKs, APIs and data in line with their terms. Keep this fi
 | File | Source | Terms |
 |---|---|---|
 | `docs/img/bench-3d.png` | Original. A screenshot of this project's own 3D bench, taken with `scripts/playtest/judge.mjs` (headless Chromium, software WebGL, 1280x720). All geometry and text are ours | Same licence as the repository (MIT) |
+| `docs/img/visual-qa-*.png` | Original. Screenshots of this project's own page at 390x844, 1280x800 and 1440x900, written by `VISUAL_QA_COPY_DOCS=1 npm run test:visual` (headless Chromium; a plain run writes only to `out/visual-qa`). The 1440x900 shot shows the 3D bench | Same licence as the repository (MIT) |
 
 ## Ideas and references (not code)
 

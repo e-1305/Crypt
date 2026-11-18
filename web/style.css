@@ -230,3 +230,37 @@ body.theatre .theatre-caption { display: block; position: fixed; z-index: 4; bot
   font-size: .8rem; line-height: 1.25; color: var(--fg); background: rgba(0, 0, 0, .65); border: 1px solid var(--dim); pointer-events: none; }
 body.record .theatre-caption { display: none; }
 @media (max-width: 900px) { body.theatre .theatre-caption { bottom: 8rem; left: .5rem; right: .5rem; } }
+
+/* Visual QA 1 (issue #56). The side stats get their own row so they never share a line with the health bar. */
+.raid-readout #raid-nights { display: block; clear: both; margin: .5rem 0; }
+.raid-hud p:has(> .raid-health) { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.raid-hud #raid-vitals { display: block; margin: .25rem 0 .5rem; }
+.game .muted { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .75rem; margin-bottom: .5rem; }
+.view-3d-row { margin: .5rem 1rem 0; }
+.view-3d-row:has(#view-3d[hidden]) { display: none; }
+.view-3d { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; padding: .25rem .75rem; color: var(--fg); border: 1px solid var(--fg); }
+
+/* Small screens (below 900px): the 2D page is one column in the order plate, game, raid, sim, then the rest.
+   Nothing is fixed or absolute over a control, every control is at least 44px, and the page never scrolls sideways. */
+@media (max-width: 899px) {
+  html, body { overflow-x: hidden; }
+  body:not(.theatre) { display: flex; flex-direction: column; }
+  body:not(.theatre) > * { order: 0; min-width: 0; max-width: 100%; }
+  body:not(.theatre) .crt, body:not(.theatre) .left, body:not(.theatre) .side { display: contents; }
+  body:not(.theatre) .crt { box-shadow: none; }
+  body:not(.theatre) .plate-pane { order: 1; margin: .5rem 1rem 0; }
+  body:not(.theatre) .game { order: 2; margin: 1rem 1rem 0; }
+  body:not(.theatre) #raid { order: 3; margin: 1rem; }
+  body:not(.theatre) #sim { order: 4; margin: 0 1rem 1rem; }
+  body:not(.theatre) .side > .pane { order: 5; margin: 0 1rem 1rem; }
+  body:not(.theatre)::after { display: none; }
+  body:not(.theatre) .plate { overflow-x: auto; max-width: 100%; }
+  body:not(.theatre) .transcript { height: 12rem; }
+  button, .raid-actions button, .manual-link, .view-3d, .gallery-list a, .skip:focus, input, .pane a, .built-with a { min-height: 44px; min-width: 44px; }
+  .pane a, .built-with a, .gallery-list a { display: inline-flex; align-items: center; }
+  .gallery-list a { line-height: 1.2; }
+  #lookup, .input-row input { min-height: 44px; }
+  .install code { display: block; }
+  .raid-health, .raid-pressure { width: min(12rem, 100%); }
+  .toolbar { flex-wrap: wrap; }
+}

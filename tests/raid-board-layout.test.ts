@@ -45,6 +45,9 @@ describe("raid board layout", () => {
       expect(b.x + b.w, b.text).toBeLessThanOrEqual(640 - 16);
       expect(b.y + b.h, b.text).toBeLessThanOrEqual(420 - 16);
     }
+    // The nights stat has its own band: at least 8 px clear of every other box above it.
+    const nights = boxes.find((b) => b.text.startsWith("Nights"))!;
+    for (const b of boxes) if (b !== nights && b.y < nights.y) expect(nights.y - (b.y + b.h), b.text).toBeGreaterThanOrEqual(8);
     for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) expect(overlap(boxes[i]!, boxes[j]!), `${boxes[i]!.text} / ${boxes[j]!.text}`).toBe(false);
   });
 });
