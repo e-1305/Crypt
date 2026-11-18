@@ -307,6 +307,16 @@ async function checkCard(browser, vp) {
   const funnel = await page.textContent("#paste-funnel");
   if (!/^\d+ findings -> \d+ exorcised as noise -> \d+ monsters$/.test(funnel || "")) fail(tag, `unexpected funnel text: ${funnel}`);
   if (!/no owner/.test((await page.textContent("#paste-funnel-owners")) || "")) fail(tag, "owners line should say no owner for a repo without CODEOWNERS");
+  // Exorcised list (R1 fix 9): one click opens it, every row has a reason, the limits line is visible.
+  await page.click("#paste-exorcised-toggle");
+  const exo = await page.evaluate(() => ({ rows: [...document.querySelectorAll("#paste-exorcised-list li")].map((l) => l.textContent), limit: document.getElementById("paste-limits")?.textContent || "", scrollW: document.documentElement.scrollWidth - document.documentElement.clientWidth }));
+  if (exo.rows.some((t) => !/: .{5,}/.test(t))) fail(tag, "an exorcised row has no reason");
+  if (!exo.limit.startsWith("Lockfile only.")) fail(tag, "the lockfile-only line is missing");
+  if (vp.w < 900 && exo.scrollW > 0) fail(tag, `exorcised list overflows by ${exo.scrollW}px`);
+  mkdirSync(outDir, { recursive: true });
+  await page.locator("#paste-exorcised").scrollIntoViewIfNeeded();
+  await page.screenshot({ path: join(outDir, `exorcised-${vp.w}x${vp.h}.png`) });
+  if (process.env.VISUAL_QA_COPY_DOCS === "1") { mkdirSync(imgDir, { recursive: true }); copyFileSync(join(outDir, `exorcised-${vp.w}x${vp.h}.png`), join(imgDir, `exorcised-${vp.w}x${vp.h}.png`)); }
   const paste = present(tag, await boxes(page, CARD_PASTE));
   for (const [a, b] of findOverlaps(paste)) fail(tag, `card controls overlap: ${a} and ${b}`);
   if (vp.w < 900) for (const b of paste) if (b.height < TAP_MIN) fail(tag, `tap target ${b.name} is ${Math.round(b.height)}px tall, under ${TAP_MIN}`);
