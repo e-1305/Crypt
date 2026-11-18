@@ -16,6 +16,11 @@
 ## Link check
 Relative markdown links, backticked repository paths and backticked tokens that are exactly 7 to 40 hex characters, and `/commit/<sha>` URLs, that `git cat-file -e` resolves. External URLs are not fetched. Globs and templates are skipped.
 
+## Stats blocks in DEVPOST.md and BLOG.md
+- `renderDocStats` builds one sentence fragment without a date, so an unchanged repository gives an unchanged file. `spliceDocStats` replaces the text between every `<!-- stats:start -->` / `<!-- stats:end -->` pair and returns null when there is no pair or one marker is unmatched.
+- `--write` refreshes the blocks after KIRO.md. With `--no-tests`, or when vitest totals are unavailable, it leaves the blocks alone rather than guess.
+- `--check-docs` runs vitest for `numTotalTests`, renders the expected text and compares it with each file. It runs in `kiro-docs`, which has no toolchain, so only the toolchain-independent total is compared.
+
 ## Threats
 - Stale numbers: the block is regenerated and a test compares stable items.
 - Shallow CI clone: the CI job uses `fetch-depth: 0`.

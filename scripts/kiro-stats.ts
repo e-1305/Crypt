@@ -3,7 +3,8 @@
  *
  *   tsx scripts/kiro-stats.ts                 print every count with its source
  *   tsx scripts/kiro-stats.ts --markdown      print the numbers block
- *   tsx scripts/kiro-stats.ts --write         replace the numbers block in docs/KIRO.md
+ *   tsx scripts/kiro-stats.ts --write         replace the numbers block in docs/KIRO.md and the stats blocks in docs/DEVPOST.md and docs/BLOG.md
+ *   tsx scripts/kiro-stats.ts --check-docs    fail when the <!-- stats:start --> blocks in docs/DEVPOST.md and docs/BLOG.md are stale (runs vitest)
  *   tsx scripts/kiro-stats.ts --no-tests      skip the vitest run (tests show "unavailable")
  *   tsx scripts/kiro-stats.ts --check-links   verify links, repository paths and commit SHAs named in docs/KIRO.md
  *
@@ -91,14 +92,14 @@ export function countPrs(root: string): number[] | null {
   return out === null ? null : prNumbers(out.split("\n"));
 }
 
-export function vitestTotals(root: string): { passed: number; skipped: number; files: number } | null {
+export function vitestTotals(root: string): { passed: number; skipped: number; total: number; files: number } | null {
   const dir = mkdtempSync(join(tmpdir(), "kiro-stats-"));
   const file = join(dir, "vitest.json");
   try {
     // vitest exits 1 when a test fails; the report is still written, and the counts are still true.
     spawnSync("npx", ["vitest", "run", "--reporter=json", `--outputFile=${file}`], { cwd: root, stdio: "ignore", env: { ...process.env, CI: "1" } });
-    const j = JSON.parse(readFileSync(file, "utf8")) as { numPassedTests: number; numPendingTests: number; testResults: unknown[] };
-    return { passed: j.numPassedTests, skipped: j.numPendingTests, files: j.testResults.length };
+    const j = JSON.parse(readFileSync(file, "utf8")) as { numPassedTests: number; numPendingTests: number; numTotalTests: number; testResults: unknown[] };
+    return { passed: j.numPassedTests, skipped: j.numPendingTests, total: j.numTotalTests, files: j.testResults.length };
   } catch {
     return null;
   } finally {
@@ -137,6 +138,49 @@ export function splice(doc: string, block: string): string {
   return `${doc.replace(/\n*$/, "\n")}\n${block}\n`;
 }
 
+export const DOC_BEGIN = "<!-- stats:start -->";
+export const DOC_END = "<!-- stats:end -->";
+/** Documents that carry a stats block between DOC_BEGIN and DOC_END. */
+export const STATS_DOCS = ["docs/DEVPOST.md", "docs/BLOG.md"];
+
+/**
+ * The text between the markers. It has no date and no skipped count: skips depend on whether the Z-machine toolchain is built,
+ * so "passed plus skipped" is the one test figure that is the same on every machine.
+ */
+export function renderDocStats(root: string, totalTests: number): string {
+  return `${countSpecs(root).length} specs in \`.kiro/specs/\`, ${countSteering(root)} steering files, ${countHooks(root)} hooks, ${countAgents(root)} custom agents and ${totalTests} tests (passed plus skipped, \`npx vitest run\`; counted by \`npm run kiro:stats\`)`;
+}
+
+/** Replace the text between every marker pair. Returns null when there is no pair or a marker is unmatched. */
+export function spliceDocStats(doc: string, text: string): string | null {
+  let out = "";
+  let at = 0;
+  let pairs = 0;
+  for (;;) {
+    const a = doc.indexOf(DOC_BEGIN, at);
+    if (a < 0) break;
+    const b = doc.indexOf(DOC_END, a + DOC_BEGIN.length);
+    if (b < 0) return null;
+    out += doc.slice(at, a + DOC_BEGIN.length) + text;
+    at = b;
+    pairs++;
+  }
+  if (pairs === 0 || doc.indexOf(DOC_END, at + DOC_END.length) >= 0) return null;
+  return out + doc.slice(at);
+}
+
+/** One problem per document whose block is missing or differs from `text`. */
+export function checkDocStats(root: string, text: string, read: (rel: string) => string = (rel) => readFileSync(join(root, rel), "utf8")): string[] {
+  const problems: string[] = [];
+  for (const rel of STATS_DOCS) {
+    const doc = read(rel);
+    const fresh = spliceDocStats(doc, text);
+    if (fresh === null) problems.push(`${rel}: missing ${DOC_BEGIN} ... ${DOC_END} markers`);
+    else if (fresh !== doc) problems.push(`${rel}: stats block is stale, run npm run kiro:stats -- --write`);
+  }
+  return problems;
+}
+
 /** Problems found in a markdown document: missing relative links, missing repository paths, unresolved commit SHAs. */
 export function checkLinks(root: string, md: string, shaExists: (sha: string) => boolean): string[] {
   const problems: string[] = [];
@@ -168,6 +212,17 @@ function main(argv: string[]): number {
     console.log(problems.length ? `kiro-stats: ${problems.length} problem(s)` : "kiro-stats: links ok");
     return problems.length ? 1 : 0;
   }
+  if (argv.includes("--check-docs")) {
+    const t = vitestTotals(root);
+    if (!t) {
+      console.error("kiro-stats: vitest totals unavailable, cannot check the stats blocks");
+      return 1;
+    }
+    const problems = checkDocStats(root, renderDocStats(root, t.total));
+    for (const p of problems) console.error(`kiro-stats: ${p}`);
+    console.log(problems.length ? `kiro-stats: ${problems.length} stale or broken block(s)` : "kiro-stats: stats blocks ok");
+    return problems.length ? 1 : 0;
+  }
   const date = new Date().toISOString().slice(0, 10);
   const stats = collect(root, !argv.includes("--no-tests"));
   if (argv.includes("--write")) {
@@ -175,6 +230,21 @@ function main(argv: string[]): number {
     const after = splice(before, render(stats, date));
     if (after !== before) writeFileSync(docPath, after);
     console.log(after === before ? "kiro-stats: docs/KIRO.md already up to date" : "kiro-stats: updated docs/KIRO.md");
+    const total = argv.includes("--no-tests") ? undefined : vitestTotals(root)?.total;
+    if (total === undefined) {
+      console.log("kiro-stats: test total unavailable or skipped, left the stats blocks in DEVPOST.md and BLOG.md as they are");
+      return 0;
+    }
+    const text = renderDocStats(root, total);
+    for (const rel of STATS_DOCS) {
+      const doc = readFileSync(join(root, rel), "utf8");
+      const next = spliceDocStats(doc, text);
+      if (next === null) console.error(`kiro-stats: ${rel}: missing stats markers`);
+      else if (next !== doc) {
+        writeFileSync(join(root, rel), next);
+        console.log(`kiro-stats: updated ${rel}`);
+      }
+    }
     return 0;
   }
   if (argv.includes("--markdown")) {

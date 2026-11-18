@@ -21,3 +21,11 @@ Terms. **Numbers block** is the text between `<!-- kiro-stats:begin -->` and `<!
 1. `npm run kiro:stats -- --check-links` SHALL fail when a relative link, a `.kiro/`, `src/`, `tests/` or `scripts/` path, or a commit SHA named in `docs/KIRO.md` does not resolve.
 2. A test SHALL fail when the numbers block disagrees with the current count of stable items.
 3. CI SHALL run both on a full-depth checkout.
+
+## K4 Stats blocks in the submission copy
+Added by the CTO note on issue #65. `docs/DEVPOST.md` and `docs/BLOG.md` carried hand-typed counts that went stale (612 tests and 15 spec folders against 623 and 17 on main).
+1. Each of `docs/DEVPOST.md` and `docs/BLOG.md` SHALL hold its counts only between `<!-- stats:start -->` and `<!-- stats:end -->`. A document MAY hold several pairs; each gets the same text.
+2. `npm run kiro:stats -- --write` SHALL rewrite the text between every marker pair in those two files with: specs, steering files, hooks, custom agents and total tests. It SHALL NOT touch text outside the markers, so the census numbers stay as written.
+3. The test figure SHALL be passed plus skipped. Skips depend on whether the Z-machine toolchain is built, so a passed-only or skipped figure differs between a laptop and CI.
+4. `npm run kiro:stats -- --check-docs` SHALL exit 1 when a block differs from the current counts, or when a file has no marker pair or an unmatched marker, and SHALL name the file and the fix.
+5. CI job `kiro-docs` SHALL run `--check-docs`.

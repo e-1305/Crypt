@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { END, checkLinks, countAgents, countHooks, countPropertyTests, countSpecs, countSteering, countTasks, prNumbers, render, splice } from "../scripts/kiro-stats.js";
+import { END, STATS_DOCS, checkDocStats, checkLinks, renderDocStats, spliceDocStats, countAgents, countHooks, countPropertyTests, countSpecs, countSteering, countTasks, prNumbers, render, splice } from "../scripts/kiro-stats.js";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const tmp = mkdtempSync(join(tmpdir(), "kiro-stats-test-"));
@@ -85,5 +85,46 @@ describe("docs/KIRO.md numbers block", () => {
     const once = splice(doc, b);
     expect(splice(once, b)).toBe(once);
     expect(once).toContain("Generated 2000-01-01");
+  });
+});
+
+describe("stats blocks in DEVPOST.md and BLOG.md", () => {
+  it("spliceDocStats rewrites every marker pair, leaves other text alone and is idempotent", () => {
+    const doc = "a 248 -> 3 <!-- stats:start -->old<!-- stats:end --> b <!-- stats:start -->older<!-- stats:end --> c 95.2%";
+    const once = spliceDocStats(doc, "NEW");
+    expect(once).toBe("a 248 -> 3 <!-- stats:start -->NEW<!-- stats:end --> b <!-- stats:start -->NEW<!-- stats:end --> c 95.2%");
+    expect(spliceDocStats(once!, "NEW")).toBe(once);
+  });
+
+  it("spliceDocStats returns null without a pair or with an unmatched marker", () => {
+    expect(spliceDocStats("no markers", "x")).toBeNull();
+    expect(spliceDocStats("<!-- stats:start --> never closed", "x")).toBeNull();
+    expect(spliceDocStats("stray <!-- stats:end -->", "x")).toBeNull();
+  });
+
+  it("renderDocStats reflects the counts of the root it is given", () => {
+    expect(renderDocStats(tmp, 7)).toContain("3 specs");
+    expect(renderDocStats(tmp, 7)).toContain("2 hooks");
+    expect(renderDocStats(tmp, 7)).toContain("7 tests");
+  });
+
+  it("checkDocStats flags a stale block and a missing marker, and passes a fresh one", () => {
+    const fresh = "x <!-- stats:start -->T<!-- stats:end -->";
+    const docs: Record<string, string> = { "docs/DEVPOST.md": fresh, "docs/BLOG.md": "x <!-- stats:start -->old<!-- stats:end -->" };
+    expect(checkDocStats(tmp, "T", (rel) => docs[rel]!)).toEqual([expect.stringContaining("docs/BLOG.md: stats block is stale")]);
+    docs["docs/BLOG.md"] = "no markers";
+    expect(checkDocStats(tmp, "T", (rel) => docs[rel]!)).toEqual([expect.stringContaining("docs/BLOG.md: missing")]);
+    docs["docs/BLOG.md"] = fresh;
+    expect(checkDocStats(tmp, "T", (rel) => docs[rel]!)).toEqual([]);
+  });
+
+  it("the committed blocks carry the current stable counts", () => {
+    for (const rel of STATS_DOCS) {
+      const doc = readFileSync(join(ROOT, rel), "utf8");
+      const texts = [...doc.matchAll(/<!-- stats:start -->(.*?)<!-- stats:end -->/g)].map((m) => m[1]!);
+      expect(texts.length, rel).toBeGreaterThan(0);
+      const expected = renderDocStats(ROOT, 0).replace(/ and \d+ tests.*$/, "");
+      for (const t of texts) expect(t, rel).toContain(expected);
+    }
   });
 });

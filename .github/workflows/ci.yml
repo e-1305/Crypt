@@ -99,6 +99,8 @@ jobs:
         run: npm run kiro:stats -- --no-tests
       - name: Links, repository paths and commit SHAs in docs/KIRO.md
         run: npm run kiro:stats -- --check-links
+      - name: Stats blocks in docs/DEVPOST.md and docs/BLOG.md are current
+        run: npm run kiro:stats -- --check-docs
 
   pack-install:
     runs-on: ubuntu-latest
