@@ -23,6 +23,22 @@
   <button id="hc-toggle" type="button" aria-pressed="false" aria-describedby="hc-help">High-contrast reader mode</button>
   <span id="hc-help" class="sr-only">Plain text, no effects, game events announced.</span>
 </header>
+<section id="hero" class="hero" aria-label="What CRYPT solves">
+  <p id="hero-problem" class="hero-line"><strong>The problem:</strong> 248 findings across 20 popular repos, 95.2% were noise, and 84.7% of dependencies had no owner.</p>
+  <p id="hero-what" class="hero-line"><strong>CRYPT:</strong> finds the few vulnerable dependencies that matter, names an owner from CODEOWNERS, opens one fix PR, and a human merges.</p>
+  <p id="hero-proof" class="hero-line"><strong>Proof:</strong> <a id="hero-proof-link" href="https://github.com/e-1305/crypt-demo/pull/1" target="_blank" rel="noopener" aria-label="Merged fix pull request, opens in a new tab">lodash 4.17.15 to 4.18.1, CI green, merged by a human</a>.</p>
+  <p class="hero-actions">
+    <a id="hero-watch" class="hero-cta" href="?judge=1">Watch it run (60 s)</a>
+    <a id="hero-play" class="hero-cta" href="#cmd">Play the creature</a>
+    <button id="hero-scan" class="hero-cta" type="button" aria-controls="lookup">Scan your repo</button>
+  </p>
+  <ol id="hero-steps" class="hero-steps" aria-label="How it works">
+    <li><b>Exhume</b> (scan)</li>
+    <li><b>Graft</b> (fix PR)</li>
+    <li><b>Human merges</b></li>
+    <li><b>Reraise</b> (healed)</li>
+  </ol>
+</section>
 <section id="paste" class="paste" aria-label="Paste your GitHub repo">
   <button id="paste-open" class="primary" type="button" aria-expanded="false" aria-controls="paste-form">Paste your GitHub repo</button>
   <form id="paste-form" class="paste-form" autocomplete="off" hidden>

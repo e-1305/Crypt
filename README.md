@@ -3,8 +3,11 @@
 # CRYPT
 ### Don't abandon your creature.
 
-> Every app is a Frankenstein, stitched from strangers' code.
-> CRYPT finds the rotting limbs, names a surgeon, and proves the fix.
+**The problem:** 248 findings across 20 popular repos, 95.2% were noise, and 84.7% of dependencies had no owner ([census](docs/census/RESULTS.md)).
+
+**CRYPT:** finds the few vulnerable dependencies that matter, names an owner from CODEOWNERS, opens one fix PR, and a human merges.
+
+**Proof:** [lodash 4.17.15 to 4.18.1, CI green, merged by a human](https://github.com/e-1305/crypt-demo/pull/1).
 
 **Zork that patches your code, and can never break it.**
 
