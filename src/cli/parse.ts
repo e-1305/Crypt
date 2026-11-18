@@ -128,6 +128,15 @@ export function parseCli(argv: readonly string[], env: Record<string, string | u
     }
     if (demo && !sabotage) throw new UsageError("--i-know-this-is-a-demo only goes with --sabotage. Remove it, or add --sabotage and --live.");
     if (flags.live === true) needsToken("--live");
+    if (typeof flags.target === "string" && parseGithubUrl(flags.target)) {
+      const t = parseGithubUrl(flags.target)!;
+      if (flags.live !== true) throw new UsageError("--target with a GitHub URL needs --live. Without --live, pass a local checkout.");
+      if (typeof flags.repo === "string" && flags.repo.toLowerCase() !== `${t.owner}/${t.repo}`.toLowerCase()) {
+        throw new UsageError("--target and --repo name different repositories. Pass one of them.");
+      }
+    } else if (typeof flags.target === "string" && looksRemote(flags.target)) {
+      throw new UsageError(`'${flags.target.slice(0, 60)}' is not a GitHub repository URL. Use ${GITHUB_BASE}/<owner>/<repo> or a local path.`);
+    }
   }
   if ((command === "inquisit" || command === "reraise") && flags.live === true) needsToken("--live");
   if (command === "raid" && flags.live === true) {
