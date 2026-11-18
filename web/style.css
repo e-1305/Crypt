@@ -356,3 +356,13 @@ body.record .judge-skip, body.record .judge-replay { display: none; }
 }
 @keyframes judge-draw { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
 @keyframes judge-slide { from { transform: translateX(110%); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* Share card panel (D3) */
+.card-panel { margin: .5rem 0; }
+.card-toggle { display: inline-flex; align-items: center; gap: .5rem; min-height: 44px; }
+.card-toggle input { width: 24px; height: 24px; }
+.card-canvas { display: block; width: 100%; max-width: 600px; height: auto; aspect-ratio: 1200 / 627; border: 1px solid var(--dim); margin: .5rem 0; }
+.card-actions { display: flex; gap: .75rem; flex-wrap: wrap; margin: .5rem 0; }
+.card-actions button { font: inherit; color: var(--fg); background: #000; border: 1px solid var(--dim); padding: .35rem .75rem; cursor: pointer; min-height: 44px; }
+.card-text { overflow-wrap: anywhere; }
+.raid-share[hidden] { display: none; }

@@ -105,6 +105,7 @@ export async function buildSite(outDir: string): Promise<void> {
     cpSync(join(WEB, "vendor"), join(outDir, "vendor"), { recursive: true });
     cpSync(join(WEB, "js"), join(outDir, "js"), { recursive: true });
     cpSync(join(WEB, "theatre"), join(outDir, "theatre"), { recursive: true });
+    cpSync(join(WEB, "card"), join(outDir, "card"), { recursive: true });
     cpSync(join(WEB, "fonts"), join(outDir, "fonts"), { recursive: true });
     writeFileSync(join(outDir, ".nojekyll"), "");
     writeFileSync(join(outDir, "feeds.json"), feedSnapshotText());
