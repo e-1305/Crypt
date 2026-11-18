@@ -14,6 +14,7 @@ import { graft } from "../../src/necromancer/index.js";
 import { fixtureAdvisories, osvAdvisories } from "../osv-advisory.js";
 import { preflightedClients, resolveRepo } from "./live.js";
 import { readRaidContext } from "./context.js";
+import { alertsCommand } from "./alerts.js";
 import { autopsyCommand } from "./autopsy.js";
 import { gazetteCommand } from "./gazette.js";
 import { graveyardCommand } from "./graveyard.js";
@@ -90,6 +91,8 @@ async function run(argv: string[]): Promise<number> {
       return raidCommand(p);
     case "autopsy":
       return autopsyCommand(p);
+    case "alerts":
+      return alertsCommand(p);
     case "gazette":
       return gazetteCommand(p);
     case "graveyard":

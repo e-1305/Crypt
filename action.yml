@@ -25,6 +25,10 @@ inputs:
     description: Demo only, with graft. Adds a failing test so CI goes red.
     required: false
     default: "false"
+  alerts:
+    description: "none (default) or issues: report mode prints the GitHub issues crypt alerts --format issues would open, one per KEV limb (dry-run, no token)."
+    required: false
+    default: none
 runs:
   using: composite
   steps:
@@ -44,6 +48,7 @@ runs:
         INPUT_SABOTAGE: ${{ inputs.sabotage }}
         INPUT_TOKEN: ${{ inputs.token }}
         INPUT_PATH: ${{ inputs.path }}
+        INPUT_ALERTS: ${{ inputs.alerts }}
       run: |
         ws="$(cd "$GITHUB_WORKSPACE" && pwd -P)"
         target="$(cd "$ws/$INPUT_PATH" 2>/dev/null && pwd -P)" || { echo "::error::path '$INPUT_PATH' not found in the workspace"; exit 2; }

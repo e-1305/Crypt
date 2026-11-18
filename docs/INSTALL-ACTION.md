@@ -29,6 +29,11 @@ Any error or unknown state fails the step with a FAILED summary, never a green "
 | `token` | none | Fine-grained token, `graft` only |
 | `limb` | `LODASH` | `LODASH` or `JQUERY`, `graft` only |
 | `sabotage` | `false` | Demo only, `graft` only |
+| `alerts` | `none` | `none` or `issues`. With `issues`, report mode adds the dry-run output of `crypt alerts --format issues` to the job summary |
+
+## Alerts
+
+`crypt alerts --format issues` prints one issue per Possessed (KEV) limb, titled `[CRYPT] KEV: <pkg> <version>`, with the CVEs, the owner team from CODEOWNERS, the 48 hour SLA and the graft command. Add `--live --repo owner/name` (with `GITHUB_TOKEN`, same preflight as live graft) to open them: at most 5 per run, and never a second issue with the same open title.
 
 ## Graft mode (opt-in)
 
