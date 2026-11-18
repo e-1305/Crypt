@@ -16,7 +16,7 @@ const at = (needle: string) => {
 
 describe("index.html above the fold", () => {
   it("puts the title, subtitle, pitch and the one primary button before the game", () => {
-    const order = ['<h1>CRYPT</h1>', 'class="subtitle"', 'id="pitch"', 'id="paste-open"', '<main class="crt">'].map(at);
+    const order = ['<h1>CRYPT</h1>', 'class="subtitle"', 'id="pitch"', 'id="paste-url"', '<main class="crt">'].map(at);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
     expect(html).toContain("npx @e-1305/crypt raid &lt;path-or-github-url&gt;");
     expect(html).toContain("Built with Kiro");

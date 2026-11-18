@@ -293,6 +293,12 @@ body.record .theatre-caption { display: none; }
 .primary:hover { background: #000; color: var(--fg); }
 .paste-form { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin: .5rem 0; }
 .paste-form[hidden] { display: none; }
+.paste-form label { font-size: 1.15rem; font-weight: bold; }
+.paste-form .paste-hint { flex: 1 1 100%; margin: 0; }
+.paste-funnel { font-size: 1.15rem; font-weight: bold; margin: .5rem 0; }
+.paste-share-row { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin: .5rem 0; }
+.paste-share-row button { min-height: 44px; }
+.paste-share-row code { overflow-wrap: anywhere; }
 .paste-form label { flex: 1 1 100%; }
 .paste-form input { flex: 1 1 20rem; min-height: 44px; background: transparent; border: 1px solid var(--dim); color: var(--fg); font: inherit; padding: .25rem; }
 .paste-form button { min-height: 44px; }
@@ -327,6 +333,13 @@ body.theatre .paste { position: fixed; top: .5rem; left: 50%; transform: transla
 body.theatre .paste .muted { font-size: .8rem; }
 body.theatre .paste-form { margin: .25rem 0 0; }
 body.theatre #paste-status:empty { display: none; }
+/* The 3D bench and the judge demo keep the scan form to one compact row; the label stays for screen readers. */
+body.theatre .paste-form { flex-wrap: nowrap; }
+body.theatre .paste-form input { flex: 1 1 auto; min-width: 0; }
+body.theatre .paste-form label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+body.theatre .paste-hint, body.judge-running .paste-hint { display: none; }
+body.theatre .paste-form .primary { font-size: 1rem; padding: .25rem .75rem; white-space: nowrap; }
+body.theatre .judge-counter:not(.judge-counter-inline) { top: 5rem; }
 body.theatre .seal-badge { top: 4.5rem; }
 body.hc .primary { background: #fff; color: #000; border-color: #fff; }
 @media (max-width: 899px) {
@@ -381,6 +394,8 @@ body.record .judge-skip, body.record .judge-replay { display: none; }
 .import-drop:focus-within, .import select:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
 .import select { min-height: 44px; background: transparent; color: var(--fg); border: 1px solid var(--dim); font: inherit; }
 @media (prefers-reduced-motion: no-preference) { .import-drop { transition: border-color .15s; } }
+.paste-chip { min-height: 44px; background: transparent; border: 1px solid var(--dim); color: var(--fg); font: inherit; padding: 0 .75rem; cursor: pointer; }
+.paste-source { font-weight: bold; margin: .25rem 0; }
 
 /* Hero (issue #120): the problem, what CRYPT does, proof and three next actions, compact so the game stays above the fold. */
 .hero { margin: .25rem 1rem 0; padding: .4rem .75rem; border: 1px solid var(--dim); }
@@ -409,3 +424,12 @@ body.theatre .top { position: fixed; left: 1rem; top: .5rem; z-index: 6; width: 
 body.theatre .intro { flex: none; }
 body.theatre .top h1 { margin: 0; padding: .25rem .5rem; background: rgba(0, 0, 0, .85); }
 body.theatre.drawer-open .top { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); }
+
+/* Scan input under the hero: keep it compact on phones so the game input stays within reach (issue #123). */
+@media (max-width: 899px) {
+  .paste { margin: .25rem .5rem; }
+  .paste-form { gap: .25rem; margin: .25rem 0; }
+  .paste-form label { font-size: 1rem; }
+  .paste-form .paste-hint { font-size: .8rem; }
+  .paste-form input { flex: 1 1 10rem; min-width: 0; }
+}

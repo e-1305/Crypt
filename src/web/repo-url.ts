@@ -28,3 +28,13 @@ export function parseRepoUrl(input: unknown): RepoRef | null {
 export function repoSlug(ref: RepoRef): string {
   return `${ref.owner}__${ref.repo}`.toLowerCase();
 }
+
+/** The ?repo= value of a shared link: exactly "owner/name", nothing else (no path, no host, no dots-only name). */
+export function repoFromQuery(value: unknown): RepoRef | null {
+  if (typeof value !== "string" || value.length > 140) return null;
+  const parts = value.split("/");
+  if (parts.length !== 2) return null;
+  const [owner, repo] = parts as [string, string];
+  if (!OWNER.test(owner) || !REPO.test(repo) || repo === "." || repo === ".." || repo.endsWith(".git")) return null;
+  return { owner, repo };
+}
