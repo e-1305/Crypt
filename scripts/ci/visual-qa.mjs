@@ -725,6 +725,20 @@ async function checkHero(browser, vp) {
     const hero = (await boxes(page, ["#hero"]))[0];
     if (vp.w === 390 && hero && hero.height > vp.h * 0.55) fail(tag, `the hero is ${Math.round(hero.height)}px tall, over 55% of the ${vp.h}px viewport`);
     if (vp.w === 390 && (!cmd || cmd.y > vp.h * 3)) fail(tag, `the game input is ${Math.round(cmd?.y ?? -1)}px down`);
+    if (vp.w === 390 && cmd) {
+      // The hero may push the game input at most one screen down: measure the input with the hero hidden, then shown.
+      const without = await page.evaluate(() => { const h = document.getElementById("hero"); const old = h.style.display; h.style.display = "none"; const y = document.getElementById("cmd").getBoundingClientRect().y + scrollY; h.style.display = old; return y; });
+      const push = cmd.y - without;
+      console.log(`     [${tag}] game input at ${Math.round(without)}px without the hero, ${Math.round(cmd.y)}px with it (hero pushes ${Math.round(push)}px of ${vp.h}px)`);
+      if (push > vp.h) fail(tag, `the hero pushes the game input ${Math.round(push)}px down, more than one screen (${vp.h}px)`);
+    }
+    if (vp.w === 1280 && theatre) {
+      // Default view at 1280x800 is the 3D bench: the canvas fills the first screen and the hero must stay a small overlay on it.
+      const canvas = (await boxes(page, ["#theatre-canvas"]))[0];
+      const hero1280 = (await boxes(page, ["#hero"]))[0];
+      if (!canvas || canvas.y > 1 || canvas.height < vp.h - 1) fail(tag, `the 3D bench canvas does not fill the first screen`);
+      if (hero1280 && hero1280.height > vp.h * 0.3) fail(tag, `the hero is ${Math.round(hero1280.height)}px tall over the 3D bench, over 30% of the ${vp.h}px viewport`);
+    }
   }
   if (process.env.VISUAL_QA_COPY_DOCS === "1" && [1440, 390].includes(vp.w)) {
     mkdirSync(imgDir, { recursive: true });
