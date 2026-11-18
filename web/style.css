@@ -311,6 +311,10 @@ body.record .theatre-caption { display: none; }
 .paste-result h2, .paste-result h3 { margin: .75rem 0 .25rem; }
 .paste-result .plate { overflow-x: auto; max-width: 100%; }
 .paste-limbs, .paste-owners { margin: .25rem 0; padding-left: 1.5rem; overflow-wrap: anywhere; }
+.paste-sla { display: inline-block; border: 1px solid var(--dim); padding: 0 .4rem; margin-left: .25rem; white-space: nowrap; }
+.paste-export-row { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin: .5rem 0; }
+.paste-export-row button { min-height: 44px; }
+.paste-export-label { overflow-wrap: anywhere; }
 .paste-payload { border-left: 2px solid var(--dim); padding-left: .75rem; margin: .5rem 0; }
 .paste-payload-title { font-weight: bold; margin: .1rem 0; }
 .paste-payload-label { color: var(--warn); margin: .1rem 0; overflow-wrap: anywhere; }
