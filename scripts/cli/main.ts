@@ -9,6 +9,7 @@ import { CliError, EXIT, exitCodeFor } from "../../src/cli/exit.js";
 import { helpText, versionText } from "../../src/cli/help.js";
 import { parseCli, type Parsed } from "../../src/cli/parse.js";
 import { dryRunClient } from "../../src/github/client.js";
+import { parseGithubUrl } from "../../src/cli/url.js";
 import { graft } from "../../src/necromancer/index.js";
 import { fixtureAdvisories, osvAdvisories } from "../osv-advisory.js";
 import { preflightedClients, resolveRepo } from "./live.js";
@@ -30,7 +31,11 @@ async function graftCommand(p: Parsed): Promise<number> {
   const now = () => new Date();
   const live = p.flags.live === true;
   const sabotage = p.flags.sabotage === true;
-  const lc = live ? await preflightedClients(resolveRepo(p.flags, cwd), process.env.GITHUB_TOKEN ?? "", cwd) : null;
+  // --target may be a GitHub URL in live mode: it names the repository. The preflight below still runs.
+  const targetUrl = typeof p.flags.target === "string" ? parseGithubUrl(p.flags.target) : null;
+  const urlRepo = targetUrl ? `${targetUrl.owner}/${targetUrl.repo}` : null;
+  const flags = urlRepo && typeof p.flags.repo !== "string" ? { ...p.flags, repo: urlRepo } : p.flags;
+  const lc = live ? await preflightedClients(resolveRepo(flags, cwd), process.env.GITHUB_TOKEN ?? "", cwd) : null;
   const client = lc ? lc.client : dryRunClient(nodeIo, paths.prsDir, now);
   const tmp = mkdtempSync(join(tmpdir(), "crypt-graft-"));
   try {
@@ -41,7 +46,7 @@ async function graftCommand(p: Parsed): Promise<number> {
       io: nodeIo,
       client,
       advisories: advisoriesFor(p.flags.advisories),
-      targetDir: resolve(typeof p.flags.target === "string" ? p.flags.target : "."),
+      targetDir: resolve(typeof p.flags.target === "string" && !targetUrl ? p.flags.target : "."),
       now,
       registry: lc?.registry,
       sabotage,

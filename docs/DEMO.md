@@ -53,6 +53,26 @@ Notes:
 - The token is only ever sent in an `Authorization` header. It is not written to the audit log, the output or any file.
 - Revoke the token after the demo (Settings, Developer settings, Fine-grained tokens, Delete).
 
+## Run the live raid from a phone
+
+The workflow `.github/workflows/live-raid.yml` runs the live raid on GitHub, so no token sits on a laptop. The token is the repository secret `CRYPT_DEMO_TOKEN`. It reaches only the one step that runs `crypt`, the workflow itself has `contents: read`, and the workflow cannot merge. The live preflight still runs: a token that sees any repository besides `e-1305/crypt-demo` is refused.
+
+Trust note: anyone who can dispatch a workflow on a branch of this repository runs that branch's code with the secret, and the secret can write to `crypt-demo`. That is how repository secrets work, so only give dispatch rights to people you trust.
+
+1. Create the fine-grained token in the GitHub web UI on the phone, with the steps in "Create the token" above (only `crypt-demo`, Contents read and write, Pull requests read and write, Checks read).
+2. In this repository open **Settings**, **Secrets and variables**, **Actions**, **New repository secret**. Name it `CRYPT_DEMO_TOKEN` and paste the token.
+3. In the GitHub app open this repository, **Actions**, **live-raid**, **Run workflow**. Choose `mode` graft and `limb` LODASH.
+4. When the run ends, open its summary. It shows the limb, the versions, and the pull request link. Open the link on `crypt-demo`, wait for the `test` check to turn green, and **merge it yourself** in the GitHub app. This is the human merge. To see the verdict in the summary first, run the workflow with `mode` inquisit.
+5. Run workflow again with `mode` reraise. The summary shows the plate with LODASH HEALED. The plate text, `creature.json` and the `.z8` story are attached to the run as the artifact `live-raid-reraise`.
+6. The sabotage beat: run workflow with `mode` graft, `limb` JQUERY and `sabotage` on. The pull request carries a failing test, so `test` goes red, and the summary says SABOTAGE. Run workflow with `mode` inquisit and `limb` JQUERY: the summary shows the rejection. Close that pull request on GitHub (do not merge it) and delete its branch.
+
+Notes:
+
+- One run at a time (concurrency group `live-raid`). A run takes a few minutes the first time, while the toolchain is built and cached.
+- The later runs find the pull request that `graft` opened through a small cache of `out/`. If the cache has expired, run `graft` again.
+- Run the workflow with the same limb and the same mode as the beat you are filming. `sabotage` is only valid with `graft`.
+- Locally the same graft is `npx --no-install crypt graft LODASH --live --target https://github.com/e-1305/crypt-demo`, after `crypt exhume` and `crypt raise` of that URL.
+
 ## Reset between takes
 
 ```bash

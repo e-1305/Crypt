@@ -43,7 +43,7 @@ Options:
   --format <kind>     gazette: slack or teams (default: from --webhook-env, else slack)
   --sample            autopsy, gazette: use built-in sample data (needs no raid)
   --story <file>      play: story file (default out/creature.z8)
-  --target <dir>      play, graft: checkout that the fix is written against (default .)
+  --target <dir>      play, graft: checkout that the fix is written against (default .); graft --live also takes a GitHub URL
   --advisories <dir>  play, graft: advisory records for an offline run
   --live              raid, graft, inquisit, reraise: talk to GitHub for real. Needs GITHUB_TOKEN.
                       raid --live opens a pull request through the GitHub API; a human lands it.
