@@ -17,6 +17,7 @@
     <h1>CRYPT</h1>
     <p class="subtitle">The first vulnerability report you can play</p>
     <p class="pitch" id="pitch">Each vulnerable dependency is a limb on a creature, and you heal it by typing GRAFT, which writes a fix pull request for a human to review and land.</p>
+    <p class="proof-line" id="proof-line">Proof: a real fix PR, green CI, a human merge. <a href="#proof">See the chain</a></p>
   </div>
   <a class="manual-link" id="manual-link" href="manual.html" target="_blank" rel="noopener" aria-label="How to play (manual), opens in a new tab">How to play (manual)</a>
   <nav class="views" id="views-nav" aria-label="Views">
@@ -118,6 +119,7 @@
   </section>
   <section id="sim" class="pane sim" aria-labelledby="sim-h">
     <h2 id="sim-h">Simulated CI</h2>
+    <p class="rehearsal" id="sim-rehearsal"><strong>Rehearsal (nothing leaves this page)</strong> <a href="#proof">See the real run</a></p>
     <p class="muted">Replays a dry-run graft for the first sick limb. No token, no network, nothing real changes.</p>
     <div class="raid-actions">
       <button id="sim-green" type="button">Simulate CI: green</button>
@@ -180,11 +182,25 @@
     </section>
     <section class="pane" aria-labelledby="payload-h">
       <h2 id="payload-h">Dry-run PR payload</h2>
+      <p class="rehearsal" id="payload-rehearsal"><strong>Rehearsal (nothing leaves this page)</strong> <a href="#proof">See the real run</a></p>
       <p id="payload-note" class="muted">Grafts here are rehearsals. GRAFT a limb to read the pull request it would open. Nothing leaves this page.</p>
       <pre id="payload" class="payload" tabindex="0"></pre>
     </section>
   </aside>
 </main>
+<section id="proof" class="pane proof" aria-labelledby="proof-h">
+  <h2 id="proof-h">Proof: the real run</h2>
+  <p class="muted">On 2026-11-18 CRYPT opened a real fix PR on e-1305/crypt-demo. Each step links to the real GitHub page.</p>
+  <ol class="proof-list">
+    <li><strong>Found:</strong> jquery 3.4.1 Possessed (in CISA KEV), lodash 4.17.15 Rotting. Live raid summaries: <a href="https://github.com/e-1305/Crypt/actions/runs/44369138370">run 1</a>, <a href="https://github.com/e-1305/Crypt/actions/runs/44374815473">run 2</a>.</li>
+    <li><strong>Fix PR opened by CRYPT:</strong> <a href="https://github.com/e-1305/crypt-demo/pull/1">crypt-demo PR #1</a>, lodash 4.17.15 to 4.18.1, one dependency.</li>
+    <li><strong>CI green:</strong> the <code>test</code> check on <a href="https://github.com/e-1305/crypt-demo/actions/runs/44369232555/job/135031172852">PR #1</a>.</li>
+    <li><strong>Merged by a human:</strong> <a href="https://github.com/e-1305/crypt-demo/pull/1">PR #1 merged</a> with the Merge button. CRYPT has no merge call.</li>
+    <li><strong>Re-raised:</strong> lodash HEALED in the <a href="https://github.com/e-1305/Crypt/actions/runs/44373819785">reraise run</a>.</li>
+    <li><strong>Counter-proof:</strong> <a href="https://github.com/e-1305/crypt-demo/pull/2">PR #2 [DEMO SABOTAGE]</a> jquery, <a href="https://github.com/e-1305/crypt-demo/actions/runs/44374944193/job/135051477584">CI red</a>, <a href="https://github.com/e-1305/Crypt/actions/runs/44375794960">GRAFT_REJECTED</a>, closed unmerged.</li>
+  </ol>
+  <p><a href="https://github.com/e-1305/Crypt/blob/main/docs/PROOF.md">Read the full chain in docs/PROOF.md</a></p>
+</section>
 <button id="judge-skip" class="judge-skip" type="button" hidden>Skip demo (Esc)</button>
 <div id="announcer" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
 <script src="vendor/zvm.min.js"></script>

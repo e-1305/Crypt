@@ -274,6 +274,9 @@ body.record .theatre-caption { display: none; }
   body:not(.theatre) #raid { order: 3; margin: 1rem; }
   body:not(.theatre) #sim { order: 4; margin: 0 1rem 1rem; }
   body:not(.theatre) .side > .pane { order: 5; margin: 0 1rem 1rem; }
+  body:not(.theatre) #proof { order: 6; margin: 0 1rem 1rem; }
+  /* The hero already carries the proof line on small screens; the header copy would push the game down. */
+  body:not(.theatre) #proof-line { display: none; }
   body:not(.theatre)::after { display: none; }
   body:not(.theatre) .plate { overflow-x: auto; max-width: 100%; }
   body:not(.theatre) .transcript { height: 12rem; }
@@ -397,6 +400,13 @@ body.record .judge-skip, body.record .judge-replay { display: none; }
 .paste-chip { min-height: 44px; background: transparent; border: 1px solid var(--dim); color: var(--fg); font: inherit; padding: 0 .75rem; cursor: pointer; }
 .paste-source { font-weight: bold; margin: .25rem 0; }
 
+.proof-line { margin: .25rem 0 0; }
+.rehearsal { margin: 0 0 .5rem; }
+.proof { margin: 1rem; }
+.proof-list { margin: .5rem 0; padding-left: 1.5rem; overflow-wrap: anywhere; }
+.proof-list li { margin: .35rem 0; }
+.proof a, .proof-line a, .rehearsal a { color: var(--fg); text-decoration: underline; }
+.pane.proof a, .pane.proof-line a { display: inline; min-height: 0; min-width: 0; padding: .6rem 0; }
 /* Hero (issue #120): the problem, what CRYPT does, proof and three next actions, compact so the game stays above the fold. */
 .hero { margin: .25rem 1rem 0; padding: .4rem .75rem; border: 1px solid var(--dim); }
 .hero-line { margin: .15rem 0; max-width: 70rem; }
