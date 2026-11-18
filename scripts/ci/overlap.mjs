@@ -17,3 +17,13 @@ export function findOverlaps(boxes, tol = 1) {
   }
   return out;
 }
+
+/** True when a box covers (nearly) the whole viewport: a backdrop, canvas or title card, not a control. */
+export function isFullViewport(b, vw, vh, ratio = 0.9) {
+  return b.width >= vw * ratio && b.height >= vh * ratio;
+}
+
+/** Drops full-viewport overlays and 1px visually hidden boxes from a list of fixed-position boxes. */
+export function filterFixedBoxes(boxes, vw, vh) {
+  return boxes.filter((b) => b.width > 2 && b.height > 2 && !isFullViewport(b, vw, vh));
+}
