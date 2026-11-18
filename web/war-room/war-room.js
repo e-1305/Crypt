@@ -39,6 +39,7 @@ const run = {
   token: "", // memory only
   timer: null,
   pollTimer: null,
+  gen: 0, // bumped on every mode change; a poll that started under an older value drops its result
   nextPollAt: 0,
   quota: null,
   done: false,
@@ -254,7 +255,7 @@ function startTicker() {
 }
 
 // ---- live mode: GET only, rate limit aware ---------------------------------------------------------------------------
-function stopLive() { clearTimeout(run.pollTimer); run.pollTimer = null; }
+function stopLive() { run.gen++; clearTimeout(run.pollTimer); run.pollTimer = null; }
 
 async function getJson(req) {
   const res = await fetch(API + req.url, { method: "GET", headers: req.headers });
@@ -262,6 +263,7 @@ async function getJson(req) {
 }
 
 async function pollOnce() {
+  const gen = run.gen;
   const now = Date.now();
   let decision = rateLimitDecision({}, now, run.token !== "");
   try {
@@ -270,6 +272,7 @@ async function pollOnce() {
       const [req] = pollPlan(repo, run.token);
       if (!req) continue;
       const { res, body } = await getJson(req);
+      if (gen !== run.gen) return;
       decision = rateLimitDecision(res.headers, Date.now(), run.token !== "");
       run.quota = res.headers.get("x-ratelimit-remaining");
       if (!res.ok || !Array.isArray(body)) {
@@ -277,6 +280,9 @@ async function pollOnce() {
         throw new Error("poll");
       }
       for (const pull of body) {
+        // Merges from before this page opened are not raid progress: skip them.
+        const mergedAt = Date.parse(pull?.merged_at ?? "");
+        if (Number.isFinite(mergedAt) && mergedAt < run.t0) continue;
         const evs = eventsFromPull(pull, run.limbs);
         events.push(...evs);
         const opened = evs.find((e) => e.type === "pr-opened");
@@ -285,15 +291,18 @@ async function pollOnce() {
           const cr = checkRunsRequest(repo, sha, run.token);
           if (!cr) continue;
           const r = await getJson(cr);
+          if (gen !== run.gen) return;
           decision = rateLimitDecision(r.res.headers, Date.now(), run.token !== "");
           run.quota = r.res.headers.get("x-ratelimit-remaining");
           if (r.body) events.push(...eventsFromCheckRuns(r.body, opened.limb, opened.pr, Date.now()));
         }
       }
     }
+    if (gen !== run.gen) return;
     run.events = events;
     say("Live. Quota left: " + (run.quota ?? "unknown") + ". Read only: a human merges.");
   } catch (e) {
+    if (gen !== run.gen) return;
     if (e instanceof Error && e.message !== "poll") say("The network did not answer. Keeping the last known state; the next poll is scheduled.");
   }
   run.nextPollAt = Date.now() + decision.delayMs;
@@ -322,7 +331,7 @@ async function startLive(repos) {
   run.mode = "live";
   run.repos = repos;
   run.creature = creatures[0];
-  run.limbs = creatures.flatMap((c) => c.limbs);
+  run.limbs = creatures[0].limbs; // one repo per live raid: limb keys carry no repo, so a second repo could heal the wrong limb
   run.t0 = Date.now();
   run.events = [];
   resetView();
@@ -339,7 +348,7 @@ function parseRepos(text) {
     if (/^[A-Za-z0-9_.-]{1,100}\/[A-Za-z0-9_.-]{1,100}$/.test(r) && !r.startsWith(".") && !r.includes("..")) out.push(r);
     else if (r !== "") return null;
   }
-  return out.length > 0 && out.length <= 5 ? out : null;
+  return out.length === 1 ? out : null;
 }
 
 // ---- wiring ----------------------------------------------------------------------------------------------------------
@@ -355,8 +364,9 @@ $("replay").addEventListener("click", () => { if (run.limbs.length) { say(""); s
 $("live-form").addEventListener("submit", (e) => {
   e.preventDefault();
   const repos = parseRepos(el.repoInput.value);
-  if (!repos) { say("Enter one to five repos as owner/name, separated by commas."); return; }
+  if (!repos) { say("Enter one repo as owner/name."); return; }
   run.token = el.tokenInput.value.trim();
+  el.tokenInput.value = "";
   startLive(repos);
 });
 window.addEventListener("pagehide", () => { run.token = ""; el.tokenInput.value = ""; });

@@ -176,6 +176,11 @@ describe("github adapter", () => {
     expect(eventsFromPull({ ...pull, number: "7" }, LIMBS)).toEqual([]);
     expect(limbForBranch("crypt/graft-unknown-1.0.0", LIMBS)).toBeNull();
   });
+  it("a merge by a bot account does not heal", () => {
+    const e = eventsFromPull({ ...pull, merged_by: { login: "dependabot[bot]", type: "Bot" } }, LIMBS);
+    expect(e.map((x) => x.type)).toEqual(["pr-opened"]);
+    expect(healedKeys(e)).toEqual([]);
+  });
   it("an open pull request alone never heals", () => {
     const e = eventsFromPull({ ...pull, merged_at: null }, LIMBS);
     expect(healedKeys(e)).toEqual([]);

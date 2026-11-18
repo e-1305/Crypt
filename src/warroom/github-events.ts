@@ -46,6 +46,8 @@ export function eventsFromPull(pull: unknown, limbs: readonly WarLimb[]): WarEve
     const doneAt = ms(p.merged_at);
     if (doneAt !== null) {
       const user = obj(p.merged_by);
+      // A bot account is not a human: the limb stays unhealed (fail safe).
+      if (user?.type === "Bot") return out.map(parseWarEvent).filter((e): e is WarEvent => e !== null);
       out.push({ type: "human-merged", limb, pr: number, at: doneAt, healedBy: typeof user?.login === "string" ? user.login : undefined, source: "live" });
     }
     return out.map(parseWarEvent).filter((e): e is WarEvent => e !== null);
