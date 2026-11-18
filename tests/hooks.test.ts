@@ -464,6 +464,21 @@ describe("run-logged.sh and the hook evidence check", () => {
     }
   });
 
+  it("allows the cloud hook name failsafe-guard-on-stop-cloud but still rejects other unknown hooks", () => {
+    const d = mkdtempSync(join(tmpdir(), "crypt-hev-"));
+    try {
+      mkdirSync(join(d, "docs", "evidence"), { recursive: true });
+      const line = (hook: string, trigger: string) => JSON.stringify({ ts: new Date().toISOString(), hook, trigger, file: "", exit: 0, summary: "s" });
+      const log = (...l: string[]) => writeFileSync(join(d, "docs", "evidence", "hook-runs.jsonl"), l.join("\n") + "\n");
+      log(line("failsafe-guard-on-stop-cloud", "Stop"));
+      expect(checkHookEvidence(d)).toEqual([]);
+      log(line("not-a-hook-cloud", "Stop"));
+      expect(checkHookEvidence(d).join("\n")).toContain('unknown hook "not-a-hook-cloud"');
+    } finally {
+      rmSync(d, { recursive: true, force: true });
+    }
+  });
+
   it("the repository hooks all log, and the log is valid", () => {
     expect(checkHookEvidence(ROOT)).toEqual([]);
   });

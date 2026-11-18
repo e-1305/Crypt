@@ -3,7 +3,8 @@
 // Everything is shown with textContent. Nothing is written anywhere: the pull request payloads are dry runs.
 // Limbs and owners from CODEOWNERS only, no person is named. Failsafe: any error shows a message and no creature.
 import { liveExhume, LiveExhumeError, PROGRESS_STEPS, dryRunLabel, ownerLabel } from "./js/web/live-exhume.js";
-import { noiseFunnel, funnelText, funnelOwners } from "./js/web/noise-funnel.js";
+import { noiseFunnel, funnelText, funnelOwners, exorcisedRows, LOCKFILE_LIMIT_LINE } from "./js/web/noise-funnel.js";
+import { slaOf, toCsv, toJson } from "./js/web/report-export.js";
 import { parseFeedSnapshot } from "./js/web/feed-snapshot.js";
 import { mountCardPanel } from "./card/panel.js";
 import { parseRepoUrl, repoFromQuery, repoSlug } from "./js/web/repo-url.js";
@@ -31,6 +32,18 @@ async function loadFeeds(fetchFn) {
 /** Who owns a limb: CODEOWNERS only, else "no owner yet". */
 function ownerText(limb) {
   return ownerLabel(limb.owner);
+}
+
+/** Saves text as a file through an anchor with a download attribute. */
+function download(name, type, text) {
+  const url = URL.createObjectURL(new Blob([text], { type }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
 function stateText(limb) {
@@ -72,6 +85,25 @@ function renderResult(root, r, gallery, announce = () => {}) {
   ownersLine.id = "paste-funnel-owners";
   root.appendChild(ownersLine);
 
+  const exorcised = exorcisedRows(r.limbs);
+  const det = document.createElement("details");
+  det.id = "paste-exorcised";
+  det.className = "paste-exorcised";
+  const sum = el("summary", "Show the " + exorcised.length + " exorcised findings and why");
+  sum.id = "paste-exorcised-toggle";
+  det.appendChild(sum);
+  const exList = el("ul", undefined, "paste-exorcised-list");
+  exList.id = "paste-exorcised-list";
+  exorcised.forEach((x) => exList.appendChild(el("li", x.name + "@" + x.version + ": " + x.reason)));
+  det.appendChild(exList);
+  const limit = el("p", LOCKFILE_LIMIT_LINE, "paste-limits");
+  limit.id = "paste-limits";
+  det.appendChild(limit);
+  const lim2 = el("a", "Census limits");
+  lim2.href = "https://github.com/e-1305/Crypt/blob/main/docs/census/RESULTS.md";
+  det.appendChild(lim2);
+  root.appendChild(det);
+
   root.appendChild(el("h3", "Share your creature"));
   const link = shareLink(r.repo);
   const row = el("div", undefined, "paste-share-row");
@@ -102,9 +134,25 @@ function renderResult(root, r, gallery, announce = () => {}) {
   const ol = el("ol", undefined, "paste-limbs");
   r.groups.slice(0, MAX_LIMB_ROWS).forEach((g) => {
     const flags = [g.kev ? "KEV" : "", g.epss !== null && g.epss !== undefined ? "EPSS " + g.epss.toFixed(2) : ""].filter(Boolean).join(", ");
-    ol.appendChild(el("li", groupName(g) + ": " + stateText(g) + (flags ? " (" + flags + ")" : "") + ", " + g.kind + ", " + ownerText(g) + (g.spawned ? ", spawned" : "")));
+    const li = el("li", groupName(g) + ": " + stateText(g) + (flags ? " (" + flags + ")" : "") + ", " + g.kind + ", " + ownerText(g) + (g.spawned ? ", spawned" : "") + " ");
+    li.appendChild(el("span", "SLA: " + slaOf(g), "paste-sla"));
+    ol.appendChild(li);
   });
   root.appendChild(ol);
+  const exportRow = el("div", undefined, "paste-export-row");
+  const slug = r.repo.replace("/", "-");
+  const csvBtn = el("button", "Download CSV");
+  csvBtn.type = "button";
+  csvBtn.id = "paste-export-csv";
+  csvBtn.addEventListener("click", () => download("crypt-" + slug + ".csv", "text/csv", toCsv(r.limbs)));
+  const jsonBtn = el("button", "Download JSON");
+  jsonBtn.type = "button";
+  jsonBtn.id = "paste-export-json";
+  jsonBtn.addEventListener("click", () => download("crypt-" + slug + ".json", "application/json", toJson(r, dryRunLabel(r.repo))));
+  exportRow.appendChild(csvBtn);
+  exportRow.appendChild(jsonBtn);
+  exportRow.appendChild(el("span", dryRunLabel(r.repo), "paste-export-label muted"));
+  root.appendChild(exportRow);
   if (r.groups.length > MAX_LIMB_ROWS) root.appendChild(el("p", "and " + (r.groups.length - MAX_LIMB_ROWS) + " more packages in the lockfile.", "muted"));
 
   root.appendChild(el("h3", "Owners from CODEOWNERS"));

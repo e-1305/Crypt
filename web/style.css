@@ -269,19 +269,40 @@ body.record .theatre-caption { display: none; }
   body:not(.theatre) > * { order: 0; min-width: 0; max-width: 100%; }
   body:not(.theatre) .crt, body:not(.theatre) .left, body:not(.theatre) .side { display: contents; }
   body:not(.theatre) .crt { box-shadow: none; }
-  body:not(.theatre) .plate-pane { order: 1; margin: .5rem 1rem 0; }
-  body:not(.theatre) .game { order: 2; margin: 1rem 1rem 0; }
-  body:not(.theatre) #raid { order: 3; margin: 1rem; }
-  body:not(.theatre) #sim { order: 4; margin: 0 1rem 1rem; }
-  body:not(.theatre) .side > .pane { order: 5; margin: 0 1rem 1rem; }
-  body:not(.theatre) #proof { order: 6; margin: 0 1rem 1rem; }
-  /* The workflow line sits in the header, above the game; it is desktop only so it adds no height there. */
+  /* R2: the first screen is the title, the problem line, Scan your repo, Play and the paste form. The plate and the game
+     follow. The what/proof lines, the 3-step strip, Watch it run, the Bench and the header links sit below the game. */
+  body:not(.theatre) .top, body:not(.theatre) .hero, body:not(.theatre) .hero-actions { display: contents; }
+  body:not(.theatre) .top > *, body:not(.theatre) .hero > *, body:not(.theatre) .hero-actions > * { min-width: 0; max-width: 100%; }
+  body:not(.theatre) .intro { order: 0; flex: none; margin: 0 1rem; }
+  body:not(.theatre) .intro .pitch { font-size: .85rem; margin: .25rem 0; }
+  body:not(.theatre) .intro .subtitle { margin: .1rem 0; }
+  body:not(.theatre) #hero-problem { order: 1; margin: .25rem 1rem 0; }
+  body:not(.theatre) #hero-scan { order: 2; margin: .35rem 1rem 0; flex: none; }
+  body:not(.theatre) #hero-play { order: 3; margin: .35rem 1rem 0; flex: none; }
+  body:not(.theatre) .paste { order: 4; }
+  body:not(.theatre) .plate-pane { order: 5; margin: .5rem 1rem 0; }
+  body:not(.theatre) .game { order: 6; margin: 1rem 1rem 0; }
+  body:not(.theatre) #judge-replay, body:not(.theatre) #daily-banner, body:not(.theatre) #tutorial { order: 7; }
+  body:not(.theatre) #judge-replay { margin: .5rem 1rem 0; }
+  body:not(.theatre) #raid { order: 7; margin: 1rem; }
+  body:not(.theatre) #sim { order: 8; margin: 0 1rem 1rem; }
+  body:not(.theatre) .side > .pane { order: 9; margin: 0 1rem 1rem; }
+  body:not(.theatre) #proof { order: 10; margin: 0 1rem 1rem; }
+  body:not(.theatre) #hero-what, body:not(.theatre) #hero-proof, body:not(.theatre) #hero-steps { order: 11; margin: .25rem 1rem; }
+  body:not(.theatre) #hero-watch { order: 12; margin: .35rem 1rem 0; flex: none; }
+  body:not(.theatre) .bench { order: 13; }
+  body:not(.theatre) .manual-link { order: 14; margin: .35rem 1rem 0; }
+  body:not(.theatre) .views { order: 14; margin: .35rem 1rem 0; flex: none; }
+  body:not(.theatre) #hc-toggle { order: 15; margin: .35rem 1rem; }
+  body.record:not(.theatre) .top { display: none; }
+  body.judge-running:not(.theatre) .intro { padding-top: 2.75rem; }
+  /* The workflow line is desktop only on small screens it would push the game down. */
   body:not(.theatre) .workflow-line { display: none; }
   /* The hero already carries the proof line on small screens; the header copy would push the game down. */
   body:not(.theatre) #proof-line { display: none; }
   body:not(.theatre)::after { display: none; }
   body:not(.theatre) .plate { overflow-x: auto; max-width: 100%; }
-  body:not(.theatre) .transcript { height: 12rem; }
+  body:not(.theatre) .transcript { height: 10rem; }
   button, .raid-actions button, .manual-link, .view-3d, .gallery-list a, .skip:focus, input, .pane a, .built-with a { min-height: 44px; min-width: 44px; }
   .pane a, .built-with a, .gallery-list a { display: inline-flex; align-items: center; }
   .gallery-list a { line-height: 1.2; }
@@ -313,6 +334,10 @@ body.record .theatre-caption { display: none; }
 .paste-result h2, .paste-result h3 { margin: .75rem 0 .25rem; }
 .paste-result .plate { overflow-x: auto; max-width: 100%; }
 .paste-limbs, .paste-owners { margin: .25rem 0; padding-left: 1.5rem; overflow-wrap: anywhere; }
+.paste-sla { display: inline-block; border: 1px solid var(--dim); padding: 0 .4rem; margin-left: .25rem; white-space: nowrap; }
+.paste-export-row { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin: .5rem 0; }
+.paste-export-row button { min-height: 44px; }
+.paste-export-label { overflow-wrap: anywhere; }
 .paste-payload { border-left: 2px solid var(--dim); padding-left: .75rem; margin: .5rem 0; }
 .paste-payload-title { font-weight: bold; margin: .1rem 0; }
 .paste-payload-label { color: var(--warn); margin: .1rem 0; overflow-wrap: anywhere; }
@@ -348,7 +373,6 @@ body.theatre .judge-counter:not(.judge-counter-inline) { top: 5rem; }
 body.theatre .seal-badge { top: 4.5rem; }
 body.hc .primary { background: #fff; color: #000; border-color: #fff; }
 @media (max-width: 899px) {
-  body:not(.theatre) .paste, body:not(.theatre) .bench { order: 0; }
   .paste-form input { flex-basis: 100%; }
 }
 body.theatre #gallery { display: none; }
@@ -447,3 +471,8 @@ body.theatre.drawer-open .top { position: absolute; width: 1px; height: 1px; mar
   .paste-form .paste-hint { font-size: .8rem; }
   .paste-form input { flex: 1 1 10rem; min-width: 0; }
 }
+.paste-exorcised { margin: .5rem 0; }
+.paste-exorcised summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; }
+.paste-exorcised-list { overflow-wrap: anywhere; }
+.paste-exorcised a { display: inline-block; min-height: 44px; line-height: 44px; }
+.paste-exorcised a { color: inherit; text-decoration: underline; }
