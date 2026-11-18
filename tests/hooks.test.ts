@@ -405,7 +405,44 @@ describe("run-logged.sh and the hook evidence check", () => {
     }
   });
 
-  it("requires a non-manual line per hook once any exists, and a PostToolUse twin", () => {
+  it("logs the Kiro CLI V3 hook_event_name as the trigger, and manual without a payload", () => {
+    const d = repo({ "src/mcp/a.ts": "export const a = 1;\n" });
+    try {
+      const go = (input: string) => spawnSync("bash", ["scripts/hooks/run-logged.sh", "failsafe-guard-on-save", "scripts/hooks/failsafe-check.sh"], { cwd: d, encoding: "utf8", input });
+      go(JSON.stringify({ hook_event_name: "PostFileSave", cwd: d, session_id: "s" }));
+      go("");
+      expect(logOf(d).map((r) => r.trigger)).toEqual(["PostFileSave", "manual"]);
+      expect(Object.keys(logOf(d)[0]!)).toEqual(["ts", "hook", "trigger", "file", "exit", "summary"]);
+    } finally {
+      rmSync(d, { recursive: true, force: true });
+    }
+  });
+
+  it("accepts the optional source key only on real Kiro lines and does not require a run per hook", () => {
+    const d = mkdtempSync(join(tmpdir(), "crypt-hev-"));
+    try {
+      mkdirSync(join(d, ".kiro", "hooks"), { recursive: true });
+      mkdirSync(join(d, "docs", "evidence"), { recursive: true });
+      for (const n of ["a", "b"]) {
+        const base = { name: n, trigger: "Stop", action: { type: "command", command: `bash scripts/hooks/run-logged.sh ${n} x.sh` }, timeout: 5, enabled: true };
+        writeFileSync(join(d, ".kiro", "hooks", `${n}.json`), JSON.stringify({ hooks: [base] }));
+      }
+      const line = (extra: Record<string, unknown>, trigger = "Stop") => JSON.stringify({ ts: new Date().toISOString(), hook: "a", trigger, file: "", exit: 0, summary: "s", ...extra });
+      const log = (...l: string[]) => writeFileSync(join(d, "docs", "evidence", "hook-runs.jsonl"), l.join("\n") + "\n");
+      log(line({}, "manual"), line({ source: "kiro-cli-ci" }));
+      expect(checkHookEvidence(d)).toEqual([]);
+      log(line({ source: "kiro-cli-ci" }, "manual"));
+      expect(checkHookEvidence(d).join("\n")).toContain("cannot have trigger manual");
+      log(line({ source: "elsewhere" }));
+      expect(checkHookEvidence(d).join("\n")).toContain("source must be one of kiro-cli-ci");
+      log(line({ other: 1 }));
+      expect(checkHookEvidence(d).join("\n")).toContain("keys must be");
+    } finally {
+      rmSync(d, { recursive: true, force: true });
+    }
+  });
+
+  it("requires a PostToolUse twin for a PostFileSave command hook", () => {
     const d = mkdtempSync(join(tmpdir(), "crypt-hev-"));
     try {
       mkdirSync(join(d, ".kiro", "hooks"), { recursive: true });
@@ -420,11 +457,8 @@ describe("run-logged.sh and the hook evidence check", () => {
       const line = (hook: string, trigger: string) => JSON.stringify({ ts: new Date().toISOString(), hook, trigger, file: "", exit: 0, summary: "s" });
       writeFileSync(join(d, "docs", "evidence", "hook-runs.jsonl"), [line("a", "manual"), line("b", "manual")].join("\n") + "\n");
       expect(checkHookEvidence(d).join("\n")).toContain("b.json: a PostFileSave command hook needs a PostToolUse");
-      expect(checkHookEvidence(d).join("\n")).not.toContain("no non-manual line");
       writeFileSync(join(d, "docs", "evidence", "hook-runs.jsonl"), [line("a", "manual"), line("b", "PostToolUse")].join("\n") + "\n");
-      const p = checkHookEvidence(d).join("\n");
-      expect(p).toContain('no non-manual line for hook "a"');
-      expect(p).not.toContain('hook "b"');
+      expect(checkHookEvidence(d).join("\n")).not.toContain("no non-manual line");
     } finally {
       rmSync(d, { recursive: true, force: true });
     }

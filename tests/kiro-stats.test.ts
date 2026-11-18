@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { END, STATS_DOCS, checkDocStats, checkLinks, renderDocStats, spliceDocStats, countAgents, countHooks, countPropertyTests, countSpecs, countSteering, countTasks, hookRunsByHook, kiroSessionRuns, readHookRuns, collect, prNumbers, render, splice } from "../scripts/kiro-stats.js";
+import { END, STATS_DOCS, checkDocStats, checkLinks, renderDocStats, spliceDocStats, countAgents, countHooks, countPropertyTests, countSpecs, countSteering, countTasks, hookRunsByHook, kiroCliCiRuns, kiroSessionRuns, manualRuns, manualRunsByHook, readHookRuns, collect, prNumbers, render, splice } from "../scripts/kiro-stats.js";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const tmp = mkdtempSync(join(tmpdir(), "kiro-stats-test-"));
@@ -146,7 +146,7 @@ describe("hook runs recorded in a Kiro session", () => {
     const d = mkdtempSync(join(tmpdir(), "kiro-stats-runs-"));
     try {
       expect(readHookRuns(d)).toBeNull();
-      expect(collect(d, false).find((s) => s.name.startsWith("Hook runs"))?.value).toBe("unavailable");
+      for (const p of ["Hook runs by hand", "Hook runs recorded", "of which Kiro CLI"]) expect(collect(d, false).find((s) => s.name.startsWith(p))?.value).toBe("unavailable");
     } finally {
       rmSync(d, { recursive: true, force: true });
     }
@@ -160,7 +160,24 @@ describe("hook runs recorded in a Kiro session", () => {
       expect(runs).toHaveLength(4);
       expect(kiroSessionRuns(runs)).toHaveLength(3);
       expect(hookRunsByHook(runs)).toEqual({ a: 1, b: 2 });
-      expect(collect(d, false).find((s) => s.name.startsWith("Hook runs"))?.value).toBe("3");
+      expect(collect(d, false).find((s) => s.name.startsWith("Hook runs recorded"))?.value).toBe("3");
+      expect(manualRunsByHook(runs)).toEqual({ a: 1 });
+    } finally {
+      rmSync(d, { recursive: true, force: true });
+    }
+  });
+  it("separates manual, real Kiro and kiro-cli-ci runs, and never counts a manual line as real", () => {
+    const d = mkdtempSync(join(tmpdir(), "kiro-stats-runs-"));
+    try {
+      mkdirSync(join(d, "docs", "evidence"), { recursive: true });
+      const withSource = (hook: string, trigger: string, source: string) => JSON.stringify({ ...JSON.parse(line(hook, trigger)), source });
+      writeFileSync(join(d, "docs", "evidence", "hook-runs.jsonl"), [line("a", "manual"), line("a", "manual"), line("a", "PostToolUse"), withSource("b", "Stop", "kiro-cli-ci"), withSource("b", "manual", "kiro-cli-ci")].join("\n") + "\n");
+      const runs = readHookRuns(d)!;
+      expect(manualRuns(runs)).toHaveLength(3);
+      expect(kiroSessionRuns(runs)).toHaveLength(2);
+      expect(kiroCliCiRuns(runs)).toHaveLength(1);
+      const v = (prefix: string) => collect(d, false).find((s) => s.name.startsWith(prefix))?.value;
+      expect([v("Hook runs by hand"), v("Hook runs recorded in a real"), v("of which Kiro CLI")]).toEqual(["3", "2", "1"]);
     } finally {
       rmSync(d, { recursive: true, force: true });
     }

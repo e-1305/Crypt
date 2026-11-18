@@ -1,0 +1,99 @@
+name: kiro-hooks
+
+# Runs Kiro CLI headless with this repository as the workspace root, so Kiro can load
+# .kiro/hooks and .kiro/steering. Whatever hook lines the wrapper writes during the session
+# are marked "source":"kiro-cli-ci" and proposed in a pull request. Nothing is written by hand.
+# Needs the repository secret KIRO_API_KEY. Without it the job fails and records nothing.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: kiro-hooks
+  cancel-in-progress: false
+
+jobs:
+  session:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Require the secret
+        env:
+          KIRO_API_KEY: ${{ secrets.KIRO_API_KEY }}
+        run: |
+          if [ -z "$KIRO_API_KEY" ]; then
+            echo "::error::The repository secret KIRO_API_KEY is empty or missing. Add it under Settings > Secrets and variables > Actions (see docs/KIRO.md). No run was recorded."
+            exit 1
+          fi
+
+      # Risk: the installer is a remote script and Kiro publishes no version pin or checksum
+      # that this job can verify. The checkout holds no token (persist-credentials: false), so
+      # the installer and the agent session cannot read one from .git/config.
+      - name: Install Kiro CLI
+        run: |
+          curl -fsSL https://cli.kiro.dev/install | bash
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Kiro CLI version
+        run: kiro-cli --version
+
+      - name: Run the scripted Kiro session
+        env:
+          KIRO_API_KEY: ${{ secrets.KIRO_API_KEY }}
+        run: |
+          baseline=$(wc -l < docs/evidence/hook-runs.jsonl)
+          echo "baseline=$baseline" >> "$GITHUB_ENV"
+          kiro-cli chat --v3 --no-interactive --trust-tools=read,write --output-format stream-json \
+            "Read every file in .kiro/steering/ first. Then use your write tool, one file at a time, to make one harmless edit and immediately undo it in each of these four files: package.json (change the description text, then restore it), .kiro/specs/hook-evidence/tasks.md (change one line, then restore it), src/necromancer/version.ts (add a comment line, then remove it), web/copy.js (add a comment line, then remove it). Do not run any script under scripts/hooks yourself and do not commit anything. Finish by listing the four files you touched." \
+            | tee kiro-session.jsonl
+
+      - name: Restore the probe edits and check the log
+        if: always()
+        run: |
+          git checkout -- . ':!docs/evidence'
+
+      - name: Mark the lines Kiro produced
+        run: node scripts/ci/kiro-hooks-collect.mjs "$baseline"
+
+      # Pull requests opened with GITHUB_TOKEN do not start CI, so the check runs here instead.
+      - name: Check the evidence file
+        run: node scripts/ci/hook-evidence-check.mjs
+
+      - name: Upload session output and evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kiro-hooks-${{ github.run_id }}
+          path: |
+            kiro-session.jsonl
+            docs/evidence/hook-runs.jsonl
+          if-no-files-found: ignore
+
+      - name: Open a pull request with the evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: kiro-hooks-evidence-${{ github.run_id }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
+          git checkout -b "$BRANCH"
+          git add docs/evidence/hook-runs.jsonl
+          git commit -m "chore(evidence): hook runs from Kiro CLI in GitHub Actions (run ${{ github.run_id }})"
+          git push origin "$BRANCH"
+          gh pr create --base "${{ github.event.repository.default_branch }}" --head "$BRANCH" \
+            --title "Hook runs recorded by Kiro CLI (run ${{ github.run_id }})" \
+            --body "Lines added by hooks during a headless Kiro CLI session, marked source kiro-cli-ci. Session output is in the kiro-hooks-${{ github.run_id }} artifact of the workflow run. A person reviews and decides."
