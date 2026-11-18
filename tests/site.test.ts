@@ -214,6 +214,12 @@ describe.skipIf(!haveToolchain)("build:site output", () => {
       expect(readFileSync(join(a, "game", "demo.z8"))[0]).toBe(8);
       const demo = JSON.parse(readFileSync(join(a, "game", "demo.json"), "utf8"));
       expect(Array.isArray(demo.limbs) && demo.limbs.length > 0).toBe(true);
+      // Visual QA 1: the default demo is the crypt-demo snapshot, owned by @e-1305, with its commit SHA recorded.
+      expect(demo.repo).toBe("crypt-demo");
+      const snap = JSON.parse(readFileSync(join(import.meta.dirname, "..", "fixtures", "crypt-demo", "SNAPSHOT.json"), "utf8"));
+      expect(snap.commit).toMatch(/^[0-9a-f]{40}$/);
+      expect(snap.owner).toBe("@e-1305");
+      expect(JSON.stringify(JSON.parse(readFileSync(join(a, "game", "demo.payloads.json"), "utf8")))).toContain("@e-1305");
       const payloads = JSON.parse(readFileSync(join(a, "game", "demo.payloads.json"), "utf8"));
       expect(Object.keys(payloads).length).toBeGreaterThan(0);
       for (const p of Object.values(payloads) as { dryRun: boolean; sent: boolean }[]) expect([p.dryRun, p.sent]).toEqual([true, false]);

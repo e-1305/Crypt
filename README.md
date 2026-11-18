@@ -34,7 +34,7 @@ Each command dispatches AI agents built with [Kiro](https://kiro.dev) that open 
 
 ## Live demo
 
-**[e-1305.github.io/Crypt](https://e-1305.github.io/Crypt/)**: the first vulnerability report you can play. The page opens on a demo creature built from `fixtures/vulnerable-npm`, with its plate and a playable story. A gallery lists 20 public projects, each with its own creature. "Download the playable report" saves the loaded `.z8`, which any Z-machine interpreter (Frotz, Lectrote, Parchment) opens.
+**[e-1305.github.io/Crypt](https://e-1305.github.io/Crypt/)**: the first vulnerability report you can play. The page opens on a demo creature built offline from `fixtures/crypt-demo`, a snapshot of [e-1305/crypt-demo](https://github.com/e-1305/crypt-demo) at commit `bd82e8e` (owner @e-1305), with its plate and a playable story. A gallery lists 20 public projects, each with its own creature. "Download the playable report" saves the loaded `.z8`, which any Z-machine interpreter (Frotz, Lectrote, Parchment) opens.
 
 GRAFT on the page is a rehearsal: it shows the dry-run pull request payload and sends nothing.
 

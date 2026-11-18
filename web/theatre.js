@@ -25,8 +25,14 @@ const decision = decideTheatre({
   reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
   highContrast: storedHighContrast() || document.body.classList.contains("hc"),
   flag: new URLSearchParams(location.search).get("theatre"),
+  viewportWidth: window.innerWidth,
+  coarsePointer: window.matchMedia("(pointer: coarse)").matches,
 });
 document.documentElement.dataset.theatre = decision.mode + ":" + decision.reason;
+
+// Small screens get the 2D page; offer the 3D bench when the device can run it.
+const view3d = document.getElementById("view-3d");
+if (view3d && decision.reason === "small-screen") view3d.hidden = false;
 
 if (decision.mode === "3d") {
   import("./theatre/stage.js")
