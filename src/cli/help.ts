@@ -21,6 +21,7 @@ Commands:
   inquisit <LIMB>     Check the CI of a limb's pull request. Green means a human may land it.
   reraise             After a human landed pull requests: mark those limbs healed and recompile.
   autopsy             Write out/autopsy.html: a one-page report for a CISO (print it to PDF from a browser).
+  gazette             Print the weekly digest as Slack or Teams JSON. Posts only with --send.
   seal                Stop every agent action. Writes .crypt-seal.
   unseal              Lift the seal.
 
@@ -35,7 +36,12 @@ Options:
   --out <path>        exhume: creature file (default out/creature.json); raise: output directory;
                       autopsy: report file (default out/autopsy.html)
   --last <N>          autopsy: raids shown in the trend (1 to 52, default 8)
-  --sample            autopsy: write the report for built-in sample data (needs no raid)
+  --webhook-env <VAR> gazette: SLACK_WEBHOOK_URL or TEAMS_WEBHOOK_URL (the variable holds the URL; it is never printed)
+  --send              gazette: post to the webhook (default: print the payload)
+  --dry-run           gazette: print the payload only (the default)
+  --war-room <url>    gazette: https link for the "Open the War Room" button
+  --format <kind>     gazette: slack or teams (default: from --webhook-env, else slack)
+  --sample            autopsy, gazette: use built-in sample data (needs no raid)
   --story <file>      play: story file (default out/creature.z8)
   --target <dir>      play, graft: checkout that the fix is written against (default .)
   --advisories <dir>  play, graft: advisory records for an offline run

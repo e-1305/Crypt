@@ -1,0 +1,173 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`payloads > slack matches the snapshot 1`] = `
+"{
+  "text": "Gravedigger's Gazette",
+  "blocks": [
+    {
+      "type": "header",
+      "text": {
+        "type": "plain_text",
+        "text": "Gravedigger's Gazette",
+        "emoji": false
+      }
+    },
+    {
+      "type": "section",
+      "fields": [
+        {
+          "type": "mrkdwn",
+          "text": "*Nights without possession*\\n0"
+        },
+        {
+          "type": "mrkdwn",
+          "text": "*Healed this week*\\n2"
+        },
+        {
+          "type": "mrkdwn",
+          "text": "*Newly possessed*\\n0"
+        },
+        {
+          "type": "mrkdwn",
+          "text": "*SLA at risk*\\n1"
+        }
+      ]
+    },
+    {
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": "*Healed*\\n• \`jquery\` healed by \`@e-1305\`\\n• \`minimist\` healed by \`@e-1305\`"
+      }
+    },
+    {
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": "*Newly possessed*\\nNone this week."
+      }
+    },
+    {
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": "*SLA at risk*\\n• \`handlebars\`"
+      }
+    },
+    {
+      "type": "context",
+      "elements": [
+        {
+          "type": "mrkdwn",
+          "text": "Crypt report for \`e-1305/crypt-demo\`"
+        }
+      ]
+    },
+    {
+      "type": "actions",
+      "elements": [
+        {
+          "type": "button",
+          "text": {
+            "type": "plain_text",
+            "text": "Open the War Room",
+            "emoji": false
+          },
+          "url": "https://e-1305.github.io/Crypt/"
+        }
+      ]
+    }
+  ]
+}"
+`;
+
+exports[`payloads > teams matches the snapshot 1`] = `
+"{
+  "type": "message",
+  "attachments": [
+    {
+      "contentType": "application/vnd.microsoft.card.adaptive",
+      "contentUrl": null,
+      "content": {
+        "type": "AdaptiveCard",
+        "version": "1.4",
+        "body": [
+          {
+            "type": "TextBlock",
+            "text": "Gravedigger's Gazette",
+            "wrap": true,
+            "size": "Large",
+            "weight": "Bolder"
+          },
+          {
+            "type": "FactSet",
+            "facts": [
+              {
+                "title": "Nights without possession",
+                "value": "0"
+              },
+              {
+                "title": "Healed this week",
+                "value": "2"
+              },
+              {
+                "title": "Newly possessed",
+                "value": "0"
+              },
+              {
+                "title": "SLA at risk",
+                "value": "1"
+              }
+            ]
+          },
+          {
+            "type": "TextBlock",
+            "text": "**Healed**",
+            "wrap": true,
+            "separator": true
+          },
+          {
+            "type": "TextBlock",
+            "text": "- jquery healed by @e\\\\-1305\\n- minimist healed by @e\\\\-1305",
+            "wrap": true
+          },
+          {
+            "type": "TextBlock",
+            "text": "**Newly possessed**",
+            "wrap": true
+          },
+          {
+            "type": "TextBlock",
+            "text": "None this week.",
+            "wrap": true
+          },
+          {
+            "type": "TextBlock",
+            "text": "**SLA at risk**",
+            "wrap": true
+          },
+          {
+            "type": "TextBlock",
+            "text": "- handlebars",
+            "wrap": true
+          },
+          {
+            "type": "TextBlock",
+            "text": "Crypt report for e\\\\-1305/crypt\\\\-demo",
+            "wrap": true,
+            "isSubtle": true,
+            "size": "Small"
+          }
+        ],
+        "actions": [
+          {
+            "type": "Action.OpenUrl",
+            "title": "Open the War Room",
+            "url": "https://e-1305.github.io/Crypt/"
+          }
+        ]
+      }
+    }
+  ]
+}"
+`;

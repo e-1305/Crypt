@@ -14,6 +14,7 @@ import { fixtureAdvisories, osvAdvisories } from "../osv-advisory.js";
 import { preflightedClients, resolveRepo } from "./live.js";
 import { readRaidContext } from "./context.js";
 import { autopsyCommand } from "./autopsy.js";
+import { gazetteCommand } from "./gazette.js";
 import { exhumeCommand, raidCommand } from "./raid.js";
 import { runScript, runScriptOrFail } from "./run.js";
 import { seal, unseal } from "./seal.js";
@@ -83,6 +84,8 @@ async function run(argv: string[]): Promise<number> {
       return raidCommand(p);
     case "autopsy":
       return autopsyCommand(p);
+    case "gazette":
+      return gazetteCommand(p);
     case "raise": {
       await ensureToolchain();
       await runScriptOrFail("raise.ts", [...p.args, ...(typeof p.flags.out === "string" ? ["--out", p.flags.out] : [])]);
