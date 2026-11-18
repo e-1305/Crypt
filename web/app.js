@@ -12,6 +12,7 @@ import { initHeal } from "./heal.js";
 import { initOnboarding } from "./onboarding.js";
 import { wireCopy } from "./copy.js";
 import { initPaste } from "./live-exhume.js";
+import { initImport } from "./import.js";
 import { initSound } from "./theatre/sound.js";
 import { countPossessed } from "./js/theatre/audio-plan.js";
 
@@ -331,6 +332,7 @@ async function main() {
   if (wanted !== null && list.some((g) => g.slug === wanted)) creatureId = wanted;
   drawGallery(list);
   initPaste({ announce, gallery: list });
+  initImport({ announce });
   loadPlate();
   try {
     const p = await fetch("game/" + creatureId + ".payloads.json");

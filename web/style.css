@@ -366,3 +366,15 @@ body.record .judge-skip, body.record .judge-replay { display: none; }
 .card-actions button { font: inherit; color: var(--fg); background: #000; border: 1px solid var(--dim); padding: .35rem .75rem; cursor: pointer; min-height: 44px; }
 .card-text { overflow-wrap: anywhere; }
 .raid-share[hidden] { display: none; }
+
+/* Import drop zone (inside the Bench drawer) */
+.import { margin: .5rem 0; }
+.import h2 { margin: .5rem 0 .25rem; }
+.import-privacy { margin: .25rem 0; }
+.import-drop { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; min-height: 44px; padding: .5rem; border: 2px dashed var(--dim); }
+.import-drop.over { border-style: solid; border-color: var(--fg); }
+.import-drop label { flex: 1 1 100%; }
+.import-drop input[type="file"] { flex: 1 1 14rem; min-height: 44px; color: var(--fg); font: inherit; max-width: 100%; }
+.import-drop:focus-within, .import select:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+.import select { min-height: 44px; background: transparent; color: var(--fg); border: 1px solid var(--dim); font: inherit; }
+@media (prefers-reduced-motion: no-preference) { .import-drop { transition: border-color .15s; } }

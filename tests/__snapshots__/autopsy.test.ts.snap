@@ -1,0 +1,106 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`autopsy page > matches the snapshot 1`] = `
+"<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CRYPT Autopsy Report (sample) - e-1305/crypt-demo</title>
+<style>
+:root{--fg:#33ff33;--dim:#22b022;--bg:#050805;--warn:#ffb000;--hot:#ff6a3d;--line:#22b022;--text:#c9f7c9}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:"JetBrains Mono",ui-monospace,"Cascadia Mono",Menlo,Consolas,"DejaVu Sans Mono","Courier New",monospace;font-size:14px;line-height:1.4}
+.page{max-width:210mm;margin:0 auto;padding:12mm 10mm}
+h1,h2{margin:0;letter-spacing:.15em;text-transform:uppercase;color:var(--fg)}
+h1{font-size:20px}
+h2{font-size:12px;color:var(--dim)}
+.sub{margin:.25rem 0 0;color:var(--text)}
+.hint{margin:.75rem 0;padding:.4rem .6rem;border:1px solid var(--warn);color:var(--warn)}
+.banner{margin:.6rem 0 0;padding:.35rem .6rem;border:2px solid var(--warn);color:var(--warn);font-weight:700;letter-spacing:.2em}
+.banner span{font-weight:400;letter-spacing:0;margin-left:.6rem}
+.wm{position:fixed;top:0;left:0;width:100%;height:100%;overflow:hidden;pointer-events:none;z-index:0;display:flex;align-items:center;justify-content:center}
+.wm span{display:block;transform:rotate(-30deg);white-space:nowrap;font-size:min(14vw,110px);font-weight:700;letter-spacing:.15em;color:rgba(255,176,0,.16)}
+.page{position:relative;z-index:1}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.card{border:1px solid var(--line);padding:8px 10px;min-width:0}
+.card .big{display:block;font-size:24px;color:var(--fg);font-weight:700;margin:.2rem 0}
+.card .detail{margin:0;color:var(--text);font-size:12px}
+.card sup{color:var(--warn)}
+.wide{grid-column:span 3}
+.n-a{color:var(--warn)}
+ul{margin:.25rem 0;padding-left:1.1rem}
+li{margin:.1rem 0}
+.spark{width:100%;height:auto;display:block}
+.spark .axis{stroke:var(--line);stroke-width:1}
+.spark .ln{fill:none;stroke:var(--fg);stroke-width:2}
+.spark .dot{fill:var(--fg)}
+footer{margin-top:10px;border-top:1px solid var(--line);padding-top:6px;font-size:11px;color:var(--text)}
+footer ol{margin:.25rem 0;padding-left:1.4rem}
+a{color:var(--fg)}
+@page{size:A4;margin:10mm}
+@media print{
+html,body{background:#fff;color:#111;font-size:11px}
+.page{max-width:none;padding:0}
+h1,h2,.card .big{color:#0a4d0a}
+.card{border-color:#555;break-inside:avoid}
+.card sup,.n-a{color:#7a4a00}
+.hint,.no-print{display:none}
+.banner{color:#7a4a00;border-color:#7a4a00}
+.wm span{color:rgba(122,74,0,.14)}
+.spark .axis{stroke:#555}.spark .ln{stroke:#0a4d0a}.spark .dot{fill:#0a4d0a}
+footer{border-top-color:#555;color:#111}
+}
+</style>
+</head>
+<body>
+<div class="wm" aria-hidden="true"><span>SAMPLE DATA</span></div>
+<div class="page">
+<header>
+<h1>CRYPT Autopsy Report</h1>
+<p class="sub">e-1305/crypt-demo, 5 findings, generated 2025-11-05</p>
+<p class="banner" role="note">SAMPLE DATA<span>Made-up numbers from crypt autopsy --sample. This is not a real team&#39;s history.</span></p>
+<p class="hint no-print">Print or save as PDF from your browser</p>
+</header>
+<main>
+<div class="grid">
+<section class="card" aria-labelledby="h-impl"><h2 id="h-impl">Implementation<sup>1</sup></h2>
+<span class="big">60%</span>
+<p class="detail">3 of 5 finding limbs have an owner</p></section>
+<section class="card" aria-labelledby="h-eff"><h2 id="h-eff">Efficiency<sup>2</sup></h2>
+<span class="big">8 hours</span>
+<p class="detail">median time to fix, 2 healed</p></section>
+<section class="card" aria-labelledby="h-imp"><h2 id="h-imp">Impact<sup>3</sup></h2>
+<span class="big">0.62</span>
+<p class="detail">exploitable risk removed (EPSS sum, 1 limbs)</p></section>
+<section class="card" aria-labelledby="h-sla"><h2 id="h-sla">SLA compliance<sup>4</sup></h2>
+<span class="big">100%</span>
+<p class="detail">2 of 2 in-scope limbs inside the window</p></section>
+<section class="card" aria-labelledby="h-noise"><h2 id="h-noise">Noise exorcised<sup>6</sup></h2>
+<span class="big">60%</span>
+<p class="detail">3 of 5 findings below the noise line</p></section>
+<section class="card" aria-labelledby="h-praise"><h2 id="h-praise">Praise</h2>
+<ul><li>JQUERY (jquery) healed by @e-1305</li><li>MINIMIST (minimist) healed by @e-1305</li></ul></section>
+<section class="card wide" aria-labelledby="h-trend"><h2 id="h-trend">Trend<sup>5</sup></h2>
+<svg class="spark" viewBox="0 0 300 70" role="img" aria-labelledby="spark-t spark-d"><title id="spark-t">Open limbs trend</title><desc id="spark-d">Open limbs after each of the last 6 raids: 7, 7, 6, 5, 4, 4.</desc><line class="axis" x1="8" y1="62" x2="292" y2="62"/><polyline class="ln" points="8,8 64.8,8 121.6,15.7 178.4,23.4 235.2,31.1 292,31.1"/><circle class="dot" cx="8" cy="8" r="3"/><circle class="dot" cx="64.8" cy="8" r="3"/><circle class="dot" cx="121.6" cy="15.7" r="3"/><circle class="dot" cx="178.4" cy="23.4" r="3"/><circle class="dot" cx="235.2" cy="31.1" r="3"/><circle class="dot" cx="292" cy="31.1" r="3"/></svg><p class="detail">Open limbs, 2025-10-29 to 2025-11-03: 7, 7, 6, 5, 4, 4</p></section>
+<section class="card wide" aria-labelledby="h-act"><h2 id="h-act">Limbs to act on</h2>
+<p class="detail">Breached: none</p>
+<p class="detail">At risk (75% of the window used): HANDLEBARS (handlebars)</p></section>
+</div>
+</main>
+<footer>
+<h2>How computed</h2>
+<ol>
+<li>Implementation (NIST SP 800-55 measure): finding limbs with a CODEOWNERS owner, divided by all finding limbs (not Healthy, or healed). Owners are counted, not listed.</li>
+<li>Efficiency (NIST SP 800-55 measure): median hours from the finding (limb foundAt, else the scan start) to the fix (the landing time in out/state.json, else updatedAt), over healed limbs.</li>
+<li>Impact (NIST SP 800-55 measure): sum of EPSS over healed limbs that were in CISA KEV or had EPSS of 0.1 or more. It reads as exploitable risk removed.</li>
+<li>SLA compliance: in-scope limbs are Possessed (48 hours) and EPSS of 0.1 or more (14-day sprint), counted from the team scan start, or from a limb&#39;s own found time when the creature records one. A limb counts when it was healed inside its window or is still open inside it. At risk means 75% of the window is used.</li>
+<li>Trend: open limbs (possessed plus rotting) after each of the last raids, read from the history that crypt autopsy and crypt gazette keep in out/autopsy-history.json (one entry per day they run), plus any history in out/state.json.</li>
+<li>Noise exorcised: findings below the noise line (counts.exorcised) divided by all findings (counts.findings).</li>
+</ol>
+</footer>
+</div>
+</body>
+</html>
+"
+`;

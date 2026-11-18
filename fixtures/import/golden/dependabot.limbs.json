@@ -1,0 +1,128 @@
+[
+  {
+    "rank": 1,
+    "id": "npm:jquery@unknown",
+    "ecosystem": "npm",
+    "name": "jquery",
+    "version": "unknown",
+    "direct": false,
+    "manifest": "dependabot.json",
+    "owner": "unowned",
+    "state": "Possessed",
+    "unknown": true,
+    "unknownReason": "version-unpinned",
+    "spawned": true,
+    "score": 1008488700,
+    "kev": true,
+    "epss": 0.84887,
+    "severity": 0,
+    "vendorSeverity": "MEDIUM",
+    "vulns": [
+      {
+        "id": "GHSA-JPCQ-CGW6-V4J6",
+        "cves": [
+          "CVE-2020-11023"
+        ]
+      }
+    ]
+  },
+  {
+    "rank": 2,
+    "id": "npm:lodash@unknown",
+    "ecosystem": "npm",
+    "name": "lodash",
+    "version": "unknown",
+    "direct": false,
+    "manifest": "dependabot.json",
+    "owner": "unowned",
+    "state": "Rotting",
+    "unknown": true,
+    "unknownReason": "version-unpinned",
+    "spawned": false,
+    "score": 521300,
+    "kev": false,
+    "epss": 0.05213,
+    "severity": 0,
+    "vendorSeverity": "HIGH",
+    "vulns": [
+      {
+        "id": "GHSA-P6MC-M468-83GW",
+        "cves": [
+          "CVE-2020-8203"
+        ]
+      }
+    ]
+  },
+  {
+    "rank": 3,
+    "id": "PyPI:pyyaml@unknown",
+    "ecosystem": "PyPI",
+    "name": "pyyaml",
+    "version": "unknown",
+    "direct": false,
+    "manifest": "dependabot.json",
+    "owner": "unowned",
+    "state": "Rotting",
+    "unknown": true,
+    "unknownReason": "version-unpinned",
+    "spawned": false,
+    "score": 0,
+    "kev": false,
+    "epss": null,
+    "severity": 0,
+    "vendorSeverity": "CRITICAL",
+    "vulns": [
+      {
+        "id": "GHSA-8Q59-Q68H-6HV4",
+        "cves": [
+          "CVE-2020-14343"
+        ]
+      }
+    ]
+  },
+  {
+    "rank": 4,
+    "id": "npm:go:example.invalid/mod@unknown",
+    "ecosystem": "npm",
+    "name": "go:example.invalid/mod",
+    "version": "unknown",
+    "direct": false,
+    "manifest": "dependabot.json",
+    "owner": "unowned",
+    "state": "Rotting",
+    "unknown": true,
+    "unknownReason": "version-unpinned",
+    "spawned": false,
+    "score": 0,
+    "kev": false,
+    "epss": null,
+    "severity": 0,
+    "vendorSeverity": "LOW",
+    "vulns": [
+      {
+        "id": "GHSA-aaaa-bbbb-cccc",
+        "cves": []
+      }
+    ]
+  },
+  {
+    "rank": 5,
+    "id": "npm:mystery@unknown",
+    "ecosystem": "npm",
+    "name": "mystery",
+    "version": "unknown",
+    "direct": false,
+    "manifest": "dependabot.json",
+    "owner": "unowned",
+    "state": "Rotting",
+    "unknown": true,
+    "unknownReason": "version-unpinned",
+    "spawned": false,
+    "score": 0,
+    "kev": false,
+    "epss": null,
+    "severity": 0,
+    "vendorSeverity": null,
+    "vulns": []
+  }
+]
