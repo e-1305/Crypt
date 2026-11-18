@@ -330,6 +330,9 @@ async function checkAutopsy(browser, vp, file) {
     copyFileSync(shot, join(imgDir, "autopsy.png"));
   }
   console.log(`ok   [${tag}] cards=${present.length} footnotes=${seen.footnotes}${pages ? ` printPages=${pages}` : ""}`);
+  await ctx.close();
+}
+
 // Import drop zone (issue #101): open the Bench on the plain page, check the zone and its privacy line, import the Trivy
 // fixture through the file input and check the ranked list, that no request carries the file, and that nothing overflows.
 const IMPORT_FIXTURE = join(root, "fixtures", "import", "trivy.json");
