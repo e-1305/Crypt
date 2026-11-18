@@ -380,3 +380,11 @@ body.record .judge-skip, body.record .judge-replay { display: none; }
 .import-drop:focus-within, .import select:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
 .import select { min-height: 44px; background: transparent; color: var(--fg); border: 1px solid var(--dim); font: inherit; }
 @media (prefers-reduced-motion: no-preference) { .import-drop { transition: border-color .15s; } }
+
+.proof-line { margin: .25rem 0 0; }
+.rehearsal { margin: 0 0 .5rem; }
+.proof { margin: 1rem; }
+.proof-list { margin: .5rem 0; padding-left: 1.5rem; overflow-wrap: anywhere; }
+.proof-list li { margin: .35rem 0; }
+.proof a, .proof-line a, .rehearsal a { color: var(--fg); text-decoration: underline; }
+.pane.proof a, .pane.proof-line a { display: inline; min-height: 0; min-width: 0; padding: .6rem 0; }
