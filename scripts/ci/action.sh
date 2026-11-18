@@ -2,6 +2,7 @@
 # Entry point of the composite action (action.yml): bash scripts/ci/action.sh <report|graft> [limb] [sabotage]
 #   report  exhume the checked-out repo, write the plate and the noise funnel to the step summary. Writes nothing to it.
 #   graft   opt-in. Needs GITHUB_TOKEN. Runs scripts/ci/live-raid.sh graft (existing preflight). Never merges.
+#   Env INPUT_ALERTS=issues (report mode): after exhume, print the KEV issues crypt alerts would open (dry-run, no token).
 # Env: CRYPT_TARGET (repo to scan, default $GITHUB_WORKSPACE or .), CRYPT_OUT_DIR (all output, default a temp dir),
 #      CRYPT_CMD, CRYPT_PLATE_CMD and CRYPT_FEEDS_CMD (stubs for tests), GITHUB_STEP_SUMMARY, GITHUB_OUTPUT.
 # Exit codes: 0 ok, 1 a step failed or the state is unknown, 2 bad arguments (nothing was run).
@@ -26,9 +27,11 @@ usage() {
 mode="$1"
 limb="${2:-LODASH}"
 sabotage="${3:-false}"
+alerts="${INPUT_ALERTS:-none}"
 
 case "$mode" in report | graft) ;; *) usage "mode must be report or graft, got '${mode:0:20}'" ;; esac
 case "$limb" in LODASH | JQUERY) ;; *) usage "limb must be LODASH or JQUERY, got '${limb:0:20}'" ;; esac
+case "$alerts" in none | issues) ;; *) usage "alerts must be none or issues, got '${alerts:0:20}'" ;; esac
 case "$sabotage" in true | false) ;; *) usage "sabotage must be true or false, got '${sabotage:0:20}'" ;; esac
 if [ "$mode" = "report" ] && [ "$sabotage" = "true" ]; then usage "sabotage only goes with mode graft"; fi
 if [ "$mode" = "graft" ] && [ -z "${GITHUB_TOKEN:-}" ]; then
@@ -103,6 +106,13 @@ funnel="$(node -e '
 ')" || fail "out/creature.json is unreadable or has no valid counts."
 read -r findings exorcised spawned unresolved unknown <<<"$funnel"
 
+if [ "$alerts" = "issues" ]; then
+  # Dry-run only: report mode has no token. The issues are printed to the log and the summary.
+  # shellcheck disable=SC2086
+  alerts_out="$($CRYPT alerts --format issues 2>>"$log")" || fail "crypt alerts failed."
+  printf '%s\n' "$alerts_out" >>"$log"
+fi
+
 # shellcheck disable=SC2086
 plate="$($PLATE out/creature.json 2>>"$log")" || fail "plate rendering failed."
 # shellcheck disable=SC2086
@@ -121,6 +131,15 @@ $CRYPT autopsy 2>&1 | tee -a "$log" || fail "crypt autopsy failed."
   echo '```'
   echo "$plate"
   echo '```'
+  echo
+  if [ "$alerts" = "issues" ]; then
+    echo
+    echo "### CRYPT alerts (dry-run)"
+    echo
+    echo '```'
+    echo "$alerts_out"
+    echo '```'
+  fi
   echo
   echo "creature.json and autopsy.html are in the workflow artifact. Report mode never writes to the repository."
 } >>"$SUMMARY"

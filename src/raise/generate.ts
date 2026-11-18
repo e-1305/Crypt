@@ -132,12 +132,9 @@ function safeCount(v: unknown): number {
   return typeof v === "number" && Number.isInteger(v) && v >= 0 && v < 1_000_000 ? v : 0;
 }
 
-export function generate(creature: CreatureInput): Generated {
-  const all: LimbInput[] = Array.isArray(creature?.limbs)
-    ? (creature.limbs as unknown[]).filter((x): x is LimbInput => !!x && typeof x === "object")
-    : [];
-  const findings = all.filter((l) => l.state === "Possessed" || l.state === "Rotting");
-  const spawned = all
+/** The limbs that become game monsters, in game order. limbIds over their names gives the real limb IDs. */
+export function spawnedLimbs(all: LimbInput[]): LimbInput[] {
+  return all
     .map((l, i) => ({ l, i }))
     .filter(({ l }) => l.spawned === true)
     .sort((a, b) => {
@@ -146,6 +143,14 @@ export function generate(creature: CreatureInput): Generated {
       return ra === rb ? a.i - b.i : ra < rb ? -1 : 1;
     })
     .map(({ l }) => l);
+}
+
+export function generate(creature: CreatureInput): Generated {
+  const all: LimbInput[] = Array.isArray(creature?.limbs)
+    ? (creature.limbs as unknown[]).filter((x): x is LimbInput => !!x && typeof x === "object")
+    : [];
+  const findings = all.filter((l) => l.state === "Possessed" || l.state === "Rotting");
+  const spawned = spawnedLimbs(all);
   const ids = limbIds(spawned.map((l) => str(l.name)));
   const monsters = spawned.map((l, i) => toMonster(l, ids[i]));
   const exorcised = Math.max(0, findings.length - monsters.length);

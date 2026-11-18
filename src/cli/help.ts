@@ -22,6 +22,7 @@ Commands:
   reraise             After a human landed pull requests: mark those limbs healed and recompile.
   autopsy             Write out/autopsy.html: a one-page report for a CISO (print it to PDF from a browser).
   gazette             Print the weekly digest as Slack or Teams JSON. Posts only with --send.
+  alerts              Open one GitHub issue per Possessed (KEV) limb. Prints them unless --live. Needs --format issues.
   graveyard           Scan an organisation (read-only) and write out/graveyard.json for the Graveyard page. Needs --org and --token-env.
   seal                Stop every agent action. Writes .crypt-seal.
   unseal              Lift the seal.
@@ -43,7 +44,8 @@ Options:
   --send              gazette: post to the webhook (default: print the payload)
   --dry-run           gazette: print the payload only (the default)
   --war-room <url>    gazette: https link for the "Open the War Room" button
-  --format <kind>     gazette: slack or teams (default: from --webhook-env, else slack)
+  --format <kind>     gazette: slack or teams (default: from --webhook-env, else slack); alerts: issues
+  --live, --repo      alerts: open the issues (at most 5, none twice) in owner/name. Needs GITHUB_TOKEN
   --org <org>         graveyard: organisation login to scan (the file stays on this machine)
   --token-env <VAR>   graveyard: NAME of the variable that holds a read-only GitHub token (it is never printed or written)
   --repos <a/b,c/d>   graveyard: scan only these repositories
