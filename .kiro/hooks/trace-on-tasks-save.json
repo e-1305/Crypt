@@ -7,9 +7,22 @@
       "trigger": "PostFileSave",
       "matcher": "(^|/)\\.kiro/specs/[^/]+/tasks\\.md$",
       "action": {
+        "type": "command",
+        "command": "bash scripts/hooks/run-logged.sh trace-on-tasks-save scripts/hooks/trace-report.sh"
+      },
+      "timeout": 60,
+      "enabled": true
+    },
+    {
+      "name": "Update traceability on tasks save (agent)",
+      "description": "When a spec's tasks.md changes, the agent refreshes the task, commit, test table in docs/KIRO.md with scripts/hooks/kiro-trace.ts.",
+      "trigger": "PostFileSave",
+      "matcher": "(^|/)\\.kiro/specs/[^/]+/tasks\\.md$",
+      "action": {
         "type": "agent",
         "prompt": "A spec tasks.md was saved. Run `npx tsx scripts/hooks/kiro-trace.ts --write` to refresh the traceability table in docs/KIRO.md, then show the diff of docs/KIRO.md. The script only rewrites the block between the kiro-trace markers. Do not commit."
-      }
+      },
+      "enabled": true
     }
   ]
 }

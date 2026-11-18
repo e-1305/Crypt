@@ -6,8 +6,12 @@
       "description": "Runs the vitest tests related to a saved src/**/*.ts file (scripts/hooks/related-tests.sh).",
       "trigger": "PostFileSave",
       "matcher": "(^|/)src/.*\\.ts$",
-      "action": { "type": "command", "command": "bash scripts/hooks/related-tests.sh" },
-      "timeout": 180
+      "action": {
+        "type": "command",
+        "command": "bash scripts/hooks/run-logged.sh related-tests-on-save scripts/hooks/related-tests.sh"
+      },
+      "timeout": 180,
+      "enabled": true
     }
   ]
 }

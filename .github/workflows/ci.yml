@@ -99,6 +99,8 @@ jobs:
         run: npm run kiro:stats -- --no-tests
       - name: Links, repository paths and commit SHAs in docs/KIRO.md
         run: npm run kiro:stats -- --check-links
+      - name: Every hook has a command action that writes docs/evidence/hook-runs.jsonl
+        run: node scripts/ci/hook-evidence-check.mjs
       - name: Stats blocks in docs/DEVPOST.md and docs/BLOG.md are current
         run: npm run kiro:stats -- --check-docs
 
