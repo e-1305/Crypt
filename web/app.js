@@ -120,6 +120,16 @@ if (benchToggle && benchBody) {
   });
 }
 
+// Hero actions (issue #120): "Play the creature" moves focus to the game input, "Scan your repo" focuses the paste field under the hero.
+document.getElementById("hero-play")?.addEventListener("click", () => {
+  document.getElementById("cmd")?.focus();
+});
+document.getElementById("hero-scan")?.addEventListener("click", () => {
+  const field = document.getElementById("paste-url");
+  field?.scrollIntoView({ block: "center" });
+  field?.focus();
+});
+
 // SEAL badge: visible while the page is sealed. Unseal lifts it for this page only.
 const sealBadge = document.getElementById("seal-badge");
 function showSeal() { if (sealBadge) sealBadge.hidden = !seal.sealed; }

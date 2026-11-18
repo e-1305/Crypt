@@ -21,7 +21,7 @@ const imgDir = join(root, "docs", "img");
 const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".woff2": "font/woff2", ".txt": "text/plain" };
 
 // The first screen: one primary button, the CRT input and the page links. The Bench drawer controls are checked with the drawer open.
-const CONTROLS = ["#paste-url", "#paste-go", "#paste-example", "#bench-toggle", "#hc-toggle", "#cmd", "#try-chip", "#download", "#manual-link", "#landing-graveyard"];
+const CONTROLS = ["#paste-url", "#paste-go", "#paste-example", "#bench-toggle", "#hc-toggle", "#cmd", "#try-chip", "#download", "#manual-link", "#views-play", "#views-war-room", "#landing-graveyard", "#views-autopsy"];
 const BENCH_CONTROLS = ["#sim-green", "#sim-red", "#raid-start", "#sound-toggle", "#record-toggle", "#view-3d", "#install-copy", "#lookup", "#kiro-link", "#graveyard-link"];
 // Fixed-position elements checked on the 3D bench. The caption is pointer-events:none, so it is listed by name.
 const CAPTION = "#theatre-caption";
@@ -147,6 +147,12 @@ async function check(browser, vp, query) {
     if (hidden.length) fail(tag, `Bench controls visible on the first screen: ${hidden.join(", ")}`);
   }
   for (const [a, b] of findOverlaps(all)) fail(tag, `controls overlap: ${a} and ${b}`);
+  if (!is3d) {
+    // The Views nav must not sit under a fixed element (sound, recording mode, skip button).
+    const nav = all.filter((b) => b.name.startsWith("#views-") || b.name === "#landing-graveyard");
+    const fixedNow = (await fixedBoxes(page, vp.w, vp.h)).filter((f) => !nav.some((n) => n.name === f.name));
+    for (const [x, y] of findOverlaps([...nav, ...fixedNow])) if (nav.some((n) => n.name === x || n.name === y)) fail(tag, `Views nav overlaps a fixed element: ${x} and ${y}`);
+  }
   const stats = is3d ? present(tag, await boxes(page, RAID_STATS)) : [];
   if (is3d) for (const [a, b] of findOverlaps(stats)) fail(tag, `raid stats overlap: ${a} and ${b}`);
 
@@ -717,6 +723,66 @@ async function checkGraveyard(browser, vp) {
   await ctx.close();
 }
 
+// Hero (issue #120): the h1, the problem line and the three buttons are visible and clear of fixed elements. The game stays
+// above the fold at 1280x800 and the input is at most one screen down at 390x844.
+const HERO = ["h1", "#hero-problem", "#hero-what", "#hero-proof", "#hero-watch", "#hero-play", "#hero-scan"];
+async function checkHero(browser, vp) {
+  const tag = `hero ${vp.w}x${vp.h}`;
+  const ctx = await browser.newContext({ viewport: { width: vp.w, height: vp.h }, hasTouch: vp.touch, isMobile: vp.touch });
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => fail(tag, `page error: ${e.message}`));
+  await page.goto(base);
+  await page.waitForFunction(() => !document.getElementById("cmd")?.disabled, null, { timeout: 30000 }).catch(() => fail(tag, "game did not load within 30s"));
+  await page.waitForTimeout(500);
+  const list = present(tag, await boxes(page, HERO));
+  if (list.length !== HERO.length) fail(tag, `hero parts not visible: ${HERO.filter((h) => !list.some((b) => b.name === h)).join(", ")}`);
+  for (const b of list) if (b.x < 0 || b.x + b.width > vp.w + 1) fail(tag, `${b.name} leaves the viewport horizontally`);
+  const fixedAll = await fixedBoxes(page, vp.w, vp.h);
+  // The hero parts sit inside fixed containers on the 3D bench (#hero, header.top): compare the parts with every other fixed element, and the containers too.
+  const containers = ["#hero", "header.top"];
+  const fixed = fixedAll.filter((f) => !containers.includes(f.name));
+  const mine = [...list, ...fixedAll.filter((f) => containers.includes(f.name))];
+  const sy = await page.evaluate(() => scrollY);
+  for (const b of mine) for (const f of fixed) if (findOverlaps([b, { ...f, y: f.y + sy }]).length) fail(tag, `${b.name} overlaps fixed element ${f.name}`);
+  for (const [a, b] of findOverlaps(list.filter((x) => x.name.startsWith("#hero-") && !x.name.endsWith("problem") && !x.name.endsWith("what") && !x.name.endsWith("proof")))) fail(tag, `hero buttons overlap: ${a} and ${b}`);
+  const labels = await page.evaluate(() => ["#hero-watch", "#hero-play", "#hero-scan"].map((s) => document.querySelector(s)?.textContent.trim()));
+  if (JSON.stringify(labels) !== JSON.stringify(["Watch it run (60 s)", "Play the creature", "Scan your repo"])) fail(tag, `hero button labels are ${JSON.stringify(labels)}`);
+  const watch = await page.getAttribute("#hero-watch", "href");
+  if (watch !== "?judge=1") fail(tag, `Watch it run goes to ${watch}, expected ?judge=1`);
+  const proof = await page.getAttribute("#hero-proof-link", "href");
+  if (proof !== "https://github.com/e-1305/crypt-demo/pull/1") fail(tag, `proof link is ${proof}`);
+  if (vp.tall !== false) {
+    const cmd = (await boxes(page, ["#cmd"]))[0];
+    const plate = (await boxes(page, ["#plate"]))[0];
+    const theatre = await page.evaluate(() => document.body.classList.contains("theatre"));
+    if (vp.w === 1280 && !theatre && (!plate || plate.y >= vp.h - 100)) fail(tag, `the game is not above the fold: plate starts at ${Math.round(plate?.y ?? -1)}px of ${vp.h}px`);
+    const hero = (await boxes(page, ["#hero"]))[0];
+    if (vp.w === 390 && hero && hero.height > vp.h * 0.55) fail(tag, `the hero is ${Math.round(hero.height)}px tall, over 55% of the ${vp.h}px viewport`);
+    if (vp.w === 390 && (!cmd || cmd.y > vp.h * 3)) fail(tag, `the game input is ${Math.round(cmd?.y ?? -1)}px down`);
+    if (vp.w === 390 && cmd) {
+      // The hero may push the game input at most one screen down: measure the input with the hero hidden, then shown.
+      const without = await page.evaluate(() => { const h = document.getElementById("hero"); const old = h.style.display; h.style.display = "none"; const y = document.getElementById("cmd").getBoundingClientRect().y + scrollY; h.style.display = old; return y; });
+      const push = cmd.y - without;
+      console.log(`     [${tag}] game input at ${Math.round(without)}px without the hero, ${Math.round(cmd.y)}px with it (hero pushes ${Math.round(push)}px of ${vp.h}px)`);
+      if (push > vp.h) fail(tag, `the hero pushes the game input ${Math.round(push)}px down, more than one screen (${vp.h}px)`);
+    }
+    if (vp.w === 1280 && theatre) {
+      // Default view at 1280x800 is the 3D bench: the canvas fills the first screen and the hero must stay a small overlay on it.
+      const canvas = (await boxes(page, ["#theatre-canvas"]))[0];
+      const hero1280 = (await boxes(page, ["#hero"]))[0];
+      if (!canvas || canvas.y > 1 || canvas.height < vp.h - 1) fail(tag, `the 3D bench canvas does not fill the first screen`);
+      if (hero1280 && hero1280.height > vp.h * 0.3) fail(tag, `the hero is ${Math.round(hero1280.height)}px tall over the 3D bench, over 30% of the ${vp.h}px viewport`);
+    }
+  }
+  if (process.env.VISUAL_QA_COPY_DOCS === "1" && [1440, 390].includes(vp.w)) {
+    mkdirSync(imgDir, { recursive: true });
+    await page.evaluate(() => scrollTo(0, 0));
+    await page.screenshot({ path: join(imgDir, `hero-${vp.w}x${vp.h}.png`) });
+  }
+  console.log(`ok   [${tag}] hero=${list.length} fixed=${fixed.length}`);
+  await ctx.close();
+}
+
 let browser;
 try {
   browser = await chromium.launch(launchOptions());
@@ -724,6 +790,7 @@ try {
     await check(browser, vp, "");
     if (vp.w >= 900) await check(browser, vp, "?theatre=2d");
   }
+  for (const vp of VIEWPORTS) await checkHero(browser, vp);
   for (const vp of VIEWPORTS) await checkImport(browser, vp);
   for (const vp of JUDGE_VIEWPORTS) await checkJudge(browser, vp);
   for (const vp of VIEWPORTS) await checkCard(browser, vp);
