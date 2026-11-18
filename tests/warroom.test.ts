@@ -70,6 +70,30 @@ describe("reduce", () => {
     expect(s.limbs.find((l) => l.key === "npm:lodash")?.phase).toBe("ci-red");
     expect(s.feed[0]).toContain(REJECTION_LINE);
   });
+  it("the rejection is tied to its limb and clears on that limb's next event or a heal elsewhere, the feed keeps it", () => {
+    const red = { type: "ci-red", limb: "npm:lodash", pr: 2, at: 10 };
+    expect(sceneFrom([red], LIMBS, 20).rejection).toEqual({ limb: "npm:lodash", name: "lodash", line: REJECTION_LINE, at: 10 });
+    const next = sceneFrom([red, { type: "ci-running", limb: "npm:lodash", pr: 3, at: 15 }], LIMBS, 20);
+    expect(next.rejection).toBeNull();
+    const healed = sceneFrom([red, { type: "human-merged", limb: "npm:jquery", pr: 1, at: 15 }], LIMBS, 20);
+    expect(healed.rejection).toBeNull();
+    expect(healed.feed.some((f) => f.includes(REJECTION_LINE))).toBe(true);
+    expect(sceneFrom([{ type: "human-merged", limb: "npm:jquery", pr: 1, at: 5 }, red], LIMBS, 20).rejection?.limb).toBe("npm:lodash");
+  });
+  it("boss cards carry KEV, EPSS, a 48h SLA countdown and honest unknowns", () => {
+    const h = 3600_000;
+    const s = sceneFrom([], [{ ...LIMBS[0]!, cveCount: 2, ownerTeam: "platform", detectedAt: 0 }], 10 * h, { raidStart: 0, scanStart: 0 });
+    expect(s.bosses[0]).toMatchObject({ kev: true, epss: 0.9, cves: 2, team: "platform", slaRemainingMs: 38 * h });
+    const bare = sceneFrom([], LIMBS, 0, { raidStart: 0 }).bosses[0]!;
+    expect(bare).toMatchObject({ cves: null, team: null, slaRemainingMs: 48 * h });
+    const done = sceneFrom([{ type: "human-merged", limb: "npm:jquery", at: 1 }], LIMBS, 5).bosses[0]!;
+    expect(done.slaRemainingMs).toBeNull();
+  });
+  it("counts Nights Without Possession for the empty arena", () => {
+    const day = 86400000;
+    expect(sceneFrom([], [LIMBS[1]!], 3 * day, { raidStart: 0, scanStart: 0 }).nights).toBe(3);
+    expect(sceneFrom([], [LIMBS[1]!], 3 * day, { raidStart: 0, scanStart: 0 }).bosses).toEqual([]);
+  });
   it("a human merge heals with thunder, scores the risk and starts a combo", () => {
     const s = sceneFrom([{ type: "human-merged", limb: "npm:jquery", pr: 1, at: 10, healedBy: "Maya" }], LIMBS, 20);
     expect(s.effects[0]).toMatchObject({ kind: "heal", thunder: true });
@@ -109,7 +133,7 @@ describe("boss bars", () => {
   });
   it("a healed boss has 0 HP", () => {
     const s = sceneFrom([{ type: "human-merged", limb: "npm:jquery", at: 1 }], LIMBS, 2);
-    expect(s.bosses).toEqual([{ key: "npm:jquery", name: "jquery", hp: 0, healed: true }]);
+    expect(s.bosses[0]).toMatchObject({ key: "npm:jquery", name: "jquery", hp: 0, healed: true });
   });
 });
 
@@ -139,7 +163,7 @@ describe("blameless", () => {
         if (/Maya|Ola/.test(line)) expect(line).toMatch(/ healed by (Maya|Ola)/);
       }
       expect(s.effects.every((e) => !/Maya|Ola/.test(JSON.stringify(e)))).toBe(true);
-      expect(Object.keys(s).sort()).toEqual(["bosses", "clock", "combo", "effects", "feed", "healTimes", "healedCount", "limbs", "remainingMs", "score", "simulated"]);
+      expect(Object.keys(s).sort()).toEqual(["bosses", "clock", "combo", "effects", "feed", "healTimes", "healedCount", "limbs", "nights", "rejection", "remainingMs", "score", "simulated"]);
     }), { numRuns: runs });
   });
 });

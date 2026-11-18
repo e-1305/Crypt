@@ -415,6 +415,9 @@ async function checkWarRoom(browser, vp) {
   await page.waitForTimeout(300);
   const feed = await page.textContent("#feed");
   if (!/healed by/.test(feed ?? "") || !/SIMULATED/.test(feed ?? "")) fail(tag, "heal row missing or not labelled SIMULATED");
+  const stale = await page.textContent("#rejection");
+  if (stale?.trim()) fail(tag, `stale rejection line after a later heal: ${JSON.stringify(stale)}`);
+  if (!/rejected/.test(feed ?? "")) fail(tag, "the feed lost the rejection history");
   await layout("after the heal");
   await capture(`war-room-${vp.w}x${vp.h}`, `war-room-${vp.w}x${vp.h}.png`);
   console.log(`ok   [${tag}] checked=${n1}`);

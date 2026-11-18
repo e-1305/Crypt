@@ -35,9 +35,20 @@ label { display: block; color: var(--dim); }
 .flash { position: absolute; inset: 0; background: #dff; opacity: 0; pointer-events: none; }
 .flash.thunder { animation: thunder .8s ease-out 1; }
 @keyframes thunder { 0% { opacity: .85; } 20% { opacity: .1; } 35% { opacity: .6; } 100% { opacity: 0; } }
-.rejection { min-height: 1.4em; color: #ff6060; font-weight: 700; }
+.rejection { min-height: 1.4em; color: #ff6060; font-weight: 700; transition: opacity .6s; }
+.rejection:empty { opacity: 0; }
 .boss-list, .feed, .badges { list-style: none; margin: 0; padding: 0; }
 .boss-list li { margin-bottom: .6rem; }
+.boss-card { border: 1px solid var(--dim); padding: .6rem; background: #0a140a; }
+.boss-card.is-healed { opacity: .7; }
+.boss-facts { display: flex; flex-wrap: wrap; gap: .3rem .8rem; margin: .4rem 0 0; }
+.kev-badge { background: var(--hot); color: #000; font-weight: 700; padding: 0 .4em; }
+.boss-sla { margin: .3rem 0 0; font-weight: 700; }
+.boss-sla.overdue { color: #ff6060; }
+.boss-sim { margin: .3rem 0 0; }
+.arena-empty { text-align: center; padding: 1rem 0; }
+.arena-title { margin: 0; font-weight: 700; }
+.nights { margin: .2rem 0; font-size: 4.5rem; line-height: 1; font-weight: 700; }
 .boss-name { display: flex; justify-content: space-between; gap: .5rem; }
 .bar { height: 14px; border: 1px solid var(--dim); background: #0a140a; }
 .bar > span { display: block; height: 100%; background: var(--hot); transition: width .6s; }
@@ -73,5 +84,5 @@ label { display: block; color: var(--dim); }
 @media (min-width: 1700px) { .plate { font-size: 13px; } .big { font-size: 3rem; } }
 @media (prefers-reduced-motion: reduce) {
   .plate .just-healed, .plate .convulsing, .flash.thunder { animation: none; }
-  .bar > span { transition: none; }
+  .bar > span, .rejection { transition: none; }
 }
