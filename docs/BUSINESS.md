@@ -78,6 +78,6 @@ Real values from `npm run traction`, run on 2026-11-18. They are tiny, and shown
 
 | Milestone | Measurable signal |
 |---|---|
-| Publish `@e-1305/crypt` to npm | The npm API returns a download count instead of "not found". Add the npm downloads badge to the README after this, not before. |
+| Publish `@e-1305/crypt` to npm | The npm API returns a download count instead of "not found". The README npm downloads badge already exists. Until the package is published it shows an error or zero, not a real count. |
 | Five outside repositories run the Action | `npm run traction` with a token reports at least 5 distinct repositories outside the e-1305 org. |
 | Build OCSF export and test it with one security team | One team confirms in writing that the export loads in their SIEM, and we log it in [PLAYTEST_LOG.md](PLAYTEST_LOG.md). |
