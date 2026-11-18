@@ -12,28 +12,18 @@
 <a class="skip" href="#main">Skip to the graveyard</a>
 <header class="gy-top">
   <h1>CRYPT Graveyard</h1>
-  <p class="gy-sub">Every repository is a tombstone, its creature rises from it. <a href="../">Back to the crypt</a></p>
+  <p id="totals" class="gy-totals" aria-label="Totals for this graveyard">Loading the census graveyard.</p>
+  <p class="gy-sub"><a href="../">Back to the crypt</a></p>
 </header>
 <main id="main">
   <section class="gy-controls" id="controls" aria-label="Choose repositories and views">
-    <div class="gy-row">
+    <div class="gy-row gy-toolbar">
       <button type="button" id="load-census" aria-pressed="true">Census demo (offline)</button>
       <label class="gy-file">Load graveyard.json
         <input type="file" id="file" accept=".json,application/json">
       </label>
       <button type="button" id="view-toggle" aria-pressed="false">List view</button>
       <button type="button" id="record-on" aria-pressed="false">Recording mode</button>
-    </div>
-    <form id="scan-form" class="gy-row" autocomplete="off">
-      <label for="repos">Public GitHub repositories (npm), one per line or comma separated</label>
-      <textarea id="repos" rows="3" spellcheck="false" placeholder="owner/repo, https://github.com/owner/repo"></textarea>
-      <div class="gy-row">
-        <button type="submit" id="scan">Scan in this browser</button>
-        <button type="button" id="resume" hidden>Resume</button>
-      </div>
-      <p id="estimate" class="gy-muted">Up to 20 repositories per run. GitHub allows 60 requests an hour without a token, so the scan reads one repository at a time and keeps results in this tab.</p>
-    </form>
-    <div class="gy-row gy-views">
       <label for="sort">Order</label>
       <select id="sort">
         <option value="name">Alphabetical</option>
@@ -50,8 +40,18 @@
       </select>
       <label for="filter-owner">Owner team</label>
       <select id="filter-owner"><option value="">All</option></select>
+      <button type="button" id="scan-toggle" aria-expanded="false" aria-controls="scan-form">Scan repositories</button>
     </div>
-    <p class="gy-muted">Views of each repo's own data. No repo is ranked against another.</p>
+    <form id="scan-form" class="gy-scan" autocomplete="off" hidden>
+      <label for="repos">Public GitHub repositories (npm), one per line or comma separated</label>
+      <textarea id="repos" rows="3" spellcheck="false" placeholder="owner/repo, https://github.com/owner/repo"></textarea>
+      <div class="gy-row">
+        <button type="submit" id="scan">Scan in this browser</button>
+        <button type="button" id="resume" hidden>Resume</button>
+      </div>
+      <p id="estimate" class="gy-muted">Up to 20 repositories per run. GitHub allows 60 requests an hour without a token, so the scan reads one repository at a time and keeps results in this tab.</p>
+    </form>
+    <p class="gy-muted gy-note">Views of each repo's own data. No repo is ranked against another.</p>
   </section>
 
   <div class="gy-progress-wrap">
@@ -64,6 +64,15 @@
     <p>These repositories could not be read. They are not healthy, they are unknown. Check the address and scan them again later.</p>
     <ul id="not-scanned-list"></ul>
   </section>
+
+  <ul id="legend" class="gy-legend" aria-label="How to read the scene">
+    <li><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><rect x="2" y="9" width="7" height="11" fill="none" stroke="currentColor"/><rect x="11" y="2" width="9" height="18" fill="none" stroke="currentColor"/></svg>Size: exploitable risk</li>
+    <li><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><rect x="5" y="5" width="12" height="15" rx="6" fill="#101c14" stroke="#ff6a3d" stroke-width="2"/></svg>Glow: possessed limbs</li>
+    <li><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="5"/></svg>Within SLA
+      <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true" fill="none" stroke="#ffb000" stroke-width="2"><path d="M11 5L17 17H5Z"/></svg>At risk
+      <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true" fill="none" stroke="#ff6a3d" stroke-width="2"><path d="M5 5L17 17M17 5L5 17"/></svg>Breached</li>
+    <li><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true" fill="#dcffdc"><path d="M4 12a7 7 0 0114 0v7l-3.5-2.5L11 19l-3.5-2.5L4 19z"/></svg>Ghost: unowned limbs</li>
+  </ul>
 
   <section id="scene-wrap" class="gy-stage" aria-label="Graveyard scene">
     <canvas id="scene" aria-hidden="true"></canvas>

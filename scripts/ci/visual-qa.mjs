@@ -548,7 +548,8 @@ async function checkImport(browser, vp) {
 }
 
 // The Graveyard (issue #111): census mode is offline. Scene, tomb buttons, screen reader table, tooltip, panel, recording mode and list fallback.
-const GY_CONTROLS = ["#load-census", "#view-toggle", "#record-on", "#scan", "#repos", "#sort", "#filter-sla", "#filter-owner"];
+const GY_CONTROLS = ["#load-census", "#view-toggle", "#record-on", "#scan-toggle", "#sort", "#filter-sla", "#filter-owner"];
+const GY_SCAN = ["#scan", "#repos"];
 
 async function checkGraveyard(browser, vp) {
   const tag = `${vp.w}x${vp.h} graveyard`;
@@ -579,7 +580,15 @@ async function checkGraveyard(browser, vp) {
     const seenColours = new Set();
     for (let i = 0; i < d.length; i += 4 * 97) seenColours.add((d[i] << 16) | (d[i + 1] << 8) | d[i + 2]);
     const tombs = [...document.querySelectorAll("#tombs button")];
+    const box = (s) => { const e = document.querySelector(s); const r = e && e.getBoundingClientRect(); return r && e.getClientRects().length ? { top: r.top, bottom: r.bottom, height: r.height } : null; };
+    const widths = tombs.map((t) => t.parentElement.getBoundingClientRect().width);
     return {
+      stage: box("#scene-wrap"), controls: box("#controls"), legend: box("#legend"), totalsBox: box("#totals"),
+      totals: document.getElementById("totals").textContent,
+      legendText: (document.getElementById("legend") || { textContent: "" }).textContent,
+      firstTomb: tombs[0] ? tombs[0].getBoundingClientRect().top : null,
+      vh: innerHeight, scrollH: document.documentElement.scrollHeight,
+      maxTombW: Math.max(0, ...widths),
       tombs: tombs.length,
       small: tombs.filter((t) => { const r = t.getBoundingClientRect(); return r.width < 44 || r.height < 44; }).length,
       rows: document.querySelectorAll("#sr-body tr").length,
@@ -600,11 +609,32 @@ async function checkGraveyard(browser, vp) {
   if (!seen.lang || seen.main !== 1) fail(tag, "html lang or the single main landmark is missing");
   if (seen.low.length) fail(tag, `text contrast under 4.5:1: ${seen.low.join(", ")}`);
   if (/\bworst\b/i.test(seen.text)) fail(tag, "the page uses a ranking label");
+  if (!/\b\d[\d,]* repos\b/.test(seen.totals) || !/limbs/.test(seen.totals) || !/findings/.test(seen.totals) || !/monsters/.test(seen.totals)) fail(tag, `the totals header is missing repos, limbs, findings or monsters: "${seen.totals}"`);
+  for (const w of ["risk", "possessed", "SLA", "unowned"]) if (!new RegExp(w, "i").test(seen.legendText)) fail(tag, `the legend does not explain "${w}"`);
+  if (!seen.legend || !seen.totalsBox) fail(tag, "the legend or the totals header is not visible");
+  if (vp.w >= 900 && vp.h >= 560) {
+    if (!seen.stage || seen.stage.height < vp.h * 0.6) fail(tag, `the scene is ${Math.round(seen.stage?.height ?? 0)}px tall, under 60% of the ${vp.h}px viewport`);
+    if (seen.stage && seen.stage.bottom < vp.h - 40) fail(tag, `the scene ends at ${Math.round(seen.stage.bottom)}px and does not fill the viewport (${vp.h}px)`);
+    if (seen.controls && seen.controls.bottom > vp.h * 0.2) fail(tag, `the controls reach ${Math.round(seen.controls.bottom)}px down, over 20% of the viewport`);
+    if (seen.scrollH > vp.h + 1) fail(tag, `the page scrolls (${seen.scrollH}px in ${vp.h}px); the scene should fill one screen`);
+    if (seen.maxTombW < 60) fail(tag, `the biggest tombstone is ${Math.round(seen.maxTombW)}px wide, too small to read`);
+  } else {
+    if (!seen.stage || seen.stage.top > vp.h * 0.3) fail(tag, `the scene starts at ${Math.round(seen.stage?.top ?? 9999)}px, not at the top of the screen`);
+    if (seen.firstTomb === null || seen.firstTomb > vp.h * 0.6) fail(tag, "no tombstone is above the fold");
+    if (seen.controls && seen.stage && seen.controls.top < seen.stage.top) fail(tag, "the controls are above the scene on a narrow screen");
+  }
   if (vp.w < 900 && seen.small) fail(tag, `${seen.small} tomb buttons are under ${TAP_MIN}px`);
 
   const ctl = present(tag, await boxes(page, GY_CONTROLS));
   for (const [a, b] of findOverlaps(ctl)) fail(tag, `controls overlap: ${a} and ${b}`);
   if (vp.w < 900) for (const b of ctl) if (b.height < TAP_MIN && b.name !== "#repos") fail(tag, `tap target ${b.name} is ${Math.round(b.height)}px tall, under ${TAP_MIN}`);
+
+  await page.click("#scan-toggle");
+  const scan = present(tag, await boxes(page, GY_SCAN));
+  if (scan.length !== GY_SCAN.length) fail(tag, "the scan form did not open");
+  for (const [a, b] of findOverlaps(scan)) fail(tag, `scan controls overlap: ${a} and ${b}`);
+  if (vp.w < 900) for (const b of scan) if (b.height < TAP_MIN && b.name !== "#repos") fail(tag, `tap target ${b.name} is ${Math.round(b.height)}px tall, under ${TAP_MIN}`);
+  await page.click("#scan-toggle");
 
   // Tab reaches the tombs.
   await page.focus("#filter-owner");
@@ -636,10 +666,13 @@ async function checkGraveyard(browser, vp) {
   await page.click("#view-toggle");
 
   mkdirSync(outDir, { recursive: true });
+  await page.evaluate(() => { document.activeElement?.blur(); document.getElementById("tip").hidden = true; scrollTo(0, 0); document.getElementById("scene-wrap").scrollTo(0, 0); });
+  await page.mouse.move(1, 1);
   await page.waitForTimeout(300);
+  await page.evaluate(() => { document.getElementById("tip").hidden = true; });
   const shot = join(outDir, `graveyard-${vp.w}x${vp.h}.png`);
   await page.screenshot({ path: shot });
-  if (process.env.VISUAL_QA_COPY_DOCS === "1" && ((vp.w === 1440 && vp.h === 900) || vp.w === 390)) {
+  if (process.env.VISUAL_QA_COPY_DOCS === "1" && ((vp.w === 1920 && vp.h === 1080) || vp.w === 390)) {
     mkdirSync(imgDir, { recursive: true });
     copyFileSync(shot, join(imgDir, `graveyard-${vp.w}x${vp.h}.png`));
   }

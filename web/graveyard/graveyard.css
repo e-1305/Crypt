@@ -1,11 +1,16 @@
 /* Graveyard page. Palette and fonts come from ../style.css (phosphor green on near black). */
 .gy { min-height: 100vh; }
-.gy-top { padding: .75rem 1rem 0; }
-.gy-top h1 { font-size: 1.25rem; }
-.gy-sub { margin: .25rem 0; }
+.gy-top { padding: .5rem 1rem 0; display: flex; flex-wrap: wrap; align-items: center; gap: 0 1.25rem; }
+.gy-top h1 { font-size: 1.25rem; margin: 0; }
+.gy-totals { margin: 0; flex: 1 1 18rem; font-weight: 700; overflow-wrap: anywhere; }
+.gy-sub { margin: 0; }
 .gy-sub a, .gy a { color: var(--fg); }
-main { display: block; padding: .5rem 1rem 2rem; max-width: 100%; }
-.gy-controls { border: 1px solid var(--dim); padding: .75rem 1rem; margin-bottom: .75rem; }
+main { display: flex; flex-direction: column; padding: .25rem 1rem 1rem; max-width: 100%; }
+.gy-controls { position: relative; border: 1px solid var(--dim); padding: .25rem .75rem; margin-bottom: .5rem; }
+.gy-controls .gy-row { margin: .2rem 0; }
+.gy-scan { margin: .25rem 0; padding: .5rem .75rem; background: #050805; border: 1px solid var(--fg); }
+.gy-scan[hidden] { display: none; }
+.gy-scan label { display: block; margin-bottom: .25rem; }
 .gy-row { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; margin: .4rem 0; }
 .gy-muted { margin: .25rem 0; color: var(--dim); max-width: 60rem; }
 .gy button, .gy select, .gy-file { min-height: 44px; min-width: 44px; }
@@ -17,9 +22,13 @@ main { display: block; padding: .5rem 1rem 2rem; max-width: 100%; }
 .gy-progress span { display: block; height: 100%; width: 0; background: var(--fg); }
 #status { margin: .35rem 0; min-height: 1.35em; overflow-wrap: anywhere; }
 
-.gy-stage { position: relative; width: 100%; border: 1px solid var(--dim); background: #03060a; overflow: hidden; }
+.gy-stage { position: relative; width: 100%; border: 1px solid var(--dim); background: #03060a; overflow: hidden; order: 1; }
 #scene { display: block; width: 100%; height: 480px; }
-.gy-tombs { list-style: none; margin: 0; padding: 0; position: absolute; inset: 0; }
+.gy-legend { list-style: none; margin: 0 0 .5rem; padding: 0; display: flex; flex-wrap: wrap; gap: .25rem 1.25rem; font-size: .875rem; }
+.gy-legend li { display: inline-flex; align-items: center; flex-wrap: wrap; gap: .25rem; }
+.gy-legend svg { flex: none; }
+.gy-legend li svg:not(:first-child) { margin-left: .5rem; }
+.gy-tombs { list-style: none; margin: 0; padding: 0; position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
 .gy-tombs li { position: absolute; }
 .gy-tombs button { display: block; width: 100%; height: 100%; min-width: 44px; min-height: 44px; padding: 0; border: 1px solid transparent; background: transparent; cursor: pointer; }
 .gy-tombs button:hover { background: rgba(51, 255, 51, .08); color: inherit; }
@@ -43,10 +52,11 @@ main { display: block; padding: .5rem 1rem 2rem; max-width: 100%; }
 .gy-panel .gy-dry { color: var(--warn); }
 
 /* Recording mode: controls hidden, large type, nothing else on screen. Escape leaves it. */
-.gy.record .gy-controls, .gy.record .gy-sub, .gy.record .gy-progress-wrap { display: none; }
+.gy.record .gy-controls, .gy.record .gy-sub, .gy.record .gy-progress-wrap, .gy.record .gy-scan { display: none; }
 .gy.record { font-size: 22px; }
-.gy.record .gy-top h1 { font-size: 2rem; text-align: center; }
+.gy.record .gy-top h1 { font-size: 2rem; }
 .gy.record main { padding: 0; }
+.gy.record .gy-legend { padding: 0 1rem; }
 .gy.record .gy-stage { border: 0; }
 .gy.record .gy-tip { font-size: 1.25rem; }
 .gy.record #status { position: fixed; bottom: .5rem; left: 1rem; right: 1rem; text-align: center; margin: 0; color: var(--dim); }
@@ -59,3 +69,33 @@ main { display: block; padding: .5rem 1rem 2rem; max-width: 100%; }
 .gy-file { flex-wrap: wrap; max-width: 100%; }
 .gy-row { max-width: 100%; }
 .gy select { max-width: 100%; }
+
+/* Layout: on a desktop viewport the page is one screen. A slim header and toolbar, then the scene fills the rest.
+   On a narrow screen the scene comes first and the controls follow it. */
+.gy-legend { order: 2; }
+.gy-progress-wrap { order: 3; }
+.gy-controls { order: 4; }
+#not-scanned { order: 5; }
+#list-wrap { order: 1; }
+@media (min-width: 900px) and (min-height: 560px) {
+  .gy { height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+  .gy main { flex: 1 1 auto; min-height: 0; }
+  .gy-controls { order: -3; }
+  .gy-legend { order: -2; }
+  .gy-progress-wrap { order: -1; }
+  .gy-stage { flex: 1 1 auto; min-height: 0; overflow-x: hidden; overflow-y: auto; }
+  #list-wrap { flex: 1 1 auto; min-height: 0; overflow: auto; }
+  .gy-scan { position: absolute; z-index: 10; left: 0; top: 100%; width: min(44rem, 100%); box-shadow: 0 8px 30px rgba(0, 0, 0, .8); }
+  .gy-progress-wrap { display: flex; align-items: center; gap: 1rem; }
+  .gy-progress-wrap .gy-progress { flex: 0 0 12rem; margin: 0; }
+  #status { margin: 0 0 .25rem; min-height: 1.35em; }
+  .gy .skip { z-index: 30; }
+  .gy-note { display: none; }
+  .gy-controls { padding: .1rem .5rem; margin-bottom: .35rem; }
+  .gy-toolbar { gap: .35rem .5rem; flex-wrap: wrap; }
+  .gy-toolbar button, .gy-toolbar select, .gy-toolbar .gy-file { min-height: 36px; padding-top: 0; padding-bottom: 0; }
+  .gy-toolbar .gy-file input { min-height: 36px; max-width: 9rem; }
+  .gy-toolbar .gy-file { padding: 0 .5rem; }
+}
+@media (max-width: 899px) { .gy-top h1 { font-size: 1.1rem; } .gy-totals { flex-basis: 100%; font-size: .9rem; } .gy-top .gy-sub { order: 1; } .gy-totals { order: 2; } .gy-scan { margin-top: .5rem; } .gy-top { padding-top: .35rem; } .gy-sub a { min-height: 44px; line-height: 44px; } }
+.gy.record .gy-legend { display: flex; }

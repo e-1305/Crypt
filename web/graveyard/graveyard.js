@@ -91,11 +91,26 @@ function applyView() {
   if ($("filter-sla").value) f.sla = $("filter-sla").value;
   if ($("filter-owner").value) f.owner = $("filter-owner").value;
   S.tombs = sortTombs(filterTombs(S.all, f), S.record ? "name" : $("sort").value);
+  renderTotals();
   renderTable();
   renderCards();
   layout();
   if (S.all.length === 0) say("No repositories to show yet.");
   else say(S.tombs.length + " of " + S.all.length + " repositories shown. Views of each repo's own data.");
+}
+
+/** Org totals over the whole data set. Aggregates only: no repo is named or ranked here. */
+function renderTotals() {
+  const n = S.all.length;
+  if (n === 0) {
+    $("totals").textContent = "No repositories to show yet.";
+    return;
+  }
+  const sum = (f) => S.all.reduce((a, t) => a + f(t), 0);
+  const findings = sum((t) => t.findings);
+  const fmt = (v) => v.toLocaleString("en-US");
+  const poss = sum((t) => t.possessed);
+  $("totals").textContent = fmt(n) + " repos | " + fmt(sum((t) => t.scannedLimbs)) + " limbs | " + fmt(findings) + " findings -> " + fmt(findings) + " monsters (" + fmt(poss) + " possessed, " + fmt(sum((t) => t.rotting)) + " rotting)";
 }
 
 // ---- screen reader table and cards -----------------------------------------------------------------------------
@@ -137,39 +152,76 @@ const ctx = canvas.getContext ? canvas.getContext("2d") : null;
 let W = 0;
 let H = 0;
 
-function colsFor(w) {
-  return Math.max(2, Math.min(8, Math.floor(w / (S.record ? 190 : 150))));
+const wide = matchMedia("(min-width: 900px) and (min-height: 560px)");
+const MIN_ROW = 190;
+const LABEL_H = 28;
+
+/** Grid for n tombs in a w x h field: the column count that makes the largest square cell. */
+function bestGrid(n, w, h) {
+  const maxCols = Math.max(2, Math.min(12, Math.floor(w / 130)));
+  let best = null;
+  for (let cols = 2; cols <= maxCols; cols++) {
+    const rows = Math.max(1, Math.ceil(n / cols));
+    const rowH = h / rows;
+    const s = Math.min(w / cols, rowH - LABEL_H);
+    if (!best || s > best.s) best = { cols, rows, rowH, s };
+  }
+  if (best.s >= MIN_ROW * 0.85) return best;
+  // Too many tombs for one screen: keep the tombs large and let the scene scroll.
+  const cols = Math.max(2, Math.min(maxCols, Math.floor(w / 170)));
+  const rows = Math.max(1, Math.ceil(n / cols));
+  return { cols, rows, rowH: MIN_ROW, s: Math.min(w / cols, MIN_ROW - LABEL_H) };
 }
 
 function layout() {
   const stage = $("scene-wrap");
-  W = Math.max(280, stage.clientWidth || 280);
+  if (!stage.clientWidth) return;
+  W = Math.max(280, stage.clientWidth);
   const drawn = S.tombs.slice(0, MAX_DRAWN);
-  const cols = colsFor(W);
-  const rows = Math.max(1, Math.ceil(drawn.length / cols));
-  const rowH = S.record ? Math.max(150, Math.floor((innerHeight - 120) / rows)) : 150;
-  H = Math.max(S.record ? innerHeight - 70 : 360, 110 + rows * rowH);
+  const n = drawn.length;
+  const fit = wide.matches ? stage.clientHeight : S.record ? innerHeight - 100 : 0;
+  let grid;
+  if (fit > 0) {
+    grid = bestGrid(n, W, Math.max(fit, 240));
+    H = Math.max(fit, grid.rows * grid.rowH);
+  } else {
+    // Narrow screen: two columns of large tombs, the page scrolls.
+    const cols = Math.max(2, Math.min(4, Math.floor(W / 150)));
+    const rows = Math.max(1, Math.ceil(n / cols));
+    const cw = W / cols;
+    const rowH = Math.max(MIN_ROW, Math.round(cw * 1.1) + LABEL_H);
+    grid = { cols, rows, rowH, s: Math.min(cw, rowH - LABEL_H) };
+    H = rows * rowH;
+  }
+  S.grid = grid;
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   canvas.style.height = H + "px";
+  $("tombs").style.height = H + "px";
   canvas.width = Math.floor(W * dpr);
   canvas.height = Math.floor(H * dpr);
   if (ctx) ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  S.places = layoutTombs(drawn, cols, 0);
+  S.places = layoutTombs(drawn, grid.cols, 0);
   S.geo = drawn.map((t, i) => geometry(t, S.places[i]));
   buildButtons(drawn);
   S.dirty = true;
 }
 
-/** Drawing numbers for one tomb. Size follows the repo's own risk, glow its possessed limbs. */
+/** Drawing numbers for one tomb. Size follows the repo's own exploitable risk (an absolute scale, not a comparison). */
 function geometry(t, p) {
-  const k = (S.record ? 1.3 : 1) * (0.7 + 0.5 * Math.min(1, t.risk / 5));
-  const top = 100;
-  const cx = p.x * W;
-  const base = top + 40 + p.y * (H - top - 70);
-  const tw = 38 * k;
-  const th = 50 * k;
-  const ch = 18 + Math.min(34, (t.possessed + t.rotting) * 4) * k;
-  return { cx, base, tw, th, ch, tilt: p.tilt };
+  const { cols, rows, s } = S.grid;
+  const cw = W / cols;
+  const rowH = H / rows;
+  const rk = Math.min(1, Math.sqrt(Math.max(0, t.risk) / 1.5));
+  const tw = s * (0.22 + 0.26 * rk);
+  const th = tw * 1.25;
+  const found = t.possessed + t.rotting;
+  const ch = s * Math.min(0.3, 0.06 + 0.05 * Math.sqrt(found));
+  // Mild jitter around the cell centre so the field does not look like a spreadsheet.
+  const cx = (p.col + 0.5) * cw + (p.x * W - (p.col + 0.5) * cw) * 0.5;
+  const cy = (p.row + 0.5) * rowH + (p.y * H - (p.row + 0.5) * rowH) * 0.3;
+  const top = cy - (th + ch + LABEL_H) / 2;
+  const base = Math.max(th + ch + 4, Math.min(H - LABEL_H, top + th + ch));
+  return { cx, base, tw, th, ch, tilt: p.tilt, s, lw: Math.max(2, s * 0.014) };
 }
 
 function buildButtons(drawn) {
@@ -178,10 +230,10 @@ function buildButtons(drawn) {
   S.rects = [];
   drawn.forEach((t, i) => {
     const g = S.geo[i];
-    const w = Math.max(48, g.tw + 20);
+    const w = Math.max(48, g.tw + g.s * 0.2);
     const x = Math.max(0, Math.min(W - w, g.cx - w / 2));
-    const y = g.base - g.th - g.ch - 6;
-    const h = Math.max(48, g.th + g.ch + 30);
+    const y = Math.max(0, g.base - g.th - g.ch - 6);
+    const h = Math.max(48, g.th + g.ch + LABEL_H + 2);
     S.rects.push({ x, y, w, h });
     const li = el("li");
     li.style.left = x + "px";
@@ -274,7 +326,7 @@ function draw(time) {
   c.fillStyle = "#cfe8d0";
   for (let i = 0; i < 70; i++) {
     const x = (i * 7919) % Math.max(1, Math.floor(W));
-    const y = (i * 104729) % 90;
+    const y = (i * 104729) % Math.max(60, Math.floor(H * 0.12));
     c.globalAlpha = 0.35 + 0.25 * Math.sin(time * 0.0007 + i);
     c.fillRect(x, y, 1.5, 1.5);
   }
@@ -292,7 +344,8 @@ function draw(time) {
   c.fill();
   // ground
   c.fillStyle = "#06100a";
-  c.fillRect(0, 130, W, H - 130);
+  const horizon = Math.min(130, H * 0.14);
+  c.fillRect(0, horizon, W, H - horizon);
 
   S.tombs.slice(0, MAX_DRAWN).forEach((t, i) => {
     const g = S.geo[i];
@@ -303,12 +356,12 @@ function draw(time) {
     c.rotate((g.tilt * Math.PI) / 180);
     // creature rising: one tendril per finding, sway slowly
     c.strokeStyle = color;
-    c.lineWidth = 2;
+    c.lineWidth = g.lw;
     c.globalAlpha = 0.85;
     const n = Math.max(1, Math.min(6, t.possessed + t.rotting));
     for (let k = 0; k < n; k++) {
       const off = (k - (n - 1) / 2) * (g.tw / Math.max(2, n));
-      const sway = Math.sin(time * 0.0012 + i + k) * 5;
+      const sway = Math.sin(time * 0.0012 + i + k) * g.s * 0.03;
       c.beginPath();
       c.moveTo(off, -g.th + 4);
       c.bezierCurveTo(off + sway, -g.th - g.ch * 0.4, off - sway, -g.th - g.ch * 0.7, off + sway * 1.5, -g.th - g.ch);
@@ -317,10 +370,10 @@ function draw(time) {
     c.globalAlpha = 1;
     // glow: possessed limbs
     c.shadowColor = t.glow === 0 ? "rgba(0,0,0,0)" : "#ff6a3d";
-    c.shadowBlur = t.glow * 9 + (S.hover === i ? 8 : 0);
+    c.shadowBlur = t.glow * g.s * 0.07 + (S.hover === i ? g.s * 0.05 : 0);
     c.fillStyle = "#101c14";
     c.strokeStyle = S.hover === i ? "#ffffff" : color;
-    c.lineWidth = 2;
+    c.lineWidth = g.lw;
     tombPath(c, g);
     c.fill();
     c.shadowBlur = 0;
@@ -328,7 +381,7 @@ function draw(time) {
     // state glyph on the face
     c.save();
     c.translate(0, -g.th * 0.45);
-    c.lineWidth = 2;
+    c.lineWidth = g.lw;
     slaGlyph(c, t.sla, g.tw * 0.18);
     c.restore();
     c.restore();
@@ -336,18 +389,20 @@ function draw(time) {
     if (t.ghosts > 0) {
       c.fillStyle = "rgba(220,255,220,.8)";
       const gy = g.base - g.th - g.ch * 0.6 + Math.sin(time * 0.001 + i) * 3;
-      drawGhost(c, g.cx + g.tw / 2 + 12, gy, 6);
-      c.font = "bold " + (S.record ? 16 : 11) + "px JetBrains Mono, monospace";
+      const gs = Math.max(7, g.s * 0.055);
+      drawGhost(c, g.cx + g.tw / 2 + gs * 2, gy, gs);
+      c.font = "bold " + Math.round(Math.max(11, gs * 1.6)) + "px JetBrains Mono, monospace";
       c.textAlign = "left";
-      c.fillText("x" + t.ghosts, g.cx + g.tw / 2 + 21, gy + 4);
+      c.fillText("x" + t.ghosts, g.cx + g.tw / 2 + gs * 3.4, gy + gs * 0.6);
     }
     // name
     c.fillStyle = "#33ff33";
-    c.font = (S.record ? 15 : 11) + "px JetBrains Mono, monospace";
+    const fs = Math.round(Math.max(12, Math.min(S.record ? 20 : 16, g.s * 0.075)));
+    c.font = fs + "px JetBrains Mono, monospace";
     c.textAlign = "center";
-    const maxChars = Math.floor((W / colsFor(W) - 8) / (S.record ? 9 : 6.6));
+    const maxChars = Math.floor((W / S.grid.cols - 8) / (fs * 0.6));
     const name = t.repo.length > maxChars ? t.repo.slice(0, Math.max(3, maxChars - 1)) + "\u2026" : t.repo;
-    c.fillText(name, g.cx, g.base + 16);
+    c.fillText(name, g.cx, g.base + fs + 4);
   });
   // fog: soft drifting bands
   for (let f = 0; f < 3; f++) {
@@ -535,6 +590,7 @@ function startScan(text) {
   bar.setAttribute("aria-valuemax", String(list.repos.length));
   $("scan").disabled = true;
   $("resume").hidden = true;
+  setScanOpen(false);
   setView("scan");
   S.queue = createQueue({
     repos: list.repos,
@@ -641,6 +697,11 @@ function setView(kind) {
   $("load-census").setAttribute("aria-pressed", String(kind === "census"));
 }
 
+function setScanOpen(open) {
+  $("scan-form").hidden = !open;
+  $("scan-toggle").setAttribute("aria-expanded", String(open));
+}
+
 function setList(on) {
   S.list = on;
   $("scene-wrap").hidden = on;
@@ -683,10 +744,14 @@ document.addEventListener("keydown", (ev) => {
   else if (S.record) setRecord(false);
 });
 let resizeTimer = 0;
-window.addEventListener("resize", () => {
+const relayout = () => {
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(layout, 100);
-});
+};
+window.addEventListener("resize", relayout);
+if (typeof ResizeObserver === "function") new ResizeObserver(relayout).observe($("scene-wrap"));
+
+$("scan-toggle").addEventListener("click", () => setScanOpen($("scan-form").hidden));
 
 // ---- start ------------------------------------------------------------------------------------------------------
 
