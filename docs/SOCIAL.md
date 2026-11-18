@@ -22,11 +22,11 @@ Method and numbers: docs/census/RESULTS.md. Demo: https://e-1305.github.io/Crypt
 
 **X**
 
-#KiroweenHackathon26 I scanned 20 popular open-source repos. 11,244 dependencies, 248 known vulns, 3 worth fixing first. The odd part: 84.7% of dependencies have no CODEOWNERS owner. Lockfile scan only, no reachability. https://e-1305.github.io/Crypt/
+#KiroweenHackathon26 I scanned 20 popular open-source repos. 11,244 dependencies, 248 known vulns, 3 to fix first. 84.7% of dependencies have no CODEOWNERS owner. Lockfile only, no reachability. Method: docs/census/RESULTS.md in https://github.com/e-1305/Crypt
 
 ## Post 2: the bridge bug
 
-Image: `docs/img/visual-qa-1440x900.png`
+Image: `docs/img/visual-qa-1440x900.png` (the raid view that the bridge drives; caption it "the live raid, fed only by confirmed game markers")
 
 **LinkedIn**
 

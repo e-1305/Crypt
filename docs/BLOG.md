@@ -10,7 +10,7 @@ Every repository is a creature stitched together from other people's parts. A lo
 
 That became the first pillar of CRYPT. Every rotting limb (a dependency with a known vulnerability) gets a named owner, taken from `CODEOWNERS` and from nowhere else.
 
-The second pillar is about tone. Nadya Bartol's TED@BCG talk (2021) is the source of the blameless pillar, which asks who will heal a problem instead of who caused it. The repo holds no quote from the talk. Pullen's TED talk influenced the same framing. Again, the repo contains no quote from it, so I won't invent one. The rule that came out of it is simple: CRYPT never reads git blame and never prints a commit author next to a vulnerable line. Rot belongs to the limb. People are named only in praise, as in "healed by".
+The second pillar is about tone. Nadya Bartol's TED@BCG talk (2021) is the source of the blameless pillar, which asks who will heal a problem instead of who caused it. The repo holds no quote from the talk. Pullen's TED talk is also credited for the same framing. The repo contains no quote from it either, so I won't invent one. The rule that came out of it is simple: CRYPT never reads git blame and never prints a commit author next to a vulnerable line. Rot belongs to the limb. People are named only in praise, as in "healed by".
 
 The third pillar is control. Saltzer and Schroeder's 1975 paper on protecting information lists design principles such as fail-safe defaults and least privilege. CRYPT applies them directly. On any error, timeout or ambiguity it changes nothing. The code never calls a merge endpoint. One dependency gets one pull request, and one raid opens at most five. A human merges. If someone types `SEAL CRYPT`, every agent action stops.
 
@@ -18,7 +18,7 @@ The game itself is a real Z-machine text adventure, the 1979 Infocom virtual mac
 
 ## How Kiro was used
 
-I wrote the spec before the code, every time. The `.kiro/specs/` folder holds one folder per piece of work, each with requirements, design and tasks: the bridge between the game and the agents, exhume and rank, raise the creature, the necromancer agent, the web player, the live raid, the operating theatre, and the census. When a design turned out wrong, I fixed the spec first and the code second. The bridge story below is the clearest case.
+I wrote the spec before the code for the bridge, and usually elsewhere. The `.kiro/specs/` folder holds one folder per piece of work, each with requirements, design and tasks: the bridge between the game and the agents, exhume and rank, raise the creature, the necromancer agent, the web player, the live raid, the operating theatre, and the census. The merge fix below landed spec and code in one commit. When a design turned out wrong, I fixed the spec first and the code second. The bridge story below is the clearest case.
 
 Steering files in `.kiro/steering/` carry the rules that must never drift. `failsafe.md` holds the eight Saltzer and Schroeder rules, and `blameless.md` holds the Bartol rules. `sla-policy.md` fixes the ranking order, and `tech.md` and `product.md` set the scope. Because they are always included, every session started with the same constraints. The failsafe file also says each rule needs a property-based test, so each one has a vitest and fast-check test that runs in CI.
 

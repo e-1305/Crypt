@@ -8,7 +8,7 @@ Goal: a blog post and a social kit for the Kiroween 2026 submission (Frankenstei
 3. Sources SHALL be paraphrased, not quoted at length. Credit: Nadya Bartol (TED@BCG 2021), Pullen (TED), Saltzer & Schroeder (1975).
 
 ## B2 Blog (`docs/BLOG.md`)
-1. About 1,200 words, written for dev.to or Medium, first person plural, plain language.
+1. About 1,200 words, written for dev.to or Medium, first person singular, plain language.
 2. Story arc: Frankenstein, ownership, shame (blamelessness), control.
 3. How Kiro was used: specs first, hooks, steering (and the two custom agents).
 4. Census findings: aggregates only, copied from `docs/census/RESULTS.md`, with its limitations. No project is named.
