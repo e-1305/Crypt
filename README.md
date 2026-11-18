@@ -3,17 +3,20 @@
 # CRYPT
 ### Don't abandon your creature.
 
+**In plain words:** CRYPT finds security holes that matter in your code's building blocks, opens one fix, and a person approves it.
+
 **The problem:** 248 findings across 20 popular repos, 95.2% were noise, and 84.7% of dependencies had no owner ([census](docs/census/RESULTS.md)).
 
 **CRYPT:** finds the few vulnerable dependencies that matter, names an owner from CODEOWNERS, opens one fix PR, and a human merges.
 
-**Proof:** [lodash 4.17.15 to 4.18.1, CI green, merged by a human](https://github.com/e-1305/crypt-demo/pull/1).
+**Proof:** [lodash 4.17.15 to 4.18.1, CI green, merged by the repo owner with GitHub's Merge button](https://github.com/e-1305/crypt-demo/pull/1) (CRYPT has no merge call). One demo repo, a lockfile-level finding, not proof the vulnerable code is reachable.
 
 **Zork that patches your code, and can never break it.**
 
 **Live demo: [e-1305.github.io/Crypt](https://e-1305.github.io/Crypt/)** · [How it works in 60 seconds](https://e-1305.github.io/Crypt/manual.html#how-it-works) · [Pitch](docs/PITCH.md)
 
 ```bash
+npm install --global @e-1305/crypt     # or skip this line and use npx
 npx @e-1305/crypt raid <path-or-github-url>     # dry run by default: nothing is sent, a human lands every PR
 npm ci && npx --no-install crypt raid fixtures/vulnerable-npm --offline     # from a checkout, no network after the first toolchain build
 ```
@@ -22,7 +25,6 @@ On the live demo the first screen is the creature plate, the CRT, the pitch and 
 
 ![Paste your repo: the creature, ranked limbs and dry-run payloads for a real public repo](docs/img/paste-your-repo.png)
 
-If `npx @e-1305/crypt` reports that the package is not found, it has not been published yet (maintainers: see [docs/RELEASE.md](docs/RELEASE.md)). Use the checkout form until then.
 
 ![The CRYPT bench: the creature plate, the game on the CRT and the simulated CI buttons](docs/img/bench-3d.png)
 

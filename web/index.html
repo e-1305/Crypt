@@ -11,12 +11,12 @@
 </head>
 <body>
 <a class="skip" href="#cmd">Skip to the game input</a>
-<p id="theatre-caption" class="theatre-caption" aria-hidden="true" title="CRYPT: Each vulnerable dependency is a limb on a creature, and you heal it by typing GRAFT, which writes a fix pull request for a human to review and land."><strong>CRYPT</strong> Each vulnerable dependency is a limb on a creature, and you heal it by typing GRAFT, which writes a fix pull request for a human to review and land.</p>
+<p id="theatre-caption" class="theatre-caption" aria-hidden="true" title="CRYPT finds security holes that matter in your code's building blocks, opens one fix, and a person approves it."><strong>CRYPT</strong> finds security holes that matter in your code's building blocks, opens one fix, and a person approves it.</p>
 <header class="top">
   <div class="intro">
     <h1>CRYPT</h1>
     <p class="subtitle">The first vulnerability report you can play</p>
-    <p class="pitch" id="pitch">Each vulnerable dependency is a limb on a creature, and you heal it by typing GRAFT, which writes a fix pull request for a human to review and land.</p>
+    <p class="pitch" id="pitch">CRYPT finds security holes that matter in your code's building blocks, opens one fix, and a person approves it.</p>
     <p class="proof-line" id="proof-line">Proof: a real fix PR, green CI, a human merge. <a href="#proof">See the chain</a></p>
   </div>
   <a class="manual-link" id="manual-link" href="manual.html" target="_blank" rel="noopener" aria-label="How to play (manual), opens in a new tab">How to play (manual)</a>
@@ -195,10 +195,11 @@
     <li><strong>Found:</strong> jquery 3.4.1 Possessed (in CISA KEV), lodash 4.17.15 Rotting. Live raid summaries: <a href="https://github.com/e-1305/Crypt/actions/runs/44369138370">run 1</a>, <a href="https://github.com/e-1305/Crypt/actions/runs/44374815473">run 2</a>.</li>
     <li><strong>Fix PR opened by CRYPT:</strong> <a href="https://github.com/e-1305/crypt-demo/pull/1">crypt-demo PR #1</a>, lodash 4.17.15 to 4.18.1, one dependency.</li>
     <li><strong>CI green:</strong> the <code>test</code> check on <a href="https://github.com/e-1305/crypt-demo/actions/runs/44369232555/job/135031172852">PR #1</a>.</li>
-    <li><strong>Merged by a human:</strong> <a href="https://github.com/e-1305/crypt-demo/pull/1">PR #1 merged</a> with the Merge button. CRYPT has no merge call.</li>
+    <li><strong>Merged by a human:</strong> <a href="https://github.com/e-1305/crypt-demo/pull/1">PR #1 merged</a> by the repo owner, using GitHub's Merge button. CRYPT has no merge call.</li>
     <li><strong>Re-raised:</strong> lodash HEALED in the <a href="https://github.com/e-1305/Crypt/actions/runs/44373819785">reraise run</a>.</li>
     <li><strong>Counter-proof:</strong> <a href="https://github.com/e-1305/crypt-demo/pull/2">PR #2 [DEMO SABOTAGE]</a> jquery, <a href="https://github.com/e-1305/crypt-demo/actions/runs/44374944193/job/135051477584">CI red</a>, <a href="https://github.com/e-1305/Crypt/actions/runs/44375794960">GRAFT_REJECTED</a>, closed unmerged.</li>
   </ol>
+  <p class="muted" id="proof-scope">What this shows: one demo repo, a lockfile-level finding (the package version is vulnerable), not proof that the vulnerable code is reachable.</p>
   <p><a href="https://github.com/e-1305/Crypt/blob/main/docs/PROOF.md">Read the full chain in docs/PROOF.md</a></p>
 </section>
 <button id="judge-skip" class="judge-skip" type="button" hidden>Skip demo (Esc)</button>
