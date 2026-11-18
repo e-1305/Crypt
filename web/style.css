@@ -108,6 +108,7 @@ body.theatre .top, body.theatre .crt { position: absolute; width: 1px; height: 1
 #theatre-plain { position: fixed; right: var(--bar-edge); bottom: var(--bar-edge); box-sizing: border-box; max-width: var(--bar-right); z-index: 5; color: var(--fg); background: #000; border: 1px solid var(--dim); padding: .25rem .75rem; }
 #theatre-manual { position: fixed; left: 13rem; top: .5rem; z-index: 6; color: var(--fg); background: #000; border: 1px solid var(--dim); padding: .25rem .75rem; min-height: 24px; }
 .manual-link { color: var(--fg); border: 1px solid var(--dim); padding: .25rem .75rem; min-height: 24px; display: inline-block; }
+.views { display: flex; flex-wrap: wrap; gap: .5rem; flex: 1 1 100%; }
 .manual-link:focus-visible, #theatre-manual:focus-visible, #theatre-plain:focus-visible { outline: 2px solid var(--warn); outline-offset: 2px; }
 
 /* Bench drawer (web/theatre/drawer.js): the A3 actions inside the 3D theatre. */

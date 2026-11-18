@@ -42,6 +42,8 @@ Each command dispatches AI agents built with [Kiro](https://kiro.dev) that open 
 
 **[e-1305.github.io/Crypt](https://e-1305.github.io/Crypt/)**: the first vulnerability report you can play. The page opens on a demo creature built offline from `fixtures/crypt-demo`, a snapshot of [e-1305/crypt-demo](https://github.com/e-1305/crypt-demo) at commit `bd82e8e` (owner @e-1305), with its plate and a playable story. A gallery lists 20 public projects, each with its own creature. "Download the playable report" saves the loaded `.z8`, which any Z-machine interpreter (Frotz, Lectrote, Parchment) opens.
 
+**Views** (linked from the landing page, all in the same site): [Play](https://e-1305.github.io/Crypt/) · [War Room](https://e-1305.github.io/Crypt/war-room.html) (simulated big-screen raid) · [Graveyard](https://e-1305.github.io/Crypt/graveyard/graveyard.html) (`graveyard/` also works) · [CISO report (sample)](https://e-1305.github.io/Crypt/autopsy.html) (labelled SAMPLE DATA, the output of `crypt autopsy --sample`).
+
 GRAFT on the page is a rehearsal: it shows the dry-run pull request payload and sends nothing.
 
 Maintainers: set Settings > Pages > Source to **GitHub Actions** once. `.github/workflows/pages.yml` then deploys on every push to `main`.
