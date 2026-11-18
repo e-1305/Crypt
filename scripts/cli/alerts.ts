@@ -5,6 +5,7 @@ import { nodeIo, type Io } from "../../src/common/io.js";
 import { CliError, EXIT } from "../../src/cli/exit.js";
 import type { Parsed } from "../../src/cli/parse.js";
 import { buildIssues, MAX_ISSUES } from "../../src/alerts/issues.js";
+import { buildOcsf } from "../../src/alerts/ocsf.js";
 import { makeCall, type Fetcher } from "../github-client.js";
 import { apiAuditHook } from "../live-audit.js";
 import { livePreflight } from "../live-preflight.js";
@@ -37,6 +38,20 @@ export async function alertsCommand(p: Parsed, deps: AlertsDeps = {}): Promise<n
     creature = JSON.parse(io.readText(paths.creaturePath));
   } catch {
     throw new CliError("out/creature.json is not readable. Run crypt raid <target> again.", EXIT.FAILURE);
+  }
+
+  if (p.flags.format === "ocsf") {
+    // Local file only, no network. Fail-safe: an invalid creature writes nothing.
+    const target = typeof p.flags.out === "string" ? p.flags.out : "out/alerts.ocsf.json";
+    let findings;
+    try {
+      findings = buildOcsf(creature, now());
+    } catch (e) {
+      throw new CliError(`alerts: ${e instanceof Error ? e.message : "invalid creature"}. Nothing was written.`, EXIT.FAILURE);
+    }
+    io.writeText(target.startsWith("/") ? target : `${cwd}/${target}`, JSON.stringify(findings, null, 2) + "\n");
+    out(`Wrote ${findings.length} OCSF Vulnerability Finding event${findings.length === 1 ? "" : "s"} (class 2002) to ${target}.\n`);
+    return EXIT.OK;
   }
 
   if (!live) {
