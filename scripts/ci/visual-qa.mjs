@@ -256,6 +256,59 @@ async function checkJudge(browser, vp) {
   await ctx.close();
 }
 
+// War Room (web/war-room/): the big-screen team raid. Loaded under a fake clock; the scripted SIMULATED timeline is played to the
+// red CI rejection (t=39 s) and to the human-merged heal (t=47 s) and the layout is checked at both moments.
+const WAR_KEYS = ["#scene", "#bosses", "#score", "#countdown", "#combo", "#feed-panel"];
+const WAR_VIEWPORTS = VIEWPORTS;
+
+async function checkWarRoom(browser, vp) {
+  const tag = `${vp.w}x${vp.h} war-room`;
+  const ctx = await browser.newContext({ viewport: { width: vp.w, height: vp.h }, hasTouch: vp.touch, isMobile: vp.touch });
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => fail(tag, `page error: ${e.message}`));
+  await page.clock.install({ time: new Date("2030-01-01T00:00:00Z") });
+  await page.clock.pauseAt(new Date("2030-01-01T00:00:01Z"));
+  await page.goto(base + "war-room.html");
+  const ready = () => page.evaluate(() => document.getElementById("plate")?.textContent.trim().length > 0);
+  for (let i = 0; i < 120 && !(await ready()); i++) await page.waitForTimeout(250);
+  if (!(await ready())) fail(tag, "the creature did not load");
+  let at = 0;
+  const playTo = async (ms) => { for (; at < ms; at += 500) { await page.clock.runFor(500); await page.waitForTimeout(20); } };
+  const capture = async (name, docsName) => {
+    mkdirSync(outDir, { recursive: true });
+    const file = join(outDir, `${name}.png`);
+    await page.screenshot({ path: file, fullPage: vp.full });
+    if (process.env.VISUAL_QA_COPY_DOCS === "1" && docsName) { mkdirSync(imgDir, { recursive: true }); copyFileSync(file, join(imgDir, docsName)); }
+  };
+  const layout = async (when) => {
+    const list = present(tag, await boxes(page, WAR_KEYS));
+    for (const [a, b] of findOverlaps(list)) fail(tag, `${when}: ${a} and ${b} overlap`);
+    const o = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    if (o > 0) fail(tag, `${when}: horizontal overflow of ${o}px`);
+    if (vp.w < 900) {
+      const taps = await page.evaluate(() => [...document.querySelectorAll("button, input")].filter((e) => e.getClientRects().length > 0).map((e) => ({ id: e.id || e.textContent.trim(), h: e.getBoundingClientRect().height })));
+      for (const t of taps) if (t.h < TAP_MIN) fail(tag, `tap target ${t.id} is ${Math.round(t.h)}px tall, under ${TAP_MIN}`);
+    }
+    return list.length;
+  };
+  const banner = await page.textContent("#mode-banner");
+  if (!/SIMULATED/.test(banner ?? "")) fail(tag, "the SIMULATED label is not on the page");
+  await playTo(39000);
+  await page.waitForTimeout(300);
+  const rej = await page.textContent("#rejection");
+  if (!rej?.includes("The graft was rejected. The creature remains.")) fail(tag, `rejection line missing: ${JSON.stringify(rej)}`);
+  const n1 = await layout("red CI");
+  await capture(`war-room-rejected-${vp.w}x${vp.h}`, vp.w === 1920 ? "war-room-rejected-1920x1080.png" : null);
+  await playTo(47000);
+  await page.waitForTimeout(300);
+  const feed = await page.textContent("#feed");
+  if (!/healed by/.test(feed ?? "") || !/SIMULATED/.test(feed ?? "")) fail(tag, "heal row missing or not labelled SIMULATED");
+  await layout("after the heal");
+  await capture(`war-room-${vp.w}x${vp.h}`, `war-room-${vp.w}x${vp.h}.png`);
+  console.log(`ok   [${tag}] checked=${n1}`);
+  await ctx.close();
+}
+
 let browser;
 try {
   browser = await chromium.launch(launchOptions());
@@ -264,6 +317,7 @@ try {
     if (vp.w >= 900) await check(browser, vp, "?theatre=2d");
   }
   for (const vp of JUDGE_VIEWPORTS) await checkJudge(browser, vp);
+  for (const vp of WAR_VIEWPORTS) await checkWarRoom(browser, vp);
 } finally {
   await browser?.close();
   server.close();

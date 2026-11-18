@@ -9,14 +9,14 @@ Generated 2026-11-18 (UTC).
 | Item | Count | Source |
 |---|---|---|
 | Specs | 25 | directories in `.kiro/specs` |
-| Spec tasks | 207 ticked of 210 | `- [x]` and `- [ ]` lines in `.kiro/specs/*/tasks.md` |
+| Spec tasks | 208 ticked of 210 | `- [x]` and `- [ ]` lines in `.kiro/specs/*/tasks.md` |
 | Hooks | 7 | `.kiro/hooks/*.json` |
 | Hook runs recorded in a Kiro session | 0 | lines of `docs/evidence/hook-runs.jsonl` whose trigger is not `manual` |
 | Steering files | 6 | `.kiro/steering/*.md` |
 | Custom agents | 2 | `.kiro/agents/*.json` (Oracle has no file) |
 | Property test call sites | 292 in 34 files | `fc.assert`, `fc.property`, `fc.asyncProperty`, `test.prop` in `tests/*.test.ts` |
-| Tests | 765 passed, 4 skipped | `npx vitest run --reporter=json` (numPassedTests, numPendingTests) |
-| Test files | 51 | `npx vitest run --reporter=json` (testResults) |
+| Tests | 773 passed, 4 skipped | `npx vitest run --reporter=json` (numPassedTests, numPendingTests) |
+| Test files | 52 | `npx vitest run --reporter=json` (testResults) |
 | PRs | 53 | unique `#N` in landing-commit subjects of `git log` (`pull request #N` or `PR #N`); `(#N)` suffixes are issues and are not counted; `gh` is not used |
 <!-- kiro-stats:end -->
 
