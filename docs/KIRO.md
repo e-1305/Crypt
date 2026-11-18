@@ -8,15 +8,15 @@ Generated 2026-11-18 (UTC).
 
 | Item | Count | Source |
 |---|---|---|
-| Specs | 21 | directories in `.kiro/specs` |
-| Spec tasks | 185 ticked of 187 | `- [x]` and `- [ ]` lines in `.kiro/specs/*/tasks.md` |
+| Specs | 22 | directories in `.kiro/specs` |
+| Spec tasks | 190 ticked of 192 | `- [x]` and `- [ ]` lines in `.kiro/specs/*/tasks.md` |
 | Hooks | 5 | `.kiro/hooks/*.json` |
 | Hook runs recorded in a Kiro session | 0 | lines of `docs/evidence/hook-runs.jsonl` whose trigger is not `manual` |
 | Steering files | 6 | `.kiro/steering/*.md` |
 | Custom agents | 2 | `.kiro/agents/*.json` (Oracle has no file) |
 | Property test call sites | 268 in 32 files | `fc.assert`, `fc.property`, `fc.asyncProperty`, `test.prop` in `tests/*.test.ts` |
-| Tests | 700 passed, 4 skipped | `npx vitest run --reporter=json` (numPassedTests, numPendingTests) |
-| Test files | 48 | `npx vitest run --reporter=json` (testResults) |
+| Tests | 710 passed, 4 skipped | `npx vitest run --reporter=json` (numPassedTests, numPendingTests) |
+| Test files | 49 | `npx vitest run --reporter=json` (testResults) |
 | PRs | 45 | unique `#N` in landing-commit subjects of `git log` (`pull request #N` or `PR #N`); `(#N)` suffixes are issues and are not counted; `gh` is not used |
 <!-- kiro-stats:end -->
 
