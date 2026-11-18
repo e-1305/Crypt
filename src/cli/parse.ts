@@ -2,7 +2,7 @@
 import { UsageError } from "./exit.js";
 import { GITHUB_BASE, looksRemote, parseGithubUrl } from "./url.js";
 
-export const COMMANDS = ["exhume", "raise", "play", "graft", "inquisit", "reraise", "seal", "unseal", "raid"] as const;
+export const COMMANDS = ["exhume", "raise", "play", "graft", "inquisit", "reraise", "seal", "unseal", "raid", "autopsy"] as const;
 export type CommandName = (typeof COMMANDS)[number];
 export type Command = CommandName | "help" | "version";
 
@@ -37,6 +37,7 @@ export const SPECS: Record<CommandName, Spec> = {
   seal: { positional: [], flags: {} },
   unseal: { positional: [], flags: {} },
   raid: { positional: TARGET, flags: { offline: "bool", feeds: "value", cache: "value", live: "bool", timeout: "value" } },
+  autopsy: { positional: [], flags: { out: "value", last: "value", sample: "bool" } },
 };
 
 const REPO = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
@@ -110,6 +111,12 @@ export function parseCli(argv: readonly string[], env: Record<string, string | u
     const t = String(flags.timeout);
     if (!/^\d+$/.test(t) || Number(t) < TIMEOUT_MIN || Number(t) > TIMEOUT_MAX) {
       throw new UsageError(`--timeout must be a whole number of seconds from ${TIMEOUT_MIN} to ${TIMEOUT_MAX}, got '${t.slice(0, 20)}'`);
+    }
+  }
+  if (flags.last !== undefined) {
+    const n = String(flags.last);
+    if (!/^\d+$/.test(n) || Number(n) < 1 || Number(n) > 52) {
+      throw new UsageError(`--last must be a whole number of raids from 1 to 52, got '${n.slice(0, 20)}'`);
     }
   }
   const needsToken = (what: string) => {

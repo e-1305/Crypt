@@ -20,6 +20,7 @@ Commands:
   graft <LIMB>        Request one fix for a limb (dry-run unless --live).
   inquisit <LIMB>     Check the CI of a limb's pull request. Green means a human may land it.
   reraise             After a human landed pull requests: mark those limbs healed and recompile.
+  autopsy             Write out/autopsy.html: a one-page report for a CISO (print it to PDF from a browser).
   seal                Stop every agent action. Writes .crypt-seal.
   unseal              Lift the seal.
 
@@ -31,7 +32,10 @@ Options:
   --offline           raid, exhume: make no network call (OSV answers come from the cache)
   --feeds <dir>       raid, exhume: directory with kev.json and epss.csv
   --cache <dir>       raid, exhume: directory for cached OSV answers
-  --out <path>        exhume: creature file (default out/creature.json); raise: output directory
+  --out <path>        exhume: creature file (default out/creature.json); raise: output directory;
+                      autopsy: report file (default out/autopsy.html)
+  --last <N>          autopsy: raids shown in the trend (1 to 52, default 8)
+  --sample            autopsy: write the report for built-in sample data (needs no raid)
   --story <file>      play: story file (default out/creature.z8)
   --target <dir>      play, graft: checkout that the fix is written against (default .)
   --advisories <dir>  play, graft: advisory records for an offline run
