@@ -8,6 +8,7 @@ import { RAID_MS } from "../src/theatre/raid.js";
 import { WAR_EVENT_TYPES, parseWarEvent, type WarEvent } from "../src/warroom/events.js";
 import { bossHp, bossOrder, reduce, reduceAll, sceneFrom, EMPTY_STATE, type WarLimb } from "../src/warroom/state.js";
 import { badgesFor } from "../src/warroom/badges.js";
+import { pollCycle, type HttpResult } from "../src/warroom/poll.js";
 import { eventsFromCheckRuns, eventsFromPull, limbForBranch, pollPlan, rateLimitDecision } from "../src/warroom/github-events.js";
 import { simulatedTimeline } from "../src/warroom/simulated.js";
 import { recapFor } from "../src/warroom/recap.js";
@@ -181,6 +182,13 @@ describe("github adapter", () => {
     expect(e.map((x) => x.type)).toEqual(["pr-opened"]);
     expect(healedKeys(e)).toEqual([]);
   });
+  it("a merge with no merged_by (list payload shape) does not heal", () => {
+    const { merged_by: _drop, ...listShaped } = pull;
+    const e = eventsFromPull(listShaped, LIMBS);
+    expect(e.map((x) => x.type)).toEqual(["pr-opened"]);
+    expect(eventsFromPull({ ...pull, merged_by: { login: "ci[bot]" } }, LIMBS).map((x) => x.type)).toEqual(["pr-opened"]);
+    expect(eventsFromPull({ ...pull, merged_by: null }, LIMBS).map((x) => x.type)).toEqual(["pr-opened"]);
+  });
   it("an open pull request alone never heals", () => {
     const e = eventsFromPull({ ...pull, merged_at: null }, LIMBS);
     expect(healedKeys(e)).toEqual([]);
@@ -250,5 +258,61 @@ describe("static: src/warroom", () => {
   });
   it("never touches storage or the network", () => {
     expect(text).not.toMatch(/localStorage|sessionStorage|document\.cookie|\bcookie\b|XMLHttpRequest|\bfetch\s*\(|node:fs|Date\.now|Math\.random|new Date\(\)/);
+  });
+});
+
+describe("poll cycle", () => {
+  const T0 = Date.parse("2025-11-20T09:00:00Z");
+  // Shaped like GET /repos/{o}/{r}/pulls items: merged_at but no merged_by.
+  const listItem = (n: number, ref: string, mergedAt: string | null, state = "closed") => ({ number: n, state, created_at: "2025-11-20T10:00:00Z", merged_at: mergedAt, head: { ref, sha: "abc1234" } });
+  const ok = (body: unknown): HttpResult => ({ ok: true, status: 200, headers: { "x-ratelimit-remaining": "50", "x-ratelimit-reset": "9999999999" }, body });
+  const fake = (routes: Record<string, HttpResult>, stale: () => boolean = () => false) => {
+    const urls: string[] = [];
+    return {
+      urls,
+      deps: {
+        getJson: async (req: { method: string; url: string }) => { urls.push(req.method + " " + req.url); return routes[req.url] ?? { ok: false, status: 404, headers: {}, body: null }; },
+        isStale: stale,
+        now: () => T0,
+      },
+    };
+  };
+  const input = { repos: ["o/r"], limbs: LIMBS, token: "", t0: T0 };
+  const LIST = "/repos/o/r/pulls?state=all&per_page=30&sort=updated";
+
+  it("heals only after the single-pull response names a human merger", async () => {
+    const f = fake({ [LIST]: ok([listItem(7, "crypt/graft-jquery-3.5.0", "2025-11-20T11:00:00Z")]), "/repos/o/r/pulls/7": ok({ merged_by: { login: "maya", type: "User" } }) });
+    const r = await pollCycle(input, f.deps);
+    if (r.stale) throw new Error("stale");
+    expect(healedKeys(r.events)).toEqual(["npm:jquery"]);
+    expect(f.urls.every((u) => u.startsWith("GET "))).toBe(true);
+  });
+  it("a bot merge, a failed detail request or no detail leaves the limb unhealed", async () => {
+    const list = ok([listItem(7, "crypt/graft-jquery-3.5.0", "2025-11-20T11:00:00Z")]);
+    for (const detail of [ok({ merged_by: { login: "dependabot[bot]", type: "Bot" } }), ok({}), { ok: false, status: 500, headers: {}, body: null }]) {
+      const r = await pollCycle(input, fake({ [LIST]: list, "/repos/o/r/pulls/7": detail }).deps);
+      if (r.stale) throw new Error("stale");
+      expect(healedKeys(r.events)).toEqual([]);
+      expect(r.events.map((e) => e.type)).toEqual(["pr-opened"]);
+    }
+  });
+  it("skips pull requests merged before the raid started", async () => {
+    const f = fake({ [LIST]: ok([listItem(7, "crypt/graft-jquery-3.5.0", "2025-11-20T08:00:00Z")]) });
+    const r = await pollCycle(input, f.deps);
+    if (r.stale) throw new Error("stale");
+    expect(r.events).toEqual([]);
+  });
+  it("drops the result when a mode switch happens during any request", async () => {
+    const routes = { [LIST]: ok([listItem(7, "crypt/graft-jquery-3.5.0", "2025-11-20T11:00:00Z"), listItem(8, "crypt/graft-lodash-4.17.21", null, "open")]), "/repos/o/r/pulls/7": ok({ merged_by: { login: "maya" } }) };
+    for (let flipAt = 1; flipAt <= 2; flipAt++) {
+      let calls = 0;
+      const f = fake(routes);
+      const deps = { ...f.deps, getJson: async (req: { method: string; url: string }) => { calls++; return f.deps.getJson(req); }, isStale: () => calls >= flipAt };
+      expect(await pollCycle(input, deps)).toEqual({ stale: true });
+    }
+  });
+  it("reports an http error without events", async () => {
+    const r = await pollCycle(input, fake({}).deps);
+    expect(r).toMatchObject({ stale: false, events: [], error: { repo: "o/r", status: 404 } });
   });
 });

@@ -45,10 +45,13 @@ export function eventsFromPull(pull: unknown, limbs: readonly WarLimb[]): WarEve
     const out: unknown[] = [{ type: "pr-opened", limb, pr: number, at: opened, source: "live" }];
     const doneAt = ms(p.merged_at);
     if (doneAt !== null) {
+      // The pulls list omits merged_by; only the single-pull response has it. No named, non-bot account means
+      // the result is unverified, so the limb stays unhealed (fail safe).
       const user = obj(p.merged_by);
-      // A bot account is not a human: the limb stays unhealed (fail safe).
-      if (user?.type === "Bot") return out.map(parseWarEvent).filter((e): e is WarEvent => e !== null);
-      out.push({ type: "human-merged", limb, pr: number, at: doneAt, healedBy: typeof user?.login === "string" ? user.login : undefined, source: "live" });
+      const login = user?.login;
+      const human = typeof login === "string" && login !== "" && user?.type !== "Bot" && !/\[bot\]$/i.test(login);
+      if (!human) return out.map(parseWarEvent).filter((e): e is WarEvent => e !== null);
+      out.push({ type: "human-merged", limb, pr: number, at: doneAt, healedBy: login, source: "live" });
     }
     return out.map(parseWarEvent).filter((e): e is WarEvent => e !== null);
   } catch {
@@ -84,7 +87,7 @@ export interface RateDecision {
   limited: boolean;
 }
 
-function header(h: unknown, name: string): string | null {
+export function header(h: unknown, name: string): string | null {
   if (h === null || typeof h !== "object") return null;
   const get = (h as { get?: unknown }).get;
   if (typeof get === "function") {
@@ -144,4 +147,11 @@ export function checkRunsRequest(repo: unknown, sha: unknown, token?: string): P
   const base = pollPlan(repo, token)[0];
   if (!base || typeof sha !== "string" || !/^[0-9a-f]{7,40}$/i.test(sha)) return null;
   return { method: "GET", url: `/repos/${String(repo)}/commits/${sha}/check-runs`, headers: base.headers };
+}
+
+/** The single-pull request. Only this response carries merged_by, which the pulls list leaves out. */
+export function pullRequest(repo: unknown, n: unknown, token?: string): PollRequest | null {
+  const base = pollPlan(repo, token)[0];
+  if (!base || typeof n !== "number" || !Number.isSafeInteger(n) || n <= 0) return null;
+  return { method: "GET", url: `/repos/${String(repo)}/pulls/${n}`, headers: base.headers };
 }

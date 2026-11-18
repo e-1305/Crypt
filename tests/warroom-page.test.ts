@@ -57,21 +57,15 @@ describe("war room page", () => {
     expect(html).toContain('src="war-room/war-room.js"');
   });
 
-  it("drops the result of a poll that a mode switch made stale", () => {
+  it("hands the poll to the tested poll module and bumps the generation on a mode change", () => {
     expect(js).toMatch(/function stopLive\(\) \{ run\.gen\+\+;/);
-    const poll = js.slice(js.indexOf("async function pollOnce"), js.indexOf("async function startLive"));
-    expect(poll).toMatch(/const gen = run\.gen;/);
-    const stale = poll.match(/if \(gen !== run\.gen\) return;/g) ?? [];
-    expect(stale.length).toBeGreaterThanOrEqual(4);
-    // the stale check comes before the events are replaced and before the next poll is scheduled
-    expect(poll.indexOf("if (gen !== run.gen) return;\n    run.events = events")).toBeGreaterThan(0);
-    expect(poll.lastIndexOf("if (gen !== run.gen) return;")).toBeLessThan(poll.indexOf("run.pollTimer = setTimeout"));
+    expect(js).toContain('from "../js/warroom/poll.js"');
+    expect(js).toMatch(/isStale: \(\) => gen !== run\.gen/);
   });
 
   it("watches one repo, skips pre-raid merges and clears the token field", () => {
     expect(js).toContain("out.length === 1");
     expect(js).toContain("run.limbs = creatures[0].limbs");
-    expect(js).toMatch(/mergedAt < run\.t0\) continue/);
     expect(js).toMatch(/run\.token = el\.tokenInput\.value\.trim\(\);\s*el\.tokenInput\.value = ""/);
   });
 });

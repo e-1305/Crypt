@@ -6,7 +6,8 @@ import { sceneFrom, limbKeyOf } from "../js/warroom/state.js";
 import { simulatedTimeline } from "../js/warroom/simulated.js";
 import { badgesFor } from "../js/warroom/badges.js";
 import { recapFor } from "../js/warroom/recap.js";
-import { eventsFromPull, eventsFromCheckRuns, pollPlan, checkRunsRequest, rateLimitDecision } from "../js/warroom/github-events.js";
+import { rateLimitDecision } from "../js/warroom/github-events.js";
+import { pollCycle } from "../js/warroom/poll.js";
 import { drawCard, downloadCard } from "../theatre/card-draw.js";
 import { ensureFonts } from "../theatre/font.js";
 
@@ -259,51 +260,26 @@ function stopLive() { run.gen++; clearTimeout(run.pollTimer); run.pollTimer = nu
 
 async function getJson(req) {
   const res = await fetch(API + req.url, { method: "GET", headers: req.headers });
-  return { res, body: res.ok ? await res.json() : null };
+  return { ok: res.ok, status: res.status, headers: res.headers, body: res.ok ? await res.json() : null };
 }
 
 async function pollOnce() {
   const gen = run.gen;
-  const now = Date.now();
-  let decision = rateLimitDecision({}, now, run.token !== "");
+  let decision = rateLimitDecision({}, Date.now(), run.token !== "");
   try {
-    const events = [];
-    for (const repo of run.repos) {
-      const [req] = pollPlan(repo, run.token);
-      if (!req) continue;
-      const { res, body } = await getJson(req);
-      if (gen !== run.gen) return;
-      decision = rateLimitDecision(res.headers, Date.now(), run.token !== "");
-      run.quota = res.headers.get("x-ratelimit-remaining");
-      if (!res.ok || !Array.isArray(body)) {
-        say(res.status === 404 ? "GitHub did not find " + repo + ". Check the name, or add a token for a private repo." : "GitHub answered HTTP " + res.status + ". Keeping the last known state; the next poll is scheduled.");
-        throw new Error("poll");
-      }
-      for (const pull of body) {
-        // Merges from before this page opened are not raid progress: skip them.
-        const mergedAt = Date.parse(pull?.merged_at ?? "");
-        if (Number.isFinite(mergedAt) && mergedAt < run.t0) continue;
-        const evs = eventsFromPull(pull, run.limbs);
-        events.push(...evs);
-        const opened = evs.find((e) => e.type === "pr-opened");
-        const sha = pull?.head?.sha;
-        if (opened && !evs.some((e) => e.type === "human-merged") && pull.state === "open") {
-          const cr = checkRunsRequest(repo, sha, run.token);
-          if (!cr) continue;
-          const r = await getJson(cr);
-          if (gen !== run.gen) return;
-          decision = rateLimitDecision(r.res.headers, Date.now(), run.token !== "");
-          run.quota = r.res.headers.get("x-ratelimit-remaining");
-          if (r.body) events.push(...eventsFromCheckRuns(r.body, opened.limb, opened.pr, Date.now()));
-        }
-      }
+    const r = await pollCycle({ repos: run.repos, limbs: run.limbs, token: run.token, t0: run.t0 }, { getJson, isStale: () => gen !== run.gen, now: Date.now });
+    if (r.stale) return;
+    decision = r.decision;
+    run.quota = r.quota;
+    if (r.error) {
+      say(r.error.status === 404 ? "GitHub did not find " + r.error.repo + ". Check the name, or add a token for a private repo." : "GitHub answered HTTP " + r.error.status + ". Keeping the last known state; the next poll is scheduled.");
+    } else {
+      run.events = r.events;
+      say("Live. Quota left: " + (run.quota ?? "unknown") + ". Read only: a human merges.");
     }
+  } catch {
     if (gen !== run.gen) return;
-    run.events = events;
-    say("Live. Quota left: " + (run.quota ?? "unknown") + ". Read only: a human merges.");
-  } catch (e) {
-    if (gen !== run.gen) return;
-    if (e instanceof Error && e.message !== "poll") say("The network did not answer. Keeping the last known state; the next poll is scheduled.");
+    say("The network did not answer. Keeping the last known state; the next poll is scheduled.");
   }
   run.nextPollAt = Date.now() + decision.delayMs;
   if (decision.limited) say("GitHub rate limit reached. Polling resumes at " + new Date(run.nextPollAt).toLocaleTimeString() + ".");
