@@ -10,7 +10,7 @@ Every repository is a creature stitched together from other people's parts. A lo
 
 That became the first pillar of CRYPT. Every rotting limb (a dependency with a known vulnerability) gets a named owner, taken from `CODEOWNERS` and from nowhere else.
 
-The second pillar is about tone. Nadya Bartol's TED@BCG talk (2021) is the source of the blameless pillar, which asks who will heal a problem instead of who caused it. The repo holds no quote from the talk. Pullen's TED talk is also credited for the same framing. The repo contains no quote from it either, so I won't invent one. The rule that came out of it is simple: CRYPT never reads git blame and never prints a commit author next to a vulnerable line. Rot belongs to the limb. People are named only in praise, as in "healed by".
+The second pillar is about tone. It comes from Nadya Bartol's TED@BCG talk (2021) on honesty and accountability in cybersecurity, and Ryan Pullen's TED talk makes a similar case: the useful question is who will heal a problem, not who caused it. The rule that came out of it is simple: CRYPT never reads git blame and never prints a commit author next to a vulnerable line. Rot belongs to the limb. People are named only in praise, as in "healed by".
 
 The third pillar is control. Saltzer and Schroeder's 1975 paper on protecting information lists design principles such as fail-safe defaults and least privilege. CRYPT applies them directly. On any error, timeout or ambiguity it changes nothing. The code never calls a merge endpoint. One dependency gets one pull request, and one raid opens at most five. A human merges. If someone types `SEAL CRYPT`, every agent action stops.
 
