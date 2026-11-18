@@ -1,0 +1,65 @@
+{
+  "SchemaVersion": 2,
+  "ArtifactName": "synthetic",
+  "ArtifactType": "filesystem",
+  "Results": [
+    {
+      "Target": "package-lock.json",
+      "Class": "lang-pkgs",
+      "Type": "npm",
+      "Packages": [
+        {
+          "Name": "ms",
+          "Version": "2.1.3"
+        }
+      ],
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2020-11023",
+          "PkgName": "jquery",
+          "InstalledVersion": "3.4.1",
+          "Severity": "MEDIUM"
+        },
+        {
+          "VulnerabilityID": "CVE-2020-8203",
+          "PkgName": "lodash",
+          "InstalledVersion": "4.17.15",
+          "Severity": "HIGH"
+        },
+        {
+          "VulnerabilityID": "CVE-2021-23337",
+          "PkgName": "lodash",
+          "InstalledVersion": "4.17.15",
+          "Severity": "HIGH"
+        },
+        {
+          "VulnerabilityID": "CVE-2021-44906",
+          "PkgName": "minimist",
+          "InstalledVersion": "0.0.8",
+          "Severity": "CRITICAL",
+          "PkgIdentifier": {
+            "PURL": "pkg:npm/minimist@0.0.8"
+          }
+        },
+        {
+          "VulnerabilityID": "CVE-2099-0001",
+          "PkgName": "no-version-pkg",
+          "Severity": "LOW"
+        }
+      ]
+    },
+    {
+      "Target": "requirements.txt",
+      "Class": "lang-pkgs",
+      "Type": "pip",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2022-0001",
+          "PkgName": "Flask_Cors",
+          "InstalledVersion": "3.0.8",
+          "Severity": "HIGH"
+        }
+      ]
+    }
+  ]
+}
