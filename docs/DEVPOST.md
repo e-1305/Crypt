@@ -1,6 +1,6 @@
 # CRYPT, Devpost entry
 
-Tagline (149 chars, limit 200): The first vulnerability report you can play. A 1979 text-adventure VM turns your lockfile into a creature and 2026 AI agents heal it by pull request.
+Tagline (111 chars, limit 200): CRYPT finds security holes that matter in your code's building blocks, opens one fix, and a person approves it.
 
 ## Links
 - Repo: https://github.com/e-1305/Crypt
@@ -12,7 +12,7 @@ Tagline (149 chars, limit 200): The first vulnerability report you can play. A 1
 Users: vulnerability management / VOC teams, AppSec, OSS maintainers. Opinion: the buyer is the security org that owns remediation SLAs. CRYPT is free today and no market size is claimed. The wedge, from the [census](census/RESULTS.md): 84.7% of limbs have no CODEOWNERS owner, and 95.2% of findings were filtered as noise. Hard to copy (opinion): the human-in-the-loop trust model enforced in code and CI, deterministic ranking, and the playable report. Details and sources: [WHO-PAYS.md](WHO-PAYS.md). Market, pricing hypothesis and real traction (none yet): [BUSINESS.md](BUSINESS.md).
 
 ## Proof on a real repository
-- [crypt-demo PR #1](https://github.com/e-1305/crypt-demo/pull/1): lodash 4.17.15 to 4.18.1, opened by CRYPT, CI green, merged by a human.
+- [crypt-demo PR #1](https://github.com/e-1305/crypt-demo/pull/1): lodash 4.17.15 to 4.18.1, opened by CRYPT, CI green, merged by the repo owner with GitHub's Merge button (CRYPT has no merge call). One demo repo, lockfile-level finding, not reachability.
 - [crypt-demo PR #2](https://github.com/e-1305/crypt-demo/pull/2): sabotage, CI red, rejected and closed.
 
 ## Inspiration
@@ -41,7 +41,6 @@ Specs first. Counts: <!-- stats:start -->31 specs in `.kiro/specs/`, 6 steering 
 Putting safety rules in steering files and tests made them cheap to keep. A judge persona and a product manager persona, run in a loop over the live page ([PLAYTEST_LOG.md](PLAYTEST_LOG.md)), found problems that unit tests did not (the prompt sat 1500 px down the page).
 
 ## What is next
-- Publish `@e-1305/crypt` to npm (not published yet).
 - Re-check on real hardware: GPU frame rate, sound, Lighthouse.
 - Beyond Tier 1: only npm and pip lockfiles are supported today.
 

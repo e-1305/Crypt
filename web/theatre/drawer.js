@@ -18,7 +18,7 @@ export function makeDrawer() {
     '<button id="bench-drawer-toggle" type="button" aria-expanded="false" aria-controls="bench-drawer-body">Bench drawer</button>' +
     '<div id="bench-drawer-body" hidden>' +
     '<h2 id="bench-drawer-h">Bench drawer</h2>' +
-    '<p class="drawer-pitch">Each vulnerable dependency is a limb on a creature. Type GRAFT to write the fix as a pull request for a human to review and land.</p>' +
+    '<p class="drawer-pitch">CRYPT finds security holes that matter in your code\'s building blocks, opens one fix, and a person approves it.</p>' +
     '<div class="drawer-install"><span>Try it on your own repo:</span><code id="bench-install-cmd">npx @e-1305/crypt raid &lt;path-or-github-url&gt;</code>' +
     '<button id="bench-install-copy" type="button">Copy command</button></div>' +
     '<p><a id="bench-kiro" href="manual.html#how-it-works" target="_blank" rel="noopener">Built with Kiro: specs, steering and hooks (opens in a new tab)</a></p>' +
