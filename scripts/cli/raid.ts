@@ -55,6 +55,13 @@ export async function exhumeTarget(t: Target, flags: Parsed["flags"]): Promise<s
 }
 
 export async function exhumeCommand(p: Parsed): Promise<number> {
+  if (typeof p.flags.from === "string") {
+    // Import of a scanner file: no target directory, no clone, no OSV.
+    const { feeds } = inputPaths(p.args[0]!, p.flags);
+    const out = typeof p.flags.out === "string" ? p.flags.out : "out/creature.json";
+    await runScriptOrFail("exhume.ts", [resolve(p.args[0]!), "--from", p.flags.from, "--out", out, "--feeds", feeds, "--offline"]);
+    return 0;
+  }
   const t = await openTarget(p.args[0]!);
   try {
     await exhumeTarget(t, p.flags);

@@ -18,6 +18,20 @@ const ROOT = resolve(".");
 const BIN = join(ROOT, "bin", "crypt.mjs");
 const FIXTURE = join(ROOT, "fixtures", "vulnerable-npm");
 
+describe("parseCli: exhume --from", () => {
+  it("accepts each import format", () => {
+    for (const f of ["sarif", "dependabot", "trivy", "grype", "snyk"]) {
+      expect(parseCli(["exhume", "scan.json", "--from", f]).flags).toEqual({ from: f });
+    }
+  });
+  it("rejects an unknown format, a URL, and other commands", () => {
+    expect(() => parseCli(["exhume", "scan.json", "--from", "bogus"])).toThrow(UsageError);
+    expect(() => parseCli(["exhume", "https://github.com/a/b", "--from", "sarif"])).toThrow(UsageError);
+    expect(() => parseCli(["raid", "scan.json", "--from", "sarif"])).toThrow(UsageError);
+    expect(() => parseCli(["exhume", "scan.json", "--from"])).toThrow(UsageError);
+  });
+});
+
 describe("parseCli: commands and flags", () => {
   it("parses exhume with every flag", () => {
     const p = parseCli(["exhume", "some/dir", "--out", "o.json", "--feeds", "f", "--cache", "c", "--offline"]);

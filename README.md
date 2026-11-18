@@ -36,6 +36,8 @@ Each command dispatches AI agents built with [Kiro](https://kiro.dev) that open 
 
 **New here? Read the [user manual](docs/USER_MANUAL.md), also hosted at [e-1305.github.io/Crypt/manual.html](https://e-1305.github.io/Crypt/manual.html).**
 
+**Already have a scanner report?** Import SARIF, Dependabot, Trivy, Grype or Snyk output: [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md).
+
 ## Live demo
 
 **[e-1305.github.io/Crypt](https://e-1305.github.io/Crypt/)**: the first vulnerability report you can play. The page opens on a demo creature built offline from `fixtures/crypt-demo`, a snapshot of [e-1305/crypt-demo](https://github.com/e-1305/crypt-demo) at commit `bd82e8e` (owner @e-1305), with its plate and a playable story. A gallery lists 20 public projects, each with its own creature. "Download the playable report" saves the loaded `.z8`, which any Z-machine interpreter (Frotz, Lectrote, Parchment) opens.
