@@ -3,7 +3,7 @@ import { UsageError } from "./exit.js";
 import { IMPORT_FORMATS, isImportFormat } from "../import/types.js";
 import { GITHUB_BASE, looksRemote, parseGithubUrl } from "./url.js";
 
-export const COMMANDS = ["exhume", "raise", "play", "graft", "inquisit", "reraise", "seal", "unseal", "raid", "autopsy", "gazette"] as const;
+export const COMMANDS = ["exhume", "raise", "play", "graft", "inquisit", "reraise", "seal", "unseal", "raid", "autopsy", "gazette", "graveyard"] as const;
 export type CommandName = (typeof COMMANDS)[number];
 export type Command = CommandName | "help" | "version";
 
@@ -40,6 +40,7 @@ export const SPECS: Record<CommandName, Spec> = {
   raid: { positional: TARGET, flags: { offline: "bool", feeds: "value", cache: "value", live: "bool", timeout: "value" } },
   autopsy: { positional: [], flags: { out: "value", last: "value", sample: "bool" } },
   gazette: { positional: [], flags: { "webhook-env": "value", "dry-run": "bool", send: "bool", "war-room": "value", format: "value", sample: "bool" } },
+  graveyard: { positional: [], flags: { org: "value", "token-env": "value", out: "value", repos: "value", sample: "bool" } },
 };
 
 export const WEBHOOK_ENVS = ["SLACK_WEBHOOK_URL", "TEAMS_WEBHOOK_URL"] as const;
@@ -149,6 +150,16 @@ export function parseCli(argv: readonly string[], env: Record<string, string | u
       }
       if (!ok) throw new UsageError("--war-room must be an https URL.");
     }
+  }
+  if (command === "graveyard") {
+    if (typeof flags.org === "string" && !/^[A-Za-z0-9_.-]{1,39}$/.test(flags.org)) throw new UsageError(`--org must be an organisation login, got '${flags.org.slice(0, 40)}'`);
+    if (typeof flags["token-env"] === "string" && !/^[A-Za-z_][A-Za-z0-9_]{0,63}$/.test(flags["token-env"])) {
+      throw new UsageError("--token-env is the NAME of an environment variable (for example GITHUB_TOKEN), never the token itself.");
+    }
+    if (typeof flags.repos === "string" && !flags.repos.split(",").every((r) => REPO.test(r.trim()))) {
+      throw new UsageError("--repos must be a comma separated list of owner/name, for example a/b,c/d.");
+    }
+    if (flags.sample === true && (flags.org !== undefined || flags.repos !== undefined)) throw new UsageError("--sample uses built-in data. Remove --org and --repos, or remove --sample.");
   }
   const needsToken = (what: string) => {
     if (!env.GITHUB_TOKEN) throw new UsageError(`${what} needs GITHUB_TOKEN in the environment. Create a fine-grained token limited to the target repository, then export GITHUB_TOKEN.`);

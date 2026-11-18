@@ -1,0 +1,31 @@
+{
+  "id": "FEAT-003",
+  "type": "chore",
+  "description": "Integration and CI-equivalent verification: build-site wiring, links from the Bench drawer and landing, visual-qa coverage, screenshots, docs stats, full local CI run, commit.",
+  "status": "completed",
+  "steps": [
+    "scripts/build-site.ts: copy web/graveyard/* to _site/graveyard/ (and js/ is already copied), write _site/graveyard/census.json built offline from web/gallery-data/*.json via the pure src/graveyard builder (deterministic, no network, each repo's own data only), keep the build offline and byte-deterministic.",
+    "Link to the graveyard from the Bench drawer in web/index.html (inside #bench-body, near #kiro-link, id graveyard-link) and in web/theatre/drawer.js (3D bench drawer, id bench-graveyard), and from the landing (a secondary text link in header or paste section; keep exactly ONE primary button 'Paste your GitHub repo'; do not break overlap/tap-target checks, tests/page-above-fold.test.ts, tests/visual-overlap.test.ts). Update BENCH_CONTROLS in scripts/ci/visual-qa.mjs if the new id is a Bench control. Also mention in docs/USER_MANUAL.md only if the manual build checks links (renderManual fails on bad links).",
+    "scripts/ci/visual-qa.mjs: add checkGraveyard(browser, vp) for 390x844, 1280x800, 1440x900 and 1920x1080 on _site/graveyard/graveyard.html: no pageerror, canvas present and non-blank (sample pixels), tomb buttons >= 5 and Tab-reachable, sr-only table has one row per tomb, no horizontal overflow, controls do not overlap (findOverlaps), tap targets >= 44 at 390, contrast, a tooltip appears on hover (desktop), panel opens on click and shows 'dry run', recording mode (?record=1) hides controls, no request leaves the origin in the census (offline) mode, 2D list fallback toggle works. Screenshots to out/visual-qa/graveyard-WxH.png and, with VISUAL_QA_COPY_DOCS=1, to docs/img/graveyard-WxH.png (at least 1440x900 and 390x844). Call it from the main runner. Lighthouse script (scripts/ci/lighthouse-a11y.sh) should also audit graveyard.html at >= 0.95 if simple to extend (loop over URLs).",
+    "Run every CI job locally: npm ci; npm run typecheck; npm run setup; npm run spike; exhume+raise fixture; raise:check; necromancer:check; CRYPT_NUM_RUNS=1000 npx vitest run; bash scripts/ci/raid-offline.sh; npm run build:site; npx playwright-core install chromium; npm run test:visual (VISUAL_QA_COPY_DOCS=1 to produce docs/img/graveyard-*.png); npm run test:a11y; bash scripts/ci/failsafe-guard.sh; npm run kiro:stats -- --no-tests, --check-links, node scripts/ci/hook-evidence-check.mjs, --check-docs (regenerate stats blocks in docs/DEVPOST.md, docs/BLOG.md, docs/KIRO.md the way earlier merges did ('regenerate stats blocks (mechanical)') if counts changed); bash scripts/ci/pack-install-test.sh (npm pack must include src/graveyard and scripts/cli/graveyard.ts, and exclude nothing needed by `crypt graveyard --sample`).",
+    "Fix anything red. Commit on branch d1-graveyard with a conventional message (feat(graveyard): ... ) with files staged by name. Do not push, do not merge. Write findings (commands run, results, screenshot paths) into this feature file."
+  ],
+  "acceptance_criteria": [
+    "`npm run test:visual` passes including the new graveyard checks at all four viewports",
+    "`npm run test:a11y` passes",
+    "`npx vitest run` passes with CRYPT_NUM_RUNS=1000",
+    "docs/img/graveyard-1440x900.png and graveyard-390x844.png exist and show the graveyard",
+    "`bash scripts/ci/failsafe-guard.sh` and kiro:stats checks pass",
+    "git log shows commits on d1-graveyard, working tree clean"
+  ],
+  "verification": [
+    "npm run typecheck",
+    "CRYPT_NUM_RUNS=1000 npx vitest run",
+    "npm run build:site && npm run test:visual && npm run test:a11y",
+    "bash scripts/ci/failsafe-guard.sh",
+    "npm run kiro:stats -- --check-links && npm run kiro:stats -- --check-docs",
+    "bash scripts/ci/pack-install-test.sh"
+  ],
+  "blocked_reason": null,
+  "findings": "Build writes _site/graveyard/{graveyard.*,census.json} (census from web/gallery-data via fromSnapshot, fixed scannedAt 2025-11-01, two builds byte-identical). Links: #graveyard-link in Bench (index.html), #bench-graveyard in 3D drawer (one line, a second line made the drawer overlap #theatre-manual at 1280x800), #landing-graveyard secondary link in header (still one primary button). visual-qa: checkGraveyard at 4 viewports, BENCH_CONTROLS/CONTROLS updated; lighthouse script loops over both pages. Ran, all green: npm ci, typecheck, setup, spike, exhume+raise, raise:check, necromancer:check, CRYPT_NUM_RUNS=1000 vitest (921 passed), raid-offline, build:site, test:visual (VISUAL_QA_COPY_DOCS=1), test:a11y (both pages score 1; needs CHROME_PATH=chrome-headless-shell, full chromium crashes on crashpad here), failsafe-guard, kiro:stats --write/--no-tests/--check-links/--check-docs, hook-evidence-check, pack-install-test. Screenshots docs/img/graveyard-1440x900.png and graveyard-390x844.png. Other docs/img pngs churned by copy-docs were reverted."
+}
