@@ -248,6 +248,24 @@ describe.skipIf(!haveToolchain)("build:site output", () => {
       }
       expect(readFileSync(join(a, "index.html"), "utf8")).toContain('href="manual.html"');
 
+      // Views nav: every linked page exists in the build output, with relative links only.
+      const landing = readFileSync(join(a, "index.html"), "utf8");
+      const nav = /<nav[^>]*id="views-nav"[\s\S]*?<\/nav>/.exec(landing)?.[0] ?? "";
+      const hrefs = [...nav.matchAll(/href="([^"]+)"/g)].map((m) => m[1]!);
+      expect(hrefs).toEqual(["./", "war-room.html", "graveyard/graveyard.html", "autopsy.html"]);
+      for (const h of hrefs) {
+        expect(h).not.toMatch(/^[a-z]+:|^\/\//i);
+        const target = join(a, h.endsWith("/") ? `${h}index.html` : h);
+        expect(existsSync(target), h).toBe(true);
+      }
+      expect(existsSync(join(a, "graveyard", "index.html"))).toBe(true);
+      expect(existsSync(join(a, "graveyard", "census.json"))).toBe(true);
+      expect(existsSync(join(a, "war-room", "war-room.js"))).toBe(true);
+      expect(readFileSync(join(a, "war-room.html"), "utf8")).toContain("SIMULATED");
+      const autopsy = readFileSync(join(a, "autopsy.html"), "utf8");
+      expect(autopsy).toContain("SAMPLE DATA");
+      expect(autopsy).not.toMatch(/<script|https?:\/\//i);
+
       // Relative URLs only, and the page code opens no connection except to its own files.
       for (const f of ["index.html", "app.js", "style.css", ...files(join(a, "js")).map((x) => x.slice(a.length + 1))]) {
         const text = readFileSync(join(a, f), "utf8");

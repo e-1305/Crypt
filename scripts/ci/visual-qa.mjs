@@ -21,7 +21,7 @@ const imgDir = join(root, "docs", "img");
 const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".woff2": "font/woff2", ".txt": "text/plain" };
 
 // The first screen: one primary button, the CRT input and the page links. The Bench drawer controls are checked with the drawer open.
-const CONTROLS = ["#paste-open", "#bench-toggle", "#hc-toggle", "#cmd", "#try-chip", "#download", "#manual-link", "#landing-graveyard"];
+const CONTROLS = ["#paste-open", "#bench-toggle", "#hc-toggle", "#cmd", "#try-chip", "#download", "#manual-link", "#views-play", "#views-war-room", "#landing-graveyard", "#views-autopsy"];
 const BENCH_CONTROLS = ["#sim-green", "#sim-red", "#raid-start", "#sound-toggle", "#record-toggle", "#view-3d", "#install-copy", "#lookup", "#kiro-link", "#graveyard-link"];
 // Fixed-position elements checked on the 3D bench. The caption is pointer-events:none, so it is listed by name.
 const CAPTION = "#theatre-caption";
@@ -147,6 +147,12 @@ async function check(browser, vp, query) {
     if (hidden.length) fail(tag, `Bench controls visible on the first screen: ${hidden.join(", ")}`);
   }
   for (const [a, b] of findOverlaps(all)) fail(tag, `controls overlap: ${a} and ${b}`);
+  if (!is3d) {
+    // The Views nav must not sit under a fixed element (sound, recording mode, skip button).
+    const nav = all.filter((b) => b.name.startsWith("#views-") || b.name === "#landing-graveyard");
+    const fixedNow = (await fixedBoxes(page, vp.w, vp.h)).filter((f) => !nav.some((n) => n.name === f.name));
+    for (const [x, y] of findOverlaps([...nav, ...fixedNow])) if (nav.some((n) => n.name === x || n.name === y)) fail(tag, `Views nav overlaps a fixed element: ${x} and ${y}`);
+  }
   const stats = is3d ? present(tag, await boxes(page, RAID_STATS)) : [];
   if (is3d) for (const [a, b] of findOverlaps(stats)) fail(tag, `raid stats overlap: ${a} and ${b}`);
 

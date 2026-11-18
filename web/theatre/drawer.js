@@ -23,6 +23,7 @@ export function makeDrawer() {
     '<button id="bench-install-copy" type="button">Copy command</button></div>' +
     '<p><a id="bench-kiro" href="manual.html#how-it-works" target="_blank" rel="noopener">Built with Kiro: specs, steering and hooks (opens in a new tab)</a></p>' +
     '<p><a id="bench-graveyard" href="graveyard/graveyard.html" target="_blank" rel="noopener">The Graveyard (new tab)</a></p>' +
+    '<p><a id="bench-war-room" href="war-room.html" target="_blank" rel="noopener">War Room (new tab)</a> <a id="bench-autopsy" href="autopsy.html" target="_blank" rel="noopener">CISO report, sample (new tab)</a></p>' +
     '<p class="muted">On the screen: <span id="bench-drawer-creature"></span>.</p>' +
     '<button id="bench-download" type="button">Download the playable report</button>' +
     '<form id="bench-exhume" autocomplete="off">' +
