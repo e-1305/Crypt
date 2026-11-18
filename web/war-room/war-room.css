@@ -35,10 +35,23 @@ label { display: block; color: var(--dim); }
 .flash { position: absolute; inset: 0; background: #dff; opacity: 0; pointer-events: none; }
 .flash.thunder { animation: thunder .8s ease-out 1; }
 @keyframes thunder { 0% { opacity: .85; } 20% { opacity: .1; } 35% { opacity: .6; } 100% { opacity: 0; } }
-.rejection { min-height: 1.4em; color: #ff6060; font-weight: 700; }
+.rejection { min-height: 1.4em; color: #ff6060; font-weight: 700; opacity: 0; transition: opacity .6s; }
+.rejection.on { opacity: 1; }
 .boss-list, .feed, .badges { list-style: none; margin: 0; padding: 0; }
-.boss-list li { margin-bottom: .6rem; }
-.boss-name { display: flex; justify-content: space-between; gap: .5rem; }
+.boss-card { margin-bottom: .75rem; padding: .6rem .75rem; border: 1px solid var(--hot); box-shadow: 0 0 12px rgba(255, 106, 61, .25); }
+.boss-card.healed { border-color: var(--dim); box-shadow: none; opacity: .65; }
+.boss-name { display: flex; justify-content: space-between; align-items: center; gap: .5rem; margin-bottom: .4rem; }
+.boss-title { font-size: 1.25rem; font-weight: 700; overflow-wrap: anywhere; }
+.kev-badge { padding: 0 .5rem; border: 2px solid var(--hot); color: var(--hot); font-weight: 700; letter-spacing: .1em; }
+.facts { display: grid; grid-template-columns: 1fr 1fr; gap: .4rem .75rem; margin: .6rem 0 0; }
+.facts div { min-width: 0; }
+.facts dt { color: var(--dim); font-size: .8rem; text-transform: uppercase; letter-spacing: .1em; }
+.facts dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
+.facts dd.sla { color: var(--warn); font-variant-numeric: tabular-nums; }
+.arena-empty { text-align: center; padding: 1.5rem 0; }
+.arena-empty .arena-title { font-size: 1.25rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.arena-empty .big { font-size: 5rem; line-height: 1.1; }
+.arena-empty[hidden] { display: none; }
 .bar { height: 14px; border: 1px solid var(--dim); background: #0a140a; }
 .bar > span { display: block; height: 100%; background: var(--hot); transition: width .6s; }
 .bar.healed > span { background: #9dffb0; }
@@ -73,5 +86,5 @@ label { display: block; color: var(--dim); }
 @media (min-width: 1700px) { .plate { font-size: 13px; } .big { font-size: 3rem; } }
 @media (prefers-reduced-motion: reduce) {
   .plate .just-healed, .plate .convulsing, .flash.thunder { animation: none; }
-  .bar > span { transition: none; }
+  .bar > span, .rejection { transition: none; }
 }

@@ -299,12 +299,30 @@ async function checkWarRoom(browser, vp) {
   await page.waitForTimeout(300);
   const rej = await page.textContent("#rejection");
   if (!rej?.includes("The graft was rejected. The creature remains.")) fail(tag, `rejection line missing: ${JSON.stringify(rej)}`);
+  if (!rej.includes("lodash")) fail(tag, `rejection line does not name its limb: ${JSON.stringify(rej)}`);
+  const card = await page.evaluate(() => {
+    const c = document.querySelector("#boss-list .boss-card");
+    return c ? { text: c.textContent, bar: !!c.querySelector('[role="progressbar"]'), w: c.getBoundingClientRect().width } : null;
+  });
+  if (!card) fail(tag, "no boss card in the arena");
+  else {
+    for (const f of ["jquery", "KEV", "CVEs", "EPSS", "Owner", "48h SLA"]) if (!card.text.includes(f)) fail(tag, `boss card is missing ${f}`);
+    if (!/\d\d:\d\d:\d\d/.test(card.text)) fail(tag, "boss card has no SLA countdown");
+    if (!card.bar) fail(tag, "boss card has no HP bar");
+  }
+  if (!/SIMULATED/.test((await page.textContent("#arena-note")) ?? "")) fail(tag, "the arena is not labelled SIMULATED");
   const n1 = await layout("red CI");
-  await capture(`war-room-rejected-${vp.w}x${vp.h}`, vp.w === 1920 ? "war-room-rejected-1920x1080.png" : null);
+  await capture(`war-room-rejected-${vp.w}x${vp.h}`, vp.w === 1920 || vp.w === 390 ? `war-room-rejected-${vp.w}x${vp.h}.png` : null);
   await playTo(47000);
   await page.waitForTimeout(300);
   const feed = await page.textContent("#feed");
   if (!/healed by/.test(feed ?? "") || !/SIMULATED/.test(feed ?? "")) fail(tag, "heal row missing or not labelled SIMULATED");
+  const rej2 = (await page.textContent("#rejection")) ?? "";
+  if (rej2.includes("The graft was rejected")) fail(tag, `rejection line still on the plate after the heal: ${JSON.stringify(rej2)}`);
+  if (!/rejected/.test(feed ?? "")) fail(tag, "the feed lost the rejection history");
+  const arena = await page.evaluate(() => ({ shown: !document.getElementById("arena-empty").hidden, text: document.getElementById("arena-empty").textContent, nights: getComputedStyle(document.getElementById("nights-value")).fontSize }));
+  if (!arena.shown || !arena.text.includes("No possession tonight")) fail(tag, "empty arena state is not shown after the last possessed limb healed");
+  if (parseFloat(arena.nights) < 48) fail(tag, `the nights count is not large: ${arena.nights}`);
   await layout("after the heal");
   await capture(`war-room-${vp.w}x${vp.h}`, `war-room-${vp.w}x${vp.h}.png`);
   console.log(`ok   [${tag}] checked=${n1}`);

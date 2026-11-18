@@ -2,7 +2,7 @@
 // Modes: SIMULATED (default, scripted on the crypt-demo creature, every row labelled) and LIVE (?repo=owner/name, GET only).
 // The token lives in one JS variable. It is cleared when the page hides and it is never stored or put in a URL.
 import { layoutPlate } from "../js/render/plate.js";
-import { sceneFrom, limbKeyOf } from "../js/warroom/state.js";
+import { sceneFrom, limbKeyOf, detailsFromPayloads } from "../js/warroom/state.js";
 import { simulatedTimeline } from "../js/warroom/simulated.js";
 import { badgesFor } from "../js/warroom/badges.js";
 import { recapFor } from "../js/warroom/recap.js";
@@ -18,7 +18,7 @@ const $ = (id) => document.getElementById(id);
 const reduceMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const el = {
-  banner: $("mode-banner"), plate: $("plate"), flash: $("flash"), rejection: $("rejection"), bossList: $("boss-list"),
+  banner: $("mode-banner"), plate: $("plate"), flash: $("flash"), rejection: $("rejection"), bossList: $("boss-list"), arenaEmpty: $("arena-empty"), arenaNote: $("arena-note"), nights: $("nights-value"),
   score: $("score-value"), clock: $("clock"), pollNote: $("poll-note"), combo: $("combo-value"), comboNote: $("combo-note"),
   feed: $("feed"), badges: $("badges"), status: $("status"), recap: $("recap"), recapCanvas: $("recap-canvas"),
   sound: $("sound-toggle"), repoInput: $("repo-input"), tokenInput: $("token-input"),
@@ -30,6 +30,7 @@ const run = {
   repos: [],
   limbs: [],
   creature: { repo: "crypt-demo", limbs: [] },
+  details: {}, // CVE ids and CODEOWNERS team per limb name, from the dry-run payloads (display only)
   t0: Date.now(),
   scanStart: Date.now(),
   events: [],
@@ -65,6 +66,13 @@ async function loadCreature(id) {
   const c = await res.json();
   if (!c || !Array.isArray(c.limbs)) throw new Error("bad creature");
   return c;
+}
+
+async function loadDetails(id) {
+  try {
+    const res = await fetch("game/" + id + ".payloads.json");
+    return res.ok ? detailsFromPayloads(await res.json()) : {};
+  } catch { return {}; }
 }
 
 // ---- sound: only after a click, never with reduced motion --------------------------------------------------------------
@@ -131,39 +139,81 @@ function drawPlate(scene, now) {
   });
 }
 
+function bossCard(c) {
+  const li = document.createElement("li");
+  li.className = "boss-card" + (c.healed ? " healed" : "");
+  li.dataset.limb = c.key;
+  const head = document.createElement("div");
+  head.className = "boss-name";
+  const name = document.createElement("span");
+  name.className = "boss-title";
+  name.textContent = c.name;
+  head.appendChild(name);
+  if (c.kev) {
+    const kev = document.createElement("span");
+    kev.className = "kev-badge";
+    kev.textContent = "KEV";
+    head.appendChild(kev);
+  }
+  const hp = Math.round(c.hp * 100);
+  const bar = document.createElement("div");
+  bar.className = "bar" + (c.healed ? " healed" : "");
+  bar.setAttribute("role", "progressbar");
+  bar.setAttribute("aria-label", c.name + " boss HP");
+  bar.setAttribute("aria-valuemin", "0");
+  bar.setAttribute("aria-valuemax", "100");
+  bar.setAttribute("aria-valuenow", String(hp));
+  const fill = document.createElement("span");
+  fill.style.width = hp + "%";
+  bar.appendChild(fill);
+  const facts = document.createElement("dl");
+  facts.className = "facts";
+  const add = (label, value, cls) => {
+    const d = document.createElement("div");
+    const dt = document.createElement("dt");
+    dt.textContent = label;
+    const dd = document.createElement("dd");
+    dd.textContent = value;
+    if (cls) dd.className = cls;
+    d.append(dt, dd);
+    facts.appendChild(d);
+    return dd;
+  };
+  add("HP", c.healed ? "HEALED" : String(hp));
+  add("CVEs", c.cveCount === null ? "unknown" : String(c.cveCount));
+  add("EPSS", c.epss === null ? "unknown" : c.epss.toFixed(2));
+  add("Owner", c.owner);
+  const sla = add("48h SLA", c.sla, "sla");
+  sla.dataset.sla = c.key;
+  li.append(head, bar, facts);
+  return li;
+}
+
 function drawBosses(scene) {
-  const sig = JSON.stringify(scene.bosses.map((b) => [b.key, Math.round(b.hp * 1000), b.healed]));
-  if (!changed("bosses", sig)) return;
-  el.bossList.textContent = "";
-  if (scene.bosses.length === 0) {
-    const li = document.createElement("li");
-    li.className = "muted";
-    li.textContent = "No possessed limbs on the slab.";
-    el.bossList.appendChild(li);
-    return;
+  // Rebuild the cards only when a field other than the ticking SLA clock changes; the clock text updates in place.
+  const sig = JSON.stringify(scene.cards.map((c) => [c.key, c.name, c.cveCount, c.kev, c.epss, Math.round(c.hp * 1000), c.healed, c.owner, c.breached]));
+  if (changed("bosses", sig)) {
+    el.bossList.textContent = "";
+    for (const c of scene.cards) el.bossList.appendChild(bossCard(c));
   }
-  for (const b of scene.bosses) {
-    const li = document.createElement("li");
-    const row = document.createElement("div");
-    row.className = "boss-name";
-    const name = document.createElement("span");
-    name.textContent = b.name;
-    const hp = document.createElement("span");
-    hp.textContent = b.healed ? "HEALED" : "HP " + Math.round(b.hp * 100);
-    row.append(name, hp);
-    const bar = document.createElement("div");
-    bar.className = "bar" + (b.healed ? " healed" : "");
-    bar.setAttribute("role", "progressbar");
-    bar.setAttribute("aria-label", b.name + " boss HP");
-    bar.setAttribute("aria-valuemin", "0");
-    bar.setAttribute("aria-valuemax", "100");
-    bar.setAttribute("aria-valuenow", String(Math.round(b.hp * 100)));
-    const fill = document.createElement("span");
-    fill.style.width = Math.round(b.hp * 100) + "%";
-    bar.appendChild(fill);
-    li.append(row, bar);
-    el.bossList.appendChild(li);
+  for (const c of scene.cards) {
+    const dd = el.bossList.querySelector('[data-sla="' + CSS.escape(c.key) + '"]');
+    if (dd && dd.textContent !== c.sla) dd.textContent = c.sla;
   }
+  const empty = scene.possessedOpen === 0;
+  el.arenaEmpty.hidden = !empty;
+  el.nights.textContent = String(scene.nights);
+  el.arenaNote.textContent = (run.mode === "simulated" ? "SIMULATED: the 48h SLA clock starts when this page loads. " : "") +
+    (empty ? "" : "Heal each boss before its 48h SLA ends.");
+}
+
+function drawRejection(scene) {
+  // The line belongs to its limb: it clears on that limb's next event or after a heal elsewhere. The feed keeps the history.
+  const r = scene.rejections;
+  const text = r.length === 0 ? "" : r[r.length - 1].name + ": " + r[r.length - 1].line;
+  if (!changed("rejection", text)) return;
+  el.rejection.textContent = text;
+  el.rejection.classList.toggle("on", text !== "");
 }
 
 function drawFeed(scene) {
@@ -206,7 +256,7 @@ async function showRecap(scene) {
 
 function render(now) {
   const visible = run.mode === "simulated" ? run.events.filter((e) => e.at <= now) : run.events;
-  const scene = sceneFrom(visible, run.limbs, now, { raidStart: run.t0 });
+  const scene = sceneFrom(visible, run.limbs, now, { raidStart: run.t0, slaStart: run.scanStart, details: run.details });
   run.scene = scene;
   // New effects: thunder and flash once per heal, the rejection line while a limb stays red.
   for (const fx of scene.effects) {
@@ -215,8 +265,7 @@ function render(now) {
     run.seen.add(id);
     if (fx.kind === "heal" && now - fx.at < FRESH_MS) { flash(); thunder(); }
   }
-  const red = scene.limbs.some((l) => l.phase === "ci-red");
-  el.rejection.textContent = red ? scene.effects.find((e) => e.kind === "convulse")?.line ?? "" : "";
+  drawRejection(scene);
   drawPlate(scene, now);
   drawBosses(scene);
   el.score.textContent = String(Math.round(scene.score * 10) / 10);
@@ -233,6 +282,7 @@ function startSimulated() {
   stopLive();
   run.mode = "simulated";
   run.t0 = Date.now();
+  run.scanStart = run.t0;
   run.events = simulatedTimeline(run.limbs, run.t0);
   resetView();
   setBanner();
@@ -307,8 +357,10 @@ async function startLive(repos) {
   run.mode = "live";
   run.repos = repos;
   run.creature = creatures[0];
+  run.details = await loadDetails(ids[0]);
   run.limbs = creatures[0].limbs; // one repo per live raid: limb keys carry no repo, so a second repo could heal the wrong limb
   run.t0 = Date.now();
+  run.scanStart = run.t0;
   run.events = [];
   resetView();
   setBanner();
@@ -355,6 +407,7 @@ async function boot() {
     return;
   }
   run.limbs = run.creature.limbs;
+  run.details = await loadDetails("demo");
   const wanted = new URLSearchParams(location.search).get("repo");
   if (wanted) {
     const repos = parseRepos(wanted);

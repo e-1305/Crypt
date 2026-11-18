@@ -6,7 +6,7 @@ import { numRuns } from "./runs.js";
 import { REJECTION_LINE } from "../src/theatre/heal-events.js";
 import { RAID_MS } from "../src/theatre/raid.js";
 import { WAR_EVENT_TYPES, parseWarEvent, type WarEvent } from "../src/warroom/events.js";
-import { bossHp, bossOrder, reduce, reduceAll, sceneFrom, EMPTY_STATE, type WarLimb } from "../src/warroom/state.js";
+import { bossHp, bossOrder, detailsFromPayloads, formatSla, reduce, reduceAll, sceneFrom, EMPTY_STATE, type WarLimb } from "../src/warroom/state.js";
 import { badgesFor } from "../src/warroom/badges.js";
 import { pollCycle, type HttpResult } from "../src/warroom/poll.js";
 import { eventsFromCheckRuns, eventsFromPull, limbForBranch, pollPlan, rateLimitDecision } from "../src/warroom/github-events.js";
@@ -139,7 +139,7 @@ describe("blameless", () => {
         if (/Maya|Ola/.test(line)) expect(line).toMatch(/ healed by (Maya|Ola)/);
       }
       expect(s.effects.every((e) => !/Maya|Ola/.test(JSON.stringify(e)))).toBe(true);
-      expect(Object.keys(s).sort()).toEqual(["bosses", "clock", "combo", "effects", "feed", "healTimes", "healedCount", "limbs", "remainingMs", "score", "simulated"]);
+      expect(Object.keys(s).sort()).toEqual(["bosses", "cards", "clock", "combo", "effects", "feed", "healTimes", "healedCount", "limbs", "nights", "possessedOpen", "rejections", "remainingMs", "score", "simulated"]);
     }), { numRuns: runs });
   });
 });
@@ -314,5 +314,78 @@ describe("poll cycle", () => {
   it("reports an http error without events", async () => {
     const r = await pollCycle(input, fake({}).deps);
     expect(r).toMatchObject({ stale: false, events: [], error: { repo: "o/r", status: 404 } });
+  });
+});
+
+describe("rejection belongs to its limb", () => {
+  const red = { type: "ci-red", limb: "npm:lodash", pr: 2, at: 10 } as const;
+  const active = (events: unknown[], now = 100) => sceneFrom(events, LIMBS, now).rejections;
+  it("is active while the limb has no later event and nothing healed after it", () => {
+    expect(active([red])).toEqual([{ limb: "npm:lodash", name: "lodash", at: 10, line: REJECTION_LINE }]);
+    expect(active([red, { type: "human-merged", limb: "npm:jquery", at: 5 }])).toHaveLength(1);
+  });
+  it("clears on the same limb's next event", () => {
+    for (const type of ["pr-opened", "ci-running", "ci-green", "human-merged"]) expect(active([red, { type, limb: "npm:lodash", at: 20 }])).toEqual([]);
+  });
+  it("clears after a heal elsewhere, and the feed keeps the history", () => {
+    const s = sceneFrom([red, { type: "human-merged", limb: "npm:jquery", at: 20 }], LIMBS, 100);
+    expect(s.rejections).toEqual([]);
+    expect(s.feed.some((l) => l.includes(REJECTION_LINE))).toBe(true);
+    expect(s.effects.some((e) => e.kind === "convulse")).toBe(true);
+  });
+  it("property: active rejections never depend on arrival order and never outlive their limb's red phase", () => {
+    fc.assert(fc.property(evs, (events) => {
+      const a = sceneFrom(events, LIMBS, 1e6);
+      expect(sceneFrom([...events].reverse(), LIMBS, 1e6).rejections).toEqual(a.rejections);
+      for (const r of a.rejections) expect(a.limbs.find((l) => l.key === r.limb)?.phase).toBe("ci-red");
+    }), { numRuns: runs });
+  });
+});
+
+describe("boss arena cards", () => {
+  const T0 = 1_000_000;
+  const rich: WarLimb[] = [
+    { ecosystem: "npm", name: "jquery", state: "Possessed", kev: true, epss: 0.99215, owner: "@e-1305", vulns: [{ id: "GHSA-1", cves: ["CVE-1", "CVE-2"] }, { id: "GHSA-2", cves: ["CVE-2"] }, { id: "GHSA-3", cves: [] }] },
+    { ecosystem: "npm", name: "lodash", state: "Rotting", kev: false, epss: 0.2 },
+  ];
+  it("lists only Possessed limbs with the card fields", () => {
+    const s = sceneFrom([], rich, T0 + 1000, { slaStart: T0 });
+    expect(s.cards).toHaveLength(1);
+    expect(s.cards[0]).toMatchObject({ key: "npm:jquery", name: "jquery", cveCount: 3, kev: true, epss: 0.99215, owner: "@e-1305", healed: false, breached: false });
+    expect(s.cards[0]!.hp).toBeCloseTo(0.99215);
+    expect(s.possessedOpen).toBe(1);
+  });
+  it("counts down the 48h SLA from detectedAt or slaStart and stops at breached", () => {
+    const h = 3600_000;
+    expect(sceneFrom([], rich, T0 + 1000, { slaStart: T0 }).cards[0]!.sla).toBe("47:59:59");
+    expect(sceneFrom([], [{ ...rich[0]!, detectedAt: T0 - 24 * h }], T0, { slaStart: T0 }).cards[0]!.sla).toBe("24:00:00");
+    const late = sceneFrom([], rich, T0 + 49 * h, { slaStart: T0 }).cards[0]!;
+    expect(late).toMatchObject({ slaMs: 0, sla: "SLA breached", breached: true });
+    expect(formatSla(48 * h)).toBe("48:00:00");
+  });
+  it("falls back to unowned and unknown CVEs, and takes details from payload bodies", () => {
+    const bare = sceneFrom([], LIMBS, 10).cards[0]!;
+    expect(bare).toMatchObject({ cveCount: null, owner: "unowned" });
+    const details = detailsFromPayloads({ JQUERY: { body: "Limb: JQUERY (jquery)\nCVEs: CVE-2020-1, CVE-2020-2\nOwner: @team-a\n" } });
+    expect(sceneFrom([], LIMBS, 10, { details }).cards[0]).toMatchObject({ cveCount: 2, owner: "@team-a" });
+    expect(detailsFromPayloads(null)).toEqual({});
+  });
+  it("heals the card, shows the empty state and counts nights", () => {
+    const day = 86400000;
+    const s = sceneFrom([{ type: "human-merged", limb: "npm:jquery", at: T0 + 5 }], rich, T0 + 3 * day, { slaStart: T0 });
+    expect(s.cards[0]).toMatchObject({ healed: true, hp: 0, sla: "HEALED" });
+    expect(s.possessedOpen).toBe(0);
+    expect(s.nights).toBe(3);
+    expect(sceneFrom([], [rich[1]!], T0 + 2 * day, { slaStart: T0 })).toMatchObject({ cards: [], possessedOpen: 0, nights: 2 });
+  });
+  it("an open KEV limb past its SLA resets the nights to 0", () => {
+    expect(sceneFrom([], rich, T0 + 5 * 86400000, { slaStart: T0 }).nights).toBe(0);
+  });
+  it("property: cards are order independent and carry no per-person field", () => {
+    fc.assert(fc.property(evs, (events) => {
+      const a = sceneFrom(events, rich, 1e6, { slaStart: 0 });
+      expect(sceneFrom([...events].reverse(), rich, 1e6, { slaStart: 0 }).cards).toEqual(a.cards);
+      expect(JSON.stringify(a.cards)).not.toMatch(/Maya|Ola|healedBy/);
+    }), { numRuns: runs });
   });
 });

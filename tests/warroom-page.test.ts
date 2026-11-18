@@ -68,4 +68,18 @@ describe("war room page", () => {
     expect(js).toContain("run.limbs = creatures[0].limbs");
     expect(js).toMatch(/run\.token = el\.tokenInput\.value\.trim\(\);\s*el\.tokenInput\.value = ""/);
   });
+
+  it("is a boss arena: card fields, the empty state and a rejection tied to its limb", () => {
+    expect(html).toContain("Boss arena");
+    expect(html).toContain("No possession tonight");
+    expect(html).toContain("Nights Without Possession");
+    expect(html).toContain('id="nights-value"');
+    for (const f of ["KEV", "CVEs", "EPSS", "Owner", "48h SLA", "progressbar"]) expect(js).toContain(f);
+    expect(js).toContain("scene.rejections");
+    expect(js).not.toContain('scene.limbs.some((l) => l.phase === "ci-red")');
+    expect(js).not.toMatch(/innerHTML/);
+    expect(css).toMatch(/\.rejection\.on/);
+    expect(css).toMatch(/\.arena-empty \.big/);
+    expect(js).toContain("SIMULATED: the 48h SLA clock");
+  });
 });

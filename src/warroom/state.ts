@@ -3,7 +3,7 @@
 // Team only: nothing is counted or ordered per person. A name exists only inside a "healed by" praise string.
 import { clean } from "../render/plate.js";
 import { REJECTION_LINE, SIMULATED_LABEL } from "../theatre/heal-events.js";
-import { RAID_MS, formatClock, riskOf, teamScore, type RaidLimb } from "../theatre/raid.js";
+import { RAID_MS, SLA_KEV_MS, formatClock, nightsWithoutPossession, riskOf, teamScore, type RaidLimb } from "../theatre/raid.js";
 import { comboState, type ComboState } from "../theatre/gamify.js";
 import { WAR_EVENT_TYPES, parseWarEvent, type WarEvent } from "./events.js";
 
@@ -12,7 +12,14 @@ export type Phase = "possessed" | "rotting" | "pr-open" | "ci-running" | "ci-gre
 /** What the scene needs to know about a limb. `exposure` is a deterministic value, 0..1. */
 export interface WarLimb extends RaidLimb {
   exposure?: unknown;
+  /** CODEOWNERS team label, never a commit author. */
+  owner?: unknown;
+  /** OSV findings: `{ id, cves[] }` each. Optional. */
+  vulns?: unknown;
 }
+
+/** Optional extra facts per limb name (from the dry-run PR payloads). Display only. */
+export type LimbDetails = Record<string, { cves?: readonly string[]; owner?: string }>;
 
 export interface SceneLimb {
   key: string;
@@ -29,6 +36,32 @@ export interface Boss {
   /** 0..1. EPSS times exposure, 0 once healed. */
   hp: number;
   healed: boolean;
+}
+
+/** A red CI that still counts: its limb has no later event and no limb healed after it. */
+export interface Rejection {
+  limb: string;
+  name: string;
+  at: number;
+  line: string;
+}
+
+/** One boss card for a Possessed limb. Team only: `owner` is a CODEOWNERS team label. */
+export interface BossCard {
+  key: string;
+  name: string;
+  /** Unique CVE ids, or null when the scan carries none. */
+  cveCount: number | null;
+  kev: boolean;
+  /** 0..1, or null when missing. */
+  epss: number | null;
+  hp: number;
+  healed: boolean;
+  owner: string;
+  /** Milliseconds left of the 48h KEV SLA, 0 once breached. 0 and `sla` "HEALED" when healed. */
+  slaMs: number;
+  sla: string;
+  breached: boolean;
 }
 
 export type WarEffect =
@@ -48,6 +81,14 @@ export interface Scene {
   healTimes: number[];
   feed: string[];
   effects: WarEffect[];
+  /** Rejections still on the plate. The feed keeps every rejection line as history. */
+  rejections: Rejection[];
+  /** Boss cards, one per Possessed limb, KEV and highest HP first. */
+  cards: BossCard[];
+  /** Possessed limbs not yet healed. */
+  possessedOpen: number;
+  /** Whole days without a KEV limb past its 48h SLA. */
+  nights: number;
   simulated: boolean;
 }
 
@@ -66,6 +107,43 @@ const cmp = (a: string | number, b: string | number) => (a < b ? -1 : a > b ? 1 
 /** EPSS times exposure, each clamped to 0..1. A missing or invalid value counts as 1 (fail-safe: full HP). */
 export function bossHp(epss: unknown, exposure?: unknown): number {
   return unit(epss) * unit(exposure);
+}
+
+/** Reads CVE ids and the owner label from dry-run PR payload bodies ("Limb: ID (name)", "CVEs: a, b", "Owner: @team"). */
+export function detailsFromPayloads(payloads: unknown): LimbDetails {
+  const out: LimbDetails = {};
+  if (!payloads || typeof payloads !== "object") return out;
+  for (const p of Object.values(payloads as Record<string, unknown>)) {
+    const body = (p as { body?: unknown } | null)?.body;
+    if (typeof body !== "string") continue;
+    const name = /^Limb: \S+ \(([^)\n]+)\)/m.exec(body)?.[1];
+    if (!name) continue;
+    const cves = (/^CVEs: (.*)$/m.exec(body)?.[1] ?? "").split(",").map((c) => clean(c, 30)).filter((c) => /^(CVE|GHSA|MAL)-/i.test(c));
+    const owner = clean(/^Owner: (.*)$/m.exec(body)?.[1] ?? "", 40);
+    out[clean(name, 40)] = { cves, ...(owner ? { owner } : {}) };
+  }
+  return out;
+}
+
+const pad = (n: number) => String(n).padStart(2, "0");
+/** 48h SLA clock as HH:MM:SS. */
+export function formatSla(ms: number): string {
+  const s = Math.floor(Math.max(0, ms) / 1000);
+  return `${pad(Math.floor(s / 3600))}:${pad(Math.floor((s % 3600) / 60))}:${pad(s % 60)}`;
+}
+
+function cveCountOf(l: WarLimb, details?: LimbDetails): number | null {
+  const d = details?.[clean(l.name, 40)]?.cves;
+  const ids = new Set<string>();
+  if (d && d.length > 0) d.forEach((c) => ids.add(c));
+  else if (Array.isArray(l.vulns)) {
+    for (const v of l.vulns as { id?: unknown; cves?: unknown }[]) {
+      const cves = Array.isArray(v?.cves) ? (v.cves as unknown[]).filter((c): c is string => typeof c === "string" && c !== "") : [];
+      if (cves.length > 0) cves.forEach((c) => ids.add(c));
+      else if (typeof v?.id === "string" && v.id !== "") ids.add(v.id);
+    }
+  }
+  return ids.size > 0 ? ids.size : null;
 }
 
 export function limbKeyOf(l: RaidLimb): string {
@@ -104,8 +182,10 @@ function line(ev: WarEvent, name: string): string {
   }
 }
 
+const start0 = (log: readonly WarEvent[], now: number) => log[0]?.at ?? now;
+
 /** Builds the scene. Only Possessed and Rotting limbs take part. Events for other limbs are ignored. */
-export function sceneFrom(events: readonly unknown[] | WarState, limbs: readonly WarLimb[], now: number, opts: { raidStart?: number } = {}): Scene {
+export function sceneFrom(events: readonly unknown[] | WarState, limbs: readonly WarLimb[], now: number, opts: { raidStart?: number; slaStart?: number; details?: LimbDetails } = {}): Scene {
   const log = Array.isArray(events) ? reduceAll(events).events : (events as WarState).events;
   const sick = limbs.filter((l) => l.state === "Possessed" || l.state === "Rotting");
   const byKey = new Map<string, { limb: WarLimb; view: SceneLimb; healedAt?: number }>();
@@ -146,6 +226,30 @@ export function sceneFrom(events: readonly unknown[] | WarState, limbs: readonly
     const healed = byKey.get(key)?.view.phase === "healed";
     return { key, name: clean(l.name, 40) || "unnamed", hp: healed ? 0 : bossHp(l.epss, l.exposure), healed };
   });
+  const slaStart = finite(opts.slaStart) ? opts.slaStart : start0(log, now);
+  const lastHeal = (except: string) => log.reduce((m, e) => (e.type === "human-merged" && e.limb !== except && byKey.has(e.limb) ? Math.max(m, e.at) : m), -Infinity);
+  const rejections: Rejection[] = effects.flatMap((e) => {
+    if (e.kind !== "convulse") return [];
+    const slot = byKey.get(e.limb);
+    if (!slot || slot.view.phase !== "ci-red" || lastHeal(e.limb) > e.at) return [];
+    return [{ limb: e.limb, name: slot.view.name, at: e.at, line: e.line }];
+  });
+  const possessed = bossOrder(view.map((s) => s.limb).filter((l) => l.state === "Possessed"));
+  const cards: BossCard[] = possessed.map((l) => {
+    const key = limbKeyOf(l);
+    const slot = byKey.get(key) as { limb: WarLimb; view: SceneLimb };
+    const healed = slot.view.phase === "healed";
+    const detected = finite(l.detectedAt) ? l.detectedAt : slaStart;
+    const slaMs = healed ? 0 : Math.min(SLA_KEV_MS, Math.max(0, SLA_KEV_MS - (now - detected)));
+    const owner = clean(opts.details?.[clean(l.name, 40)]?.owner ?? l.owner, 40) || "unowned";
+    return {
+      key, name: slot.view.name, cveCount: cveCountOf(l, opts.details), kev: l.kev === true,
+      epss: finite(l.epss) ? Math.min(1, Math.max(0, l.epss)) : null,
+      hp: healed ? 0 : bossHp(l.epss, l.exposure), healed, owner,
+      slaMs, sla: healed ? "HEALED" : slaMs <= 0 ? "SLA breached" : formatSla(slaMs), breached: !healed && slaMs <= 0,
+    };
+  });
+  const asRaid: RaidLimb[] = view.map((s) => (s.view.phase === "healed" ? { ...s.limb, healed: true, resolvedAt: s.healedAt } : s.limb));
   const start = finite(opts.raidStart) ? opts.raidStart : (log[0]?.at ?? now);
   const elapsed = Math.min(RAID_MS, Math.max(0, finite(now) ? now - start : 0));
   return {
@@ -159,6 +263,10 @@ export function sceneFrom(events: readonly unknown[] | WarState, limbs: readonly
     healTimes,
     feed: feed.slice(-FEED_MAX),
     effects,
+    rejections,
+    cards,
+    possessedOpen: cards.filter((c) => !c.healed).length,
+    nights: nightsWithoutPossession(asRaid, now, slaStart),
     simulated,
   };
 }
