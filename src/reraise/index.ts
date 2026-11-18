@@ -37,7 +37,7 @@ interface HealedRef {
 /** Pure: healed limbs become Healthy and do not spawn. Counts that depend on those fields are recomputed. */
 export function applyHealed(creature: Record<string, unknown>, healed: HealedRef[]): Record<string, unknown> {
   const limbs = (Array.isArray(creature.limbs) ? creature.limbs : []).map((l: Record<string, unknown>) => {
-    const h = healed.find((x) => x.ecosystem === l.ecosystem && x.name === l.name && (x.from === undefined || x.from === l.version));
+    const h = healed.find((x) => x.ecosystem === l.ecosystem && x.name === l.name && (x.from === undefined || x.from === l.version || x.to === l.version));
     if (!h) return l;
     // The awaiting status and the CI record end with the heal. healedBy is praise and is kept only when clean.
     const { status: _s, ciVerdict: _v, ciPr: _p, healedBy: _b, ...rest } = l;
