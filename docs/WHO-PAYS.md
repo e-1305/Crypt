@@ -2,6 +2,8 @@
 
 No market size is claimed. Every number below comes from [the census](census/RESULTS.md) (20 popular open-source projects, scan 2026-11-17, lockfile only, no reachability, not a random sample). Sentences marked **Opinion** are the authors' judgment, not measured.
 
+For the market, pricing hypothesis, defensibility and traction, see [BUSINESS.md](BUSINESS.md).
+
 ## Who uses it
 
 - Vulnerability management and VOC (vulnerability operations) teams, who rank findings and chase owners.
