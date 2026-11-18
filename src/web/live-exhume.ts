@@ -4,12 +4,14 @@
 import { buildCreature, type Creature } from "../exhume/creature.js";
 import { LockfileError } from "../exhume/lockfile.js";
 import { osvLookup } from "../exhume/osv-client.js";
-import { CODEOWNERS_LOCATIONS } from "../exhume/owners.js";
+import { groupLimbs, type PackageGroup } from "../exhume/group.js";
+import { CODEOWNERS_LOCATIONS, ownerLabel } from "../exhume/owners.js";
 import type { OsvLookup } from "../exhume/osv.js";
 import type { ExhumeFs } from "../exhume/types.js";
 import { parseAdvisory } from "../necromancer/advisory.js";
-import { auditIdFor, prBody } from "../necromancer/pr-body.js";
-import { chooseVersion, type Advisory } from "../necromancer/version.js";
+import { fetchPackageAdvisories, unionAdvisories } from "../necromancer/package-advisories.js";
+import { auditIdFor, prBody, prTitle } from "../necromancer/pr-body.js";
+import { chooseGroupVersion, type Advisory } from "../necromancer/version.js";
 import { limbIds } from "../raise/generate.js";
 import { plateSummary, renderPlate } from "../render/plate.js";
 import type { FeedSnapshot } from "./feed-snapshot.js";
@@ -71,9 +73,15 @@ export type DryRunPayload =
       /** Stable limb ID, as the game uses it (for example JQUERY). */
       limb: string;
       name: string;
+      /** Lowest installed version that moves. */
       from: string;
+      /** Every installed version this one graft replaces. */
+      versions: string[];
       to: string;
+      /** Major bump (or 0.x minor). The title and body say "review carefully". */
       breaking: boolean;
+      /** Direct: version bump. Transitive: forced via npm overrides. */
+      kind: "direct" | "transitive";
       title: string;
       branch: string;
       body: string;
@@ -93,7 +101,9 @@ export interface LiveExhumeResult {
   creature: Creature;
   /** Ranked limbs (creature.limbs): rank order, owners from CODEOWNERS. */
   limbs: Creature["limbs"];
-  /** Manifest to owner, from CODEOWNERS only ("unowned" without one). */
+  /** One entry per package (copies grouped), in rank order. */
+  groups: PackageGroup<Creature["limbs"][number]>[];
+  /** Manifest to owner, from CODEOWNERS only ("no owner yet" without one). */
   owners: { manifest: string; owner: string }[];
   /** renderPlate(creature): identical to the CLI plate. */
   plate: string;
@@ -104,6 +114,8 @@ export interface LiveExhumeResult {
   payloadsOmitted: number;
   notes: string[];
 }
+
+export { ownerLabel };
 
 export function dryRunLabel(repo: string): string {
   return `dry run: run \`npx @e-1305/crypt raid ${repo} --live\` to open it for real`;
@@ -152,64 +164,87 @@ async function advisoryFor(f: FetchLike, id: string): Promise<Advisory | "rate-l
   }
 }
 
-/** The PR the Necromancer would open, built by its own pure code. Nothing is sent. */
+/** The PR the Necromancer would open, built by its own pure code. Nothing is sent. One payload per package. */
 async function buildPayloads(
   f: FetchLike,
   creature: Creature,
   repo: string,
   notes: string[],
 ): Promise<{ payloads: DryRunPayload[]; omitted: number }> {
-  const spawned = creature.limbs.filter((l) => l.spawned && l.ecosystem === "npm");
-  const ids = limbIds(spawned.map((l) => l.name));
+  const spawnedCopies = creature.limbs.filter((l) => l.spawned && l.ecosystem === "npm");
+  const ids = limbIds(spawnedCopies.map((l) => l.name));
+  const idOf = new Map<string, string>();
+  spawnedCopies.forEach((l, i) => {
+    if (!idOf.has(l.name)) idOf.set(l.name, ids[i]!);
+  });
+  const groups = groupLimbs(creature.limbs.filter((l) => l.ecosystem === "npm")).filter((g) => g.spawned);
   const stamp = new Date(Date.parse(creature.feeds.epss.date ?? "") || 0);
   const payloads: DryRunPayload[] = [];
   const label = dryRunLabel(repo);
   let rateLimited = false;
-  for (let i = 0; i < Math.min(spawned.length, MAX_PAYLOADS); i++) {
-    const l = spawned[i]!;
-    const limb = ids[i]!;
-    const noFix = (reason: string): DryRunPayload => ({ status: "no-fix", limb, name: l.name, from: l.version, reason });
+  for (let i = 0; i < Math.min(groups.length, MAX_PAYLOADS); i++) {
+    const g = groups[i]!;
+    const limb = idOf.get(g.name)!;
+    const first = g.members[0]!;
+    const noFix = (reason: string): DryRunPayload => ({ status: "no-fix", limb, name: g.name, from: g.versions[0] ?? first.version, reason });
     if (rateLimited) {
       payloads.push(noFix("advisory could not be read (rate limit)"));
       continue;
     }
-    const results = await Promise.all(l.vulns.map((v) => advisoryFor(f, v.id)));
-    if (results.includes("rate-limited")) {
+    // Every known advisory for the package, not only those of one installed version.
+    const all = await fetchPackageAdvisories(f, g.ecosystem, g.name);
+    if (!all.ok) {
+      if (all.rateLimited) {
+        rateLimited = true;
+        notes.push("OSV rate limit reached while reading advisories; some dry-run payloads are missing. Wait a few minutes and paste the URL again.");
+        payloads.push(noFix("advisory could not be read (rate limit)"));
+      } else payloads.push(noFix("advisory could not be read from OSV"));
+      continue;
+    }
+    const vulnIds = [...new Set(g.members.flatMap((m) => m.vulns.map((v) => v.id)))];
+    const have = new Set(all.advisories.map((a) => a.id));
+    const extra = await Promise.all(vulnIds.filter((id) => !have.has(id)).map((id) => advisoryFor(f, id)));
+    if (extra.includes("rate-limited")) {
       rateLimited = true;
       notes.push("OSV rate limit reached while reading advisories; some dry-run payloads are missing. Wait a few minutes and paste the URL again.");
       payloads.push(noFix("advisory could not be read (rate limit)"));
       continue;
     }
-    if (results.includes(null)) {
+    if (extra.includes(null)) {
       payloads.push(noFix("advisory could not be read from OSV"));
       continue;
     }
-    const advisories = results as Advisory[];
-    const choice = chooseVersion(l.ecosystem, l.name, l.version, advisories);
+    const advisories = unionAdvisories(all.advisories, extra as Advisory[]);
+    const rotting = g.members.filter((m) => m.vulns.length > 0 || m.state !== "Healthy").map((m) => m.version);
+    const choice = chooseGroupVersion(g.ecosystem, g.name, g.versions, rotting, advisories);
     if (!choice) {
       payloads.push(noFix("no single fixed version could be chosen from the OSV ranges"));
       continue;
     }
-    const cves = [...new Set(l.vulns.flatMap((v) => v.cves))].sort();
+    const cves = [...new Set(g.members.flatMap((m) => m.vulns.flatMap((v) => v.cves)))].sort();
     payloads.push({
       status: "ready",
       limb,
-      name: l.name,
-      from: l.version,
+      name: g.name,
+      from: choice.from,
+      versions: choice.affected,
       to: choice.version,
       breaking: choice.breaking,
-      title: `fix: graft ${l.name} ${l.version} to ${choice.version} (${limb})`,
+      kind: g.kind,
+      title: prTitle({ name: g.name, from: choice.from, versions: choice.affected, to: choice.version, limb, breaking: choice.breaking }),
       branch: `crypt/graft-${limb.toLowerCase()}-${choice.version}`,
       body: prBody({
         limb,
-        name: l.name,
-        from: l.version,
+        name: g.name,
+        from: choice.from,
         to: choice.version,
         breaking: choice.breaking,
+        kind: g.kind,
+        versions: choice.affected,
         cves,
-        kev: l.kev,
-        epss: l.epss,
-        owner: l.owner,
+        kev: g.kev,
+        epss: g.epss,
+        owner: g.owner,
         auditId: auditIdFor(stamp, limb),
       }),
       files: ["package.json", "package-lock.json"],
@@ -218,7 +253,7 @@ async function buildPayloads(
       label,
     });
   }
-  return { payloads, omitted: Math.max(0, spawned.length - MAX_PAYLOADS) };
+  return { payloads, omitted: Math.max(0, groups.length - MAX_PAYLOADS) };
 }
 
 export async function liveExhume(input: string, opts: LiveExhumeOptions): Promise<LiveExhumeResult> {
@@ -265,7 +300,7 @@ export async function liveExhume(input: string, opts: LiveExhumeOptions): Promis
       }
     } catch (e) {
       if (e instanceof LiveExhumeError && e.code === "rate-limited") throw e;
-      notes.push("CODEOWNERS could not be read, so owners show as unowned.");
+      notes.push("CODEOWNERS could not be read, so owners show as no owner yet.");
       break;
     }
   }
@@ -310,6 +345,7 @@ export async function liveExhume(input: string, opts: LiveExhumeOptions): Promis
     ref: usedRef,
     creature,
     limbs: creature.limbs,
+    groups: groupLimbs(creature.limbs),
     owners: creature.manifests.map((m) => ({ manifest: m.path, owner: m.owner })),
     plate: renderPlate(creature),
     summary: plateSummary(creature),

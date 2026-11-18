@@ -1,0 +1,27 @@
+{
+  "id": "GQ-LODASH-1",
+  "aliases": [
+    "CVE-2020-11023"
+  ],
+  "affected": [
+    {
+      "package": {
+        "ecosystem": "npm",
+        "name": "lodash"
+      },
+      "ranges": [
+        {
+          "type": "SEMVER",
+          "events": [
+            {
+              "introduced": "0"
+            },
+            {
+              "fixed": "4.17.12"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
