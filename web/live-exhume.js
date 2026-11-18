@@ -3,7 +3,7 @@
 // Everything is shown with textContent. Nothing is written anywhere: the pull request payloads are dry runs.
 // Limbs and owners from CODEOWNERS only, no person is named. Failsafe: any error shows a message and no creature.
 import { liveExhume, LiveExhumeError, PROGRESS_STEPS, dryRunLabel, ownerLabel } from "./js/web/live-exhume.js";
-import { noiseFunnel, funnelText, funnelOwners } from "./js/web/noise-funnel.js";
+import { noiseFunnel, funnelText, funnelOwners, exorcisedRows, LOCKFILE_LIMIT_LINE } from "./js/web/noise-funnel.js";
 import { slaOf, toCsv, toJson } from "./js/web/report-export.js";
 import { parseFeedSnapshot } from "./js/web/feed-snapshot.js";
 import { mountCardPanel } from "./card/panel.js";
@@ -84,6 +84,25 @@ function renderResult(root, r, gallery, announce = () => {}) {
   const ownersLine = el("p", "Owners from CODEOWNERS: " + funnelOwners(r.limbs).join(", "), "paste-funnel-owners");
   ownersLine.id = "paste-funnel-owners";
   root.appendChild(ownersLine);
+
+  const exorcised = exorcisedRows(r.limbs);
+  const det = document.createElement("details");
+  det.id = "paste-exorcised";
+  det.className = "paste-exorcised";
+  const sum = el("summary", "Show the " + exorcised.length + " exorcised findings and why");
+  sum.id = "paste-exorcised-toggle";
+  det.appendChild(sum);
+  const exList = el("ul", undefined, "paste-exorcised-list");
+  exList.id = "paste-exorcised-list";
+  exorcised.forEach((x) => exList.appendChild(el("li", x.name + "@" + x.version + ": " + x.reason)));
+  det.appendChild(exList);
+  const limit = el("p", LOCKFILE_LIMIT_LINE, "paste-limits");
+  limit.id = "paste-limits";
+  det.appendChild(limit);
+  const lim2 = el("a", "Census limits");
+  lim2.href = "https://github.com/e-1305/Crypt/blob/main/docs/census/RESULTS.md";
+  det.appendChild(lim2);
+  root.appendChild(det);
 
   root.appendChild(el("h3", "Share your creature"));
   const link = shareLink(r.repo);
