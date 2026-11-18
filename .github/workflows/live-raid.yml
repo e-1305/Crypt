@@ -1,0 +1,96 @@
+name: live-raid
+
+# Run the live raid from a phone: GitHub app, Crypt, Actions, live-raid, Run workflow.
+# The token is the fine-grained CRYPT_DEMO_TOKEN (only e-1305/crypt-demo). This workflow never writes
+# to this repository, and nothing here merges: a person lands the pull request on crypt-demo.
+on:
+  workflow_dispatch:
+    inputs:
+      limb:
+        description: Limb to work on
+        type: choice
+        options:
+          - LODASH
+          - JQUERY
+        default: LODASH
+      mode:
+        description: What to do
+        type: choice
+        options:
+          - graft
+          - inquisit
+          - reraise
+        default: graft
+      sabotage:
+        description: Demo only, with graft. Adds a failing test so CI goes red.
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: live-raid
+  cancel-in-progress: false
+
+env:
+  CRYPT_TOOLCHAIN_DIR: ${{ github.workspace }}/.toolchain
+
+jobs:
+  live-raid:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Cache toolchain
+        uses: actions/cache@v4
+        with:
+          path: .toolchain
+          key: toolchain-${{ runner.os }}-${{ hashFiles('scripts/setup-tools.sh') }}
+      - run: npm run setup
+      # Run state (out/ and the audit log) lets inquisit and reraise find the pull request that graft opened.
+      - name: Restore run state
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            out
+            crypt-audit.log
+          key: live-raid-state-${{ github.run_id }}
+          restore-keys: live-raid-state-
+      - name: Live raid
+        env:
+          # The only step that sees the token. crypt reads it as GITHUB_TOKEN.
+          GITHUB_TOKEN: ${{ secrets.CRYPT_DEMO_TOKEN }}
+          MODE: ${{ inputs.mode }}
+          LIMB: ${{ inputs.limb }}
+          SABOTAGE: ${{ inputs.sabotage }}
+        run: |
+          if [ -z "$GITHUB_TOKEN" ]; then
+            echo "CRYPT_DEMO_TOKEN is not set. Add it under Settings, Secrets and variables, Actions." >&2
+            exit 1
+          fi
+          echo "::add-mask::$GITHUB_TOKEN"
+          bash scripts/ci/live-raid.sh "$MODE" "$LIMB" "$SABOTAGE"
+      - name: Save run state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            out
+            crypt-audit.log
+          key: live-raid-state-${{ github.run_id }}
+      - name: Upload the plate and the creature
+        if: inputs.mode == 'reraise'
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-raid-reraise
+          path: |
+            out/plate.txt
+            out/creature.json
+            out/creature.z8
+          if-no-files-found: warn
