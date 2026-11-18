@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 import { spawnSync } from "node:child_process";
-import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { numRuns } from "./runs.js";
@@ -270,15 +270,33 @@ describe("hook definitions in .kiro/hooks", () => {
     for (const h of hooks) {
       expect(h.version, h.file).toBe("v1");
       expect(typeof h.name, h.file).toBe("string");
-      expect(h.trigger, h.file).toBe("PostFileSave");
-      expect(() => new RegExp(h.matcher), h.file).not.toThrow();
+      expect(["PostFileSave", "PostToolUse", "Stop", "SessionStart"], h.file).toContain(h.trigger);
+      if (h.trigger === "PostFileSave") expect(() => new RegExp(h.matcher), h.file).not.toThrow();
+      if (h.trigger === "PostToolUse") expect(h.matcher, h.file).toBe("write");
       expect(["command", "agent"], h.file).toContain(h.action.type);
       expect(h.action.type === "command" ? h.action.command : h.action.prompt, h.file).toBeTruthy();
     }
   });
+  it("each PostToolUse twin filters on the same regex as its PostFileSave command hook", () => {
+    const twins = hooks.filter((h) => h.trigger === "PostToolUse");
+    expect(twins).toHaveLength(5);
+    for (const t of twins) {
+      const original = hooks.find((h) => h.file === t.file && h.trigger === "PostFileSave" && h.action.type === "command")!;
+      const filter = /CRYPT_HOOK_FILTER='([^']*)'/.exec(t.action.command)![1]!;
+      expect(filter, t.file).toBe(original.matcher);
+      expect(t.action.command, t.file).toContain("CRYPT_HOOK_TRIGGER=PostToolUse");
+    }
+  });
+  it("a Stop and a SessionStart hook exist and log with their trigger", () => {
+    for (const [trigger, name] of [["Stop", "failsafe-guard-on-stop"], ["SessionStart", "session-start-log"]] as const) {
+      const h = hooks.find((x) => x.trigger === trigger)!;
+      expect(h.action.command).toContain(`CRYPT_HOOK_TRIGGER=${trigger}`);
+      expect(h.action.command).toContain(`run-logged.sh ${name} `);
+    }
+  });
   it("every command hook runs a script that exists", () => {
     for (const h of hooks.filter((x) => x.action.type === "command")) {
-      const script = /scripts\/hooks\/\S+/.exec(h.action.command)![0];
+      const script = /scripts\/(?:hooks|ci)\/\S+/.exec(h.action.command)![0];
       expect(readFileSync(join(ROOT, script), "utf8").length, h.file).toBeGreaterThan(0);
     }
   });
@@ -353,6 +371,60 @@ describe("run-logged.sh and the hook evidence check", () => {
       const r = spawnSync("bash", ["scripts/hooks/run-logged.sh", "failsafe-guard-on-save", "scripts/hooks/failsafe-check.sh", "src/mcp/a.ts"], { cwd: d, encoding: "utf8", input: "" });
       expect(r.status, r.stderr).toBe(0);
       expect(logOf(d)[0]).toMatchObject({ trigger: "manual", file: "src/mcp/a.ts", exit: 0 });
+    } finally {
+      rmSync(d, { recursive: true, force: true });
+    }
+  });
+
+  it("PostToolUse filter: logs a matching write with the PostToolUse trigger, skips a non-matching one", () => {
+    const d = repo({ "src/mcp/a.ts": clean, "docs/x.md": "x\n" });
+    try {
+      const env = { ...process.env, CRYPT_HOOK_TRIGGER: "PostToolUse", CRYPT_HOOK_FILTER: "(^|/)src/(necromancer|inquisitor|mcp)/.*\\.ts$" };
+      const run = (path: string) => spawnSync("bash", ["scripts/hooks/run-logged.sh", "failsafe-guard-on-save", "scripts/hooks/failsafe-check.sh"], { cwd: d, encoding: "utf8", env, input: JSON.stringify({ tool_name: "write", tool_input: { path } }) });
+      expect(run(join(d, "docs/x.md")).status).toBe(0);
+      expect(existsSync(join(d, "docs", "evidence", "hook-runs.jsonl"))).toBe(false);
+      const r = run(join(d, "src/mcp/a.ts"));
+      expect(r.status, r.stderr).toBe(0);
+      expect(logOf(d)).toHaveLength(1);
+      expect(logOf(d)[0]).toMatchObject({ hook: "failsafe-guard-on-save", trigger: "PostToolUse", file: "src/mcp/a.ts", exit: 0 });
+    } finally {
+      rmSync(d, { recursive: true, force: true });
+    }
+  });
+
+  it("Stop and SessionStart hooks log their trigger", () => {
+    const d = repo({ "src/a.ts": clean });
+    try {
+      cpSync(join(ROOT, "scripts", "ci"), join(d, "scripts", "ci"), { recursive: true });
+      const go = (hook: string, script: string, trigger: string) => spawnSync("bash", ["scripts/hooks/run-logged.sh", hook, script], { cwd: d, encoding: "utf8", env: { ...process.env, CRYPT_HOOK_TRIGGER: trigger }, input: "{}" });
+      expect(go("session-start-log", "scripts/hooks/session-start.sh", "SessionStart").status).toBe(0);
+      go("failsafe-guard-on-stop", "scripts/ci/failsafe-guard.sh", "Stop");
+      expect(logOf(d).map((r) => [r.hook, r.trigger])).toEqual([["session-start-log", "SessionStart"], ["failsafe-guard-on-stop", "Stop"]]);
+    } finally {
+      rmSync(d, { recursive: true, force: true });
+    }
+  });
+
+  it("requires a non-manual line per hook once any exists, and a PostToolUse twin", () => {
+    const d = mkdtempSync(join(tmpdir(), "crypt-hev-"));
+    try {
+      mkdirSync(join(d, ".kiro", "hooks"), { recursive: true });
+      mkdirSync(join(d, "docs", "evidence"), { recursive: true });
+      const hook = (n: string, twin: boolean) => {
+        const base = { name: n, trigger: "PostFileSave", action: { type: "command", command: `bash scripts/hooks/run-logged.sh ${n} x.sh` }, timeout: 5, enabled: true };
+        const t = { ...base, trigger: "PostToolUse", matcher: "write", action: { type: "command", command: `CRYPT_HOOK_FILTER='x' bash scripts/hooks/run-logged.sh ${n} x.sh` } };
+        writeFileSync(join(d, ".kiro", "hooks", `${n}.json`), JSON.stringify({ hooks: twin ? [base, t] : [base] }));
+      };
+      hook("a", true);
+      hook("b", false);
+      const line = (hook: string, trigger: string) => JSON.stringify({ ts: new Date().toISOString(), hook, trigger, file: "", exit: 0, summary: "s" });
+      writeFileSync(join(d, "docs", "evidence", "hook-runs.jsonl"), [line("a", "manual"), line("b", "manual")].join("\n") + "\n");
+      expect(checkHookEvidence(d).join("\n")).toContain("b.json: a PostFileSave command hook needs a PostToolUse");
+      expect(checkHookEvidence(d).join("\n")).not.toContain("no non-manual line");
+      writeFileSync(join(d, "docs", "evidence", "hook-runs.jsonl"), [line("a", "manual"), line("b", "PostToolUse")].join("\n") + "\n");
+      const p = checkHookEvidence(d).join("\n");
+      expect(p).toContain('no non-manual line for hook "a"');
+      expect(p).not.toContain('hook "b"');
     } finally {
       rmSync(d, { recursive: true, force: true });
     }

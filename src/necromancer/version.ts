@@ -35,6 +35,7 @@ export interface Advisory {
 const SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+)?$/;
 const MAX = Number.MAX_SAFE_INTEGER;
 
+/** Parses a semver string into its parts. Null when the string is not valid semver. */
 export function parseVersion(v: string): Semver | null {
   const m = SEMVER.exec(v);
   if (!m) return null;
@@ -43,6 +44,7 @@ export function parseVersion(v: string): Semver | null {
   return { major, minor, patch, pre: m[4] ? m[4].split(".") : [] };
 }
 
+/** Renders a parsed version back to `major.minor.patch[-pre]`. Build metadata is not kept. */
 export function formatVersion(s: Semver): string {
   return `${s.major}.${s.minor}.${s.patch}${s.pre.length ? "-" + s.pre.join(".") : ""}`;
 }

@@ -93,8 +93,8 @@
   <rect class="card" x="510" y="322" width="450" height="100" rx="8"/>
   <rect class="k2" x="510" y="322" width="10" height="100" rx="4"/>
   <text class="tx h" x="536" y="350">Hooks: the guards</text>
-  <text class="tx" x="536" y="374">Five hooks: File Save (IDE/CLI) + Post Tool Use (Web).</text>
-  <text class="tx" x="536" y="396">Tests, failsafe, copy, attribution, task trace.</text>
+  <text class="tx" x="536" y="374">7 hook files apply in IDE/CLI (repo as workspace root).</text>
+  <text class="tx" x="536" y="396">Not observed firing in Kiro Web (repo is in a subfolder).</text>
 
   <rect class="card" x="40" y="436" width="450" height="100" rx="8"/>
   <rect class="k3" x="40" y="436" width="10" height="100" rx="4"/>

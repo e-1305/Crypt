@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Failsafe guard on agent stop",
+      "description": "Runs the failsafe guard over all of src/ and bin/ when the agent stops (session-level safety net; Agent Stop works in Kiro Web).",
+      "trigger": "Stop",
+      "action": {
+        "type": "command",
+        "command": "CRYPT_HOOK_TRIGGER=Stop bash scripts/hooks/run-logged.sh failsafe-guard-on-stop scripts/ci/failsafe-guard.sh"
+      },
+      "timeout": 120,
+      "enabled": true
+    }
+  ]
+}
