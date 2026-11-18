@@ -128,6 +128,21 @@ describe("web/raid.js", () => {
     return { raid, said, running, m };
   }
 
+  it("counts nights from the shared team.scanStart, else from this browser's first visit", async () => {
+    const DAY = 86_400_000;
+    const healthy = [{ ecosystem: "npm", name: "ms", version: "2.1.3", state: "Healthy", healed: false, spawned: true, epss: 0, kev: false }];
+    const a = await start();
+    clock += 100 * DAY;
+    a.raid.setLimbs(healthy, "acme/app");
+    expect(el("raid-nights").textContent).toBe("Nights Without Possession (counted from this browser's first visit): 100");
+    for (const bad of [{}, { scanStart: "x" }, { scanStart: NaN }, { scanStart: -5 }, { scanStart: clock + DAY }, null]) {
+      a.raid.setLimbs(healthy, "acme/app", bad);
+      expect(el("raid-nights").textContent).toContain("this browser's first visit): 100");
+    }
+    a.raid.setLimbs(healthy, "acme/app", { scanStart: clock - 40 * DAY });
+    expect(el("raid-nights").textContent).toBe("Nights Without Possession (counted from the team's first scan): 40");
+  });
+
   it("shows possession pressure as text and a progress bar without touching the score", async () => {
     vi.useFakeTimers();
     try {

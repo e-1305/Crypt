@@ -33,12 +33,15 @@ export function initRaid({ store, announce, onRunning, now = () => Date.now() })
     setTimeout(() => b.classList.toggle(cls, false), ms);
   }
 
-  const scanStart = (() => {
+  // Fallback: this browser's first visit. The team's shared scanStart (creature.json team.scanStart) wins when present.
+  const localScanStart = (() => {
     const t = store.get("crypt.scanStart");
     if (typeof t === "number") return t;
     store.set("crypt.scanStart", now());
     return now();
   })();
+  let sharedScanStart = null;
+  const scanStart = () => (sharedScanStart ?? localScanStart);
 
   // The reraise step turns a healed limb into a plain Healthy one (no KEV, no vulns). Remember what it was.
   function remember(list) {
@@ -77,7 +80,7 @@ export function initRaid({ store, announce, onRunning, now = () => Date.now() })
     setText("raid-state", v.status === "idle" ? "Ready. Start the raid when the team is together." : v.status === "running" ? "Raid in progress." : "Raid complete.");
     setText("raid-score", "Team risk removed: " + score.toFixed(2));
     setText("raid-rank", "Rank: " + rankFor(healedCount(limbs)));
-    setText("raid-nights", "Nights Without Possession (counted from this browser's first visit): " + nightsWithoutPossession(limbs, now(), scanStart));
+    setText("raid-nights", "Nights Without Possession (counted from " + (sharedScanStart === null ? "this browser's first visit" : "the team's first scan") + "): " + nightsWithoutPossession(limbs, now(), scanStart()));
     setText("raid-praise", praiseLines(limbs).join("; "));
     const start = $("raid-start");
     if (start) start.disabled = v.status === "running";
@@ -129,7 +132,7 @@ export function initRaid({ store, announce, onRunning, now = () => Date.now() })
     setText("raid-boss", bossText);
     const bossEl = $("raid-boss");
     if (bossEl) bossEl.hidden = bossText === "";
-    const shelf = trophies(limbs, { healed: gainedCount(), elapsedMs: v.elapsedMs, nights: nightsWithoutPossession(limbs, now(), scanStart), bestChain: combo.best });
+    const shelf = trophies(limbs, { healed: gainedCount(), elapsedMs: v.elapsedMs, nights: nightsWithoutPossession(limbs, now(), scanStart()), bestChain: combo.best });
     const list = $("raid-trophies");
     if (list) {
       shelf.forEach((t, i) => {
@@ -187,7 +190,7 @@ export function initRaid({ store, announce, onRunning, now = () => Date.now() })
     interval = 0;
     const v = timer.view();
     const gained = limbs.filter((l) => countsForScore(l) && !baseline.has(keyOf(l)));
-    card = cardData(repo, gained, v.elapsedMs, { all: limbs, bestChain: comboState(healTimes).best, nights: nightsWithoutPossession(limbs, now(), scanStart) });
+    card = cardData(repo, gained, v.elapsedMs, { all: limbs, bestChain: comboState(healTimes).best, nights: nightsWithoutPossession(limbs, now(), scanStart()) });
     onRunning?.(false);
     announce("Raid complete. " + card.limbsHealed + " limbs healed. Risk removed " + card.riskRemoved + ". Grade " + card.grade + ". " + card.epitaph);
     render();
@@ -223,7 +226,9 @@ export function initRaid({ store, announce, onRunning, now = () => Date.now() })
   render();
 
   return {
-    setLimbs(list, name) {
+    setLimbs(list, name, team) {
+      const t = team && typeof team === "object" ? team.scanStart : undefined;
+      sharedScanStart = typeof t === "number" && Number.isFinite(t) && t > 0 && t <= now() ? t : null;
       limbs = remember(Array.isArray(list) ? list : []);
       noteHeals(counted);
       counted = new Set(limbs.filter(countsForScore).map(keyOf));

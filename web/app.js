@@ -228,7 +228,7 @@ async function loadPlate() {
     const name = creatureName(creature.repo || "demo");
     creatureNameEl.textContent = name + (creatureId === "demo" ? " (the demo creature)" : " (" + creature.repo + ")");
     downloadName = "crypt-" + name.toLowerCase() + ".z8";
-    raid.setLimbs(creature.limbs, creature.repo);
+    raid.setLimbs(creature.limbs, creature.repo, creature.team);
     // Real source: each limb that turned Healed goes through the same fail-safe pipeline as the simulation.
     heal.real(fresh);
     // A red check recorded by the Inquisitor shows the rejection once per PR.
