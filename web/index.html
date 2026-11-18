@@ -36,7 +36,7 @@
   <p class="hero-actions">
     <a id="hero-watch" class="hero-cta" href="?judge=1">Watch it run (60 s)</a>
     <a id="hero-play" class="hero-cta" href="#cmd">Play the creature</a>
-    <button id="hero-scan" class="hero-cta" type="button" aria-controls="lookup">Scan your repo</button>
+    <button id="hero-scan" class="hero-cta" type="button" aria-controls="paste-url">Scan your repo</button>
   </p>
   <ol id="hero-steps" class="hero-steps" aria-label="How it works">
     <li><b>Exhume</b> (scan)</li>
@@ -45,12 +45,12 @@
     <li><b>Reraise</b> (healed)</li>
   </ol>
 </section>
-<section id="paste" class="paste" aria-label="Paste your GitHub repo">
-  <button id="paste-open" class="primary" type="button" aria-expanded="false" aria-controls="paste-form">Paste your GitHub repo</button>
-  <form id="paste-form" class="paste-form" autocomplete="off" hidden>
-    <label for="paste-url">GitHub address (public repo with a package-lock.json)</label>
-    <input id="paste-url" type="text" spellcheck="false" autocapitalize="off" placeholder="https://github.com/owner/repo">
-    <button id="paste-go" type="submit">Meet its creature</button>
+<section id="paste" class="paste" aria-label="Scan your GitHub repo">
+  <form id="paste-form" class="paste-form" autocomplete="off">
+    <label for="paste-url">Paste a public GitHub repo</label>
+    <input id="paste-url" type="text" spellcheck="false" autocapitalize="off" placeholder="https://github.com/owner/repo" aria-describedby="paste-hint">
+    <button id="paste-go" class="primary" type="submit">Scan my repo</button>
+    <span id="paste-hint" class="muted paste-hint">See your repo as a creature in about 15 seconds. No install. Public GitHub repo with a package-lock.json at the root (npm). Example: <button id="paste-example" class="paste-chip" type="button">e-1305/crypt-demo</button></span>
   </form>
   <p id="paste-status" class="muted" role="status"></p>
   <div id="paste-result" class="paste-result" hidden></div>

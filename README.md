@@ -146,6 +146,13 @@ No server code is needed.
 
 The page requests only its own files under `game/`. To refresh the gallery, run `npm run census` then `npm run gallery:snapshot` and commit `web/gallery-data/`.
 
+## Who uses it and who pays
+
+Users: vulnerability management / VOC teams, AppSec, OSS maintainers. Opinion: the buyer is the security org that owns remediation SLAs. CRYPT is free today and no market size is claimed. Wedge, from the [census](docs/census/RESULTS.md): 84.7% of limbs have no CODEOWNERS owner, and 95.2% of findings were filtered as noise. Sources and the opinion on what is hard to copy: [docs/WHO-PAYS.md](docs/WHO-PAYS.md).
+
+**Real proof** on [crypt-demo](https://github.com/e-1305/crypt-demo):
+[PR #1](https://github.com/e-1305/crypt-demo/pull/1) (lodash 4.17.15 to 4.18.1, opened by CRYPT, CI green, merged by a human) and [PR #2](https://github.com/e-1305/crypt-demo/pull/2) (sabotage, CI red, rejected and closed).
+
 ## The three pillars
 
 | Pillar | Source | In CRYPT |

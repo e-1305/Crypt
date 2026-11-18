@@ -11,9 +11,12 @@ const bench = html.slice(html.indexOf('<section id="bench"'), html.indexOf('<p i
 const before = html.slice(0, html.indexOf('<section id="bench"'));
 
 describe("first screen", () => {
-  it("has exactly one primary button, labelled Paste your GitHub repo", () => {
+  it("has exactly one primary button, Scan my repo, next to an always-visible labelled input", () => {
     expect(html.match(/class="primary"/g)).toHaveLength(1);
-    expect(html).toMatch(/<button id="paste-open" class="primary"[^>]*>Paste your GitHub repo<\/button>/);
+    expect(html).toMatch(/<button id="paste-go" class="primary"[^>]*>Scan my repo<\/button>/);
+    expect(html).toMatch(/<label for="paste-url">Paste a public GitHub repo<\/label>/);
+    expect(html).not.toMatch(/<form id="paste-form"[^>]*hidden/);
+    expect(html).not.toContain("paste-open");
   });
 
   it("keeps raid, trophies, ranks, Simulated CI, gallery, sound and recording mode inside the Bench drawer", () => {

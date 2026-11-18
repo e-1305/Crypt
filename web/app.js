@@ -120,14 +120,12 @@ if (benchToggle && benchBody) {
   });
 }
 
-// Hero actions (issue #120): "Play the creature" moves focus to the game input, "Scan your repo" opens the Bench on the GitHub address field.
+// Hero actions (issue #120): "Play the creature" moves focus to the game input, "Scan your repo" focuses the paste field under the hero.
 document.getElementById("hero-play")?.addEventListener("click", () => {
   document.getElementById("cmd")?.focus();
 });
 document.getElementById("hero-scan")?.addEventListener("click", () => {
-  const bench = document.getElementById("bench");
-  if (bench && !bench.classList.contains("open")) benchToggle?.click();
-  const field = document.getElementById("lookup");
+  const field = document.getElementById("paste-url");
   field?.scrollIntoView({ block: "center" });
   field?.focus();
 });

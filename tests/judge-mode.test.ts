@@ -21,7 +21,7 @@ describe("timeline", () => {
   });
   it("labels the CI step simulated and ends on the human-merges caption", () => {
     expect(tl[4].caption.toLowerCase()).toContain("simulated");
-    expect(tl[5].caption).toBe("Real PRs, real CI, a human always merges. Your turn.");
+    expect(tl[5].caption).toBe("This page is a rehearsal. The CLI opens real PRs, CI checks them, a person merges. Your turn.");
   });
   it("stepAt finds the step for any time inside the demo and null outside", () => {
     fc.assert(fc.property(fc.integer({ min: 0, max: 44999 }), (ms) => {
