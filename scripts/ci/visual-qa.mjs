@@ -18,7 +18,9 @@ const outDir = join(root, "out", "visual-qa");
 const imgDir = join(root, "docs", "img");
 const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".woff2": "font/woff2", ".txt": "text/plain" };
 
-const CONTROLS = ["#sim-green", "#sim-red", "#raid-start", "#hc-toggle", "#sound-toggle", "#record-toggle", "#cmd", "#try-chip", "#download", "#view-3d", "#install-copy", "#manual-link"];
+// The first screen: one primary button, the CRT input and the page links. The Bench drawer controls are checked with the drawer open.
+const CONTROLS = ["#paste-open", "#bench-toggle", "#hc-toggle", "#cmd", "#try-chip", "#download", "#manual-link"];
+const BENCH_CONTROLS = ["#sim-green", "#sim-red", "#raid-start", "#sound-toggle", "#record-toggle", "#view-3d", "#install-copy", "#lookup", "#kiro-link"];
 // Fixed-position elements checked on the 3D bench. The caption is pointer-events:none, so it is listed by name.
 const CAPTION = "#theatre-caption";
 const RAID_STATS = ["#raid-nights", "#raid-vitals", "#raid-health"];
@@ -132,12 +134,37 @@ async function check(browser, vp, query) {
   if (!plate.trim()) fail(tag, "plate is empty");
   else if (!plate.includes("crypt-demo")) fail(tag, "plate does not name crypt-demo");
 
-  const all = present(tag, await boxes(page, CONTROLS));
+  const theatre0 = await page.evaluate(() => document.documentElement.dataset.theatre ?? "");
+  const is3d = theatre0.startsWith("3d");
+  const all = present(tag, await boxes(page, is3d ? CONTROLS.filter((c) => c !== "#bench-toggle") : CONTROLS));
+  const primary = await page.evaluate(() => [...document.querySelectorAll("button.primary, a.primary")].filter((e) => e.getClientRects().length > 0).map((e) => e.textContent.trim()));
+  if (primary.length !== 1 || primary[0] !== "Paste your GitHub repo") fail(tag, `expected one primary button "Paste your GitHub repo", got ${JSON.stringify(primary)}`);
+  if (!is3d) {
+    // The Bench holds the raid, Simulated CI and the rest: closed they are not on screen, open they do not overlap.
+    const hidden = await page.evaluate((sels) => sels.filter((s) => { const e = document.querySelector(s); return e && e.getClientRects().length > 0; }), ["#sim-green", "#raid-start", "#record-toggle", "#sound-toggle", "#gallery-list"]);
+    if (hidden.length) fail(tag, `Bench controls visible on the first screen: ${hidden.join(", ")}`);
+  }
   for (const [a, b] of findOverlaps(all)) fail(tag, `controls overlap: ${a} and ${b}`);
-  const stats = present(tag, await boxes(page, RAID_STATS));
-  for (const [a, b] of findOverlaps(stats)) fail(tag, `raid stats overlap: ${a} and ${b}`);
+  const stats = is3d ? present(tag, await boxes(page, RAID_STATS)) : [];
+  if (is3d) for (const [a, b] of findOverlaps(stats)) fail(tag, `raid stats overlap: ${a} and ${b}`);
 
-  const theatre = await page.evaluate(() => document.documentElement.dataset.theatre ?? "");
+  const theatre = theatre0;
+  if (!is3d) {
+    await page.click("#bench-toggle");
+    const open = present(tag, await boxes(page, BENCH_CONTROLS));
+    for (const [a, b] of findOverlaps([...present(tag, await boxes(page, CONTROLS)), ...open])) fail(tag, `controls overlap with the Bench open: ${a} and ${b}`);
+    if (vp.w < 900) for (const b of open) if (b.height < TAP_MIN && b.name !== "#install-copy" && b.name !== "#kiro-link") fail(tag, `tap target ${b.name} is ${Math.round(b.height)}px tall, under ${TAP_MIN}`);
+    const stats2 = present(tag, await boxes(page, RAID_STATS));
+    for (const [a, b] of findOverlaps(stats2)) fail(tag, `raid stats overlap: ${a} and ${b}`);
+    await page.click("#bench-toggle");
+  } else {
+    await page.click("#bench-drawer-toggle");
+    const open = present(tag, await boxes(page, BENCH_CONTROLS.filter((c) => c !== "#view-3d" && c !== "#lookup" && c !== "#install-copy" && c !== "#kiro-link")));
+    for (const [a, b] of findOverlaps(open)) fail(tag, `controls overlap with the Bench open: ${a} and ${b}`);
+    const fixedOpen = await fixedBoxes(page, vp.w, vp.h);
+    for (const [a, b] of findOverlaps(fixedOpen)) fail(tag, `fixed elements overlap with the Bench open: ${a} and ${b}`);
+    await page.click("#bench-drawer-toggle");
+  }
   let fixedCount = 0;
   if (theatre.startsWith("3d")) {
     // Worst case for the bottom bar: the raid card download button is shown, which makes #raid as wide as it gets.

@@ -15,8 +15,8 @@ const at = (needle: string) => {
 };
 
 describe("index.html above the fold", () => {
-  it("puts the title, subtitle, pitch, install command and Kiro line before the game", () => {
-    const order = ['<h1>CRYPT</h1>', 'class="subtitle"', 'id="pitch"', 'id="install-cmd"', 'id="install-copy"', 'id="kiro-link"', '<main class="crt">'].map(at);
+  it("puts the title, subtitle, pitch and the one primary button before the game", () => {
+    const order = ['<h1>CRYPT</h1>', 'class="subtitle"', 'id="pitch"', 'id="paste-open"', '<main class="crt">'].map(at);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
     expect(html).toContain("npx @e-1305/crypt raid &lt;path-or-github-url&gt;");
     expect(html).toContain("Built with Kiro");
@@ -39,7 +39,7 @@ describe("index.html above the fold", () => {
 
   it("keeps the recording button out of the heading and names what it does", () => {
     expect(html).toMatch(/id="record-toggle"[^>]*aria-label="Recording mode: [^"]+"/);
-    expect(at('id="record-toggle"')).toBeLessThan(at("<header"));
+    expect(at('id="record-toggle"')).toBeGreaterThan(at('id="bench-body"'));
     expect(readFileSync(join(import.meta.dirname, "..", "web", "style.css"), "utf8")).toMatch(/body:not\(\.theatre\) \.record-toggle \{ position: static/);
   });
 

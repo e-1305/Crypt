@@ -18,15 +18,15 @@ Generated 2026-11-18 (UTC).
 
 | Item | Count | Source |
 |---|---|---|
-| Specs | 20 | directories in `.kiro/specs` |
-| Spec tasks | 172 ticked of 174 | `- [x]` and `- [ ]` lines in `.kiro/specs/*/tasks.md` |
+| Specs | 21 | directories in `.kiro/specs` |
+| Spec tasks | 181 ticked of 183 | `- [x]` and `- [ ]` lines in `.kiro/specs/*/tasks.md` |
 | Hooks | 5 | `.kiro/hooks/*.json` |
 | Hook runs recorded in a Kiro session | 0 | lines of `docs/evidence/hook-runs.jsonl` whose trigger is not `manual` |
-| Steering files | 5 | `.kiro/steering/*.md` |
+| Steering files | 6 | `.kiro/steering/*.md` |
 | Custom agents | 2 | `.kiro/agents/*.json` (Oracle has no file) |
-| Property test call sites | 262 in 30 files | `fc.assert`, `fc.property`, `fc.asyncProperty`, `test.prop` in `tests/*.test.ts` |
-| Tests | 642 passed, 15 skipped | `npx vitest run --reporter=json` (numPassedTests, numPendingTests) |
-| Test files | 46 | `npx vitest run --reporter=json` (testResults) |
+| Property test call sites | 264 in 31 files | `fc.assert`, `fc.property`, `fc.asyncProperty`, `test.prop` in `tests/*.test.ts` |
+| Tests | 687 passed, 4 skipped | `npx vitest run --reporter=json` (numPassedTests, numPendingTests) |
+| Test files | 48 | `npx vitest run --reporter=json` (testResults) |
 | PRs | 44 | unique `#N` in landing-commit subjects of `git log` (`pull request #N` or `PR #N`); `(#N)` suffixes are issues and are not counted; `gh` is not used |
 <!-- kiro-stats:end -->
 

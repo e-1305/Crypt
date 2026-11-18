@@ -34,7 +34,22 @@ describe("least privilege and economy of mechanism (rules 2, 4)", () => {
   });
   it("src/ has no network client, GitHub or LLM import", () => {
     const banned = /node:https?|node:net|node:dgram|node:tls|\bfetch\s*\(|XMLHttpRequest|octokit|openai|anthropic|\bhttps?:\/\//i;
-    for (const f of files) expect(readFileSync(f, "utf8"), f).not.toMatch(banned);
+    // The live exhume modules receive an injected fetch and may name exactly two hosts: raw.githubusercontent.com and api.osv.dev.
+    const hosts = new Set(["src/web/live-exhume.ts", "src/exhume/osv-client.ts"]);
+    const urlOk = /^https:\/\/(raw\.githubusercontent\.com|api\.osv\.dev)\b/;
+    for (const f of files) {
+      const text = readFileSync(f, "utf8");
+      if (!hosts.has(f)) {
+        expect(text, f).not.toMatch(banned);
+        continue;
+      }
+      expect(text, f).not.toMatch(/node:https?|node:net|node:dgram|node:tls|\bfetch\s*\(|XMLHttpRequest|octokit|openai|anthropic/i);
+      for (const u of text.match(/https?:\/\/[^\s"'`)]*/g) ?? []) {
+        // Prose examples (a pasted repository, the npx command) are not requests.
+        if (/^https:\/\/github\.com\//.test(u)) continue;
+        expect(u, f).toMatch(urlOk);
+      }
+    }
   });
 });
 
