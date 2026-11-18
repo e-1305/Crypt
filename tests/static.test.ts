@@ -8,7 +8,8 @@ function sources(dir: string): string[] {
   );
 }
 
-const withoutLabel = (t: string) => t.replace(/awaiting[-_]human[-_]merge/gi, "");
+// The state label, the human-merged event type (data a person produced) and the GitHub data fields merged_at and merged_by are not calls.
+const withoutLabel = (t: string) => t.replace(/awaiting[-_]human[-_]merge|(?<![\w/.-])human-merged(?![\w-])|\bmerged_at\b|\bmerged_by\b/gi, "");
 
 /** Merge endpoints and commands: banned in src/ and scripts/ (failsafe 2). Returns the offending patterns. */
 export function mergeOffenses(text: string): string[] {
@@ -72,5 +73,7 @@ describe("no merge endpoint or command anywhere (failsafe 2)", () => {
   });
   it("the state label alone is allowed", () => {
     expect(mergeOffenses('state: "awaiting-human-merge"')).toEqual([]);
+    expect(mergeOffenses("x/human-merged(")).not.toEqual([]);
+    expect(mergeOffenses('fetch("/repos/o/r/pulls/1/merged_at/merge")')).not.toEqual([]);
   });
 });

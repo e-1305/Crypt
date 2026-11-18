@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CRYPT War Room: team raid on the big screen</title>
+<link rel="stylesheet" href="war-room/war-room.css">
+</head>
+<body>
+<a class="skip" href="#controls">Skip to the controls</a>
+<header class="wr-top">
+  <h1>CRYPT WAR ROOM</h1>
+  <p id="mode-banner" class="banner" role="status">SIMULATED: a scripted raid on the crypt-demo creature. Nothing here is real.</p>
+  <p class="note" id="human-note">A human merges every pull request. CRYPT opens it and watches.</p>
+</header>
+<main class="wr-grid">
+  <section id="scene" class="panel" aria-label="The creature">
+    <h2>The creature</h2>
+    <pre id="plate" class="plate" aria-label="Anatomical plate of the creature"></pre>
+    <div id="flash" class="flash" aria-hidden="true"></div>
+    <p id="rejection" class="rejection" role="status"></p>
+  </section>
+  <section id="bosses" class="panel" aria-label="Boss bars">
+    <h2>Possessed limbs</h2>
+    <ul id="boss-list" class="boss-list"></ul>
+  </section>
+  <section id="score" class="panel stat" aria-label="Team score">
+    <h2>Team score</h2>
+    <p class="big" id="score-value">0</p>
+    <p class="muted">risk removed by the team</p>
+  </section>
+  <section id="countdown" class="panel stat" aria-label="Countdown">
+    <h2>Countdown</h2>
+    <p class="big" id="clock" role="timer">15:00</p>
+    <p class="muted" id="poll-note">weekly 15-minute raid</p>
+  </section>
+  <section id="combo" class="panel stat" aria-label="Combo streak">
+    <h2>Combo</h2>
+    <p class="big" id="combo-value">x1</p>
+    <p class="muted" id="combo-note">heal limbs close together to build a streak</p>
+  </section>
+  <section id="feed-panel" class="panel" aria-label="Live feed">
+    <h2>Live feed</h2>
+    <ol id="feed" class="feed" aria-live="polite" aria-relevant="additions"></ol>
+  </section>
+  <section id="badges-panel" class="panel" aria-label="Team badges">
+    <h2>Team badges</h2>
+    <ul id="badges" class="badges"></ul>
+  </section>
+  <section id="controls" class="panel" aria-label="Controls">
+    <h2>Controls</h2>
+    <div class="row">
+      <button type="button" id="sound-toggle" aria-pressed="false">Turn thunder sound on</button>
+      <button type="button" id="recap-open">Show the recap card</button>
+      <button type="button" id="replay">Replay the simulated raid</button>
+    </div>
+    <form id="live-form" class="row" autocomplete="off">
+      <label for="repo-input">GitHub repo (owner/name)</label>
+      <input id="repo-input" name="repo" type="text" inputmode="url" placeholder="e-1305/crypt-demo" autocomplete="off" spellcheck="false">
+      <label for="token-input">Token for a private repo (stays in this tab)</label>
+      <input id="token-input" name="token" type="password" autocomplete="off" spellcheck="false">
+      <button type="submit">Watch this repo live</button>
+    </form>
+    <p id="status" class="muted" role="status"></p>
+  </section>
+  <section id="recap" class="panel" aria-label="Raid recap" hidden>
+    <h2>Raid recap</h2>
+    <canvas id="recap-canvas" width="800" height="450" aria-label="End of raid card"></canvas>
+    <p><button type="button" id="recap-download">Download the card (PNG)</button></p>
+  </section>
+</main>
+<script type="module" src="war-room/war-room.js"></script>
+</body>
+</html>

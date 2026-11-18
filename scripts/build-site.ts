@@ -106,6 +106,9 @@ export async function buildSite(outDir: string): Promise<void> {
     cpSync(join(WEB, "js"), join(outDir, "js"), { recursive: true });
     cpSync(join(WEB, "theatre"), join(outDir, "theatre"), { recursive: true });
     cpSync(join(WEB, "fonts"), join(outDir, "fonts"), { recursive: true });
+    // War Room (Epic D4): the page is served as war-room.html, its css and js sit in war-room/ beside it. All URLs are relative.
+    cpSync(join(WEB, "war-room", "war-room.html"), join(outDir, "war-room.html"));
+    cpSync(join(WEB, "war-room"), join(outDir, "war-room"), { recursive: true, filter: (src) => !src.endsWith(".html") });
     writeFileSync(join(outDir, ".nojekyll"), "");
     writeFileSync(join(outDir, "feeds.json"), feedSnapshotText());
     cpSync(join(WEB, "manual.css"), join(outDir, "manual.css"));
