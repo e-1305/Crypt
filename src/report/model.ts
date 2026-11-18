@@ -33,6 +33,8 @@ export interface Praise extends LimbRef {
 }
 
 export interface AutopsyModel {
+  /** True when built from the built-in sample, never from a real team's data. */
+  sample?: boolean;
   repo: string;
   generatedAt: number;
   findings: number;
@@ -54,6 +56,8 @@ export interface AutopsyInput {
   now: number;
   /** Raids shown in the trend (default 8). */
   last?: number;
+  /** True for built-in sample data. The page then says so. */
+  sample?: boolean;
 }
 
 export const NOT_ENOUGH_RAIDS = "Not enough raids yet";
@@ -127,6 +131,12 @@ function emptyModel(now: number): AutopsyModel {
 }
 
 export function buildAutopsy(input: AutopsyInput): AutopsyModel {
+  const model = buildModel(input);
+  if (input?.sample === true) model.sample = true;
+  return model;
+}
+
+function buildModel(input: AutopsyInput): AutopsyModel {
   const now = typeof input?.now === "number" && Number.isFinite(input.now) && Math.abs(input.now) <= MAX_MS ? input.now : 0;
   try {
     return build(input, now);

@@ -8,16 +8,16 @@ Generated 2026-11-18 (UTC).
 
 | Item | Count | Source |
 |---|---|---|
-| Specs | 28 | directories in `.kiro/specs` |
-| Spec tasks | 229 ticked of 234 | `- [x]` and `- [ ]` lines in `.kiro/specs/*/tasks.md` |
+| Specs | 30 | directories in `.kiro/specs` |
+| Spec tasks | 241 ticked of 245 | `- [x]` and `- [ ]` lines in `.kiro/specs/*/tasks.md` |
 | Hooks | 7 | `.kiro/hooks/*.json` |
 | Hook runs recorded in a Kiro session | 0 | lines of `docs/evidence/hook-runs.jsonl` whose trigger is not `manual` |
 | Steering files | 6 | `.kiro/steering/*.md` |
 | Custom agents | 2 | `.kiro/agents/*.json` (Oracle has no file) |
-| Property test call sites | 296 in 38 files | `fc.assert`, `fc.property`, `fc.asyncProperty`, `test.prop` in `tests/*.test.ts` |
-| Tests | 926 passed, 0 skipped | `npx vitest run --reporter=json` (numPassedTests, numPendingTests) |
-| Test files | 59 | `npx vitest run --reporter=json` (testResults) |
-| PRs | 56 | unique `#N` in landing-commit subjects of `git log` (`pull request #N` or `PR #N`); `(#N)` suffixes are issues and are not counted; `gh` is not used |
+| Property test call sites | 308 in 38 files | `fc.assert`, `fc.property`, `fc.asyncProperty`, `test.prop` in `tests/*.test.ts` |
+| Tests | 936 passed, 4 skipped | `npx vitest run --reporter=json` (numPassedTests, numPendingTests) |
+| Test files | 58 | `npx vitest run --reporter=json` (testResults) |
+| PRs | 53 | unique `#N` in landing-commit subjects of `git log` (`pull request #N` or `PR #N`); `(#N)` suffixes are issues and are not counted; `gh` is not used |
 <!-- kiro-stats:end -->
 
 Checked against the repository by a test: specs, hooks, steering files and custom agents. As of the generation date only: spec tasks, property test call sites, tests, test files and PRs (CI does not refresh them).
@@ -29,7 +29,7 @@ Checked against the repository by a test: specs, hooks, steering files and custo
 - **Steering was not observed as auto-loaded in Kiro Web.** For the same layout reason it is not claimed. What is verifiable: every Kiro issue explicitly told the agent to read `.kiro/steering/` first, and the rules show up in the code and tests (three examples under "Steering").
 - The safety claims rest on tests (property-based, run in CI) and on the scripts named here, not on a recorded Kiro session.
 - Nothing here measures how much time Kiro saved. There is no such measurement.
-- Only the specs, hooks, steering and agents rows are compared with the repository by a test. The other rows (tasks, property call sites, tests, test files, PRs) change only when someone runs `npm run kiro:stats -- --write`, and CI does not refresh them.
+- All rows change only when the `stats` workflow on `main` runs `npm run kiro:stats -- --write`. Between runs the numbers can lag the repository. A test checks the shape of the block, not the values.
 - Hook "catches" are the runs recorded in the appendix. Where a hook caught nothing, the table says so.
 
 ## Specs
@@ -143,7 +143,9 @@ The count of call sites is in the numbers block. The full invariant list is in t
 - `failsafe-guard`: `scripts/ci/failsafe-guard.sh`, the same rules as the save hook.
 - `visual-qa`: screenshots at several sizes and a Lighthouse accessibility check.
 - `pack-install`: tarball installed into an empty project on the Node versions listed in `.github/workflows/ci.yml`.
-- `kiro-docs`: `npm run kiro:stats` and `npm run kiro:stats -- --check-links`, on a full-depth checkout so commit SHAs resolve.
+- `kiro-docs`: `npm run kiro:stats` and `npm run kiro:stats -- --check-links`, on a full-depth checkout so commit SHAs resolve. It does not check the generated stats blocks.
+
+Generated numbers (the block above, the stats blocks in `docs/DEVPOST.md` and `docs/BLOG.md`, and `docs/img/kiro-timeline.svg`) are regenerated only on `main` by `.github/workflows/stats.yml`, which commits `chore(stats): regenerate [skip ci]`. Do not run `kiro:stats --write` or `kiro:timeline` in a PR.
 
 ## Process note
 Built with Kiro. The strategy, the review gates and some CI and merge-conflict fixes came from a human-supervised AI CTO (Claude). Selection rule, applied to `git log`: commits with a `Co-Authored-By: Claude` trailer, and the review-gate merges whose subject says "reviewed:" or "CTO review". Each SHA was checked with `git show`.

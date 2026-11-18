@@ -14,6 +14,9 @@ export const FOOTNOTES = {
   noise: "Noise exorcised: findings below the noise line (counts.exorcised) divided by all findings (counts.findings).",
 } as const;
 
+export const SAMPLE_BANNER = "SAMPLE DATA";
+export const SAMPLE_NOTE = "Made-up numbers from crypt autopsy --sample. This is not a real team's history.";
+
 export const STYLE = `
 :root{--fg:#33ff33;--dim:#22b022;--bg:#050805;--warn:#ffb000;--hot:#ff6a3d;--line:#22b022;--text:#c9f7c9}
 *{box-sizing:border-box}
@@ -24,6 +27,11 @@ h1{font-size:20px}
 h2{font-size:12px;color:var(--dim)}
 .sub{margin:.25rem 0 0;color:var(--text)}
 .hint{margin:.75rem 0;padding:.4rem .6rem;border:1px solid var(--warn);color:var(--warn)}
+.banner{margin:.6rem 0 0;padding:.35rem .6rem;border:2px solid var(--warn);color:var(--warn);font-weight:700;letter-spacing:.2em}
+.banner span{font-weight:400;letter-spacing:0;margin-left:.6rem}
+.wm{position:fixed;top:0;left:0;width:100%;height:100%;overflow:hidden;pointer-events:none;z-index:0;display:flex;align-items:center;justify-content:center}
+.wm span{display:block;transform:rotate(-30deg);white-space:nowrap;font-size:min(14vw,110px);font-weight:700;letter-spacing:.15em;color:rgba(255,176,0,.16)}
+.page{position:relative;z-index:1}
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
 .card{border:1px solid var(--line);padding:8px 10px;min-width:0}
 .card .big{display:block;font-size:24px;color:var(--fg);font-weight:700;margin:.2rem 0}
@@ -48,6 +56,8 @@ h1,h2,.card .big{color:#0a4d0a}
 .card{border-color:#555;break-inside:avoid}
 .card sup,.n-a{color:#7a4a00}
 .hint,.no-print{display:none}
+.banner{color:#7a4a00;border-color:#7a4a00}
+.wm span{color:rgba(122,74,0,.14)}
 .spark .axis{stroke:#555}.spark .ln{stroke:#0a4d0a}.spark .dot{fill:#0a4d0a}
 footer{border-top-color:#555;color:#111}
 }

@@ -8,7 +8,8 @@ function sources(dir: string): string[] {
   );
 }
 
-const withoutLabel = (t: string) => t.replace(/awaiting[-_]human[-_]merge/gi, "");
+// The state label, the human-merged event type (data a person produced) and the GitHub data fields merged_at and merged_by are not calls.
+const withoutLabel = (t: string) => t.replace(/awaiting[-_]human[-_]merge|(?<![\w/.-])human-merged(?![\w-])|\bmerged_at\b|\bmerged_by\b/gi, "");
 
 /** Merge endpoints and commands: banned in src/ and scripts/ (failsafe 2). Returns the offending patterns. */
 export function mergeOffenses(text: string): string[] {
@@ -35,8 +36,8 @@ describe("least privilege and economy of mechanism (rules 2, 4)", () => {
   it("src/ has no network client, GitHub or LLM import", () => {
     const banned = /node:https?|node:net|node:dgram|node:tls|\bfetch\s*\(|XMLHttpRequest|octokit|openai|anthropic|\bhttps?:\/\//i;
     // The live exhume modules receive an injected fetch and may name exactly two hosts: raw.githubusercontent.com and api.osv.dev.
-    const hosts = new Set(["src/web/live-exhume.ts", "src/exhume/osv-client.ts", "src/necromancer/package-advisories.ts"]);
-    const urlOk = /^https:\/\/(raw\.githubusercontent\.com|api\.osv\.dev)\b/;
+    const hosts = new Set(["src/web/live-exhume.ts", "src/exhume/osv-client.ts", "src/necromancer/package-advisories.ts", "src/render/card.ts"]);
+    const urlOk = /^https:\/\/(raw\.githubusercontent\.com|api\.osv\.dev|e-1305\.github\.io|www\.linkedin\.com)\b/;
     for (const f of files) {
       const text = readFileSync(f, "utf8");
       if (!hosts.has(f)) {
@@ -72,5 +73,7 @@ describe("no merge endpoint or command anywhere (failsafe 2)", () => {
   });
   it("the state label alone is allowed", () => {
     expect(mergeOffenses('state: "awaiting-human-merge"')).toEqual([]);
+    expect(mergeOffenses("x/human-merged(")).not.toEqual([]);
+    expect(mergeOffenses('fetch("/repos/o/r/pulls/1/merged_at/merge")')).not.toEqual([]);
   });
 });

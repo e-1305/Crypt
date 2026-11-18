@@ -4,6 +4,7 @@
 // Limbs and owners from CODEOWNERS only, no person is named. Failsafe: any error shows a message and no creature.
 import { liveExhume, LiveExhumeError, dryRunLabel, ownerLabel } from "./js/web/live-exhume.js";
 import { parseFeedSnapshot } from "./js/web/feed-snapshot.js";
+import { mountCardPanel } from "./card/panel.js";
 import { parseRepoUrl, repoSlug } from "./js/web/repo-url.js";
 
 const $ = (id) => document.getElementById(id);
@@ -41,7 +42,7 @@ function groupName(g) {
   return g.versions.length > 1 ? g.name + " \u00d7" + g.versions.length + " versions (" + g.versions.join(", ") + ")" : g.name + " " + (g.versions[0] || "unknown");
 }
 
-function renderResult(root, r, gallery) {
+function renderResult(root, r, gallery, announce = () => {}) {
   root.textContent = "";
   root.appendChild(el("h2", "Your creature: " + r.repo));
   const plate = el("pre", r.plate, "plate");
@@ -49,6 +50,12 @@ function renderResult(root, r, gallery) {
   plate.setAttribute("aria-label", "Plate of " + r.repo + ". " + (r.summary.length ? r.summary.join("; ") : "No limbs spawn."));
   root.appendChild(plate);
   root.appendChild(el("p", r.summary.length === 0 ? "No limbs spawn for this repo." : "Limbs that spawn: " + r.summary.join("; ") + "."));
+
+  root.appendChild(el("h3", "Share your creature"));
+  const share = el("div", undefined, "paste-share");
+  root.appendChild(share);
+  // A public repo read here: the repo toggle starts ON. Only counts and limb names reach the card, never owners.
+  mountCardPanel(share, { variant: "creature", source: "paste", creature: r.creature }, { announce });
 
   root.appendChild(el("h3", "Ranked limbs"));
   const ol = el("ol", undefined, "paste-limbs");
@@ -137,7 +144,7 @@ export function initPaste({ announce, gallery = [], fetchFn = (...a) => fetch(..
     try {
       const feeds = await loadFeeds(fetchFn);
       const r = await liveExhume(text, { fetch: fetchFn, feeds });
-      renderResult(result, r, gallery);
+      renderResult(result, r, gallery, announce);
       status.textContent = "Done: " + r.repo + " has " + r.groups.length + " packages (" + r.limbs.length + " installed copies) and " + r.groups.filter((g) => g.spawned).length + " spawned limbs.";
       announce(status.textContent);
       result.scrollIntoView?.({ block: "nearest" });

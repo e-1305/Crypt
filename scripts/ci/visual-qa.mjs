@@ -8,7 +8,7 @@ import { homedir } from "node:os";
 import { join, extname, resolve, sep } from "node:path";
 import { spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
-import { readdirSync, existsSync, readFileSync, mkdirSync, copyFileSync } from "node:fs";
+import { readdirSync, existsSync, readFileSync, mkdirSync, copyFileSync, writeFileSync } from "node:fs";
 import http from "node:http";
 import { findOverlaps, filterFixedBoxes } from "./overlap.mjs";
 
@@ -258,6 +258,169 @@ async function checkJudge(browser, vp) {
   await ctx.close();
 }
 
+// Share card (D3): paste a repo (network mocked: lockfile from a fixture, OSV answers with a hit for lodash) and check the card
+// panel on the paste result and the raid end screen: no control overlaps, 44 px tap targets on mobile, a real 1200x627 canvas.
+const CARD_PASTE = ["#card-creature-repo", "#card-creature-download", "#card-creature-copy", "#card-creature-linkedin"];
+const CARD_RAID = ["#card-raid-repo", "#card-raid-download", "#card-raid-copy", "#card-raid-linkedin"];
+const demoLock = readFileSync(join(root, "fixtures", "crypt-demo", "package-lock.json"), "utf8");
+
+async function mockNetwork(page) {
+  await page.route("https://raw.githubusercontent.com/**", (route) => route.request().url().endsWith("/package-lock.json")
+    ? route.fulfill({ status: 200, contentType: "text/plain", body: demoLock })
+    : route.fulfill({ status: 404, body: "" }));
+  await page.route("https://api.osv.dev/**", (route) => {
+    const req = route.request();
+    if (req.url().endsWith("/querybatch")) {
+      const q = JSON.parse(req.postData() || "{}").queries || [];
+      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ results: q.map((x) => (x.package.name === "lodash" ? { vulns: [{ id: "GHSA-test-0001" }] } : {})) }) });
+    }
+    return route.fulfill({ contentType: "application/json", body: JSON.stringify({ id: "GHSA-test-0001", aliases: ["CVE-2099-0001"], database_specific: { severity: "HIGH" } }) });
+  });
+}
+
+async function checkCard(browser, vp) {
+  const tag = `${vp.w}x${vp.h} card`;
+  const ctx = await browser.newContext({ viewport: { width: vp.w, height: vp.h }, hasTouch: vp.touch, isMobile: vp.touch });
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => fail(tag, `page error: ${e.message}`));
+  await mockNetwork(page);
+  await page.goto(base + "?theatre=2d");
+  await page.waitForFunction(() => document.getElementById("plate")?.textContent.trim().length > 0 && !document.getElementById("cmd")?.disabled, null, { timeout: 30000 })
+    .catch(() => fail(tag, "page did not load within 30s"));
+  await page.click("#paste-open");
+  await page.fill("#paste-url", "https://github.com/acme/widgets");
+  await page.click("#paste-go");
+  await page.waitForSelector("#card-creature-canvas", { timeout: 30000 }).catch(() => fail(tag, "no card panel after paste"));
+  await page.waitForFunction(() => document.getElementById("card-creature-canvas")?.getAttribute("aria-label"), null, { timeout: 10000 }).catch(() => {});
+  await page.locator("#card-creature-canvas").scrollIntoViewIfNeeded().catch(() => {});
+
+  const paste = present(tag, await boxes(page, CARD_PASTE));
+  for (const [a, b] of findOverlaps(paste)) fail(tag, `card controls overlap: ${a} and ${b}`);
+  if (vp.w < 900) for (const b of paste) if (b.height < TAP_MIN) fail(tag, `tap target ${b.name} is ${Math.round(b.height)}px tall, under ${TAP_MIN}`);
+  const info = await page.evaluate(() => {
+    const c = document.getElementById("card-creature-canvas");
+    const d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data;
+    let lit = 0;
+    for (let i = 0; i < d.length; i += 4 * 97) if (d[i] > 80 || d[i + 1] > 80) lit++;
+    return { w: c.width, h: c.height, lit, checked: document.getElementById("card-creature-repo").checked, alt: c.getAttribute("aria-label") || "", scrollW: document.documentElement.scrollWidth - document.documentElement.clientWidth };
+  });
+  if (info.w !== 1200 || info.h !== 627) fail(tag, `card canvas is ${info.w}x${info.h}, expected 1200x627`);
+  if (info.lit < 50) fail(tag, "card canvas looks blank");
+  if (!info.checked) fail(tag, "repo toggle should default to ON for a pasted public repo");
+  if (!info.alt.includes("acme/widgets")) fail(tag, "card alt text misses the repo name while the toggle is on");
+  if (vp.w < 900 && info.scrollW > 0) fail(tag, `horizontal overflow of ${info.scrollW}px`);
+  await page.uncheck("#card-creature-repo");
+  await page.waitForFunction(() => !document.getElementById("card-creature-canvas").getAttribute("aria-label").includes("acme/widgets"), null, { timeout: 5000 }).catch(() => fail(tag, "repo name stays on the card after the toggle is switched off"));
+  await page.check("#card-creature-repo");
+  const dl = await Promise.all([page.waitForEvent("download", { timeout: 10000 }).catch(() => null), page.click("#card-creature-download")]);
+  if (!dl[0]) fail(tag, "Download PNG did not start a download");
+  else if (dl[0].suggestedFilename() !== "crypt-creature-card.png") fail(tag, `unexpected download name ${dl[0].suggestedFilename()}`);
+  mkdirSync(outDir, { recursive: true });
+  await page.locator("#card-creature-canvas").screenshot({ path: join(outDir, `card-paste-${vp.w}x${vp.h}.png`) });
+  await page.screenshot({ path: join(outDir, `card-paste-page-${vp.w}x${vp.h}.png`) });
+
+  // The raid end screen: mount the raid variant the way web/raid.js does at the end of a raid, then check it in the open Bench.
+  await page.click("#bench-toggle");
+  await page.evaluate(async () => {
+    const { mountCardPanel } = await import("./card/panel.js");
+    const root = document.getElementById("raid-share");
+    const creature = { repo: "acme/widgets", limbs: [{ ecosystem: "npm", name: "lodash", version: "4.17.15", state: "Healed", rank: 1, spawned: true }, { ecosystem: "npm", name: "minimist", version: "0.0.8", state: "Rotting", rank: 2, spawned: true }] };
+    const m = mountCardPanel(root, { variant: "raid", source: "raid", creature, raid: { riskRemoved: "3.42", limbsHealed: 1, time: "07:31", rank: "Surgeon" } });
+    await m.ready;
+    root.hidden = false;
+  });
+  await page.locator("#card-raid-canvas").scrollIntoViewIfNeeded().catch(() => {});
+  const raid = present(tag, await boxes(page, CARD_RAID));
+  for (const [a, b] of findOverlaps([...raid, ...present(tag, await boxes(page, BENCH_CONTROLS))])) fail(tag, `raid card controls overlap: ${a} and ${b}`);
+  if (vp.w < 900) for (const b of raid) if (b.height < TAP_MIN) fail(tag, `tap target ${b.name} is ${Math.round(b.height)}px tall, under ${TAP_MIN}`);
+  const rinfo = await page.evaluate(() => ({ checked: document.getElementById("card-raid-repo").checked, alt: document.getElementById("card-raid-canvas").getAttribute("aria-label") || "" }));
+  if (rinfo.checked) fail(tag, "repo toggle should default to OFF on the raid card");
+  if (rinfo.alt.includes("widgets")) fail(tag, "raid card names the repo while the toggle is off");
+  await page.locator("#card-raid-canvas").screenshot({ path: join(outDir, `card-raid-${vp.w}x${vp.h}.png`) });
+  console.log(`ok   [${tag}] paste controls=${paste.length} raid controls=${raid.length}`);
+  await ctx.close();
+}
+
+// docs/img/card-creature.png and card-raid.png: the real 1200x627 canvas of the demo creature (only with VISUAL_QA_COPY_DOCS=1).
+async function captureCards(browser) {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const page = await ctx.newPage();
+  await page.goto(base + "?theatre=2d");
+  await page.waitForFunction(() => document.getElementById("plate")?.textContent.trim().length > 0, null, { timeout: 30000 });
+  const urls = await page.evaluate(async () => {
+    const { mountCardPanel } = await import("./card/panel.js");
+    const demo = await (await fetch("game/demo.json")).json();
+    const out = {};
+    for (const variant of ["creature", "raid"]) {
+      const root = document.createElement("div");
+      document.body.appendChild(root);
+      const healed = demo.limbs.filter((l) => l.spawned).slice(0, 2).map((l) => `${l.ecosystem}:${l.name}`);
+      const limbs = variant === "raid" ? demo.limbs.map((l) => (healed.includes(`${l.ecosystem}:${l.name}`) ? { ...l, state: "Healed" } : l)) : demo.limbs;
+      const m = mountCardPanel(root, { variant, source: variant === "raid" ? "raid" : "paste", creature: { ...demo, limbs }, raid: { riskRemoved: "2.87", limbsHealed: healed.length, time: "08:42", rank: "Surgeon" } });
+      await m.ready;
+      if (variant === "raid") { m.toggle.checked = true; m.toggle.dispatchEvent(new Event("change")); await new Promise((r) => setTimeout(r, 300)); }
+      out[variant] = m.canvas.toDataURL("image/png");
+    }
+    return out;
+  });
+  mkdirSync(imgDir, { recursive: true });
+  for (const [v, url] of Object.entries(urls)) writeFileSync(join(imgDir, `card-${v}.png`), Buffer.from(url.split(",")[1], "base64"));
+  await ctx.close();
+}
+
+// War Room (web/war-room/): the big-screen team raid. Loaded under a fake clock; the scripted SIMULATED timeline is played to the
+// red CI rejection (t=39 s) and to the human-merged heal (t=47 s) and the layout is checked at both moments.
+const WAR_KEYS = ["#scene", "#bosses", "#score", "#countdown", "#combo", "#feed-panel"];
+const WAR_VIEWPORTS = VIEWPORTS;
+
+async function checkWarRoom(browser, vp) {
+  const tag = `${vp.w}x${vp.h} war-room`;
+  const ctx = await browser.newContext({ viewport: { width: vp.w, height: vp.h }, hasTouch: vp.touch, isMobile: vp.touch });
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => fail(tag, `page error: ${e.message}`));
+  await page.clock.install({ time: new Date("2030-01-01T00:00:00Z") });
+  await page.clock.pauseAt(new Date("2030-01-01T00:00:01Z"));
+  await page.goto(base + "war-room.html");
+  const ready = () => page.evaluate(() => document.getElementById("plate")?.textContent.trim().length > 0);
+  for (let i = 0; i < 120 && !(await ready()); i++) await page.waitForTimeout(250);
+  if (!(await ready())) fail(tag, "the creature did not load");
+  let at = 0;
+  const playTo = async (ms) => { for (; at < ms; at += 500) { await page.clock.runFor(500); await page.waitForTimeout(20); } };
+  const capture = async (name, docsName) => {
+    mkdirSync(outDir, { recursive: true });
+    const file = join(outDir, `${name}.png`);
+    await page.screenshot({ path: file, fullPage: vp.full });
+    if (process.env.VISUAL_QA_COPY_DOCS === "1" && docsName) { mkdirSync(imgDir, { recursive: true }); copyFileSync(file, join(imgDir, docsName)); }
+  };
+  const layout = async (when) => {
+    const list = present(tag, await boxes(page, WAR_KEYS));
+    for (const [a, b] of findOverlaps(list)) fail(tag, `${when}: ${a} and ${b} overlap`);
+    const o = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    if (o > 0) fail(tag, `${when}: horizontal overflow of ${o}px`);
+    if (vp.w < 900) {
+      const taps = await page.evaluate(() => [...document.querySelectorAll("button, input")].filter((e) => e.getClientRects().length > 0).map((e) => ({ id: e.id || e.textContent.trim(), h: e.getBoundingClientRect().height })));
+      for (const t of taps) if (t.h < TAP_MIN) fail(tag, `tap target ${t.id} is ${Math.round(t.h)}px tall, under ${TAP_MIN}`);
+    }
+    return list.length;
+  };
+  const banner = await page.textContent("#mode-banner");
+  if (!/SIMULATED/.test(banner ?? "")) fail(tag, "the SIMULATED label is not on the page");
+  await playTo(39000);
+  await page.waitForTimeout(300);
+  const rej = await page.textContent("#rejection");
+  if (!rej?.includes("The graft was rejected. The creature remains.")) fail(tag, `rejection line missing: ${JSON.stringify(rej)}`);
+  const n1 = await layout("red CI");
+  await capture(`war-room-rejected-${vp.w}x${vp.h}`, vp.w === 1920 ? "war-room-rejected-1920x1080.png" : null);
+  await playTo(47000);
+  await page.waitForTimeout(300);
+  const feed = await page.textContent("#feed");
+  if (!/healed by/.test(feed ?? "") || !/SIMULATED/.test(feed ?? "")) fail(tag, "heal row missing or not labelled SIMULATED");
+  await layout("after the heal");
+  await capture(`war-room-${vp.w}x${vp.h}`, `war-room-${vp.w}x${vp.h}.png`);
+  console.log(`ok   [${tag}] checked=${n1}`);
+  await ctx.close();
+}
+
 // Autopsy report (D5): the one-page CISO report from `crypt autopsy --sample`. Loaded from a file URL at two viewports.
 // Checks no page error, no horizontal overflow, the h1 and the three measure cards visible and apart, the footnotes,
 // a basic accessibility pass (lang, landmark, alt text, text contrast) and that print emulation fits one A4 page.
@@ -499,6 +662,9 @@ try {
   }
   for (const vp of VIEWPORTS) await checkImport(browser, vp);
   for (const vp of JUDGE_VIEWPORTS) await checkJudge(browser, vp);
+  for (const vp of VIEWPORTS) await checkCard(browser, vp);
+  if (process.env.VISUAL_QA_COPY_DOCS === "1") await captureCards(browser);
+  for (const vp of WAR_VIEWPORTS) await checkWarRoom(browser, vp);
   for (const vp of VIEWPORTS) await checkGraveyard(browser, vp);
   mkdirSync(outDir, { recursive: true });
   const autopsyFile = join(outDir, "autopsy.html");

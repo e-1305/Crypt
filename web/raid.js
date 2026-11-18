@@ -5,6 +5,7 @@ import { cardData } from "./js/theatre/card.js";
 import { COMBO_WINDOW_MS, bossLimbs, comboState, rankProgress, styleBonus, trophies, vitals } from "./js/theatre/gamify.js";
 import { pressureLabel, pressureWarning, spreadPressure } from "./js/theatre/onboarding.js";
 import { downloadCard } from "./theatre/card-draw.js";
+import { mountCardPanel } from "./card/panel.js";
 
 const $ = (id) => document.getElementById(id);
 const keyOf = (l) => l.ecosystem + ":" + l.name;
@@ -192,8 +193,19 @@ export function initRaid({ store, announce, onRunning, now = () => Date.now() })
     const gained = limbs.filter((l) => countsForScore(l) && !baseline.has(keyOf(l)));
     card = cardData(repo, gained, v.elapsedMs, { all: limbs, bestChain: comboState(healTimes).best, nights: nightsWithoutPossession(limbs, now(), scanStart()) });
     onRunning?.(false);
+    mountShare(gained, v.elapsedMs);
     announce("Raid complete. " + card.limbsHealed + " limbs healed. Risk removed " + card.riskRemoved + ". Grade " + card.grade + ". " + card.epitaph);
     render();
+  }
+
+  // Share card (D3): the raid result card. The repo toggle starts OFF here. Owners never reach the layout (plateInput).
+  function mountShare(gained, elapsedMs) {
+    const root = $("raid-share");
+    if (!root || !card) return;
+    const won = new Set(gained.map(keyOf));
+    const creature = { repo, limbs: limbs.map((l) => (won.has(keyOf(l)) ? { ...l, state: "Healed" } : l)) };
+    mountCardPanel(root, { variant: "raid", source: "raid", creature, raid: { riskRemoved: card.riskRemoved, limbsHealed: card.limbsHealed, time: card.time, rank: card.rank } }, { announce });
+    root.hidden = false;
   }
 
   function tick() {
@@ -207,6 +219,8 @@ export function initRaid({ store, announce, onRunning, now = () => Date.now() })
     if (timer.view().status === "running") return;
     timer.reset();
     card = null;
+    const share = $("raid-share");
+    if (share) { share.hidden = true; share.textContent = ""; }
     baseline = new Set(limbs.filter(countsForScore).map(keyOf));
     timer.start();
     warned = false;

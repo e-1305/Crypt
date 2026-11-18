@@ -12,3 +12,4 @@ inclusion: always
 - Tests: vitest + fast-check for property-based tests.
 - Ecosystems in scope: npm and pip only.
 - Any third-party code, tool or dataset added must be recorded in `docs/ATTRIBUTION.md` with its license.
+- Generated stats blocks and the timeline are regenerated only on `main` by the `stats` workflow (bot commit). Do not run `kiro:stats --write` or `kiro:timeline` in a PR.
