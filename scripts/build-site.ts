@@ -12,6 +12,8 @@ import { dryRunClient } from "../src/github/client.js";
 import { graft } from "../src/necromancer/index.js";
 import { galleryIndex, previewPayload, type GalleryIndexEntry, type GallerySnapshot, type PayloadPreview } from "../src/site/gallery.js";
 import { renderManual } from "../src/site/manual.js";
+import { parseEpss, parseKev } from "../src/exhume/feeds.js";
+import { serializeFeedSnapshot, SNAPSHOT_MIN_EPSS } from "../src/web/feed-snapshot.js";
 import { raiseCreature } from "./compile.js";
 import { fixtureAdvisories } from "./osv-advisory.js";
 
@@ -73,6 +75,24 @@ async function demoPayloads(work: string, creaturePath: string, limbs: LimbRefs)
   return out;
 }
 
+/**
+ * The KEV and EPSS snapshot the page ranks with. Full feeds from `npm run feeds:update` (data/feeds) when present, else the committed
+ * fixture feeds, so the build stays offline. Returns the compact JSON text and its dates.
+ */
+export function feedSnapshotText(feedDirs: string[] = [join(ROOT, "data", "feeds"), join(FIXTURE, "feeds")]): string {
+  for (const dir of feedDirs) {
+    try {
+      const kev = parseKev(readFileSync(join(dir, "kev.json"), "utf8"));
+      const epss = parseEpss(readFileSync(join(dir, "epss.csv"), "utf8"));
+      // A small committed fixture keeps every score; the full feed keeps the ones that can matter.
+      if (kev && epss) return serializeFeedSnapshot(kev, epss, epss.scores.size > 5000 ? SNAPSHOT_MIN_EPSS : 0);
+    } catch {
+      // try the next directory
+    }
+  }
+  throw new Error("no valid KEV and EPSS feeds found in data/feeds or fixtures/vulnerable-npm/feeds");
+}
+
 export async function buildSite(outDir: string): Promise<void> {
   const work = mkdtempSync(join(tmpdir(), "crypt-site-"));
   try {
@@ -87,6 +107,7 @@ export async function buildSite(outDir: string): Promise<void> {
     cpSync(join(WEB, "theatre"), join(outDir, "theatre"), { recursive: true });
     cpSync(join(WEB, "fonts"), join(outDir, "fonts"), { recursive: true });
     writeFileSync(join(outDir, ".nojekyll"), "");
+    writeFileSync(join(outDir, "feeds.json"), feedSnapshotText());
     cpSync(join(WEB, "manual.css"), join(outDir, "manual.css"));
     // The user manual, rendered offline. A relative link that is neither a repo file nor a site file fails the build.
     writeFileSync(

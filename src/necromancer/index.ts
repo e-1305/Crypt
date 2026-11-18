@@ -16,8 +16,11 @@ import {
 import type { FileChange, GithubClient } from "../github/client.js";
 import type { RegistryClient, RegistryVersion } from "../registry/types.js";
 import { BUMP_MESSAGES, bumpLockfile, jsonIndent, respec } from "./lockfile.js";
-import { SABOTAGE_BODY_LINE, SABOTAGE_PATH, SABOTAGE_TITLE_PREFIX, sabotageSmokeTest } from "./sabotage.js";
+import { prBody, auditIdFor } from "./pr-body.js";
+import { SABOTAGE_PATH, SABOTAGE_TITLE_PREFIX, sabotageSmokeTest } from "./sabotage.js";
 import { chooseVersion, type Advisory } from "./version.js";
+
+export { prBody, auditIdFor, type PrFields } from "./pr-body.js";
 
 export const MAX_PRS_PER_RAID = 5;
 
@@ -52,44 +55,6 @@ interface CreatureLimb {
   kev?: boolean;
   epss?: number | null;
   vulns?: { id: string; cves?: string[] }[];
-}
-
-export interface PrFields {
-  limb: string;
-  name: string;
-  from: string;
-  to: string;
-  breaking: boolean;
-  cves: string[];
-  kev: boolean;
-  epss: number | null;
-  owner: string;
-  auditId: string;
-  /** True when `resolved` and `integrity` come from registry metadata. */
-  fromRegistry?: boolean;
-  sabotage?: boolean;
-}
-
-/** PR body. Built from creature.json only (owners from CODEOWNERS); never from git history. */
-export function prBody(f: PrFields): string {
-  return [
-    `Limb: ${f.limb} (${f.name})`,
-    `Version: ${f.from} -> ${f.to}`,
-    `CVEs: ${f.cves.length ? f.cves.join(", ") : "none listed"}`,
-    `KEV: ${f.kev ? "yes" : "no"}`,
-    `EPSS: ${f.epss === null ? "unknown" : f.epss.toFixed(5)}`,
-    `Owner: ${f.owner || "unowned"}`,
-    `Healed by: (pending)`,
-    `Audit ID: ${f.auditId}`,
-    ...(f.breaking ? ["breaking: true"] : []),
-    "",
-    ...(f.sabotage ? [SABOTAGE_BODY_LINE, ""] : []),
-    f.fromRegistry
-      ? "One dependency per PR. package-lock.json: `version`, `resolved` and `integrity` for this package come from the npm registry metadata. Nothing was installed or run."
-      : "One dependency per PR. package-lock.json: `resolved` and `integrity` for this package were removed and refresh on the next `npm install`.",
-    "A human lands this PR after CI is green.",
-    "",
-  ].join("\n");
 }
 
 type Json = Record<string, unknown>;
@@ -140,10 +105,6 @@ export function editManifests(
     pkg: JSON.stringify(pkg, null, jsonIndent(pkgText)) + "\n",
     lock: JSON.stringify(lock, null, jsonIndent(lockText)) + "\n",
   };
-}
-
-export function auditIdFor(now: Date, limb: string): string {
-  return `AUD-${now.toISOString().replace(/\D/g, "").slice(0, 14)}-${limb}`;
 }
 
 /** Handles one graft request file. Never throws for expected failures; the outcome is audited. */

@@ -11,6 +11,7 @@ import { initRaid } from "./raid.js";
 import { initHeal } from "./heal.js";
 import { initOnboarding } from "./onboarding.js";
 import { wireCopy } from "./copy.js";
+import { initPaste } from "./live-exhume.js";
 import { initSound } from "./theatre/sound.js";
 import { countPossessed } from "./js/theatre/audio-plan.js";
 
@@ -100,6 +101,23 @@ setHc(store.get("crypt.hc") === true);
 const installCmd = document.getElementById("install-cmd");
 const installCopy = document.getElementById("install-copy");
 if (installCmd && installCopy) wireCopy(installCopy, installCmd, announce);
+
+// The Bench: raid, trophies, ranks, Simulated CI, gallery, sound and recording mode behind one button.
+// On the 3D bench the existing drawer opens the same content (body.drawer-open), so this button is not shown there.
+const benchToggle = document.getElementById("bench-toggle");
+const benchBody = document.getElementById("bench-body");
+if (benchToggle && benchBody) {
+  const setBench = (on, focus) => {
+    benchToggle.setAttribute("aria-expanded", String(on));
+    document.getElementById("bench").classList.toggle("open", on);
+    announce(on ? "Bench open." : "Bench closed.");
+    if (focus && !on) benchToggle.focus({ preventScroll: true });
+  };
+  benchToggle.addEventListener("click", () => setBench(benchToggle.getAttribute("aria-expanded") !== "true", false));
+  document.getElementById("bench").addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape" && benchToggle.getAttribute("aria-expanded") === "true") setBench(false, true);
+  });
+}
 
 // SEAL badge: visible while the page is sealed. Unseal lifts it for this page only.
 const sealBadge = document.getElementById("seal-badge");
@@ -312,6 +330,7 @@ async function main() {
   const wanted = new URLSearchParams(location.search).get("creature");
   if (wanted !== null && list.some((g) => g.slug === wanted)) creatureId = wanted;
   drawGallery(list);
+  initPaste({ announce, gallery: list });
   loadPlate();
   try {
     const p = await fetch("game/" + creatureId + ".payloads.json");

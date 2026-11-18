@@ -130,7 +130,9 @@ npm run web        # serves http://127.0.0.1:8080/ (set PORT to change)
 
 The page opens on a demo creature built from `fixtures/vulnerable-npm`. `GRAFT` in the browser is a rehearsal: it shows the dry-run payload and sends nothing.
 
-- **Gallery.** Twenty public projects, each with its own creature. Type a GitHub address into "Open a project by its GitHub address" to open one. An address outside the gallery is not scanned in the browser. Run `crypt raid` on your own checkout instead.
+- **Paste your GitHub repo.** The one primary button on the first screen. Press it, paste `https://github.com/owner/repo` and press Enter. In about 10 to 30 seconds (it depends on the lockfile size and the OSV service) the page shows your creature's plate, the ranked limbs, the owners from CODEOWNERS and, for each spawned limb, the pull request payload labelled "dry run: run `npx @e-1305/crypt raid <repo> --live` to open it for real". It then offers "Play its crypt" when the repo is in the gallery, or "Play the demo crypt" plus the `npx` command that generates yours. The web version reads npm projects only (`package-lock.json`, lockfileVersion 2 or 3, at the repo root). The KEV and EPSS feed date is shown. On any error the page shows what to do next and draws no creature. Nothing is written and no git author is read.
+- **Bench.** The "Bench" button opens the raid, trophies, ranks, Simulated CI, the gallery, sound and recording mode. Escape closes it. On the 3D bench the "Bench drawer" opens the same controls.
+- **Gallery.** Twenty public projects, each with its own creature, in the Bench. Type a GitHub address into "Open a project by its GitHub address" to open one.
 - **Download the playable report.** Saves the loaded `.z8` file. Any Z-machine interpreter (Frotz, Lectrote, Parchment) opens it.
 - **Event log.** Lists commands the story confirmed. Text you type is never counted as a command.
 - **High-contrast reader mode.** Plain white-on-black text, no effects. The choice is remembered in the browser.
@@ -188,10 +190,10 @@ The raid adds arcade touches on top of the team score. They are display only: th
 
 ### Getting started
 
-A strip above the game walks through the first minute on the demo creature. It has seven steps: look at the plate, type `EXAMINE <limb>`, type `ASSIGN <limb>`, type `GRAFT <limb>`, press "Simulate CI: green" and watch the limb heal, type `SEAL CRYPT` then `GRAFT <limb>` to see the graft rejected, then read how the pull request waits for a human to review it. The strip names a limb that has a rehearsal pull request.
+A strip above the game walks through the first minute on the demo creature in three steps: look at the plate, type `GRAFT <limb>`, then open the Bench and press "Simulate CI: green" and watch the limb heal. The strip names a limb that has a rehearsal pull request.
 
 - You type every command. The strip shows what to type and never runs anything, `GRAFT` included. Each command goes through the same strict grammar as the rest of the game.
-- A step finishes when the game accepts its verb. Steps 1 and 7 finish with the "Got it" button. The two seal and CI steps finish when the page sees the green result or the refused graft.
+- A step finishes when the game accepts its verb. Step 1 finishes with the "Got it" button. The CI step finishes when the page sees the green result.
 - After 8 seconds without typing, one hint appears under the strip and is read out politely by screen readers. Typing clears the wait.
 - "Skip" closes the strip. "Hide for good" keeps it closed on later visits. Both are remembered in this browser.
 - A banner above the page shows one of eight daily lines, chosen from the date, so everyone sees the same line on the same day.
