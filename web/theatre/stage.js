@@ -5,10 +5,12 @@ import { makeScreen } from "./screen.js";
 import { makeWall } from "./wall.js";
 import { makeDrawer } from "./drawer.js";
 import { makeBoard } from "./board.js";
+import { ensureFonts } from "./font.js";
 import { TITLE_CARD_TEXT, dollyProgress, shouldShowTitleCard, titleCardVisible } from "../js/theatre/polish.js";
 
 export async function mountStage() {
   const THREE = await import("../vendor/three.module.min.js");
+  await ensureFonts();
   const transcript = document.getElementById("transcript");
   const cmd = document.getElementById("cmd");
   const plateEl = document.getElementById("plate");

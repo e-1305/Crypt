@@ -1,8 +1,10 @@
-/* CRT look: phosphor green on near-black, scanlines, slight bloom. One system monospace stack, no font files. */
+/* CRT look: phosphor green on near-black, scanlines, slight bloom. One self-hosted monospace webfont (JetBrains Mono, OFL-1.1, web/fonts/), system monospace only as a fallback. */
+@font-face { font-family: "JetBrains Mono"; font-style: normal; font-weight: 400; font-display: swap; src: url("fonts/jetbrains-mono-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "JetBrains Mono"; font-style: normal; font-weight: 700; font-display: swap; src: url("fonts/jetbrains-mono-latin-700-normal.woff2") format("woff2"); }
 :root { --fg: #33ff33; --dim: #22b022; --bg: #050805; --warn: #ffb000; --hot: #ff6a3d; }
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); color: var(--fg);
-  font-family: ui-monospace, "Cascadia Mono", Menlo, Consolas, "DejaVu Sans Mono", "Courier New", monospace;
+  font-family: "JetBrains Mono", ui-monospace, "Cascadia Mono", Menlo, Consolas, "DejaVu Sans Mono", "Courier New", monospace;
   font-size: 16px; line-height: 1.35; }
 body { min-height: 100%; background: radial-gradient(ellipse at center, #0a140a 0%, var(--bg) 70%); }
 .top { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: .5rem 1rem; padding: .5rem 1rem 0; }

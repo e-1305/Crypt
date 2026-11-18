@@ -1,9 +1,10 @@
 // Draws the DOM transcript and input line onto an offscreen canvas for the CRT.
 // The DOM stays the source of truth: this only mirrors it.
 import { tailRows } from "../js/theatre/screen-text.js";
+import { MONO, ADVANCE, onFontsReady } from "./font.js";
 
 const W = 1024, H = 768, PAD = 36, FONT_PX = 28, LINE_PX = 34;
-const COLS = Math.floor((W - PAD * 2) / (FONT_PX * 0.6));
+const COLS = Math.floor((W - PAD * 2) / (FONT_PX * ADVANCE));
 const ROWS = Math.floor((H - PAD * 2) / LINE_PX) - 1; // last row is the input line
 
 export function makeScreen(transcript, cmd) {
@@ -12,6 +13,7 @@ export function makeScreen(transcript, cmd) {
   canvas.height = H;
   const ctx = canvas.getContext("2d");
   let dirty = true;
+  onFontsReady(() => { dirty = true; });
   let lastPhase = -1;
   const mark = () => { dirty = true; };
   const obs = new MutationObserver(mark);
@@ -24,7 +26,7 @@ export function makeScreen(transcript, cmd) {
     const lines = Array.from(transcript.querySelectorAll(".line"), (el) => ({ text: el.textContent || "", echo: el.classList.contains("echo") }));
     ctx.fillStyle = "#031003";
     ctx.fillRect(0, 0, W, H);
-    ctx.font = FONT_PX + 'px ui-monospace, "DejaVu Sans Mono", Menlo, Consolas, monospace';
+    ctx.font = FONT_PX + 'px ' + MONO;
     ctx.textBaseline = "top";
     // Wrap with echo flags kept: wrap each source line, then take the tail.
     const rows = [];
@@ -39,7 +41,7 @@ export function makeScreen(transcript, cmd) {
     const prompt = "> " + value.slice(-(COLS - 3));
     ctx.fillText(prompt, PAD, y);
     if (!cmd.disabled && Math.floor(now / 500) % 2 === 0) {
-      ctx.fillRect(PAD + prompt.length * FONT_PX * 0.6, y + 2, FONT_PX * 0.6, FONT_PX);
+      ctx.fillRect(PAD + prompt.length * FONT_PX * ADVANCE, y + 2, FONT_PX * ADVANCE, FONT_PX);
     }
     dirty = false;
   }

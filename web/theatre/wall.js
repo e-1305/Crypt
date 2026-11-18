@@ -1,6 +1,8 @@
 // Draws the plate (layoutPlate output) on a canvas for the wall. It reads the DOM #plate that
 // web/app.js already builds, so healed state and live updates come for free.
 // State is shown by glyph and word as well as color. A legend lists all four states.
+import { MONO, ADVANCE, onFontsReady } from "./font.js";
+
 const W = 960, H = 1000, FONT_PX = 17, LINE_PX = 19;
 const COLOR = { Possessed: "#ff6a3d", Rotting: "#c8e63c", Healed: "#33ff33", Healthy: "#22b022" };
 const LEGEND = [["Possessed", "#", "POSSESSED"], ["Rotting", "%", "ROTTING"], ["Healed", "+", "HEALED"], ["Healthy", ".", "HEALTHY"]];
@@ -32,6 +34,7 @@ export function makeWall(plateEl, summaryEl) {
   canvas.height = H;
   const ctx = canvas.getContext("2d");
   let dirty = true;
+  onFontsReady(() => { dirty = true; });
   // Live heal effects (web/heal.js dispatches crypt:fx). Heal: rot color fades to green and the stitches glow.
   // Convulse: the limb shakes. With reduced motion the new state is simply shown, no animation.
   const fx = new Map();
@@ -56,12 +59,12 @@ export function makeWall(plateEl, summaryEl) {
     ctx.strokeStyle = "#5a4a2a";
     ctx.lineWidth = 8;
     ctx.strokeRect(10, 10, W - 20, H - 20);
-    ctx.font = "bold 26px ui-monospace, 'DejaVu Sans Mono', Menlo, Consolas, monospace";
+    ctx.font = "bold 26px " + MONO;
     ctx.textBaseline = "top";
     ctx.fillStyle = "#d8c590";
     ctx.fillText("PLATE I: THE CREATURE", 48, 36);
-    ctx.font = FONT_PX + "px ui-monospace, 'DejaVu Sans Mono', Menlo, Consolas, monospace";
-    const cw = FONT_PX * 0.6;
+    ctx.font = FONT_PX + "px " + MONO;
+    const cw = FONT_PX * ADVANCE;
     readLines(plateEl).forEach((segs, row) => {
       let x = 48;
       for (const seg of segs) {
@@ -83,19 +86,19 @@ export function makeWall(plateEl, summaryEl) {
     });
     const sim = document.getElementById("sim-label");
     if (sim && !sim.hidden && sim.textContent) {
-      ctx.font = "bold 20px " + "ui-monospace, 'DejaVu Sans Mono', Menlo, Consolas, monospace";
+      ctx.font = "bold 20px " + MONO;
       ctx.fillStyle = "#ff6a3d";
       ctx.fillText(sim.textContent.slice(0, 64), 48, H - 120);
     }
     // Team trophy shelf (text twin: #raid-shelf in the raid readout).
     const shelf = document.getElementById("raid-shelf");
     if (shelf && shelf.textContent) {
-      ctx.font = "16px ui-monospace, 'DejaVu Sans Mono', Menlo, Consolas, monospace";
+      ctx.font = "16px " + MONO;
       ctx.fillStyle = "#ffb000";
       ctx.fillText(shelf.textContent.slice(0, 90), 48, H - 98);
     }
     // Legend: color chip + glyph + word, so no state depends on color alone.
-    ctx.font = "bold 22px ui-monospace, 'DejaVu Sans Mono', Menlo, Consolas, monospace";
+    ctx.font = "bold 22px " + MONO;
     LEGEND.forEach(([state, glyph, word], i) => {
       const x = 40 + i * 228, y = H - 70;
       ctx.fillStyle = COLOR[state];

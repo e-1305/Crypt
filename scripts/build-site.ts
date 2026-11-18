@@ -85,6 +85,7 @@ export async function buildSite(outDir: string): Promise<void> {
     cpSync(join(WEB, "vendor"), join(outDir, "vendor"), { recursive: true });
     cpSync(join(WEB, "js"), join(outDir, "js"), { recursive: true });
     cpSync(join(WEB, "theatre"), join(outDir, "theatre"), { recursive: true });
+    cpSync(join(WEB, "fonts"), join(outDir, "fonts"), { recursive: true });
     writeFileSync(join(outDir, ".nojekyll"), "");
     cpSync(join(WEB, "manual.css"), join(outDir, "manual.css"));
     // The user manual, rendered offline. A relative link that is neither a repo file nor a site file fails the build.

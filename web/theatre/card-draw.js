@@ -1,9 +1,9 @@
 // Draws the end-of-raid card (card data from js/theatre/card.js) on a canvas and offers it as a PNG.
 // The card holds public scan data only.
+import { MONO } from "./font.js";
 import { cardLines } from "../js/theatre/card.js";
 
 const W = 800, H = 450;
-const MONO = "ui-monospace, 'DejaVu Sans Mono', Menlo, Consolas, monospace";
 
 export function drawCard(data, canvas = document.createElement("canvas")) {
   canvas.width = W;

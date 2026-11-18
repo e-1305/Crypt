@@ -32,6 +32,7 @@ and using third-party SDKs, APIs and data in line with their terms. Keep this fi
 | @types/node (26.6.6) | Types (dev-time only) | Node.js type declarations for `tsc --noEmit` | MIT | https://github.com/DefinitelyTyped/DefinitelyTyped |
 | playwright-core | Tool (devDependency, dev and CI only) | `scripts/ci/visual-qa.mjs` drives headless Chromium at 390x844, 1280x800 and 1440x900 for the visual QA check (`npm run test:visual`); `scripts/playtest/judge.mjs` uses it too. Not in the npm package (`scripts/ci` is excluded), not in the site | Apache-2.0 | https://github.com/microsoft/playwright |
 | Lighthouse | Tool (run with `npx`, dev and CI only) | `scripts/ci/lighthouse-a11y.sh` checks the accessibility score of the 2D page is at least 0.95. Not a dependency, not in the npm package or the site | Apache-2.0 | https://github.com/GoogleChrome/lighthouse |
+| JetBrains Mono (5.3.0, Latin subset, regular 400 and bold 700) | Font | Self-hosted monospace webfont for the page, the manual code samples and every canvas texture in the 3D bench (`web/theatre/font.js`), so the ASCII creature aligns the same on every machine. woff2 files `web/fonts/jetbrains-mono-latin-400-normal.woff2` and `web/fonts/jetbrains-mono-latin-700-normal.woff2`, taken unmodified from the `@fontsource/jetbrains-mono` npm package (already the Latin subset, about 43 KB for both). Licence text in `web/fonts/OFL.txt`. Copyright 2020 The JetBrains Mono Project Authors | OFL-1.1 | https://github.com/JetBrains/JetBrainsMono |
 | Sound effects (`web/theatre/sound.js`) | Code | CRT hum, heartbeat, thunder and needle clicks are original, synthesised at runtime with WebAudio oscillators and filtered noise by project code. No audio files, samples or third-party sound assets are used. Sound is off on load and starts only after the user clicks the toggle | MIT (project license) | n/a |
 
 ## Images
@@ -39,11 +40,11 @@ and using third-party SDKs, APIs and data in line with their terms. Keep this fi
 | File | Source | Terms |
 |---|---|---|
 | `docs/img/bench-3d.png` | Original. A screenshot of this project's own 3D bench, taken with `scripts/playtest/judge.mjs` (headless Chromium, software WebGL, 1280x720). All geometry and text are ours | Same licence as the repository (MIT) |
-| `docs/img/visual-qa-*.png` | Original. Screenshots of this project's own page at 390x844, 1280x800 and 1440x900, written by `VISUAL_QA_COPY_DOCS=1 npm run test:visual` (headless Chromium; a plain run writes only to `out/visual-qa`). The 1440x900 shot shows the 3D bench | Same licence as the repository (MIT) |
+| `docs/img/visual-qa-*.png` | Original. Screenshots of this project's own page at 390x844, 1280x800, 1440x900 and 1920x1080, written by `VISUAL_QA_COPY_DOCS=1 npm run test:visual` (headless Chromium; a plain run writes only to `out/visual-qa`). The 1440x900 shot shows the 3D bench | Same licence as the repository (MIT) |
 
 ## Ideas and references (not code)
 
-- Visual direction: 19th-century anatomical plates (public domain tradition); the ASCII figure and font stack are our own, no font file is bundled (system monospace)
+- Visual direction: 19th-century anatomical plates (public domain tradition); the ASCII figure is our own, the monospace font is JetBrains Mono (see the components table; system monospace fonts are only a fallback)
 - Mary Shelley, *Frankenstein; or, The Modern Prometheus* (1818)
 - Nadya Bartol, "Better cybersecurity starts with honesty and accountability", TED@BCG (2021)
 - Jerome Saltzer & Michael Schroeder, "The Protection of Information in Computer Systems", Proceedings of the IEEE (1975)
