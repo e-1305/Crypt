@@ -82,6 +82,26 @@ jobs:
       - uses: actions/checkout@v4
       - run: bash scripts/ci/failsafe-guard.sh
 
+  kiro-docs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # Full history so commit SHAs and PR numbers in docs/KIRO.md resolve.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Counts for docs/KIRO.md (tests are counted by the test job)
+        run: npm run kiro:stats -- --no-tests
+      - name: Links, repository paths and commit SHAs in docs/KIRO.md
+        run: npm run kiro:stats -- --check-links
+      - name: Stats blocks in docs/DEVPOST.md and docs/BLOG.md are current
+        run: npm run kiro:stats -- --check-docs
+
   pack-install:
     runs-on: ubuntu-latest
     timeout-minutes: 20
