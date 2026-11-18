@@ -6,7 +6,7 @@ import { CliError, EXIT } from "../../src/cli/exit.js";
 import type { Parsed } from "../../src/cli/parse.js";
 import { buildAutopsy, DEFAULT_LAST, type AutopsyInput } from "../../src/report/model.js";
 import { renderAutopsyHtml } from "../../src/report/html.js";
-import { SAMPLE_INPUT } from "../../src/report/sample.js";
+import { sampleInput } from "../../src/report/sample.js";
 import { loadHistory, recordSnapshot } from "./history.js";
 import { PDF_HINT } from "../../src/report/template.js";
 
@@ -24,7 +24,7 @@ export function autopsyCommand(p: Parsed, cwd: string = process.cwd(), io: Io = 
   const last = typeof p.flags.last === "string" ? Number(p.flags.last) : DEFAULT_LAST;
   let input: AutopsyInput;
   if (p.flags.sample === true) {
-    input = { ...SAMPLE_INPUT, last };
+    input = { ...sampleInput(now()), last };
   } else {
     const creature = readJson(io, paths.creaturePath);
     if (creature === undefined) {

@@ -6,13 +6,19 @@ export const SAMPLE_SCAN_START = Date.UTC(2025, 10, 3, 9, 0, 0);
 /** 40 hours after the scan start: the open Possessed limb has used 83% of its 48 hour window. */
 export const SAMPLE_NOW = SAMPLE_SCAN_START + 40 * H;
 
-const at = (hoursAfter: number): string => new Date(SAMPLE_SCAN_START + hoursAfter * H).toISOString();
-
-export const SAMPLE_INPUT: AutopsyInput = {
-  now: SAMPLE_NOW,
+/**
+ * The sample, dated from a scan start. The oldest trend point is 120 hours before the scan start and "now" is 40 hours after it,
+ * so every date falls inside the 7 days before "now" (6 days 16 hours).
+ */
+function buildSample(scanStart: number): AutopsyInput {
+  const now = scanStart + 40 * H;
+  const at = (hoursAfter: number): string => new Date(scanStart + hoursAfter * H).toISOString();
+  return {
+  sample: true,
+  now,
   creature: {
     repo: "e-1305/crypt-demo",
-    team: { scanStart: SAMPLE_SCAN_START },
+    team: { scanStart },
     counts: { limbs: 6, findings: 5, exorcised: 3, spawned: 2, possessed: 1, rotting: 3, healthy: 2 },
     limbs: [
       { id: "JQUERY", name: "jquery", owner: "@e-1305", state: "Healthy", spawned: true, kev: false, wasKev: true, epss: 0.62, healed: true, healedBy: "e-1305" },
@@ -39,3 +45,12 @@ export const SAMPLE_INPUT: AutopsyInput = {
     { at: at(0), possessed: 1, rotting: 3, healthy: 11, spawned: 2, healed: 3 },
   ],
 };
+}
+
+/** Fixed clock: used by tests, snapshots and the gazette sample. */
+export const SAMPLE_INPUT: AutopsyInput = buildSample(SAMPLE_SCAN_START);
+
+/** Sample dated relative to the given clock (default today), so a generated page never looks stale. */
+export function sampleInput(now: number = Date.now()): AutopsyInput {
+  return buildSample(now - 40 * H);
+}

@@ -7,7 +7,7 @@ import { CliError } from "../src/cli/exit.js";
 import { parseCli } from "../src/cli/parse.js";
 import { buildAutopsy, median, readHistory, LANDED_AT, NOT_ENOUGH_RAIDS } from "../src/report/model.js";
 import { esc, renderAutopsyHtml } from "../src/report/html.js";
-import { SAMPLE_INPUT, SAMPLE_NOW, SAMPLE_SCAN_START } from "../src/report/sample.js";
+import { SAMPLE_INPUT, sampleInput, SAMPLE_NOW, SAMPLE_SCAN_START } from "../src/report/sample.js";
 import { autopsyCommand } from "../scripts/cli/autopsy.js";
 import { numRuns } from "./runs.js";
 
@@ -187,6 +187,28 @@ describe("autopsy page", () => {
   it("matches the snapshot", () => {
     expect(html).toMatchSnapshot();
   });
+  it("labels sample data with a banner, a watermark and a sample title", () => {
+    expect(html).toContain("<title>CRYPT Autopsy Report (sample) - e-1305/crypt-demo</title>");
+    expect(html).toContain('<p class="banner" role="note">SAMPLE DATA');
+    expect(html).toContain('<div class="wm" aria-hidden="true"><span>SAMPLE DATA</span></div>');
+  });
+  it("does not label real data as a sample", () => {
+    const real = renderAutopsyHtml(buildAutopsy({ ...SAMPLE_INPUT, sample: false }));
+    expect(real).not.toMatch(/SAMPLE DATA|\(sample\)|class="wm"|class="banner"/);
+  });
+  it("dates the sample inside the 7 days before the clock", () => {
+    const now = Date.UTC(2031, 5, 15, 12, 0, 0);
+    const input = sampleInput(now);
+    expect(input.now).toBe(now);
+    const m = buildAutopsy(input);
+    expect(m.generatedAt).toBe(now);
+    expect(m.sample).toBe(true);
+    const ats = m.trend.points.map((p) => p.at);
+    expect(Math.min(...ats)).toBeGreaterThanOrEqual(now - 7 * 24 * H);
+    expect(Math.max(...ats)).toBeLessThanOrEqual(now);
+    expect(m.sla.atRisk.map((x) => x.id)).toEqual(["HANDLEBARS"]);
+    expect(renderAutopsyHtml(m)).toContain("generated 2031-06-15");
+  });
   it("says when the trend has too few raids", () => {
     expect(renderAutopsyHtml(buildAutopsy({ ...SAMPLE_INPUT, history: [] }))).toContain(NOT_ENOUGH_RAIDS);
   });
@@ -208,7 +230,9 @@ describe("crypt autopsy command", () => {
       expect(() => autopsyCommand(parseCli(["autopsy"]), dir)).toThrow(/Run crypt raid <target> first/);
       expect(existsSync(join(dir, "out", "autopsy.html"))).toBe(false);
       autopsyCommand(parseCli(["autopsy", "--sample", "--out", "s.html"]), dir);
-      expect(readFileSync(join(dir, "s.html"), "utf8")).toContain("CRYPT Autopsy Report");
+      const written = readFileSync(join(dir, "s.html"), "utf8");
+      expect(written).toContain("CRYPT Autopsy Report (sample)");
+      expect(written).toContain(`generated ${new Date().toISOString().slice(0, 10)}`);
       mkdirSync(join(dir, "out"));
       writeFileSync(join(dir, "out", "creature.json"), JSON.stringify(SAMPLE_INPUT.creature));
       expect(autopsyCommand(parseCli(["autopsy"]), dir, undefined, () => SAMPLE_NOW)).toBe(0);
