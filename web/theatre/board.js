@@ -1,8 +1,8 @@
+import { MONO, onFontsReady } from "./font.js";
 // The raid board on the wall: mirrors the #raid readout (timer, team score, rank, nights counter).
 // The DOM stays the source of truth.
 const W = 640, H = 420;
 const LEFT_W = 380, RIGHT_W = 174; // right column: x 430 to 604, inside the frame
-const MONO = "ui-monospace, 'DejaVu Sans Mono', Menlo, Consolas, monospace";
 const IDS = ["raid-timer", "raid-score", "raid-rank", "raid-nights", "raid-state", "raid-epitaph", "raid-combo", "raid-shelf", "raid-vitals"];
 
 export function makeBoard() {
@@ -11,6 +11,7 @@ export function makeBoard() {
   canvas.height = H;
   const ctx = canvas.getContext("2d");
   let dirty = true;
+  onFontsReady(() => { dirty = true; });
   const obs = new MutationObserver(() => { dirty = true; });
   const root = document.getElementById("raid");
   if (root) obs.observe(root, { childList: true, subtree: true, characterData: true });

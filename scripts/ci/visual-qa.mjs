@@ -16,7 +16,7 @@ const root = resolve(import.meta.dirname, "..", "..");
 const site = join(root, "_site");
 const outDir = join(root, "out", "visual-qa");
 const imgDir = join(root, "docs", "img");
-const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml" };
+const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".woff2": "font/woff2", ".txt": "text/plain" };
 
 const CONTROLS = ["#sim-green", "#sim-red", "#raid-start", "#hc-toggle", "#sound-toggle", "#record-toggle", "#cmd", "#try-chip", "#download", "#view-3d", "#install-copy", "#manual-link"];
 // Fixed-position elements checked on the 3D bench. The caption is pointer-events:none, so it is listed by name.
@@ -85,6 +85,34 @@ function present(tag, list) {
   });
 }
 
+// A proportional fallback makes the ASCII creature drift apart. Measure with the same stack constant the canvas
+// textures use (web/theatre/font.js), regular and bold, and check the DOM plate resolved to the webfont.
+async function checkMonospace(page, tag) {
+  const r = await page.evaluate(async () => {
+    const { MONO, FONT_FAMILY, ensureFonts } = await import("./theatre/font.js");
+    await document.fonts.ready;
+    await ensureFonts();
+    const ctx = document.createElement("canvas").getContext("2d");
+    const width = (weight, s) => { ctx.font = `${weight} 26px ${MONO}`; return ctx.measureText(s).width; };
+    const plate = document.getElementById("plate");
+    return {
+      regular: [width("normal", "iiii"), width("normal", "MMMM")],
+      bold: [width("bold", "iiii"), width("bold", "MMMM")],
+      loaded: document.fonts.check(`26px "${FONT_FAMILY}"`) && document.fonts.check(`bold 26px "${FONT_FAMILY}"`),
+      plateFont: plate ? getComputedStyle(plate).fontFamily : "",
+      plateLoaded: plate ? document.fonts.check(`13px ${getComputedStyle(plate).fontFamily}`, "iM") : false,
+      family: FONT_FAMILY,
+    };
+  });
+  const faces = await page.evaluate(() => [...document.fonts].filter((f) => f.status === "loaded").map((f) => `${f.family}/${f.weight}`));
+  for (const k of ["regular", "bold"]) {
+    if (r[k][0] !== r[k][1]) fail(tag, `${k} canvas font is proportional: iiii=${r[k][0]} MMMM=${r[k][1]}`);
+  }
+  if (!r.loaded) fail(tag, `webfont "${r.family}" is not loaded`);
+  if (!faces.some((f) => f.includes(r.family) && f.endsWith("/400")) || !faces.some((f) => f.includes(r.family) && f.endsWith("/700"))) fail(tag, `webfont faces not loaded: ${faces.join(", ")}`);
+  if (!r.plateFont.includes(r.family)) fail(tag, `#plate font-family does not start with the webfont: ${r.plateFont}`);
+}
+
 async function check(browser, vp, query) {
   const tag = `${vp.w}x${vp.h}${query ? " " + query : ""}`;
   const ctx = await browser.newContext({ viewport: { width: vp.w, height: vp.h }, hasTouch: vp.touch, isMobile: vp.touch });
@@ -97,6 +125,8 @@ async function check(browser, vp, query) {
   // The 3D path shows a 3 second title card over the bench. Wait it out so the screenshot shows the page.
   await page.waitForSelector("#title-card", { state: "detached", timeout: 10000 }).catch(() => {});
   await page.waitForTimeout(1500);
+
+  await checkMonospace(page, tag);
 
   const plate = (await page.textContent("#plate")) ?? "";
   if (!plate.trim()) fail(tag, "plate is empty");
