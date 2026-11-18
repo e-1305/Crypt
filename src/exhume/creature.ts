@@ -1,5 +1,5 @@
 import { countsPhrase } from "../common/counts.js";
-import { CODEOWNERS_LOCATIONS, ownerOf, parseCodeowners } from "./owners.js";
+import { CODEOWNERS_LOCATIONS, ownerLabel, ownerOf, parseCodeowners } from "./owners.js";
 import type { EpssFeed, KevFeed } from "./feeds.js";
 import { parsePackageLock, parseRequirements } from "./lockfile.js";
 import { type OsvLookup, resolveOsv } from "./osv.js";
@@ -115,7 +115,7 @@ export function summarize(c: Creature, top = 5): string {
   ];
   for (const l of c.limbs.slice(0, top)) {
     if (l.state === "Healthy") break;
-    lines.push(`  #${l.rank} ${l.state}${l.unknown ? " (unknown)" : ""} ${l.id} owner: ${l.owner}`);
+    lines.push(`  #${l.rank} ${l.state}${l.unknown ? " (unknown)" : ""} ${l.id} owner: ${ownerLabel(l.owner)}`);
   }
   return lines.join("\n");
 }

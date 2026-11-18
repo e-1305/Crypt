@@ -23,7 +23,8 @@ export function parseAdvisory(raw: unknown): Advisory | null {
       }
       ranges.push({ type: r.type, events });
     }
-    affected.push({ package: { ecosystem, name }, ranges });
+    const versions = Array.isArray(a.versions) ? a.versions.filter((x): x is string => typeof x === "string") : [];
+    affected.push({ package: { ecosystem, name }, ranges, ...(versions.length ? { versions } : {}) });
   }
   const aliases = Array.isArray(raw.aliases) ? raw.aliases.filter((x): x is string => typeof x === "string") : [];
   return { id: raw.id, aliases, affected };

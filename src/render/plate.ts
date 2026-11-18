@@ -157,6 +157,24 @@ function items(creature: unknown): Item[] {
   return out.map((o) => o.it);
 }
 
+const WORST: Record<PlateState, number> = { Possessed: 0, Rotting: 1, Healed: 2, Healthy: 3 };
+
+/** One item per package: copies of the same package collapse into "name xN versions" with the worst state. Order is kept. */
+function collapseCopies(list: Item[]): Item[] {
+  const byKey = new Map<string, { item: Item; n: number }>();
+  for (const it of list) {
+    const seen = byKey.get(it.key);
+    if (!seen) {
+      byKey.set(it.key, { item: { ...it }, n: 1 });
+      continue;
+    }
+    seen.n++;
+    if (WORST[it.state] < WORST[seen.item.state]) seen.item.state = it.state;
+    seen.item.spawned = seen.item.spawned || it.spawned;
+  }
+  return [...byKey.values()].map(({ item, n }) => (n > 1 ? { ...item, version: `x${n}` } : item));
+}
+
 function label(it: Item): string {
   const tail = ` \u2014 ${it.state.toUpperCase()}`;
   const ver = it.version.length > 10 ? it.version.slice(0, 9) + "~" : it.version;
@@ -175,7 +193,8 @@ export function layoutPlate(creature: unknown, options: PlateOptions = {}): Plat
   const repoRaw = options.repo ?? (creature as { repo?: unknown } | null)?.repo;
   const repo = clean(repoRaw, 30) || "the-crypt";
   const all = items(creature);
-  const figureItems = [...all.filter((i) => i.spawned && i.state !== "Healed"), ...all.filter((i) => i.state === "Healed")];
+  const pkgs = collapseCopies(all);
+  const figureItems = [...pkgs.filter((i) => i.spawned && i.state !== "Healed"), ...pkgs.filter((i) => i.state === "Healed")];
   const placed = figureItems.slice(0, SLOTS.length);
   const overflow = figureItems.slice(SLOTS.length);
   const bySlot = new Map<string, Item>();
@@ -251,7 +270,7 @@ export function layoutPlate(creature: unknown, options: PlateOptions = {}): Plat
     lines.push(plain(""));
   }
 
-  const stitched = all.filter((i) => !figureItems.includes(i));
+  const stitched = pkgs.filter((i) => !figureItems.includes(i));
   const stitches = Array.from({ length: Math.min(stitched.length, STITCH_MAX) }, () => ".").join(" ");
   lines.push(plain(`STITCHES: ${stitches === "" ? "none" : stitches}${stitched.length > STITCH_MAX ? " ..." : ""}`));
   lines.push(plain("# POSSESSED   % ROTTING   (clean lines) HEALED   . HEALTHY"));
@@ -277,7 +296,7 @@ export function renderPlate(creature: unknown, options: PlateOptions = {}): stri
 
 /** One sentence per limb for screen readers: name, version, state. */
 export function plateSummary(creature: unknown): string[] {
-  return items(creature)
+  return collapseCopies(items(creature))
     .filter((i) => i.spawned || i.state === "Healed")
-    .map((i) => `${i.name} ${i.version}: ${i.state}`);
+    .map((i) => `${i.name} ${/^x\d+$/.test(i.version) ? `${i.version.slice(1)} versions` : i.version}: ${i.state}`);
 }

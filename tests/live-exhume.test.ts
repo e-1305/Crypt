@@ -28,14 +28,22 @@ type Res = { status: number; body?: string };
 /** A fetch that serves a fixture directory as raw.githubusercontent.com and advisories as api.osv.dev. Records every URL. */
 function serve(dir: string | null, extra: Record<string, Res> = {}) {
   const urls: string[] = [];
-  const f: FetchLike = async (url) => {
+  const f: FetchLike = async (url, init) => {
     urls.push(url);
     let r: Res = { status: 404 };
     if (url in extra) r = extra[url]!;
     else if (dir !== null) {
       const raw = /^https:\/\/raw\.githubusercontent\.com\/[^/]+\/[^/]+\/(?:HEAD|main|master)\/(.+)$/.exec(url);
       const adv = /^https:\/\/api\.osv\.dev\/v1\/vulns\/(.+)$/.exec(url);
-      if (raw) {
+      if (url === "https://api.osv.dev/v1/query" && init?.method === "POST") {
+        // Every advisory in the fixture folder that names the queried package, as OSV answers a package-only query.
+        const q = JSON.parse(init.body ?? "{}") as { package?: { name?: string } };
+        const dirA = join(VULN, "advisories");
+        const vulns = readdirSync(dirA)
+          .map((n) => JSON.parse(readFileSync(join(dirA, n), "utf8")) as { affected?: { package?: { name?: string } }[] })
+          .filter((a) => (a.affected ?? []).some((x) => x.package?.name === q.package?.name));
+        r = { status: 200, body: JSON.stringify({ vulns }) };
+      } else if (raw) {
         const p = join(dir, raw[1]!);
         if (existsSync(p)) r = { status: 200, body: readFileSync(p, "utf8") };
       } else if (adv) {

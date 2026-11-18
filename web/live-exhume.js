@@ -2,7 +2,7 @@
 // reaches outside its own files lives here: raw.githubusercontent.com (the lockfile) and api.osv.dev, called by the module.
 // Everything is shown with textContent. Nothing is written anywhere: the pull request payloads are dry runs.
 // Limbs and owners from CODEOWNERS only, no person is named. Failsafe: any error shows a message and no creature.
-import { liveExhume, LiveExhumeError, dryRunLabel } from "./js/web/live-exhume.js";
+import { liveExhume, LiveExhumeError, dryRunLabel, ownerLabel } from "./js/web/live-exhume.js";
 import { parseFeedSnapshot } from "./js/web/feed-snapshot.js";
 import { parseRepoUrl, repoSlug } from "./js/web/repo-url.js";
 
@@ -26,14 +26,19 @@ async function loadFeeds(fetchFn) {
   }
 }
 
-/** Who owns a limb: CODEOWNERS only, else "unowned". */
+/** Who owns a limb: CODEOWNERS only, else "no owner yet". */
 function ownerText(limb) {
-  return limb.owner && limb.owner !== "" ? limb.owner : "unowned";
+  return ownerLabel(limb.owner);
 }
 
 function stateText(limb) {
   if (limb.unknown) return "Unknown (not checked)";
   return limb.state;
+}
+
+/** One list row per package: "lodash x4 versions (2.4.2, 4.17.4, ...)" or "lodash 4.17.21". */
+function groupName(g) {
+  return g.versions.length > 1 ? g.name + " \u00d7" + g.versions.length + " versions (" + g.versions.join(", ") + ")" : g.name + " " + (g.versions[0] || "unknown");
 }
 
 function renderResult(root, r, gallery) {
@@ -47,17 +52,17 @@ function renderResult(root, r, gallery) {
 
   root.appendChild(el("h3", "Ranked limbs"));
   const ol = el("ol", undefined, "paste-limbs");
-  r.limbs.slice(0, MAX_LIMB_ROWS).forEach((l) => {
-    const flags = [l.kev ? "KEV" : "", l.epss !== null && l.epss !== undefined ? "EPSS " + l.epss.toFixed(2) : ""].filter(Boolean).join(", ");
-    ol.appendChild(el("li", l.name + " " + l.version + ": " + stateText(l) + (flags ? " (" + flags + ")" : "") + ", owner " + ownerText(l) + (l.spawned ? ", spawned" : "")));
+  r.groups.slice(0, MAX_LIMB_ROWS).forEach((g) => {
+    const flags = [g.kev ? "KEV" : "", g.epss !== null && g.epss !== undefined ? "EPSS " + g.epss.toFixed(2) : ""].filter(Boolean).join(", ");
+    ol.appendChild(el("li", groupName(g) + ": " + stateText(g) + (flags ? " (" + flags + ")" : "") + ", " + g.kind + ", " + ownerText(g) + (g.spawned ? ", spawned" : "")));
   });
   root.appendChild(ol);
-  if (r.limbs.length > MAX_LIMB_ROWS) root.appendChild(el("p", "and " + (r.limbs.length - MAX_LIMB_ROWS) + " more in the lockfile.", "muted"));
+  if (r.groups.length > MAX_LIMB_ROWS) root.appendChild(el("p", "and " + (r.groups.length - MAX_LIMB_ROWS) + " more packages in the lockfile.", "muted"));
 
   root.appendChild(el("h3", "Owners from CODEOWNERS"));
   const owners = el("ul", undefined, "paste-owners");
   if (r.owners.length === 0) owners.appendChild(el("li", "No manifest found."));
-  r.owners.forEach((o) => owners.appendChild(el("li", o.manifest + ": " + o.owner)));
+  r.owners.forEach((o) => owners.appendChild(el("li", o.manifest + ": " + ownerLabel(o.owner))));
   root.appendChild(owners);
 
   root.appendChild(el("h3", "Dry-run pull requests"));
@@ -68,14 +73,14 @@ function renderResult(root, r, gallery) {
     if (p.status === "ready") {
       box.appendChild(el("p", p.limb + ": " + p.title, "paste-payload-title"));
       box.appendChild(el("p", label, "paste-payload-label"));
-      box.appendChild(el("pre", "Branch: " + p.branch + "\nFiles: " + p.files.join(", ") + "\n\n" + p.body, "payload"));
+      box.appendChild(el("pre", "Branch: " + p.branch + "\nFiles: " + p.files.join(", ") + "\nDependency: " + p.kind + (p.kind === "transitive" ? " (overrides)" : "") + "\n\n" + p.body, "payload"));
     } else {
       box.appendChild(el("p", p.limb + ": no pull request. " + p.reason));
       box.appendChild(el("p", label, "paste-payload-label"));
     }
     root.appendChild(box);
   });
-  if (r.payloadsOmitted > 0) root.appendChild(el("p", r.payloadsOmitted + " more spawned limbs wait for the next run, five pull requests at a time.", "muted"));
+  if (r.payloadsOmitted > 0) root.appendChild(el("p", r.payloadsOmitted + " more spawned packages wait for the next run, five pull requests at a time.", "muted"));
 
   root.appendChild(el("h3", "Play"));
   const ref = parseRepoUrl("https://github.com/" + r.repo);
@@ -133,7 +138,7 @@ export function initPaste({ announce, gallery = [], fetchFn = (...a) => fetch(..
       const feeds = await loadFeeds(fetchFn);
       const r = await liveExhume(text, { fetch: fetchFn, feeds });
       renderResult(result, r, gallery);
-      status.textContent = "Done: " + r.repo + " has " + r.limbs.length + " dependencies and " + r.limbs.filter((l) => l.spawned).length + " spawned limbs.";
+      status.textContent = "Done: " + r.repo + " has " + r.groups.length + " packages (" + r.limbs.length + " installed copies) and " + r.groups.filter((g) => g.spawned).length + " spawned limbs.";
       announce(status.textContent);
       result.scrollIntoView?.({ block: "nearest" });
     } catch (err) {

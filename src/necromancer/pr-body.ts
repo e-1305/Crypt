@@ -1,5 +1,11 @@
 // Pure PR body text. No fs, clock or network, so the web bundle can use it.
+import { ownerLabel } from "../exhume/owners.js";
 import { SABOTAGE_BODY_LINE } from "./sabotage.js";
+import { BREAKING_NOTE } from "./version.js";
+
+export { BREAKING_NOTE };
+export const TRANSITIVE_NOTE = "transitive: forced via overrides; check the parents' compatibility";
+export const NESTED_NOTE = "direct: the dependency in package.json is bumped. Copies nested under other packages follow their parents; check them after this PR lands.";
 
 export interface PrFields {
   limb: string;
@@ -15,6 +21,16 @@ export interface PrFields {
   /** True when `resolved` and `integrity` come from registry metadata. */
   fromRegistry?: boolean;
   sabotage?: boolean;
+  /** Direct dependency (version bump) or transitive only (npm overrides). Omitted: direct. */
+  kind?: "direct" | "transitive";
+  /** Every installed version of the package that this graft replaces. Omitted: just `from`. */
+  versions?: string[];
+}
+
+/** PR title. One PR per package: a package with several installed versions names them all. */
+export function prTitle(f: { name: string; from: string; versions?: string[]; to: string; limb: string; breaking: boolean }): string {
+  const from = f.versions && f.versions.length > 1 ? f.versions.join(", ") : f.from;
+  return `fix: graft ${f.name} ${from} to ${f.to} (${f.limb})${f.breaking ? ` ${BREAKING_NOTE}` : ""}`;
 }
 
 /** PR body. Built from creature.json only (owners from CODEOWNERS); never from git history. */
@@ -22,13 +38,17 @@ export function prBody(f: PrFields): string {
   return [
     `Limb: ${f.limb} (${f.name})`,
     `Version: ${f.from} -> ${f.to}`,
+    ...(f.versions && f.versions.length > 1 ? [`Installed versions: ${f.versions.join(", ")}`] : []),
+    `Dependency: ${f.kind ?? "direct"}`,
     `CVEs: ${f.cves.length ? f.cves.join(", ") : "none listed"}`,
     `KEV: ${f.kev ? "yes" : "no"}`,
     `EPSS: ${f.epss === null ? "unknown" : f.epss.toFixed(5)}`,
-    `Owner: ${f.owner || "unowned"}`,
+    `Owner: ${ownerLabel(f.owner)}`,
     `Healed by: (pending)`,
     `Audit ID: ${f.auditId}`,
-    ...(f.breaking ? ["breaking: true"] : []),
+    ...(f.breaking ? ["breaking: true", BREAKING_NOTE] : []),
+    ...(f.kind === "transitive" ? [TRANSITIVE_NOTE] : []),
+    ...(f.kind !== "transitive" && f.versions && f.versions.length > 1 ? [NESTED_NOTE] : []),
     "",
     ...(f.sabotage ? [SABOTAGE_BODY_LINE, ""] : []),
     f.fromRegistry

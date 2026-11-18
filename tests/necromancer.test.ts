@@ -93,7 +93,7 @@ describe("version choice", () => {
           compareVersions(g, parseVersion(fmt(cur))!) >= 0 &&
           !affected(gk) &&
           got.version === fmt(expected) &&
-          got.breaking === (g.major > cur[0]!)
+          got.breaking === (g.major > cur[0]! || (cur[0] === 0 && g.major === 0 && g.minor > cur[1]!))
         );
       }),
       { numRuns: numRuns(300) },
