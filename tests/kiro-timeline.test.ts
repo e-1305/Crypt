@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { buildTimeline, dayNumber, esc, isoOf, mergeDates, renderTimeline, specDates } from "../scripts/kiro-timeline.js";
+import { buildTimeline, dayNumber, esc, isoOf, landingDates, renderTimeline, specDates } from "../scripts/kiro-timeline.js";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const tmp = mkdtempSync(join(tmpdir(), "kiro-timeline-test-"));
@@ -38,7 +38,7 @@ describe("timeline from git", () => {
   });
 
   it("reads PR merge dates from landing subjects and ignores (#N) suffixes", () => {
-    expect(mergeDates(["2026-01-04\tMerge pull request #7 from a/b", "2026-01-06\tMerge PR #8", "2026-01-06\tfix (#9)"])).toEqual([
+    expect(landingDates(["2026-01-04\tMerge pull request #7 from a/b", "2026-01-06\tMerge PR #8", "2026-01-06\tfix (#9)"])).toEqual([
       { pr: 7, date: "2026-01-04" },
       { pr: 8, date: "2026-01-06" },
     ]);

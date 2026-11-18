@@ -44,7 +44,7 @@ export function specDates(root: string, run: Run = gitRunner(root)): Spec[] {
 }
 
 /** Landing commits as "date TAB subject" lines, to PR number and date (first line seen for a number wins). */
-export function mergeDates(lines: string[]): Merge[] {
+export function landingDates(lines: string[]): Merge[] {
   const seen = new Map<number, string>();
   for (const line of lines) {
     const [date, ...rest] = line.split("\t");
@@ -60,7 +60,7 @@ export function buildTimeline(root: string, run: Run = gitRunner(root)): Timelin
   const specs = specDates(root, run);
   const head = (run(["log", "-1", "--format=%ad", "--date=short"]) ?? "").trim();
   if (!specs.length || !head) return null;
-  const merges = mergeDates((run(["log", "--format=%ad%x09%s", "--date=short"]) ?? "").split("\n"));
+  const merges = landingDates((run(["log", "--format=%ad%x09%s", "--date=short"]) ?? "").split("\n"));
   const start = specs[0]!.date;
   const end = head > start ? head : start;
   return { start, end, days: dayNumber(end) - dayNumber(start) + 1, specs, merges };
