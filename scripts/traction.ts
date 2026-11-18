@@ -1,9 +1,10 @@
 // npm run traction: print real adoption numbers as a markdown table. Never invents a number.
-// Each row is a value, "not published", "not discoverable" or "unavailable".
+// Each row is a value, "not published", "downloads not indexed yet", "not discoverable" or "unavailable".
 import { pathToFileURL } from "node:url";
 import type { Fetcher } from "./github-client.js";
 
 export const NPM_URL = "https://api.npmjs.org/downloads/point/last-week/@e-1305/crypt";
+export const REGISTRY_URL = "https://registry.npmjs.org/@e-1305/crypt";
 export const REPO_URL = "https://api.github.com/repos/e-1305/Crypt";
 export const CODE_SEARCH_URL = "https://api.github.com/search/code?q=%22e-1305%2FCrypt%22+path%3A.github%2Fworkflows+-org%3Ae-1305&per_page=100";
 
@@ -43,7 +44,14 @@ export async function collectTraction(o: { fetch?: Fetcher; token?: string } = {
 
   const [npm] = await safe(async () => {
     const r = await getJson(f, NPM_URL);
-    if (isObj(r.body) && typeof r.body.error === "string") return [/not found/i.test(r.body.error) ? "not published" : UNAVAILABLE];
+    if (r.status === 404 || (isObj(r.body) && typeof r.body.error === "string" && /not found/i.test(r.body.error))) {
+      // The downloads API also answers 404 for a published package that is not indexed yet.
+      // Only the registry can tell the two cases apart.
+      const reg = await getJson(f, REGISTRY_URL);
+      if (reg.status === 404) return ["not published"];
+      if (reg.ok && isObj(reg.body) && isObj(reg.body.versions) && Object.keys(reg.body.versions).length > 0) return ["downloads not indexed yet"];
+      return [UNAVAILABLE];
+    }
     if (!r.ok || !isObj(r.body)) return [UNAVAILABLE];
     return [count(r.body.downloads)];
   }, 1);

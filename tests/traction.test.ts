@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { collectTraction, renderTraction, NPM_URL, REPO_URL } from "../scripts/traction.js";
+import { collectTraction, renderTraction, NPM_URL, REGISTRY_URL, REPO_URL } from "../scripts/traction.js";
 import type { Fetcher } from "../scripts/github-client.js";
 
 const reply = (status: number, body: unknown) => ({ ok: status >= 200 && status < 300, status, json: async () => body });
@@ -26,9 +26,35 @@ describe("collectTraction", () => {
 
   it("reports an unpublished package as 'not published', never 0", async () => {
     const rows = await collectTraction({
-      fetch: fake({ [NPM_URL]: () => reply(404, { error: "package @e-1305/crypt not found" }), [REPO_URL]: () => reply(200, { stargazers_count: 0, forks_count: 0 }) }),
+      fetch: fake({
+        [NPM_URL]: () => reply(404, { error: "package @e-1305/crypt not found" }),
+        [REGISTRY_URL]: () => reply(404, { error: "Not found" }),
+        [REPO_URL]: () => reply(200, { stargazers_count: 0, forks_count: 0 }),
+      }),
     });
     expect(rows[0]!.value).toBe("not published");
+  });
+
+  it("reports 'downloads not indexed yet' when downloads 404 but the registry lists versions", async () => {
+    const rows = await collectTraction({
+      fetch: fake({
+        [NPM_URL]: () => reply(404, { error: "package @e-1305/crypt not found" }),
+        [REGISTRY_URL]: () => reply(200, { name: "@e-1305/crypt", versions: { "0.1.0": {} } }),
+        [REPO_URL]: () => reply(200, { stargazers_count: 0, forks_count: 0 }),
+      }),
+    });
+    expect(rows[0]!.value).toBe("downloads not indexed yet");
+  });
+
+  it("reports 'unavailable' when downloads 404 and the registry cannot be read", async () => {
+    const rows = await collectTraction({
+      fetch: fake({
+        [NPM_URL]: () => reply(404, { error: "not found" }),
+        [REGISTRY_URL]: () => reply(503, {}),
+        [REPO_URL]: () => reply(200, { stargazers_count: 0, forks_count: 0 }),
+      }),
+    });
+    expect(rows[0]!.value).toBe("unavailable");
   });
 
   it("prints 'unavailable' on HTTP errors, network errors and malformed bodies", async () => {

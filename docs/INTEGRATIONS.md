@@ -34,7 +34,7 @@ Then `crypt raise` and `crypt play` work as usual.
 
 ## Works in your team workflow
 
-Three outputs already exist for the people who do not play the game: the GitHub Action job summary, a Slack digest and a Teams digest. CSV export for spreadsheets is planned in [#131](https://github.com/e-1305/Crypt/issues/131) and is not available yet.
+Three outputs already exist for the people who do not play the game: the GitHub Action job summary, a Slack digest and a Teams digest. CSV and JSON export for spreadsheets ships in the scan result (since [#157](https://github.com/e-1305/Crypt/pull/157)).
 
 All payloads and numbers below are **SAMPLE DATA** (the built-in sample, repository `e-1305/crypt-demo`). They are not a customer report.
 
