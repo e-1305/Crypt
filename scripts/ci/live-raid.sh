@@ -40,21 +40,39 @@ run_crypt() {
   $CRYPT "$@" 2>&1 | tee -a "$log"
 }
 
-# Field of the newest real PR record for the limb: url, from, to.
+# Field of the newest real PR record for the limb: url, from, to. Rejected records count too:
+# inquisit archives a red graft to out/prs/rejected/. Newest means latest modification time.
 pr_field() {
   node -e '
     const fs = require("fs");
     const [limb, field] = process.argv.slice(1);
+    const files = [];
+    for (const dir of ["out/prs", "out/prs/rejected"]) {
+      if (!fs.existsSync(dir)) continue;
+      for (const f of fs.readdirSync(dir).sort()) {
+        if (f.endsWith(".json")) files.push({ p: dir + "/" + f, t: fs.statSync(dir + "/" + f).mtimeMs });
+      }
+    }
+    files.sort((a, b) => a.t - b.t);
     let best = "";
-    for (const f of fs.existsSync("out/prs") ? fs.readdirSync("out/prs").sort() : []) {
-      if (!f.endsWith(".json")) continue;
+    for (const { p } of files) {
       try {
-        const r = JSON.parse(fs.readFileSync("out/prs/" + f, "utf8"));
+        const r = JSON.parse(fs.readFileSync(p, "utf8"));
         if (r.limb === limb && r.dryRun !== true && typeof r[field] === "string") best = r[field];
       } catch {}
     }
     process.stdout.write(best);
   ' "$limb" "$1"
+}
+
+# True when the run state already records the limb as healed (by this run or an earlier one).
+limb_healed() {
+  node -e '
+    try {
+      const s = JSON.parse(require("fs").readFileSync("out/state.json", "utf8"));
+      process.exit(s.limbs && s.limbs[process.argv[1]] && s.limbs[process.argv[1]].state === "healed" ? 0 : 1);
+    } catch { process.exit(1); }
+  ' "$limb"
 }
 
 : >"$log"
@@ -64,7 +82,7 @@ on_exit() {
     {
       echo "## Live raid FAILED: ${mode} ${limb}"
       echo
-      echo "crypt stopped with exit code ${code}. Nothing was changed on the limb. See the step log."
+      echo "crypt stopped with exit code ${code}. Check the repository for an open pull request, then see the step log."
     } >>"$SUMMARY"
   fi
 }
@@ -98,12 +116,17 @@ case "$mode" in
     ;;
   reraise)
     run_crypt reraise --live --repo "$REPO"
-    grep -v '^healed:' "$log" | sed '/./,$!d' >out/plate.txt || true
-    plate="$(cat out/plate.txt)"
-    if grep -q "^healed: .*${limb}" "$log"; then
-      verdict="${limb} HEALED"
+    if grep -q '^reraise: ' "$log"; then
+      verdict="$(grep '^reraise: ' "$log" | tail -n 1 | cut -c1-160)"
     else
-      verdict="${limb} not healed yet (merge the pull request first)"
+      # The plate is everything after the healed: line, so stderr warnings stay out of it.
+      sed -n '/^healed:/,$p' "$log" | sed '1d' | sed '/./,$!d' >out/plate.txt || true
+      plate="$(cat out/plate.txt)"
+      if grep -q "^healed: .*${limb}" "$log" || limb_healed; then
+        verdict="${limb} HEALED"
+      else
+        verdict="${limb} not healed yet (merge the pull request first)"
+      fi
     fi
     ;;
 esac

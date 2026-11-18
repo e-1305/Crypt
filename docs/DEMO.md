@@ -57,6 +57,8 @@ Notes:
 
 The workflow `.github/workflows/live-raid.yml` runs the live raid on GitHub, so no token sits on a laptop. The token is the repository secret `CRYPT_DEMO_TOKEN`. It reaches only the one step that runs `crypt`, the workflow itself has `contents: read`, and the workflow cannot merge. The live preflight still runs: a token that sees any repository besides `e-1305/crypt-demo` is refused.
 
+Trust note: anyone who can dispatch a workflow on a branch of this repository runs that branch's code with the secret, and the secret can write to `crypt-demo`. That is how repository secrets work, so only give dispatch rights to people you trust.
+
 1. Create the fine-grained token in the GitHub web UI on the phone, with the steps in "Create the token" above (only `crypt-demo`, Contents read and write, Pull requests read and write, Checks read).
 2. In this repository open **Settings**, **Secrets and variables**, **Actions**, **New repository secret**. Name it `CRYPT_DEMO_TOKEN` and paste the token.
 3. In the GitHub app open this repository, **Actions**, **live-raid**, **Run workflow**. Choose `mode` graft and `limb` LODASH.

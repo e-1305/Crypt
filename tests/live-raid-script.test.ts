@@ -19,8 +19,13 @@ case "$1" in
     mkdir -p out/prs
     echo '{"branch":"crypt/graft-lodash-4.18.0","limb":"'"$2"'","name":"lodash","from":"4.17.15","to":"4.18.0","url":"https://github.com/e-1305/crypt-demo/pull/7"}' > out/prs/crypt-graft-lodash-4.18.0.json
     echo "$2: PR_OPENED"; echo "Pull request: https://github.com/e-1305/crypt-demo/pull/7" ;;
-  inquisit) echo "$2: \${STUB_OUTCOME:-AWAITING_HUMAN_MERGE}" ;;
-  reraise) echo "healed: \${STUB_HEALED:-none}"; echo; echo "PLATE LINE lodash HEALED" ;;
+  inquisit)
+    if [ -n "\${STUB_ARCHIVE:-}" ]; then mkdir -p out/prs/rejected; mv out/prs/*.json out/prs/rejected/; fi
+    echo "$2: \${STUB_OUTCOME:-AWAITING_HUMAN_MERGE}" ;;
+  reraise)
+    if [ -n "\${STUB_SEALED:-}" ]; then echo "reraise: REJECTED_SEALED (nothing changed)"; exit 0; fi
+    echo "warning: before" >&2
+    echo "healed: \${STUB_HEALED:-none}"; echo; echo "PLATE LINE lodash HEALED" ;;
   *) exit 9 ;;
 esac
 exit \${STUB_EXIT:-0}
@@ -105,6 +110,49 @@ describe("live-raid.sh argument handling", () => {
     expect(readFileSync(join(x.d, "out", "plate.txt"), "utf8")).toContain("PLATE LINE");
   });
 
+  it("inquisit keeps the PR link and versions after the record is archived as rejected", () => {
+    const d = run(["graft", "LODASH", "false"]).d;
+    // Same working directory: graft record exists, the stub now archives it.
+    const stub = join(d, "stub.sh");
+    const summary = join(d, "summary2.md");
+    const r = spawnSync("bash", [SCRIPT, "inquisit", "LODASH", "false"], {
+      cwd: d,
+      encoding: "utf8",
+      env: { PATH: process.env.PATH ?? "", CRYPT_CMD: stub, STUB_CALLS: join(d, "c2.txt"), GITHUB_STEP_SUMMARY: summary, STUB_ARCHIVE: "1", STUB_OUTCOME: "GRAFT_REJECTED x" },
+    });
+    expect(r.status).toBe(0);
+    const s = readFileSync(summary, "utf8");
+    expect(s).toContain("https://github.com/e-1305/crypt-demo/pull/7");
+    expect(s).toContain("4.17.15 to 4.18.0");
+  });
+
+  it("reraise says HEALED for a limb healed by an earlier run (healed: none)", () => {
+    const d = run(["graft", "LODASH", "false"]).d;
+    writeFileSync(join(d, "out", "state.json"), JSON.stringify({ limbs: { LODASH: { state: "healed" } } }));
+    const summary = join(d, "s3.md");
+    const r = spawnSync("bash", [SCRIPT, "reraise", "LODASH", "false"], {
+      cwd: d,
+      encoding: "utf8",
+      env: { PATH: process.env.PATH ?? "", CRYPT_CMD: join(d, "stub.sh"), STUB_CALLS: join(d, "c3.txt"), GITHUB_STEP_SUMMARY: summary },
+    });
+    expect(r.status).toBe(0);
+    expect(readFileSync(summary, "utf8")).toContain("LODASH HEALED");
+  });
+
+  it("reraise reports a non-OK outcome as the verdict, with no plate", () => {
+    const x = run(["reraise", "LODASH", "false"], { STUB_SEALED: "1" });
+    expect(x.r.status).toBe(0);
+    expect(x.summary).toContain("Verdict: reraise: REJECTED_SEALED");
+    expect(x.summary).not.toContain("merge the pull request first");
+    expect(x.summary).not.toContain("```");
+  });
+
+  it("the plate leaves out stderr noise printed before the healed line", () => {
+    const x = run(["reraise", "LODASH", "false"], { STUB_HEALED: "LODASH" });
+    expect(x.summary).not.toContain("warning: before");
+    expect(readFileSync(join(x.d, "out", "plate.txt"), "utf8")).not.toContain("warning");
+  });
+
   it("a failing crypt command fails the script and the summary says so", () => {
     const x = run(["inquisit", "LODASH", "false"], { STUB_EXIT: "1" });
     expect(x.r.status).not.toBe(0);
@@ -128,6 +176,11 @@ describe("live-raid.yml", () => {
     expect(wf).toMatch(/^permissions:\n {2}contents: read\n/m);
     expect(wf).toMatch(/group: live-raid/);
     expect(wf.match(/secrets\.CRYPT_DEMO_TOKEN/g)).toHaveLength(1);
+    // The secret sits in the step named "Live raid" and nowhere else.
+    const steps = wf.split(/^ {6}- /m).slice(1);
+    const holders = steps.filter((s) => s.includes("secrets.CRYPT_DEMO_TOKEN"));
+    expect(holders).toHaveLength(1);
+    expect(holders[0]).toMatch(/^name: Live raid\n/);
     expect(wf).toContain("::add-mask::");
     expect(wf).not.toMatch(/\/merge|gh pr merge/);
   });
