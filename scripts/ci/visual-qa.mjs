@@ -238,6 +238,10 @@ async function checkJudge(browser, vp) {
     return { named, running: document.body.classList.contains("judge-running"), scrollW: document.documentElement.scrollWidth - document.documentElement.clientWidth };
   });
   const n = seen.named;
+  if (vp.w === 390) {
+    const y = await page.evaluate(() => document.getElementById("cmd").getBoundingClientRect().y + scrollY);
+    if (y > 1700) fail(tag, `the game input is ${Math.round(y)}px down in judge mode, over the 1700px limit`);
+  }
   if (!seen.running) fail(tag, "judge mode is not running at 30 s");
   if (!n["#judge-caption"]) fail(tag, "judge caption is not visible");
   if (!n["#judge-counter"] || !/findings/.test(n["#judge-counter"].text)) fail(tag, "findings badge is not visible at 30 s");
@@ -769,6 +773,11 @@ async function checkHero(browser, vp) {
     const hero = (await boxes(page, ["#hero"]))[0];
     if (vp.w === 390 && hero && hero.height > vp.h * 0.55) fail(tag, `the hero is ${Math.round(hero.height)}px tall, over 55% of the ${vp.h}px viewport`);
     if (vp.w === 390 && (!cmd || cmd.y > vp.h * 3)) fail(tag, `the game input is ${Math.round(cmd?.y ?? -1)}px down`);
+    if (vp.w === 390 && cmd && cmd.y > 1700) fail(tag, `the game input is ${Math.round(cmd.y)}px down, over the 1700px (two screens) limit`);
+    if (vp.w === 390) {
+      // R2: the problem line, Scan your repo and the scan input are on the first screen.
+      for (const b of await boxes(page, ["#hero-problem", "#hero-scan", "#paste-url"])) if (b.y + b.height > vp.h) fail(tag, `${b.name} ends at ${Math.round(b.y + b.height)}px, below the first screen (${vp.h}px)`);
+    }
     if (vp.w === 390 && cmd) {
       // The hero may push the game input at most one screen down: measure the input with the hero hidden, then shown.
       const without = await page.evaluate(() => { const h = document.getElementById("hero"); const old = h.style.display; h.style.display = "none"; const y = document.getElementById("cmd").getBoundingClientRect().y + scrollY; h.style.display = old; return y; });
