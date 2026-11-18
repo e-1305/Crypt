@@ -203,7 +203,7 @@ function drawBosses(scene) {
   const empty = scene.possessedOpen === 0;
   el.arenaEmpty.hidden = !empty;
   el.nights.textContent = String(scene.nights);
-  el.arenaNote.textContent = (run.mode === "simulated" ? "SIMULATED: the 48h SLA clock starts when this page loads. " : "") +
+  el.arenaNote.textContent = (run.mode === "simulated" ? "SIMULATED: the 48h SLA clock starts when this page loads. " : "LIVE: SLA counted from page load; detection time unknown. ") +
     (empty ? "" : "Heal each boss before its 48h SLA ends.");
 }
 

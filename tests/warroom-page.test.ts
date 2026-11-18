@@ -44,6 +44,15 @@ describe("war room page", () => {
     expect(js).toContain('method: "GET"');
   });
 
+  it("labels the SLA clock origin in both modes", () => {
+    expect(js).toContain("SIMULATED: the 48h SLA clock starts when this page loads.");
+    expect(js).toContain("LIVE: SLA counted from page load; detection time unknown.");
+  });
+
+  it("does not claim a rejection fade", () => {
+    expect(css).not.toMatch(/\.rejection\s*\{[^}]*transition/);
+  });
+
   it("honours reduced motion", () => {
     expect(css).toContain("prefers-reduced-motion: reduce");
     expect(js).toContain("prefers-reduced-motion: reduce");
