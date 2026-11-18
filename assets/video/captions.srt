@@ -1,0 +1,35 @@
+1
+00:00:00,000 --> 00:00:12,000
+Every app is a Frankenstein. CRYPT turns rotting parts into a game.
+
+2
+00:00:12,000 --> 00:00:22,000
+A real pull request. Merged by a person.
+
+3
+00:00:22,000 --> 00:00:40,000
+Census: 20 projects, 248 findings, 3 monsters. 0 possessed.
+
+4
+00:00:40,000 --> 00:01:05,000
+One command. Ranked by CISA KEV and EPSS. GRAFT opens the pull request.
+
+5
+00:01:05,000 --> 00:01:35,000
+CI red. The graft was rejected. The creature remains.
+
+6
+00:01:35,000 --> 00:01:55,000
+SEAL CRYPT blocks every graft. The refusal is logged.
+
+7
+00:01:55,000 --> 00:02:25,000
+Built with Kiro: specs, steering, hooks, MCP.
+
+8
+00:02:25,000 --> 00:02:45,000
+Download the playable report. Share the creature.
+
+9
+00:02:45,000 --> 00:03:00,000
+Own it. Without shame. Without losing control. Don't abandon your creature.
