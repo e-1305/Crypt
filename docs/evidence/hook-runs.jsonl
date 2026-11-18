@@ -3,3 +3,4 @@
 {"ts":"2026-11-18T11:39:22.144Z","hook":"blameless-copy-on-save","trigger":"manual","file":"web/copy.js","exit":0,"summary":"blameless-copy-check: ok (1 files checked)"}
 {"ts":"2026-11-18T11:39:22.247Z","hook":"attribution-on-package-save","trigger":"manual","file":"","exit":0,"summary":"deps-check: ok (8 dependencies attributed)"}
 {"ts":"2026-11-18T11:39:23.341Z","hook":"trace-on-tasks-save","trigger":"manual","file":"","exit":0,"summary":"trace-report: ok (187 table rows, run kiro-trace.ts --write to refresh docs/KIRO.md)"}
+{"ts":"2026-11-18T21:15:44.519Z","hook":"failsafe-guard-on-stop-cloud","trigger":"Stop","file":"","exit":0,"summary":"failsafe-check: ok (10 files checked)"}
