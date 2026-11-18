@@ -45,16 +45,33 @@ describe("collectTraction", () => {
     expect(bad.slice(0, 3).map((r) => r.value)).toEqual(["unavailable", "unavailable", "unavailable"]);
   });
 
-  it("uses code search only with a token and labels the count", async () => {
-    const rows = await collectTraction({
-      token: "t",
-      fetch: fake({
-        [NPM_URL]: () => reply(200, { downloads: 1 }),
-        [REPO_URL]: () => reply(200, { stargazers_count: 1, forks_count: 1 }),
-        "https://api.github.com/search/code": () => reply(200, { total_count: 5 }),
-      }),
-    });
-    expect(rows[3]!.value).toContain("5 workflow files");
+  it("uses code search only with a token, dedupes by repository and excludes the org", async () => {
+    const seen: { url: string; auth?: string | undefined }[] = [];
+    const f: Fetcher = async (url, init) => {
+      seen.push({ url, auth: init?.headers?.authorization });
+      if (url.startsWith(NPM_URL)) return reply(200, { downloads: 1 });
+      if (url.startsWith(REPO_URL)) return reply(200, { stargazers_count: 1, forks_count: 1 });
+      return reply(200, {
+        total_count: 3,
+        items: [{ repository: { full_name: "a/x" } }, { repository: { full_name: "A/x" } }, { repository: { full_name: "b/y" } }],
+      });
+    };
+    const rows = await collectTraction({ token: "t", fetch: f });
+    expect(rows[3]!.value).toBe("2 repositories (outside e-1305)");
+    const search = seen.find((s) => s.url.startsWith("https://api.github.com/search/code"))!;
+    expect(decodeURIComponent(search.url)).toContain("-org:e-1305");
+    expect(search.auth).toBe("Bearer t");
+    expect(seen.find((s) => s.url.startsWith(NPM_URL))!.auth).toBeUndefined();
+    const noTok = await collectTraction({ fetch: f });
+    expect(noTok[3]!.value).toMatch(/^not discoverable/);
+  });
+
+  it("labels a truncated code search as a lower bound and reports failures as unavailable", async () => {
+    const base = { [NPM_URL]: () => reply(200, { downloads: 1 }), [REPO_URL]: () => reply(200, { stargazers_count: 1, forks_count: 1 }) };
+    const more = await collectTraction({ token: "t", fetch: fake({ ...base, "https://api.github.com/search/code": () => reply(200, { total_count: 500, items: [{ repository: { full_name: "a/x" } }] }) }) });
+    expect(more[3]!.value).toBe("at least 1 repositories (outside e-1305)");
+    const bad = await collectTraction({ token: "t", fetch: fake({ ...base, "https://api.github.com/search/code": () => reply(403, { message: "rate" }) }) });
+    expect(bad[3]!.value).toBe("unavailable");
   });
 
   it("renders a table whose digits all come from the input", async () => {

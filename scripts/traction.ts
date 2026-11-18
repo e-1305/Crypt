@@ -1,10 +1,11 @@
 // npm run traction: print real adoption numbers as a markdown table. Never invents a number.
 // Each row is a value, "not published", "not discoverable" or "unavailable".
+import { pathToFileURL } from "node:url";
 import type { Fetcher } from "./github-client.js";
 
 export const NPM_URL = "https://api.npmjs.org/downloads/point/last-week/@e-1305/crypt";
 export const REPO_URL = "https://api.github.com/repos/e-1305/Crypt";
-export const CODE_SEARCH_URL = "https://api.github.com/search/code?q=%22e-1305%2FCrypt%22+path%3A.github%2Fworkflows&per_page=1";
+export const CODE_SEARCH_URL = "https://api.github.com/search/code?q=%22e-1305%2FCrypt%22+path%3A.github%2Fworkflows+-org%3Ae-1305&per_page=100";
 
 export interface TractionRow {
   measure: string;
@@ -15,7 +16,7 @@ export interface TractionRow {
 const UNAVAILABLE = "unavailable";
 
 async function getJson(f: Fetcher, url: string, headers?: Record<string, string>): Promise<{ status: number; ok: boolean; body: unknown }> {
-  const r = await f(url, { headers: { accept: "application/json", ...headers } });
+  const r = await f(url, { headers: { accept: "application/json", ...headers }, signal: AbortSignal.timeout(10_000) });
   let body: unknown = null;
   try {
     body = await r.json();
@@ -57,9 +58,16 @@ export async function collectTraction(o: { fetch?: Fetcher; token?: string } = {
     if (!o.token) return ["not discoverable (GitHub code search needs a token)"];
     const r = await getJson(f, CODE_SEARCH_URL, auth);
     if (!r.ok || !isObj(r.body)) return [UNAVAILABLE];
-    // total_count is workflow files, an upper bound on repositories; label it so.
-    const n = count(r.body.total_count);
-    return [n === UNAVAILABLE ? n : `${n} workflow files (not deduplicated by repository)`];
+    // Distinct repositories among the first 100 matching files, excluding the e-1305 org.
+    // More matches than one page means the figure is a lower bound.
+    if (!Array.isArray(r.body.items) || !Number.isInteger(r.body.total_count)) return [UNAVAILABLE];
+    const repos = new Set<string>();
+    for (const it of r.body.items) {
+      const name = isObj(it) && isObj(it.repository) ? it.repository.full_name : undefined;
+      if (typeof name === "string") repos.add(name.toLowerCase());
+    }
+    const more = (r.body.total_count as number) > r.body.items.length;
+    return [`${more ? "at least " : ""}${repos.size} repositories (outside e-1305)`];
   }, 1);
 
   return [
@@ -76,7 +84,7 @@ export function renderTraction(rows: TractionRow[], date: string): string {
   return lines.join("\n");
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const rows = await collectTraction({ token: process.env.GITHUB_TOKEN || undefined });
   console.log(renderTraction(rows, new Date().toISOString().slice(0, 10)));
 }
