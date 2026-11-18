@@ -5,7 +5,7 @@ export function wireCopy(button, source, say) {
     const text = source.textContent || "";
     try {
       await navigator.clipboard.writeText(text);
-      say("Copied: " + text);
+      say("Copied to the clipboard: " + text);
     } catch {
       const range = document.createRange();
       range.selectNodeContents(source);

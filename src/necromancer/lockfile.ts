@@ -139,6 +139,7 @@ export function overrideSpec(version: string): string {
   return `>=${version}`;
 }
 
+// npm reads the top-level "overrides" map of package.json, so a pinned fix for a nested dependency goes there.
 /** Sets overrides[name] in a parsed package.json. False when an existing entry would conflict. */
 export function setOverride(pkg: Json, name: string, version: string): boolean {
   const cur = pkg.overrides;

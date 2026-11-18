@@ -1,7 +1,7 @@
 {
   "name": "@e-1305/crypt",
   "version": "0.1.0",
-  "description": "CRYPT: your dependency tree as a Z-machine creature. One command (crypt raid) finds the rotting limbs and opens dry-run fix payloads.",
+  "description": "CRYPT: your dependency tree as a Z-machine creature. One command (crypt raid) finds the rotting limbs and prepares dry-run fix payloads.",
   "keywords": [
     "vulnerability",
     "dependencies",
