@@ -164,30 +164,27 @@ async function buildPayloads(
   const stamp = new Date(Date.parse(creature.feeds.epss.date ?? "") || 0);
   const payloads: DryRunPayload[] = [];
   const label = dryRunLabel(repo);
+  let rateLimited = false;
   for (let i = 0; i < Math.min(spawned.length, MAX_PAYLOADS); i++) {
     const l = spawned[i]!;
     const limb = ids[i]!;
     const noFix = (reason: string): DryRunPayload => ({ status: "no-fix", limb, name: l.name, from: l.version, reason });
-    const advisories: Advisory[] = [];
-    let missing = false;
-    for (const v of l.vulns) {
-      const a = await advisoryFor(f, v.id);
-      if (a === "rate-limited") {
-        notes.push("OSV rate limit reached while reading advisories; some dry-run payloads are missing. Wait a few minutes and paste the URL again.");
-        payloads.push(noFix("advisory could not be read (rate limit)"));
-        missing = true;
-        break;
-      }
-      if (a === null) {
-        missing = true;
-        break;
-      }
-      advisories.push(a);
-    }
-    if (missing) {
-      if (payloads.length <= i) payloads.push(noFix("advisory could not be read from OSV"));
+    if (rateLimited) {
+      payloads.push(noFix("advisory could not be read (rate limit)"));
       continue;
     }
+    const results = await Promise.all(l.vulns.map((v) => advisoryFor(f, v.id)));
+    if (results.includes("rate-limited")) {
+      rateLimited = true;
+      notes.push("OSV rate limit reached while reading advisories; some dry-run payloads are missing. Wait a few minutes and paste the URL again.");
+      payloads.push(noFix("advisory could not be read (rate limit)"));
+      continue;
+    }
+    if (results.includes(null)) {
+      payloads.push(noFix("advisory could not be read from OSV"));
+      continue;
+    }
+    const advisories = results as Advisory[];
     const choice = chooseVersion(l.ecosystem, l.name, l.version, advisories);
     if (!choice) {
       payloads.push(noFix("no single fixed version could be chosen from the OSV ranges"));

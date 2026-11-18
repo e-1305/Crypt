@@ -127,7 +127,7 @@ export function initPaste({ announce, gallery = [], fetchFn = (...a) => fetch(..
     result.hidden = true;
     result.textContent = "";
     $("paste-go").disabled = true;
-    status.textContent = "Reading " + ref.owner + "/" + ref.repo + ": lockfile, then OSV and the KEV and EPSS snapshot. About 10 seconds.";
+    status.textContent = "Reading " + ref.owner + "/" + ref.repo + ": lockfile, then OSV and the KEV and EPSS snapshot. Large lockfiles can take 30 seconds or more.";
     announce(status.textContent);
     try {
       const feeds = await loadFeeds(fetchFn);
