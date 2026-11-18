@@ -274,6 +274,7 @@ body.record .theatre-caption { display: none; }
   body:not(.theatre) #raid { order: 3; margin: 1rem; }
   body:not(.theatre) #sim { order: 4; margin: 0 1rem 1rem; }
   body:not(.theatre) .side > .pane { order: 5; margin: 0 1rem 1rem; }
+  body:not(.theatre) #proof { order: 6; margin: 0 1rem 1rem; }
   body:not(.theatre)::after { display: none; }
   body:not(.theatre) .plate { overflow-x: auto; max-width: 100%; }
   body:not(.theatre) .transcript { height: 12rem; }
