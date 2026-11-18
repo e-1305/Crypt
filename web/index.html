@@ -12,25 +12,96 @@
 <body>
 <a class="skip" href="#cmd">Skip to the game input</a>
 <p id="theatre-caption" class="theatre-caption" aria-hidden="true" title="CRYPT: Each vulnerable dependency is a limb on a creature, and you heal it by typing GRAFT, which writes a fix pull request for a human to review and land."><strong>CRYPT</strong> Each vulnerable dependency is a limb on a creature, and you heal it by typing GRAFT, which writes a fix pull request for a human to review and land.</p>
-<div class="toolbar">
-  <button id="sound-toggle" class="sound-toggle" type="button" aria-pressed="false">Sound: off</button>
-  <button id="record-toggle" class="record-toggle" type="button" aria-pressed="false" aria-label="Recording mode: hide the page controls for screen capture">Recording mode</button>
-</div>
-<p class="view-3d-row"><a id="view-3d" class="view-3d" href="?theatre=3d" hidden>View the 3D bench</a></p>
 <header class="top">
   <div class="intro">
     <h1>CRYPT</h1>
     <p class="subtitle">The first vulnerability report you can play</p>
     <p class="pitch" id="pitch">Each vulnerable dependency is a limb on a creature, and you heal it by typing GRAFT, which writes a fix pull request for a human to review and land.</p>
-    <p class="install"><span class="install-label">Try it on your own repo:</span>
-      <code id="install-cmd">npx @e-1305/crypt raid &lt;path-or-github-url&gt;</code>
-      <button id="install-copy" type="button" data-copy-target="install-cmd">Copy command</button></p>
-    <p class="built-with"><a id="kiro-link" href="manual.html#how-it-works">Built with Kiro: specs, steering and hooks</a></p>
   </div>
   <a class="manual-link" id="manual-link" href="manual.html" target="_blank" rel="noopener" aria-label="How to play (manual), opens in a new tab">How to play (manual)</a>
   <button id="hc-toggle" type="button" aria-pressed="false" aria-describedby="hc-help">High-contrast reader mode</button>
   <span id="hc-help" class="sr-only">Plain text, no effects, game events announced.</span>
 </header>
+<section id="paste" class="paste" aria-label="Paste your GitHub repo">
+  <button id="paste-open" class="primary" type="button" aria-expanded="false" aria-controls="paste-form">Paste your GitHub repo</button>
+  <form id="paste-form" class="paste-form" autocomplete="off" hidden>
+    <label for="paste-url">GitHub address (public repo with a package-lock.json)</label>
+    <input id="paste-url" type="text" spellcheck="false" autocapitalize="off" placeholder="https://github.com/owner/repo">
+    <button id="paste-go" type="submit">Meet its creature</button>
+  </form>
+  <p id="paste-status" class="muted" role="status"></p>
+  <div id="paste-result" class="paste-result" hidden></div>
+</section>
+<section id="bench" class="bench" aria-label="Bench">
+  <button id="bench-toggle" class="bench-toggle" type="button" aria-expanded="false" aria-controls="bench-body">Bench</button>
+  <div id="bench-body" class="bench-body">
+    <p class="muted bench-note">The Bench holds the raid, trophies, ranks, Simulated CI, the gallery, sound and recording mode.</p>
+    <div class="toolbar">
+      <button id="sound-toggle" class="sound-toggle" type="button" aria-pressed="false">Sound: off</button>
+      <button id="record-toggle" class="record-toggle" type="button" aria-pressed="false" aria-label="Recording mode: hide the page controls for screen capture">Recording mode</button>
+    </div>
+    <p class="view-3d-row"><a id="view-3d" class="view-3d" href="?theatre=3d" hidden>View the 3D bench</a></p>
+    <p class="install bench-extra"><span class="install-label">Try it on your own repo:</span>
+      <code id="install-cmd">npx @e-1305/crypt raid &lt;path-or-github-url&gt;</code>
+      <button id="install-copy" type="button" data-copy-target="install-cmd">Copy command</button></p>
+    <p class="built-with bench-extra"><a id="kiro-link" href="manual.html#how-it-works">Built with Kiro: specs, steering and hooks</a></p>
+  <section id="raid" class="pane raid" aria-labelledby="raid-h">
+    <h2 id="raid-h">The raid</h2>
+    <div id="raid-readout" class="raid-readout">
+      <p>Time left: <span id="raid-timer">15:00</span></p>
+      <p id="raid-state">Ready. Start the raid when the team is together.</p>
+      <p id="raid-score">Team risk removed: 0.00</p>
+      <p id="raid-rank">Rank: Apprentice</p>
+      <p id="raid-nights">Nights Without Possession: 0</p>
+      <p id="raid-praise"></p>
+      <div class="raid-hud">
+        <p class="raid-big">Risk removed <span id="raid-counter" aria-hidden="true">0.00</span> <span id="raid-pop" class="raid-pop" aria-hidden="true"></span></p>
+        <p><span id="raid-heart" class="raid-heart" aria-hidden="true">&hearts;</span>
+          <span id="raid-health" class="raid-health" role="progressbar" aria-label="Creature health" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><span class="raid-health-fill"></span></span></p>
+        <p id="raid-vitals">Creature health 100 of 100. Heartbeat 50 beats per minute.</p>
+        <p id="raid-vitals-note" class="muted">Creature health falls with every unhealed limb, weighted by risk.</p>
+        <p id="raid-next">Next rank: Surgeon in 3 heals.</p>
+        <p id="raid-combo" class="raid-chip">Combo: none. Heal two limbs within 90 seconds to start a chain.</p>
+        <p id="raid-boss" class="raid-boss" hidden></p>
+        <p id="raid-pressure-text">Possession spread: 0 percent. Heal the next limb.</p>
+        <p><span id="raid-pressure" class="raid-pressure" role="progressbar" aria-label="Possession spread" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="raid-pressure-fill"></span></span></p>
+        <p id="raid-warning" class="raid-boss" hidden></p>
+        <p id="raid-grade"></p>
+        <p id="raid-shelf">Trophies 0 of 6</p>
+        <ul id="raid-trophies" class="raid-trophies" aria-label="Team trophies"></ul>
+      </div>
+      <p id="raid-card"></p>
+      <p id="raid-epitaph"></p>
+    </div>
+    <div id="raid-actions" class="raid-actions">
+      <button id="raid-start" type="button">Start the 15 minute raid</button>
+      <button id="raid-download" type="button" hidden>Download the raid card (PNG)</button>
+    </div>
+    <p class="muted">Type RAID in the game input to start as well.</p>
+  </section>
+  <section id="sim" class="pane sim" aria-labelledby="sim-h">
+    <h2 id="sim-h">Simulated CI</h2>
+    <p class="muted">Replays a dry-run graft for the first sick limb. No token, no network, nothing real changes.</p>
+    <div class="raid-actions">
+      <button id="sim-green" type="button">Simulate CI: green</button>
+      <button id="sim-red" type="button">Simulate CI: red</button>
+    </div>
+    <p id="sim-label" class="sim-label" hidden></p>
+  </section>
+  <nav id="gallery" class="pane" aria-labelledby="gallery-h">
+        <h2 id="gallery-h">Gallery</h2>
+        <p class="muted">Twenty public projects, each scanned at a pinned commit. Each creature shows only its own project's packages, listed alphabetically.</p>
+        <p><a id="demo-link" href="./">The demo creature</a></p>
+        <form id="lookup-form" autocomplete="off">
+          <label for="lookup">Open a project by its GitHub address</label>
+          <input id="lookup" type="text" spellcheck="false" placeholder="https://github.com/owner/repo">
+          <button type="submit">Open</button>
+        </form>
+        <p id="lookup-status" class="muted" role="status"></p>
+        <ul id="gallery-list" class="gallery-list"></ul>
+      </nav>
+  </div>
+</section>
 <p id="seal-badge" class="seal-badge" role="status" hidden>SEALED: no graft will run. <button id="unseal" type="button">Unseal</button></p>
 <p id="daily-banner" class="daily-banner" role="region" aria-label="Daily event"></p>
 <section id="tutorial" class="pane tutorial" aria-labelledby="tutorial-progress" hidden>
@@ -75,63 +146,8 @@
       <p id="payload-note" class="muted">Grafts here are rehearsals. GRAFT a limb to read the pull request it would open. Nothing leaves this page.</p>
       <pre id="payload" class="payload" tabindex="0"></pre>
     </section>
-    <nav class="pane" aria-labelledby="gallery-h">
-      <h2 id="gallery-h">Gallery</h2>
-      <p class="muted">Twenty public projects, each scanned at a pinned commit. Each creature shows only its own project's packages, listed alphabetically.</p>
-      <p><a id="demo-link" href="./">The demo creature</a></p>
-      <form id="lookup-form" autocomplete="off">
-        <label for="lookup">Open a project by its GitHub address</label>
-        <input id="lookup" type="text" spellcheck="false" placeholder="https://github.com/owner/repo">
-        <button type="submit">Open</button>
-      </form>
-      <p id="lookup-status" class="muted" role="status"></p>
-      <ul id="gallery-list" class="gallery-list"></ul>
-    </nav>
   </aside>
 </main>
-<section id="raid" class="pane raid" aria-labelledby="raid-h">
-  <h2 id="raid-h">The raid</h2>
-  <div id="raid-readout" class="raid-readout">
-    <p>Time left: <span id="raid-timer">15:00</span></p>
-    <p id="raid-state">Ready. Start the raid when the team is together.</p>
-    <p id="raid-score">Team risk removed: 0.00</p>
-    <p id="raid-rank">Rank: Apprentice</p>
-    <p id="raid-nights">Nights Without Possession: 0</p>
-    <p id="raid-praise"></p>
-    <div class="raid-hud">
-      <p class="raid-big">Risk removed <span id="raid-counter" aria-hidden="true">0.00</span> <span id="raid-pop" class="raid-pop" aria-hidden="true"></span></p>
-      <p><span id="raid-heart" class="raid-heart" aria-hidden="true">&hearts;</span>
-        <span id="raid-health" class="raid-health" role="progressbar" aria-label="Creature health" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><span class="raid-health-fill"></span></span></p>
-      <p id="raid-vitals">Creature health 100 of 100. Heartbeat 50 beats per minute.</p>
-      <p id="raid-vitals-note" class="muted">Creature health falls with every unhealed limb, weighted by risk.</p>
-      <p id="raid-next">Next rank: Surgeon in 3 heals.</p>
-      <p id="raid-combo" class="raid-chip">Combo: none. Heal two limbs within 90 seconds to start a chain.</p>
-      <p id="raid-boss" class="raid-boss" hidden></p>
-      <p id="raid-pressure-text">Possession spread: 0 percent. Heal the next limb.</p>
-      <p><span id="raid-pressure" class="raid-pressure" role="progressbar" aria-label="Possession spread" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="raid-pressure-fill"></span></span></p>
-      <p id="raid-warning" class="raid-boss" hidden></p>
-      <p id="raid-grade"></p>
-      <p id="raid-shelf">Trophies 0 of 6</p>
-      <ul id="raid-trophies" class="raid-trophies" aria-label="Team trophies"></ul>
-    </div>
-    <p id="raid-card"></p>
-    <p id="raid-epitaph"></p>
-  </div>
-  <div id="raid-actions" class="raid-actions">
-    <button id="raid-start" type="button">Start the 15 minute raid</button>
-    <button id="raid-download" type="button" hidden>Download the raid card (PNG)</button>
-  </div>
-  <p class="muted">Type RAID in the game input to start as well.</p>
-</section>
-<section id="sim" class="pane sim" aria-labelledby="sim-h">
-  <h2 id="sim-h">Simulated CI</h2>
-  <p class="muted">Replays a dry-run graft for the first sick limb. No token, no network, nothing real changes.</p>
-  <div class="raid-actions">
-    <button id="sim-green" type="button">Simulate CI: green</button>
-    <button id="sim-red" type="button">Simulate CI: red</button>
-  </div>
-  <p id="sim-label" class="sim-label" hidden></p>
-</section>
 <div id="announcer" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
 <script src="vendor/zvm.min.js"></script>
 <script type="module" src="app.js"></script>

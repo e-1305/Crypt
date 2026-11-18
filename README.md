@@ -15,6 +15,10 @@ npx @e-1305/crypt raid <path-or-github-url>     # dry run by default: nothing is
 npm ci && npx --no-install crypt raid fixtures/vulnerable-npm --offline     # from a checkout, no network after the first toolchain build
 ```
 
+On the live demo the first screen is the creature plate, the CRT, the pitch and one button, "Paste your GitHub repo": paste a public npm repo and meet its creature in the browser, with dry-run pull request payloads (npm `package-lock.json` only). The raid, Simulated CI, gallery and recording mode sit in the Bench drawer.
+
+![Paste your repo: the creature, ranked limbs and dry-run payloads for a real public repo](docs/img/paste-your-repo.png)
+
 The package is not published to npm yet, so use the checkout form until it is.
 
 ![The CRYPT bench: the creature plate, the game on the CRT and the simulated CI buttons](docs/img/bench-3d.png)

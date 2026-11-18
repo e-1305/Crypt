@@ -50,6 +50,7 @@ export function makeDrawer() {
     toggle.setAttribute("aria-expanded", String(open));
     body.hidden = !open;
     root.classList.toggle("open", open);
+    document.body.classList.toggle("drawer-open", open);
     if (open) dl.focus();
     else toggle.focus();
     root.dispatchEvent(new CustomEvent("drawer", { detail: { open } }));
@@ -80,6 +81,7 @@ export function makeDrawer() {
     onChange: (fn) => on(root, "drawer", (e) => fn(e.detail.open)),
     dispose() {
       obs.disconnect();
+      document.body.classList.remove("drawer-open");
       for (const [t, ev, fn] of listeners) t.removeEventListener(ev, fn);
       root.remove();
     },

@@ -13,8 +13,8 @@ const limbId = fc.stringMatching(/^[A-Z]{1,32}$/);
 const done = fc.array(fc.boolean(), { maxLength: tutorialSteps.length });
 
 describe("tutorial", () => {
-  it("has the five steps in order", () => {
-    expect(tutorialSteps.map((s) => s.id)).toEqual(["look", "examine", "assign", "graft", "ci", "seal", "review"]);
+  it("has three steps in order", () => {
+    expect(tutorialSteps.map((s) => s.id)).toEqual(["look", "graft", "ci"]);
   });
 
   it("every suggested command is accepted by the strict grammar parser", () => {
@@ -22,7 +22,6 @@ describe("tutorial", () => {
       for (const s of tutorialSteps) {
         const c = tutorialCommand(s, id);
         if (s.command === null) expect(c).toBeNull();
-        else if (s.event === "seal-refused") expect(parseCommand(c)).toMatchObject({ ok: true, verb: "SEAL" });
         else expect(parseCommand(c)).toEqual({ ok: true, verb: s.verb, limb: id });
       }
     }), { numRuns: runs });
@@ -34,14 +33,13 @@ describe("tutorial", () => {
     }
   });
 
-  it("every hint that names a command is a parser-accepted command, and only the seal step suggests SEAL", () => {
+  it("every hint that names a command is a parser-accepted command, and no step suggests SEAL", () => {
     fc.assert(fc.property(done, fc.integer({ min: IDLE_HINT_MS, max: 100_000 }), limbId, (d, idle, id) => {
       const h = nextHint(d, idle, id);
       if (h === null) return;
       const m = /^Hint: type ([A-Z]+ [A-Z]+) and press Enter\.$/.exec(h);
       if (m) expect(parseCommand(m[1]).ok).toBe(true);
-      // Only the seal step names SEAL, and it is the first unfinished step when it does.
-      if (/SEAL/.test(h)) expect(tutorialSteps[d.concat(Array(tutorialSteps.length).fill(false)).slice(0, tutorialSteps.length).findIndex((x) => x !== true)]!.id).toBe("seal");
+      expect(h).not.toMatch(/SEAL/);
     }), { numRuns: runs });
   });
 

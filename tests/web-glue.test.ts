@@ -85,7 +85,7 @@ function fakeDom(search = "") {
 beforeAll(() => {
   tmp = mkdtempSync(join(tmpdir(), "crypt-glue-"));
   cpSync(join(ROOT, "web", "theatre"), join(tmp, "theatre"), { recursive: true });
-  for (const f of ["app.js", "raid.js", "heal.js", "onboarding.js", "copy.js"]) cpSync(join(ROOT, "web", f), join(tmp, f));
+  for (const f of ["app.js", "raid.js", "heal.js", "onboarding.js", "copy.js", "live-exhume.js"]) cpSync(join(ROOT, "web", f), join(tmp, f));
   writeFileSync(join(tmp, "package.json"), '{"type":"module"}');
   const r = spawnSync("npx", ["tsc", "-p", "tsconfig.web.json", "--outDir", join(tmp, "js")], { cwd: ROOT, encoding: "utf8" });
   if (r.status !== 0) throw new Error(r.stdout + r.stderr);
@@ -319,33 +319,22 @@ describe("web/app.js", () => {
     await flush();
     expect(el("daily-banner").textContent).toMatch(/^Today in the crypt: /);
     expect(el("tutorial").hidden).toBe(false);
-    expect(el("tutorial-progress").textContent).toBe("Getting started, step 1 of 7");
+    expect(el("tutorial-progress").textContent).toBe("Getting started, step 1 of 3");
     expect(el("tutorial-command").textContent).toBe("");
     el("tutorial-next").click();
-    expect(el("tutorial-command").textContent).toBe("Type: EXAMINE JQUERY");
-    glkOf!.glk_put_jstring("[[CRYPT EXAMINE JQUERY]]\nA rotting limb.\n");
-    expect(el("tutorial-command").textContent).toBe("Type: ASSIGN JQUERY");
-    // A verb the strip is not waiting for does not finish a step.
-    glkOf!.glk_put_jstring("[[CRYPT GRAFT JQUERY]]\n");
-    expect(el("tutorial-command").textContent).toBe("Type: ASSIGN JQUERY");
-    glkOf!.glk_put_jstring("[[CRYPT ASSIGN JQUERY]]\n");
     expect(el("tutorial-command").textContent).toBe("Type: GRAFT JQUERY");
     expect(el("tutorial-step").textContent).toContain("yourself");
+    // A verb the strip is not waiting for does not finish a step.
+    glkOf!.glk_put_jstring("[[CRYPT EXAMINE JQUERY]]\nA rotting limb.\n");
+    expect(el("tutorial-command").textContent).toBe("Type: GRAFT JQUERY");
     // No tutorial code path submits input: the command row is still empty and the payload stays unread.
     expect(el("cmd").value).toBe("");
     glkOf!.glk_put_jstring("[[CRYPT GRAFT JQUERY]]\n");
-    // The next two steps finish on page events: the simulated CI going green, then a graft refused by the seal.
+    // The last step finishes on a page event: the simulated CI going green.
     expect(el("tutorial-step").textContent).toContain("Simulate CI: green");
     expect(el("tutorial-next").hidden).toBe(true);
     el("sim-green").click();
     await new Promise((r) => setTimeout(r, 1400));
-    expect(el("tutorial-command").textContent).toBe("Type: SEAL CRYPT");
-    expect(el("tutorial-step").textContent).toContain("GRAFT JQUERY");
-    glkOf!.glk_put_jstring("[[CRYPT SEAL]]\n");
-    expect(el("seal-badge").hidden).toBe(false);
-    glkOf!.glk_put_jstring("[[CRYPT GRAFT JQUERY]]\n");
-    expect(el("tutorial-step").textContent).toContain("waits for a human");
-    el("tutorial-next").click();
     expect(el("tutorial").hidden).toBe(true);
   });
 
@@ -388,7 +377,7 @@ describe("web/app.js", () => {
     expect(el("tutorial-hint").textContent).toBe("");
     t += 1;
     vi.advanceTimersByTime(1000);
-    expect(el("tutorial-hint").textContent).toBe("Hint: type EXAMINE JQUERY and press Enter.");
+    expect(el("tutorial-hint").textContent).toBe("Hint: type GRAFT JQUERY and press Enter.");
     vi.useRealTimers();
   });
 
@@ -399,14 +388,13 @@ describe("web/app.js", () => {
     const said: string[] = [];
     const ob = initOnboarding({ store: { get: (k: string) => m.get(k) ?? null, set: (k: string, v: unknown) => void m.set(k, v) }, announce: (t: string) => said.push(t), now: () => 1 });
     ob.setLimb("JQUERY");
-    expect(el("tutorial-progress").textContent).toBe("Getting started, step 1 of 7");
+    expect(el("tutorial-progress").textContent).toBe("Getting started, step 1 of 3");
     ob.signal("ci-green");
-    expect(el("tutorial-progress").textContent).toBe("Getting started, step 6 of 7");
-    expect(el("tutorial-step").textContent).toContain("Type SEAL CRYPT");
-    expect(said.at(-1)).toContain("Step done. Next:");
+    expect(el("tutorial").hidden).toBe(true);
+    expect(said.at(-1)).toContain("Getting started complete");
     // A signal for a step that is already done changes nothing.
     ob.signal("ci-green");
-    expect(el("tutorial-progress").textContent).toBe("Getting started, step 6 of 7");
+    expect(el("tutorial").hidden).toBe(true);
   });
 
   it("the Try chip only fills the command box and announces it", async () => {
