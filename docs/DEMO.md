@@ -227,4 +227,5 @@ Before the take: clear site data for the page (`localStorage` remembers healed l
 - A red CI is recorded by the Inquisitor on the limb in `out/creature.json` (`ciVerdict: "red"`, `ciPr`). The page shows the convulse effect once per PR when `game/<id>.json` carries it. `game/<id>.json` is built by `npm run build:site`, so a live page needs that file regenerated from `out/creature.json` after the Inquisitor runs.
 - Praise lines read `healedBy` on a limb. reraise writes it (a cleaned GitHub login, praise only) from the PR the human landed. It is empty when the API does not name anyone.
 - The Inquisitor writes `status: "awaiting-human-merge"` on the limb in `out/creature.json` when CI is green, and reraise clears it when the limb heals. The score counts it once `game/<id>.json` is regenerated.
+- The raid command writes `team.scanStart` (epoch ms) in `out/creature.json` and keeps it on re-raids. `game/<id>.json` carries it, so the scan start is shared. It holds no person data.
 - Risk removed and Nights Without Possession are per browser (they are remembered in localStorage), not shared team numbers. The counter starts at the browser's first visit.
