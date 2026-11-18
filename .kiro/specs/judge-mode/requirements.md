@@ -11,7 +11,7 @@ The demo SHALL use the real game and real page components. No video file.
 3. 12 to 22 s: `EXAMINE JQUERY` is typed into the command box at a human cadence and submitted. The game answers.
 4. 22 to 32 s: `GRAFT JQUERY` is typed and submitted. The dry-run payload panel slides in (jquery 3.4.1 to 3.5.0, owner @e-1305, "a human merges").
 5. 32 to 40 s: the page's own Simulated CI (green) runs. The caption says **simulated**. The limb heals on the plate with the heal effect.
-6. 40 to 45 s: caption "Real PRs, real CI, a human always merges. Your turn." The command box gets focus.
+6. 40 to 45 s: caption "This page is a rehearsal. The CLI opens real PRs, CI checks them, a person merges. Your turn." The command box gets focus.
 
 ## J2 Control
 1. The Skip button SHALL be visible from second 0. Any keypress (not a lone modifier), any click and `Esc` SHALL skip. Skipping hands over at once and leaves the page usable.

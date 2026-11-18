@@ -8,6 +8,13 @@ Tagline (149 chars, limit 200): The first vulnerability report you can play. A 1
 - Demo repo: https://github.com/e-1305/crypt-demo
 - Video: TODO add URL after upload (shot list in [DEMO.md](DEMO.md), pitch in [PITCH.md](PITCH.md))
 
+## Who uses it and who pays
+Users: vulnerability management / VOC teams, AppSec, OSS maintainers. Opinion: the buyer is the security org that owns remediation SLAs. CRYPT is free today and no market size is claimed. The wedge, from the [census](census/RESULTS.md): 84.7% of limbs have no CODEOWNERS owner, and 95.2% of findings were filtered as noise. Hard to copy (opinion): the human-in-the-loop trust model enforced in code and CI, deterministic ranking, and the playable report. Details and sources: [WHO-PAYS.md](WHO-PAYS.md).
+
+## Proof on a real repository
+- [crypt-demo PR #1](https://github.com/e-1305/crypt-demo/pull/1): lodash 4.17.15 to 4.18.1, opened by CRYPT, CI green, merged by a human.
+- [crypt-demo PR #2](https://github.com/e-1305/crypt-demo/pull/2): sabotage, CI red, rejected and closed.
+
 ## Inspiration
 Every app is a Frankenstein of strangers' code. Scanners print a list that nobody reads. We wanted the list to be something you play, with a safety story a security team can accept.
 
