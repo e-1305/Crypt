@@ -15,7 +15,7 @@ Generated 2026-11-18 (UTC).
 | Steering files | 6 | `.kiro/steering/*.md` |
 | Custom agents | 2 | `.kiro/agents/*.json` (Oracle has no file) |
 | Property test call sites | 296 in 38 files | `fc.assert`, `fc.property`, `fc.asyncProperty`, `test.prop` in `tests/*.test.ts` |
-| Tests | 917 passed, 4 skipped | `npx vitest run --reporter=json` (numPassedTests, numPendingTests) |
+| Tests | 921 passed, 0 skipped | `npx vitest run --reporter=json` (numPassedTests, numPendingTests) |
 | Test files | 59 | `npx vitest run --reporter=json` (testResults) |
 | PRs | 56 | unique `#N` in landing-commit subjects of `git log` (`pull request #N` or `PR #N`); `(#N)` suffixes are issues and are not counted; `gh` is not used |
 <!-- kiro-stats:end -->

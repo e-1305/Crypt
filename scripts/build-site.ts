@@ -12,6 +12,7 @@ import { dryRunClient } from "../src/github/client.js";
 import { graft } from "../src/necromancer/index.js";
 import { galleryIndex, previewPayload, type GalleryIndexEntry, type GallerySnapshot, type PayloadPreview } from "../src/site/gallery.js";
 import { renderManual } from "../src/site/manual.js";
+import { fromSnapshot, serializeGraveyard } from "../src/graveyard/model.js";
 import { parseEpss, parseKev } from "../src/exhume/feeds.js";
 import { serializeFeedSnapshot, SNAPSHOT_MIN_EPSS } from "../src/web/feed-snapshot.js";
 import { raiseCreature } from "./compile.js";
@@ -20,6 +21,8 @@ import { fixtureAdvisories } from "./osv-advisory.js";
 const ROOT = resolve(import.meta.dirname, "..");
 const WEB = join(ROOT, "web");
 const FIXTURE = join(ROOT, "fixtures", "vulnerable-npm");
+/** Fixed scan time of the census graveyard (the census snapshot date), so the build is byte-identical and offline. */
+const CENSUS_SCANNED_AT = Date.UTC(2025, 10, 1);
 /** The committed snapshot of e-1305/crypt-demo at a pinned commit (SNAPSHOT.json records the SHA). */
 const DEMO = join(ROOT, "fixtures", "crypt-demo");
 
@@ -143,6 +146,14 @@ export async function buildSite(outDir: string): Promise<void> {
         return out;
       })(join(snapDir, f));
     }
+    // The graveyard page (D1) and its offline census data: each repo's own public snapshot, owners dropped, no network.
+    cpSync(join(WEB, "graveyard"), join(outDir, "graveyard"), { recursive: true });
+    const records = readdirSync(snapDir)
+      .filter((n) => n.endsWith(".json"))
+      .sort()
+      .map((n) => fromSnapshot(JSON.parse(readFileSync(join(snapDir, n), "utf8")), CENSUS_SCANNED_AT))
+      .filter((r) => r !== null);
+    writeFileSync(join(outDir, "graveyard", "census.json"), serializeGraveyard({ source: "census", repos: records }));
     writeFileSync(join(gameDir, "index.json"), JSON.stringify(galleryIndex(index)));
     console.log(`site: wrote ${outDir} (demo + ${index.length} gallery creatures)`);
   } finally {

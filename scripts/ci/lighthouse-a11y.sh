@@ -13,12 +13,15 @@ for _ in $(seq 1 50); do
 done
 curl -sf "http://127.0.0.1:$port/" >/dev/null || { echo "static server did not start" >&2; exit 1; }
 mkdir -p out/visual-qa
-npx --yes lighthouse@13.6.0 "http://127.0.0.1:$port/?theatre=2d" \
-  --only-categories=accessibility --output=json --output-path=out/visual-qa/lighthouse.json \
-  --chrome-flags="--headless --no-sandbox --disable-gpu --disable-dev-shm-usage" --quiet
-node -e '
-const r = JSON.parse(require("fs").readFileSync("out/visual-qa/lighthouse.json", "utf8"));
+for page in "?theatre=2d" "graveyard/graveyard.html"; do
+  name=$(echo "$page" | tr -c 'a-zA-Z0-9\n' '-')
+  npx --yes lighthouse@13.6.0 "http://127.0.0.1:$port/$page" \
+    --only-categories=accessibility --output=json --output-path="out/visual-qa/lighthouse-$name.json" \
+    --chrome-flags="--headless --no-sandbox --disable-gpu --disable-dev-shm-usage" --quiet
+  LH="out/visual-qa/lighthouse-$name.json" node -e '
+const r = JSON.parse(require("fs").readFileSync(process.env.LH, "utf8"));
 const s = r.categories.accessibility.score;
-console.log("Lighthouse accessibility:", s);
+console.log("Lighthouse accessibility:", r.finalDisplayedUrl || "", s);
 for (const a of Object.values(r.audits)) if (a.score === 0) console.log("  failing:", a.id, a.title);
 if (s < 0.95) process.exit(1);'
+done

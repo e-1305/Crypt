@@ -21,8 +21,8 @@ const imgDir = join(root, "docs", "img");
 const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".woff2": "font/woff2", ".txt": "text/plain" };
 
 // The first screen: one primary button, the CRT input and the page links. The Bench drawer controls are checked with the drawer open.
-const CONTROLS = ["#paste-open", "#bench-toggle", "#hc-toggle", "#cmd", "#try-chip", "#download", "#manual-link"];
-const BENCH_CONTROLS = ["#sim-green", "#sim-red", "#raid-start", "#sound-toggle", "#record-toggle", "#view-3d", "#install-copy", "#lookup", "#kiro-link"];
+const CONTROLS = ["#paste-open", "#bench-toggle", "#hc-toggle", "#cmd", "#try-chip", "#download", "#manual-link", "#landing-graveyard"];
+const BENCH_CONTROLS = ["#sim-green", "#sim-red", "#raid-start", "#sound-toggle", "#record-toggle", "#view-3d", "#install-copy", "#lookup", "#kiro-link", "#graveyard-link"];
 // Fixed-position elements checked on the 3D bench. The caption is pointer-events:none, so it is listed by name.
 const CAPTION = "#theatre-caption";
 const RAID_STATS = ["#raid-nights", "#raid-vitals", "#raid-health"];
@@ -155,13 +155,13 @@ async function check(browser, vp, query) {
     await page.click("#bench-toggle");
     const open = present(tag, await boxes(page, BENCH_CONTROLS));
     for (const [a, b] of findOverlaps([...present(tag, await boxes(page, CONTROLS)), ...open])) fail(tag, `controls overlap with the Bench open: ${a} and ${b}`);
-    if (vp.w < 900) for (const b of open) if (b.height < TAP_MIN && b.name !== "#install-copy" && b.name !== "#kiro-link") fail(tag, `tap target ${b.name} is ${Math.round(b.height)}px tall, under ${TAP_MIN}`);
+    if (vp.w < 900) for (const b of open) if (b.height < TAP_MIN && b.name !== "#install-copy" && b.name !== "#kiro-link" && b.name !== "#graveyard-link") fail(tag, `tap target ${b.name} is ${Math.round(b.height)}px tall, under ${TAP_MIN}`);
     const stats2 = present(tag, await boxes(page, RAID_STATS));
     for (const [a, b] of findOverlaps(stats2)) fail(tag, `raid stats overlap: ${a} and ${b}`);
     await page.click("#bench-toggle");
   } else {
     await page.click("#bench-drawer-toggle");
-    const open = present(tag, await boxes(page, BENCH_CONTROLS.filter((c) => c !== "#view-3d" && c !== "#lookup" && c !== "#install-copy" && c !== "#kiro-link")));
+    const open = present(tag, await boxes(page, BENCH_CONTROLS.filter((c) => c !== "#view-3d" && c !== "#lookup" && c !== "#install-copy" && c !== "#kiro-link" && c !== "#graveyard-link")));
     for (const [a, b] of findOverlaps(open)) fail(tag, `controls overlap with the Bench open: ${a} and ${b}`);
     const fixedOpen = await fixedBoxes(page, vp.w, vp.h);
     for (const [a, b] of findOverlaps(fixedOpen)) fail(tag, `fixed elements overlap with the Bench open: ${a} and ${b}`);
@@ -384,6 +384,112 @@ async function checkImport(browser, vp) {
   await ctx.close();
 }
 
+// The Graveyard (issue #111): census mode is offline. Scene, tomb buttons, screen reader table, tooltip, panel, recording mode and list fallback.
+const GY_CONTROLS = ["#load-census", "#view-toggle", "#record-on", "#scan", "#repos", "#sort", "#filter-sla", "#filter-owner"];
+
+async function checkGraveyard(browser, vp) {
+  const tag = `${vp.w}x${vp.h} graveyard`;
+  const ctx = await browser.newContext({ viewport: { width: vp.w, height: vp.h }, hasTouch: vp.touch, isMobile: vp.touch });
+  const page = await ctx.newPage();
+  const origin = new URL(base).origin;
+  const outside = [];
+  page.on("request", (r) => { if (!r.url().startsWith(origin) && !r.url().startsWith("data:") && !r.url().startsWith("blob:")) outside.push(r.url()); });
+  page.on("pageerror", (e) => fail(tag, `page error: ${e.message}`));
+  await page.goto(`${base}graveyard/graveyard.html`);
+  await page.waitForSelector("#tombs button", { timeout: 15000 }).catch(() => fail(tag, "no tomb buttons rendered"));
+  await page.waitForTimeout(400);
+  const seen = await page.evaluate(() => {
+    const shown = (e) => e && e.getClientRects().length > 0 && getComputedStyle(e).visibility !== "hidden";
+    const lum = (c) => { const [r, g, b] = c.map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+    const rgba = (s) => (s.match(/[\d.]+/g) || []).map(Number);
+    const bgOf = (e) => { for (; e; e = e.parentElement) { const c = rgba(getComputedStyle(e).backgroundColor); if (c.length >= 3 && (c.length === 3 || c[3] > 0.95)) return c.slice(0, 3); } return [0, 0, 0]; };
+    const low = [];
+    for (const e of document.body.querySelectorAll("h1,h2,p,li,label,span,a,button,div,option,td,th")) {
+      if (e.closest(".sr-only") || e.classList.contains("skip") || ![...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()) || !shown(e)) continue;
+      const a = lum(rgba(getComputedStyle(e).color).slice(0, 3)), b = lum(bgOf(e));
+      const ratio = (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+      if (ratio < 4.5) low.push(`${e.tagName.toLowerCase()}${e.className ? "." + e.className : ""} ${ratio.toFixed(2)}`);
+    }
+    const c = document.getElementById("scene");
+    const x = c.getContext("2d");
+    const d = x.getImageData(0, 0, c.width, c.height).data;
+    const seenColours = new Set();
+    for (let i = 0; i < d.length; i += 4 * 97) seenColours.add((d[i] << 16) | (d[i + 1] << 8) | d[i + 2]);
+    const tombs = [...document.querySelectorAll("#tombs button")];
+    return {
+      tombs: tombs.length,
+      small: tombs.filter((t) => { const r = t.getBoundingClientRect(); return r.width < 44 || r.height < 44; }).length,
+      rows: document.querySelectorAll("#sr-body tr").length,
+      caption: !!document.querySelector("#sr-table caption"),
+      colours: seenColours.size,
+      overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      lang: document.documentElement.lang,
+      main: document.querySelectorAll("main").length,
+      low: [...new Set(low)],
+      text: document.body.innerText,
+    };
+  });
+  if (seen.tombs < 5) fail(tag, `expected at least 5 tomb buttons, found ${seen.tombs}`);
+  if (seen.rows !== seen.tombs) fail(tag, `screen reader table has ${seen.rows} rows for ${seen.tombs} tombs`);
+  if (!seen.caption) fail(tag, "screen reader table has no caption");
+  if (seen.colours < 4) fail(tag, "the scene canvas looks blank");
+  if (seen.overflow > 0) fail(tag, `horizontal overflow of ${seen.overflow}px`);
+  if (!seen.lang || seen.main !== 1) fail(tag, "html lang or the single main landmark is missing");
+  if (seen.low.length) fail(tag, `text contrast under 4.5:1: ${seen.low.join(", ")}`);
+  if (/\bworst\b/i.test(seen.text)) fail(tag, "the page uses a ranking label");
+  if (vp.w < 900 && seen.small) fail(tag, `${seen.small} tomb buttons are under ${TAP_MIN}px`);
+
+  const ctl = present(tag, await boxes(page, GY_CONTROLS));
+  for (const [a, b] of findOverlaps(ctl)) fail(tag, `controls overlap: ${a} and ${b}`);
+  if (vp.w < 900) for (const b of ctl) if (b.height < TAP_MIN && b.name !== "#repos") fail(tag, `tap target ${b.name} is ${Math.round(b.height)}px tall, under ${TAP_MIN}`);
+
+  // Tab reaches the tombs.
+  await page.focus("#filter-owner");
+  let reached = 0;
+  for (let i = 0; i < 12 && reached === 0; i++) {
+    await page.keyboard.press("Tab");
+    if (await page.evaluate(() => !!document.activeElement?.closest("#tombs"))) reached++;
+  }
+  if (!reached) fail(tag, "Tab does not reach a tomb button");
+
+  if (!vp.touch) {
+    const b = await page.evaluate(() => { const r = document.querySelector("#tombs button").getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
+    await page.mouse.move(b.x - 1, b.y - 1);
+    await page.mouse.move(b.x, b.y, { steps: 4 });
+    await page.waitForFunction(() => { const t = document.getElementById("tip"); return t && !t.hidden && t.textContent.trim().length > 0; }, null, { timeout: 3000 }).catch(() => fail(tag, "no tooltip on hover"));
+  }
+
+  await page.locator("#tombs button").first().click({ force: true });
+  await page.waitForSelector("#panel:not([hidden])", { timeout: 3000 }).catch(() => fail(tag, "the repo panel did not open"));
+  const panel = ((await page.textContent("#panel")) ?? "").toLowerCase();
+  if (!/dry[ -]run/.test(panel)) fail(tag, "the repo panel does not say dry run");
+  await page.screenshot({ path: join(outDir, `graveyard-panel-${vp.w}x${vp.h}.png`) });
+  await page.keyboard.press("Escape");
+  if (await page.locator("#panel").isVisible()) fail(tag, "Escape did not close the panel");
+
+  await page.click("#view-toggle");
+  const cards = await page.locator("#cards li").count();
+  if (cards !== seen.tombs || !(await page.locator("#list-wrap").isVisible()) || (await page.locator("#scene-wrap").isVisible())) fail(tag, "the 2D list fallback toggle does not work");
+  await page.click("#view-toggle");
+
+  mkdirSync(outDir, { recursive: true });
+  await page.waitForTimeout(300);
+  const shot = join(outDir, `graveyard-${vp.w}x${vp.h}.png`);
+  await page.screenshot({ path: shot });
+  if (process.env.VISUAL_QA_COPY_DOCS === "1" && ((vp.w === 1440 && vp.h === 900) || vp.w === 390)) {
+    mkdirSync(imgDir, { recursive: true });
+    copyFileSync(shot, join(imgDir, `graveyard-${vp.w}x${vp.h}.png`));
+  }
+
+  await page.goto(`${base}graveyard/graveyard.html?record=1`);
+  await page.waitForSelector("#tombs button", { timeout: 15000 }).catch(() => fail(tag, "recording mode shows no tombs"));
+  const hidden = await page.evaluate(() => ["#controls", "#record-on"].every((s) => { const e = document.querySelector(s); return !e || e.getClientRects().length === 0; }));
+  if (!hidden) fail(tag, "recording mode does not hide the controls");
+  if (outside.length) fail(tag, `requests left the origin in census mode: ${outside.join(", ")}`);
+  console.log(`ok   [${tag}] tombs=${seen.tombs} rows=${seen.rows}`);
+  await ctx.close();
+}
+
 let browser;
 try {
   browser = await chromium.launch(launchOptions());
@@ -393,6 +499,7 @@ try {
   }
   for (const vp of VIEWPORTS) await checkImport(browser, vp);
   for (const vp of JUDGE_VIEWPORTS) await checkJudge(browser, vp);
+  for (const vp of VIEWPORTS) await checkGraveyard(browser, vp);
   mkdirSync(outDir, { recursive: true });
   const autopsyFile = join(outDir, "autopsy.html");
   const gen = spawnSync(process.execPath, [join(root, "bin", "crypt.mjs"), "autopsy", "--sample", "--out", autopsyFile], { cwd: root, encoding: "utf8" });
