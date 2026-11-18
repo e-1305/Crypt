@@ -8,7 +8,7 @@ import { homedir } from "node:os";
 import { join, extname, resolve, sep } from "node:path";
 import { readdirSync, existsSync, readFileSync, mkdirSync, copyFileSync } from "node:fs";
 import http from "node:http";
-import { findOverlaps } from "./overlap.mjs";
+import { findOverlaps, filterFixedBoxes } from "./overlap.mjs";
 
 const require = createRequire(import.meta.url);
 const { chromium } = require("playwright-core");
@@ -19,6 +19,8 @@ const imgDir = join(root, "docs", "img");
 const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml" };
 
 const CONTROLS = ["#sim-green", "#sim-red", "#raid-start", "#hc-toggle", "#sound-toggle", "#record-toggle", "#cmd", "#try-chip", "#download", "#view-3d", "#install-copy", "#manual-link"];
+// Fixed-position elements checked on the 3D bench. The caption is pointer-events:none, so it is listed by name.
+const CAPTION = "#theatre-caption";
 const RAID_STATS = ["#raid-nights", "#raid-vitals", "#raid-health"];
 const TAP_MIN = 44;
 
@@ -26,6 +28,7 @@ const VIEWPORTS = [
   { w: 390, h: 844, touch: true, full: true },
   { w: 1280, h: 800, touch: false, full: false },
   { w: 1440, h: 900, touch: false, full: false },
+  { w: 1920, h: 1080, touch: false, full: false },
 ];
 
 const server = http.createServer((req, res) => {
@@ -46,6 +49,22 @@ function launchOptions() {
 
 const failures = [];
 const fail = (tag, msg) => { failures.push(`[${tag}] ${msg}`); console.error(`FAIL [${tag}] ${msg}`); };
+
+// Every visible position:fixed element, found from computed style so new fixed UI is covered without editing a list.
+// Full-viewport overlays are dropped, and so are pointer-events:none decorations other than the caption.
+async function fixedBoxes(page, vw, vh) {
+  const found = await page.evaluate((caption) => {
+    const label = (el) => el.id ? `#${el.id}` : `${el.tagName.toLowerCase()}${[...el.classList].map((c) => "." + c).join("")}`;
+    return [...document.body.querySelectorAll("*")].flatMap((el) => {
+      const cs = getComputedStyle(el);
+      if (cs.position !== "fixed" || cs.display === "none" || cs.visibility === "hidden" || el.closest("[hidden]")) return [];
+      if (cs.pointerEvents === "none" && !el.matches(caption)) return [];
+      const r = el.getBoundingClientRect();
+      return [{ name: label(el), x: r.x, y: r.y, width: r.width, height: r.height }];
+    });
+  }, CAPTION);
+  return filterFixedBoxes(found, vw, vh);
+}
 
 async function boxes(page, selectors) {
   return page.evaluate((sels) => sels.flatMap((s) => {
@@ -89,6 +108,16 @@ async function check(browser, vp, query) {
   for (const [a, b] of findOverlaps(stats)) fail(tag, `raid stats overlap: ${a} and ${b}`);
 
   const theatre = await page.evaluate(() => document.documentElement.dataset.theatre ?? "");
+  let fixedCount = 0;
+  if (theatre.startsWith("3d")) {
+    // Worst case for the bottom bar: the raid card download button is shown, which makes #raid as wide as it gets.
+    await page.evaluate(() => { const b = document.getElementById("raid-download"); if (b) b.hidden = false; });
+    const fixed = await fixedBoxes(page, vp.w, vp.h);
+    await page.evaluate(() => { const b = document.getElementById("raid-download"); if (b) b.hidden = true; });
+    fixedCount = fixed.length;
+    if (!fixed.some((b) => b.name === CAPTION)) fail(tag, `${CAPTION} is not visible on the 3D bench`);
+    for (const [a, b] of findOverlaps(fixed)) fail(tag, `fixed elements overlap: ${a} and ${b}`);
+  }
   if (vp.w < 900 && !query) {
     if (!theatre.startsWith("2d")) fail(tag, `expected 2D by default, got data-theatre="${theatre}"`);
     for (const b of all) if (b.height < TAP_MIN && b.name !== "#install-copy") fail(tag, `tap target ${b.name} is ${Math.round(b.height)}px tall, under ${TAP_MIN}`);
@@ -110,7 +139,7 @@ async function check(browser, vp, query) {
     mkdirSync(outDir, { recursive: true });
     await page.screenshot({ path: join(outDir, `${vp.w}x${vp.h}-2d.png`) });
   }
-  console.log(`ok   [${tag}] theatre=${theatre} controls=${all.length} stats=${stats.length}`);
+  console.log(`ok   [${tag}] theatre=${theatre} controls=${all.length} stats=${stats.length} fixed=${fixedCount}`);
   await ctx.close();
 }
 
