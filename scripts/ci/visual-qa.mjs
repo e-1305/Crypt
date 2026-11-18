@@ -311,6 +311,24 @@ async function checkCard(browser, vp) {
   const funnel = await page.textContent("#paste-funnel");
   if (!/^\d+ findings -> \d+ exorcised as noise -> \d+ monsters$/.test(funnel || "")) fail(tag, `unexpected funnel text: ${funnel}`);
   if (!/no owner/.test((await page.textContent("#paste-funnel-owners")) || "")) fail(tag, "owners line should say no owner for a repo without CODEOWNERS");
+  // R1: SLA per limb and CSV/JSON export buttons in the ranked list.
+  await page.locator("#paste-export-csv").scrollIntoViewIfNeeded().catch(() => {});
+  const slaTexts = await page.$$eval(".paste-limbs .paste-sla", (els) => els.map((e) => e.textContent || ""));
+  if (!slaTexts.length) fail(tag, "ranked limbs show no SLA text");
+  else if (!slaTexts.every((t) => /^SLA: (48 hours|this sprint|backlog)$/.test(t.trim()))) fail(tag, `unexpected SLA text: ${slaTexts.join(" | ")}`);
+  const exportBoxes = present(tag, await boxes(page, ["#paste-export-csv", "#paste-export-json"]));
+  if (exportBoxes.length !== 2) fail(tag, "Download CSV and Download JSON must both be visible after a scan");
+  const slaBoxes = await page.$$eval(".paste-limbs .paste-sla", (els) => els.map((e, i) => { const r = e.getBoundingClientRect(); return { name: `.paste-sla#${i}`, x: r.x + scrollX, y: r.y + scrollY, width: r.width, height: r.height }; }));
+  for (const [a, b] of findOverlaps([...exportBoxes, ...slaBoxes.filter((b) => b.width > 0)])) fail(tag, `SLA or export overlap: ${a} and ${b}`);
+  if (vp.w < 900) for (const b of exportBoxes) if (b.height < TAP_MIN) fail(tag, `tap target ${b.name} is ${Math.round(b.height)}px tall, under ${TAP_MIN}`);
+  if (vp.w < 900 && (await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)) > 0) fail(tag, "horizontal overflow with the SLA column and export buttons");
+  mkdirSync(outDir, { recursive: true });
+  const slaShot = join(outDir, `paste-sla-export-${vp.w}x${vp.h}.png`);
+  await page.screenshot({ path: slaShot });
+  if (process.env.VISUAL_QA_COPY_DOCS === "1") {
+    mkdirSync(imgDir, { recursive: true });
+    copyFileSync(slaShot, join(imgDir, `paste-sla-export-${vp.w}x${vp.h}.png`));
+  }
   // Exorcised list (R1 fix 9): one click opens it, every row has a reason, the limits line is visible.
   await page.click("#paste-exorcised-toggle");
   const exo = await page.evaluate(() => ({ rows: [...document.querySelectorAll("#paste-exorcised-list li")].map((l) => l.textContent), limit: document.getElementById("paste-limits")?.textContent || "", scrollW: document.documentElement.scrollWidth - document.documentElement.clientWidth }));
