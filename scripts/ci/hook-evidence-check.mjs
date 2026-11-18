@@ -6,6 +6,8 @@ import { join, resolve } from "node:path";
 const KEYS = ["ts", "hook", "trigger", "file", "exit", "summary"];
 // One optional key. It marks where a real Kiro run was captured.
 const SOURCES = ["kiro-cli-ci"];
+// Hook names that are not .kiro/hooks files: cloud hooks configured in the Kiro web console (Agent Config > Hooks).
+const CLOUD_HOOKS = ["failsafe-guard-on-stop-cloud"];
 
 /** Problems found under `root`. Exported for tests. */
 export function check(root) {
@@ -51,7 +53,7 @@ export function check(root) {
       if (!KEYS.every((k) => keys.includes(k)) || extra.some((k) => k !== "source") || extra.length > 1) problems.push(`hook-runs.jsonl line ${i + 1}: keys must be ${KEYS.join(", ")} and optionally source`);
       else if (extra.length === 1 && !SOURCES.includes(o.source)) problems.push(`hook-runs.jsonl line ${i + 1}: source must be one of ${SOURCES.join(", ")}`);
       else if (extra.length === 1 && o.trigger === "manual") problems.push(`hook-runs.jsonl line ${i + 1}: a line with a source cannot have trigger manual`);
-      else if (!names.includes(o.hook)) problems.push(`hook-runs.jsonl line ${i + 1}: unknown hook "${o.hook}"`);
+      else if (!names.includes(o.hook) && !CLOUD_HOOKS.includes(o.hook)) problems.push(`hook-runs.jsonl line ${i + 1}: unknown hook "${o.hook}"`);
       else if (typeof o.exit !== "number" || typeof o.trigger !== "string" || Number.isNaN(Date.parse(o.ts))) problems.push(`hook-runs.jsonl line ${i + 1}: bad ts, trigger or exit`);
     });
   }

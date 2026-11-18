@@ -166,6 +166,18 @@ describe("hook runs recorded in a Kiro session", () => {
       rmSync(d, { recursive: true, force: true });
     }
   });
+  it("counts a failsafe-guard-on-stop-cloud Stop line as a real Kiro run", () => {
+    const d = mkdtempSync(join(tmpdir(), "kiro-stats-runs-"));
+    try {
+      mkdirSync(join(d, "docs", "evidence"), { recursive: true });
+      writeFileSync(join(d, "docs", "evidence", "hook-runs.jsonl"), [line("failsafe-guard-on-stop-cloud", "Stop"), line("a", "manual")].join("\n") + "\n");
+      const runs = readHookRuns(d)!;
+      expect(hookRunsByHook(runs)).toEqual({ "failsafe-guard-on-stop-cloud": 1 });
+      expect(collect(d, false).find((x) => x.name.startsWith("Hook runs recorded"))?.value).toBe("1");
+    } finally {
+      rmSync(d, { recursive: true, force: true });
+    }
+  });
   it("separates manual, real Kiro and kiro-cli-ci runs, and never counts a manual line as real", () => {
     const d = mkdtempSync(join(tmpdir(), "kiro-stats-runs-"));
     try {
