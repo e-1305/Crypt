@@ -401,6 +401,8 @@ body.record .judge-skip, body.record .judge-replay { display: none; }
 .paste-source { font-weight: bold; margin: .25rem 0; }
 
 .proof-line { margin: .25rem 0 0; }
+.workflow-line { margin: 0; flex: 1 1 100%; font-size: .9rem; }
+.workflow-line a { color: var(--fg); text-decoration: underline; }
 .rehearsal { margin: 0 0 .5rem; }
 .proof { margin: 1rem; }
 .proof-list { margin: .5rem 0; padding-left: 1.5rem; overflow-wrap: anywhere; }
