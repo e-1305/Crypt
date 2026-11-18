@@ -9,6 +9,7 @@ import { buildSlackPayload } from "../../src/gazette/slack.js";
 import { buildTeamsPayload } from "../../src/gazette/teams.js";
 import { sendGazette, type FetchLike } from "../../src/gazette/send.js";
 import { SAMPLE_INPUT } from "../../src/report/sample.js";
+import { loadHistory, recordSnapshot } from "./history.js";
 import { SEAL_NOTICE } from "./session.js";
 
 function readJson(io: Io, path: string): unknown {
@@ -48,7 +49,9 @@ export async function gazetteCommand(p: Parsed, deps: GazetteDeps = {}): Promise
   } else {
     const creature = readJson(io, paths.creaturePath);
     if (creature === undefined) throw new CliError("no readable out/creature.json. Run crypt raid <target> first.", EXIT.FAILURE);
-    digest = buildDigest({ creature, state: readJson(io, paths.statePath) ?? {}, now: now(), warRoomUrl });
+    const state = readJson(io, paths.statePath) ?? {};
+    digest = buildDigest({ creature, state, history: loadHistory(io, paths.creaturePath, state), now: now(), warRoomUrl });
+    recordSnapshot(io, paths.creaturePath, creature, now());
   }
   const payload = format === "teams" ? buildTeamsPayload(digest) : buildSlackPayload(digest);
 

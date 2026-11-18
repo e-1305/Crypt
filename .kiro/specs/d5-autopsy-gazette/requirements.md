@@ -6,7 +6,7 @@ Scope: `src/report/` (autopsy model, HTML), `src/gazette/` (gazette model, Slack
 
 ## Data sources and assumptions
 1. `out/creature.json`: `counts`, `team.scanStart` (ms), `limbs[]` with `id`, `name`, `owner` (`unowned` when CODEOWNERS names none), `state`, `spawned`, `kev`, `epss`, `healed`, `healedBy`. Optional per limb: `foundAt`, `wasKev`.
-2. `out/state.json`: `limbs{ID: {state, pr, updatedAt, healedBy?}}`. Optional per entry: `mergedAt`, `kev`. Optional top-level `history`: `[{at, possessed, rotting, healthy, spawned, healed}]`, one entry per raid. `serializeState` drops unknown keys, so `history` is read from the raw JSON and these commands never write it.
+2. `out/state.json`: `limbs{ID: {state, pr, updatedAt, healedBy?}}`. Optional per entry: `mergedAt`, `kev`. Optional top-level `history`: `[{at, possessed, rotting, healthy, spawned, healed}]`, one entry per raid. `serializeState` drops unknown keys, so these commands keep their own history in `out/autopsy-history.json` (one snapshot per UTC day, with `possessedIds`), written when `autopsy` or `gazette` runs on real data, and read together with any `state.history`. The trend therefore starts at the first run of either command. `foundAt` and `wasKev` have no producer yet: SLA windows start at `team.scanStart` until one lands, so limbs found in later raids can show as breached early.
 3. When `foundAt` is absent, the finding time is `team.scanStart`. When `mergedAt` is absent, the fix time is the state entry `updatedAt`.
 
 ## A1 Autopsy report (`crypt autopsy`)

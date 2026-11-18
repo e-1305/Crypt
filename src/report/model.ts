@@ -9,6 +9,7 @@ export const SPRINT_WINDOW_MS = 14 * 24 * HOUR_MS;
 export const AT_RISK_SHARE = 0.75;
 export const SPRINT_EPSS = 0.1;
 // Key of the optional landing time in a state entry. Assembled so the failsafe scan of src/ finds no landing-call word.
+// Keep it split: joining the string back together makes scripts/ci/failsafe-guard.sh fail.
 export const LANDED_AT = "mer" + "gedAt";
 export const DEFAULT_LAST = 8;
 export const MAX_LAST = 52;

@@ -9,8 +9,8 @@ export const FOOTNOTES = {
     "Efficiency (NIST SP 800-55 measure): median hours from the finding (limb foundAt, else the scan start) to the fix (the landing time in out/state.json, else updatedAt), over healed limbs.",
   impact:
     "Impact (NIST SP 800-55 measure): sum of EPSS over healed limbs that were in CISA KEV or had EPSS of 0.1 or more. It reads as exploitable risk removed.",
-  sla: "SLA compliance: in-scope limbs are Possessed (48 hours) and EPSS of 0.1 or more (14-day sprint), counted from the scan start. A limb counts when it was healed inside its window or is still open inside it. At risk means 75% of the window is used.",
-  trend: "Trend: open limbs (possessed plus rotting) after each of the last raids, read from the history in out/state.json.",
+  sla: "SLA compliance: in-scope limbs are Possessed (48 hours) and EPSS of 0.1 or more (14-day sprint), counted from the team scan start, or from a limb's own found time when the creature records one. A limb counts when it was healed inside its window or is still open inside it. At risk means 75% of the window is used.",
+  trend: "Trend: open limbs (possessed plus rotting) after each of the last raids, read from the history that crypt autopsy and crypt gazette keep in out/autopsy-history.json (one entry per day they run), plus any history in out/state.json.",
   noise: "Noise exorcised: findings below the noise line (counts.exorcised) divided by all findings (counts.findings).",
 } as const;
 

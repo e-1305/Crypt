@@ -1,5 +1,5 @@
 // POST the gazette payload to a webhook. Errors never carry the URL or the response body.
-export type FetchLike = (url: string, init: { method: string; headers: Record<string, string>; body: string; signal: AbortSignal }) => Promise<{ ok: boolean; status: number }>;
+export type FetchLike = (url: string, init: { method: string; headers: Record<string, string>; body: string; signal: AbortSignal; redirect: "error" }) => Promise<{ ok: boolean; status: number }>;
 
 export const SEND_TIMEOUT_MS = 10_000;
 
@@ -26,7 +26,7 @@ export async function sendGazette(input: SendInput): Promise<void> {
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), input.timeoutMs ?? SEND_TIMEOUT_MS);
   try {
-    const res = await f(input.url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input.payload), signal: ctl.signal });
+    const res = await f(input.url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input.payload), signal: ctl.signal, redirect: "error" });
     if (!res.ok) throw new Error(`the webhook answered HTTP ${Number.isInteger(res.status) ? res.status : "?"}. Nothing was retried.`);
   } catch (e) {
     if (e instanceof Error && e.message.startsWith("the webhook answered")) throw e;

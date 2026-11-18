@@ -7,6 +7,7 @@ import type { Parsed } from "../../src/cli/parse.js";
 import { buildAutopsy, DEFAULT_LAST, type AutopsyInput } from "../../src/report/model.js";
 import { renderAutopsyHtml } from "../../src/report/html.js";
 import { SAMPLE_INPUT } from "../../src/report/sample.js";
+import { loadHistory, recordSnapshot } from "./history.js";
 import { PDF_HINT } from "../../src/report/template.js";
 
 function readJson(io: Io, path: string): unknown {
@@ -29,7 +30,9 @@ export function autopsyCommand(p: Parsed, cwd: string = process.cwd(), io: Io = 
     if (creature === undefined) {
       throw new CliError("no readable out/creature.json. Run crypt raid <target> first.", EXIT.FAILURE);
     }
-    input = { creature, state: readJson(io, paths.statePath) ?? {}, now: now(), last };
+    const state = readJson(io, paths.statePath) ?? {};
+    input = { creature, state, now: now(), last, history: loadHistory(io, paths.creaturePath, state) };
+    recordSnapshot(io, paths.creaturePath, creature, now());
   }
   io.writeText(out, renderAutopsyHtml(buildAutopsy(input)));
   console.log(`Autopsy report written to ${out}`);

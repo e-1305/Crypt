@@ -7,6 +7,8 @@ import { parseCli } from "../src/cli/parse.js";
 import { buildDigest, DAY_MS } from "../src/gazette/digest.js";
 import { buildSlackPayload, slackCode } from "../src/gazette/slack.js";
 import { buildTeamsPayload } from "../src/gazette/teams.js";
+import { spawnSync } from "node:child_process";
+import { appendSnapshot, joinHistory, snapshotOf } from "../src/report/history.js";
 import { sendGazette, type FetchLike } from "../src/gazette/send.js";
 import { SAMPLE_INPUT } from "../src/report/sample.js";
 import { DEFAULT_WAR_ROOM, gazetteCommand } from "../scripts/cli/gazette.js";
@@ -171,5 +173,51 @@ describe("sendGazette", () => {
     const err = await sendGazette({ payload: {}, url: SECRET, fetchImpl: f, timeoutMs: 5 }).catch((e: Error) => e);
     expect((err as Error).message).toMatch(/in time/);
     expect((err as Error).message).not.toContain("SENTINEL");
+  });
+});
+
+it("sendGazette refuses redirects", async () => {
+  let seen: unknown;
+  await sendGazette({ payload: {}, url: SECRET, fetchImpl: async (_u, i) => ((seen = i.redirect), { ok: true, status: 200 }) });
+  expect(seen).toBe("error");
+});
+
+describe("raid history kept by the report commands", () => {
+  const creature = { counts: { spawned: 2 }, limbs: [{ id: "A", name: "a", state: "Possessed" }, { id: "B", name: "b", state: "Healthy", healed: true }, { id: "C", name: "c", state: "Rotting" }] };
+  it("snapshots the creature", () => {
+    expect(snapshotOf(creature, Date.UTC(2025, 0, 2))).toMatchObject({ possessed: 1, rotting: 1, healthy: 1, healed: 1, spawned: 2, possessedIds: ["A"] });
+    expect(snapshotOf(5, 1)).toBeNull();
+  });
+  it("keeps one entry per day and drops junk", () => {
+    const a = snapshotOf(creature, Date.UTC(2025, 0, 2, 1))!;
+    const b = snapshotOf(creature, Date.UTC(2025, 0, 2, 20))!;
+    const c = snapshotOf(creature, Date.UTC(2025, 0, 3))!;
+    expect(appendSnapshot(appendSnapshot(["junk", { at: "x" }], a), b)).toEqual([b]);
+    expect(appendSnapshot([b], c)).toEqual([b, c]);
+    expect(joinHistory([1], [2])).toEqual([1, 2]);
+  });
+  it("gazette builds the history across runs and names newly possessed limbs", async () => {
+    const d = workdir(creature);
+    await run([], d);
+    const next = { limbs: [...creature.limbs, { id: "D", name: "d", state: "Possessed" }] };
+    writeFileSync(join(d, "out", "creature.json"), JSON.stringify(next));
+    let stdout = "";
+    const env = {};
+    await gazetteCommand(parseCli(["gazette"], env), { cwd: d, env, now: () => SAMPLE_INPUT.now + 2 * DAY_MS, out: (s) => void (stdout += s) });
+    expect(stdout).toContain("d");
+    const h = JSON.parse(readFileSync(join(d, "out", "autopsy-history.json"), "utf8")) as unknown[];
+    expect(h).toHaveLength(2);
+  });
+});
+
+describe("crypt gazette through main.ts", () => {
+  it("a failed send leaks the URL in neither stdout nor stderr", () => {
+    const d = workdir();
+    const url = "https://127.0.0.1:9/SENTINEL-SECRET-123";
+    const r = spawnSync(process.execPath, [join(process.cwd(), "bin", "crypt.mjs"), "gazette", "--webhook-env", "SLACK_WEBHOOK_URL", "--send"], { cwd: d, env: { ...process.env, SLACK_WEBHOOK_URL: url }, encoding: "utf8", timeout: 60_000 });
+    expect(r.status).not.toBe(0);
+    expect(r.stderr).toMatch(/gazette not sent/);
+    expect(r.stdout + r.stderr).not.toContain("SENTINEL");
+    expect(readFileSync(join(d, "crypt-audit.log"), "utf8")).not.toContain("SENTINEL");
   });
 });
