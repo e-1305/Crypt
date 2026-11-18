@@ -66,14 +66,12 @@ export function countPropertyTests(root: string): { calls: number; files: number
 // The word is assembled from parts so this file does not trip tests/static.test.ts, which scans scripts/.
 const LANDED = new RegExp("^Mer" + "ge (?:pull request|PR) #(\\d+)");
 
-/** Unique PR numbers named by landing-commit subjects and "(#N)" suffixes. */
+/** Unique PR numbers named by landing-commit subjects. "(#N)" suffixes are not counted: here they name issues. */
 export function prNumbers(subjects: string[]): number[] {
   const set = new Set<number>();
   for (const s of subjects) {
     const m = LANDED.exec(s);
     if (m) set.add(Number(m[1]));
-    const t = /\(#(\d+)\)\s*$/.exec(s);
-    if (t) set.add(Number(t[1]));
   }
   return [...set].sort((a, b) => a - b);
 }
@@ -121,7 +119,7 @@ export function collect(root: string, runTests: boolean): Stat[] {
     { name: "Property test call sites", value: `${prop.calls} in ${prop.files} files`, source: "`fc.assert`, `fc.property`, `fc.asyncProperty`, `test.prop` in `tests/*.test.ts`" },
     { name: "Tests", value: t ? `${t.passed} passed, ${t.skipped} skipped` : un, source: "`npx vitest run --reporter=json` (numPassedTests, numPendingTests)" },
     { name: "Test files", value: t ? String(t.files) : un, source: "`npx vitest run --reporter=json` (testResults)" },
-    { name: "PRs", value: prs ? String(prs.length) : un, source: "unique `#N` in `git log` subjects (landing-commit subjects with `pull request #N` or `PR #N`, and `(#N)` suffixes); `gh` is not used" },
+    { name: "PRs", value: prs ? String(prs.length) : un, source: "unique `#N` in landing-commit subjects of `git log` (`pull request #N` or `PR #N`); `(#N)` suffixes are issues and are not counted; `gh` is not used" },
   ];
 }
 

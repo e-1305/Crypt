@@ -47,9 +47,9 @@ describe("counting functions on a fixture directory", () => {
 });
 
 describe("PR numbers from subjects", () => {
-  it("deduplicates landing subjects and (#N) suffixes", () => {
+  it("deduplicates landing subjects and ignores (#N) issue suffixes", () => {
     const m = "Mer" + "ge";
-    expect(prNumbers([`${m} pull request #4 from x/y`, `${m} PR #4: again`, "feat: thing (#7)", "feat: other (#7)", `${m} PR #12: z`, "chore: none"])).toEqual([4, 7, 12]);
+    expect(prNumbers([`${m} pull request #4 from x/y`, `${m} PR #4: again`, "feat: thing (#7)", "feat: other (#7)", `${m} PR #12: z`, "chore: none"])).toEqual([4, 12]);
   });
 });
 

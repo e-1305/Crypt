@@ -11,10 +11,10 @@
 - Hooks, agents: `*.json` files. Steering: `*.md` files.
 - Property tests: call sites of `fc.assert(`, `fc.property(`, `fc.asyncProperty(` and `test.prop(` in `tests/*.test.ts`.
 - Tests: `vitest run --reporter=json` totals (passed, skipped, files). This runs the suite, so it is opt out with `--no-tests` for the fast path.
-- PRs: unique numbers from `Merge pull request #N`, `Merge PR #N` and `(#N)` subjects in `git log`. `gh` is not used because its auth is not available in every environment.
+- PRs: unique numbers from `Merge pull request #N` and `Merge PR #N` subjects in `git log`. `(#N)` suffixes are issue references here and are not counted. `gh` is not used because its auth is not available in every environment.
 
 ## Link check
-Relative markdown links, backticked repository paths and `\b[0-9a-f]{7,40}\b` inside backticks that `git cat-file -e` resolves. External URLs are not fetched. Globs and templates are skipped.
+Relative markdown links, backticked repository paths and backticked tokens that are exactly 7 to 40 hex characters, and `/commit/<sha>` URLs, that `git cat-file -e` resolves. External URLs are not fetched. Globs and templates are skipped.
 
 ## Threats
 - Stale numbers: the block is regenerated and a test compares stable items.

@@ -6,7 +6,7 @@ Terms. **Numbers block** is the text between `<!-- kiro-stats:begin -->` and `<!
 
 ## K1 Stats script
 1. `npm run kiro:stats` SHALL print the generation date (UTC) and, for each item, its count and the command or file that produces it: specs, spec tasks (ticked and total), hooks, steering files, custom agents, property tests (call sites and files), tests (total and files), PRs.
-2. The PR count SHALL come from `git log` merge subjects and `(#N)` subjects, deduplicated, and the output SHALL name that source.
+2. The PR count SHALL come from `git log` landing-commit subjects (`Merge pull request #N`, `Merge PR #N`), deduplicated. `(#N)` suffixes are not counted because they name issues in this repository, and the output SHALL name that source.
 3. When a source is unavailable the script SHALL print `unavailable` and name the source, and SHALL NOT guess a number.
 4. `--markdown` SHALL print the numbers block as a table. `--write` SHALL refresh the block in `docs/KIRO.md`.
 
