@@ -65,6 +65,22 @@ describe("timeline from git", () => {
     expect(esc("<&>")).toBe("&lt;&amp;&gt;");
   });
 
+  it("keeps every label inside the viewBox when many specs share the last day", () => {
+    const specs = [
+      ...Array.from({ length: 13 }, (_, i) => ({ name: `early-spec-${i}`, date: "2026-01-01" })),
+      ...Array.from({ length: 20 }, (_, i) => ({ name: `late-spec-${i}`, date: "2026-01-02" })),
+    ];
+    const svg = renderTimeline({ start: "2026-01-01", end: "2026-01-02", days: 2, specs, merges: [] });
+    const width = Number(/viewBox="0 0 (\d+) /.exec(svg)![1]);
+    const xs = [...svg.matchAll(/translate\((\d+) /g)].map((m) => Number(m[1]));
+    expect(xs).toHaveLength(33);
+    for (const x of xs) {
+      expect(x).toBeGreaterThanOrEqual(0);
+      expect(x + 14).toBeLessThanOrEqual(width);
+    }
+    expect(new Set(xs).size).toBe(33);
+  });
+
   it("converts days and dates both ways", () => {
     expect(isoOf(dayNumber("2026-11-17") + 8)).toBe("2026-11-25");
   });

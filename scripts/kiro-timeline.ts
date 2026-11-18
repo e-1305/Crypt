@@ -95,14 +95,20 @@ export function renderTimeline(t: Timeline): string {
   o.push(`  <rect class="bg" x="0" y="0" width="${W}" height="${H}"/>`);
   o.push(`  <text class="tx h" x="${L}" y="28">${esc(`${t.days} days, ${t.specs.length} specs, ${t.merges.length} merged PRs`)}</text>`);
   o.push(`  <line class="ax" x1="${L}" y1="${axisY}" x2="${R}" y2="${axisY}"/>`);
+  const MAXX = W - 20;
+  const tops = t.specs.map((s) => xOf(s.date));
+  const lxs: number[] = [];
   let prev = L - GAP;
-  for (const s of t.specs) {
-    const tx = xOf(s.date), lx = Math.max(tx, prev + GAP);
-    prev = lx;
+  for (const tx of tops) { prev = Math.max(tx, prev + GAP); lxs.push(prev); }
+  // Pull labels back left so a cluster on the last day stays inside the canvas.
+  let next = MAXX + GAP;
+  for (let i = lxs.length - 1; i >= 0; i--) { next = Math.min(lxs[i]!, next - GAP); lxs[i] = next; }
+  t.specs.forEach((s, i) => {
+    const tx = tops[i]!, lx = lxs[i]!;
     o.push(`  <line class="lead" x1="${tx}" y1="${axisY}" x2="${lx}" y2="${axisY - 10}"/>`);
     o.push(`  <circle class="mk" cx="${tx}" cy="${axisY}" r="4"/>`);
     o.push(`  <text class="tx" transform="translate(${lx + 5} ${axisY - 16}) rotate(-90)">${esc(s.name)}</text>`);
-  }
+  });
   for (const [date, n] of [...perDay].sort()) {
     o.push(`  <rect class="pr" x="${xOf(date) - 3}" y="${axisY + 10}" width="6" height="${n * 6}"/>`);
   }

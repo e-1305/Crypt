@@ -25,14 +25,14 @@ Generated 2026-11-18 (UTC).
 | Steering files | 5 | `.kiro/steering/*.md` |
 | Custom agents | 2 | `.kiro/agents/*.json` (Oracle has no file) |
 | Property test call sites | 262 in 30 files | `fc.assert`, `fc.property`, `fc.asyncProperty`, `test.prop` in `tests/*.test.ts` |
-| Tests | 641 passed, 15 skipped | `npx vitest run --reporter=json` (numPassedTests, numPendingTests) |
+| Tests | 642 passed, 15 skipped | `npx vitest run --reporter=json` (numPassedTests, numPendingTests) |
 | Test files | 46 | `npx vitest run --reporter=json` (testResults) |
 | PRs | 44 | unique `#N` in landing-commit subjects of `git log` (`pull request #N` or `PR #N`); `(#N)` suffixes are issues and are not counted; `gh` is not used |
 <!-- kiro-stats:end -->
 
 ![Timeline from the first spec to the latest commit, with PR merges per day](img/kiro-timeline.svg)
 
-Drawn by `npm run kiro:timeline` ([`scripts/kiro-timeline.ts`](../scripts/kiro-timeline.ts)) from `git log` and `.kiro/specs`.
+Drawn by `npm run kiro:timeline` ([`scripts/kiro-timeline.ts`](../scripts/kiro-timeline.ts)) from `git log` and `.kiro/specs`. The image is as of generation: it ends at the date of the commit it was drawn from, so rerun the script after new PRs land.
 
 ## Limits
 

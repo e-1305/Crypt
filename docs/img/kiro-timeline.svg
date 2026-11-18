@@ -51,27 +51,27 @@
   <line class="lead" x1="40" y1="262" x2="232" y2="252"/>
   <circle class="mk" cx="40" cy="262" r="4"/>
   <text class="tx" transform="translate(237 246) rotate(-90)">web-player</text>
-  <line class="lead" x1="960" y1="262" x2="960" y2="252"/>
+  <line class="lead" x1="960" y1="262" x2="884" y2="252"/>
   <circle class="mk" cx="960" cy="262" r="4"/>
-  <text class="tx" transform="translate(965 246) rotate(-90)">c1-kiro-md-final</text>
-  <line class="lead" x1="960" y1="262" x2="976" y2="252"/>
+  <text class="tx" transform="translate(889 246) rotate(-90)">c1-kiro-md-final</text>
+  <line class="lead" x1="960" y1="262" x2="900" y2="252"/>
   <circle class="mk" cx="960" cy="262" r="4"/>
-  <text class="tx" transform="translate(981 246) rotate(-90)">c3-video-kit</text>
-  <line class="lead" x1="960" y1="262" x2="992" y2="252"/>
+  <text class="tx" transform="translate(905 246) rotate(-90)">c3-video-kit</text>
+  <line class="lead" x1="960" y1="262" x2="916" y2="252"/>
   <circle class="mk" cx="960" cy="262" r="4"/>
-  <text class="tx" transform="translate(997 246) rotate(-90)">c4-blog-social-kit</text>
-  <line class="lead" x1="960" y1="262" x2="1008" y2="252"/>
+  <text class="tx" transform="translate(921 246) rotate(-90)">c4-blog-social-kit</text>
+  <line class="lead" x1="960" y1="262" x2="932" y2="252"/>
   <circle class="mk" cx="960" cy="262" r="4"/>
-  <text class="tx" transform="translate(1013 246) rotate(-90)">epic-c2-devpost</text>
-  <line class="lead" x1="960" y1="262" x2="1024" y2="252"/>
+  <text class="tx" transform="translate(937 246) rotate(-90)">epic-c2-devpost</text>
+  <line class="lead" x1="960" y1="262" x2="948" y2="252"/>
   <circle class="mk" cx="960" cy="262" r="4"/>
-  <text class="tx" transform="translate(1029 246) rotate(-90)">hook-evidence</text>
-  <line class="lead" x1="960" y1="262" x2="1040" y2="252"/>
+  <text class="tx" transform="translate(953 246) rotate(-90)">hook-evidence</text>
+  <line class="lead" x1="960" y1="262" x2="964" y2="252"/>
   <circle class="mk" cx="960" cy="262" r="4"/>
-  <text class="tx" transform="translate(1045 246) rotate(-90)">kiro-story</text>
-  <line class="lead" x1="960" y1="262" x2="1056" y2="252"/>
+  <text class="tx" transform="translate(969 246) rotate(-90)">kiro-story</text>
+  <line class="lead" x1="960" y1="262" x2="980" y2="252"/>
   <circle class="mk" cx="960" cy="262" r="4"/>
-  <text class="tx" transform="translate(1061 246) rotate(-90)">visual-qa-1</text>
+  <text class="tx" transform="translate(985 246) rotate(-90)">visual-qa-1</text>
   <rect class="pr" x="37" y="272" width="6" height="192"/>
   <rect class="pr" x="957" y="272" width="6" height="72"/>
   <text class="tx" x="40" y="494" text-anchor="start">2026-11-17</text>
