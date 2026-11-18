@@ -9,7 +9,7 @@ Generated 2026-11-18 (UTC).
 | Item | Count | Source |
 |---|---|---|
 | Specs | 22 | directories in `.kiro/specs` |
-| Spec tasks | 191 ticked of 194 | `- [x]` and `- [ ]` lines in `.kiro/specs/*/tasks.md` |
+| Spec tasks | 192 ticked of 194 | `- [x]` and `- [ ]` lines in `.kiro/specs/*/tasks.md` |
 | Hooks | 7 | `.kiro/hooks/*.json` |
 | Hook runs recorded in a Kiro session | 0 | lines of `docs/evidence/hook-runs.jsonl` whose trigger is not `manual` |
 | Steering files | 6 | `.kiro/steering/*.md` |
@@ -24,7 +24,7 @@ Checked against the repository by a test: specs, hooks, steering files and custo
 
 ## Limits
 
-- No hook has been seen to fire inside a Kiro session. The File Save trigger (`PostFileSave`) is not supported in Kiro Web ([Kiro hook types](https://kiro.dev/docs/hooks/types/)), which is why it never fired there. Issue #87 added `PostToolUse` (matcher `write`), `Stop` and `SessionStart` hooks that Kiro Web does support. They were written, but the session that wrote them did not load them (hooks are read at session start), and editing matching files there wrote no line. Every line in `docs/evidence/hook-runs.jsonl` carries the trigger `manual`.
+- No hook has been seen to fire inside a Kiro session. The File Save trigger (`PostFileSave`) is not supported in Kiro Web ([Kiro hook types](https://kiro.dev/docs/hooks/types/)), which is why it never fired there. Issue #87 added `PostToolUse` (matcher `write`), `Stop` and `SessionStart` hooks that Kiro Web does support. They were written, but the session that wrote them did not load them (hooks are read at session start), and editing matching files there wrote no line. Issue #91 repeated the attempt in a fresh session with the hooks already on `main`: one edit per hook filter (`src/**/*.ts`, `src/necromancer/**`, `.kiro/specs/hook-evidence/tasks.md`, `package.json`, `web/copy.js`) wrote no new line in `docs/evidence/hook-runs.jsonl` and showed no hook error, and no `SessionStart` or `Stop` line appeared either. Every line in `docs/evidence/hook-runs.jsonl` still carries the trigger `manual`.
 - The safety claims rest on tests (property-based, run in CI) and on the scripts named here, not on a recorded Kiro session.
 - Nothing here measures how much time Kiro saved. There is no such measurement.
 - Only the specs, hooks, steering and agents rows are compared with the repository by a test. The other rows (tasks, property call sites, tests, test files, PRs) change only when someone runs `npm run kiro:stats -- --write`, and CI does not refresh them.
