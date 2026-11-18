@@ -5,6 +5,12 @@ export interface OwnerRule {
 
 export const CODEOWNERS_LOCATIONS = [".github/CODEOWNERS", "CODEOWNERS", "docs/CODEOWNERS"];
 export const UNOWNED = "unowned";
+/** Blameless copy shown to people. The data value stays "unowned". */
+export const NO_OWNER_TEXT = "no owner yet";
+
+export function ownerLabel(owner: string | null | undefined): string {
+  return !owner || owner === UNOWNED ? NO_OWNER_TEXT : owner;
+}
 
 export function parseCodeowners(text: string): OwnerRule[] {
   const rules: OwnerRule[] = [];

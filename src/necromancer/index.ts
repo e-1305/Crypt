@@ -15,22 +15,28 @@ import {
 } from "../common/agent.js";
 import type { FileChange, GithubClient } from "../github/client.js";
 import type { RegistryClient, RegistryVersion } from "../registry/types.js";
-import { BUMP_MESSAGES, bumpLockfile, jsonIndent, respec } from "./lockfile.js";
-import { prBody, auditIdFor } from "./pr-body.js";
+import { BUMP_MESSAGES, bumpLockfile, jsonIndent, overrideLockfile, respec, setOverride } from "./lockfile.js";
+import { fetchPackageAdvisories, unionAdvisories, type PackageAdvisoryLookup } from "./package-advisories.js";
+import { prBody, prTitle, auditIdFor } from "./pr-body.js";
 import { SABOTAGE_PATH, SABOTAGE_TITLE_PREFIX, sabotageSmokeTest } from "./sabotage.js";
-import { chooseVersion, type Advisory } from "./version.js";
+import { chooseGroupVersion, compareVersions, parseVersion, type Advisory } from "./version.js";
 
 export { prBody, auditIdFor, type PrFields } from "./pr-body.js";
 
 export const MAX_PRS_PER_RAID = 5;
 
 /** Returns the advisory with OSV affected ranges for an ID, or null when it cannot be had. */
-export type AdvisoryLookup = (id: string) => Promise<Advisory | null>;
+export type AdvisoryLookup = ((id: string) => Promise<Advisory | null>) & {
+  /** Every advisory for a package (all versions). Without it, only the advisories of the installed copies are known. */
+  forPackage?: PackageAdvisoryLookup;
+};
 
 export interface NecromancerCtx extends AgentPaths {
   io: Io;
   client: GithubClient;
   advisories: AdvisoryLookup;
+  /** Overrides `advisories.forPackage`. */
+  packageAdvisories?: PackageAdvisoryLookup;
   /** Directory of the target repository checkout (package.json, package-lock.json). */
   targetDir: string;
   now: () => Date;
@@ -50,6 +56,8 @@ interface CreatureLimb {
   ecosystem: string;
   name: string;
   version: string;
+  direct?: boolean;
+  state?: string;
   owner?: string;
   spawned?: boolean;
   kev?: boolean;
@@ -66,10 +74,12 @@ export function editManifests(
   lockText: string,
   name: string,
   version: string,
+  opts: { transitive?: boolean } = {},
 ): { pkg: string; lock: string } | null {
   const pkg: unknown = JSON.parse(pkgText);
   const lock: unknown = JSON.parse(lockText);
   if (!isObj(pkg) || !isObj(lock)) return null;
+  if (opts.transitive === true) return editOverrides(pkg, lock, pkgText, lockText, name, version);
   let found = false;
   const bump = (deps: unknown): void => {
     if (isObj(deps) && typeof deps[name] === "string") {
@@ -101,6 +111,45 @@ export function editManifests(
     lockFound = true;
   }
   if (!lockFound) return null;
+  return {
+    pkg: JSON.stringify(pkg, null, jsonIndent(pkgText)) + "\n",
+    lock: JSON.stringify(lock, null, jsonIndent(lockText)) + "\n",
+  };
+}
+
+/** Transitive-only package: `overrides` in package.json, and every lock copy below the fixed version loses its pins. */
+function editOverrides(pkg: Json, lock: Json, pkgText: string, lockText: string, name: string, version: string) {
+  const target = parseVersion(version);
+  if (!target) return null;
+  const below = (v: unknown): boolean => {
+    const p = typeof v === "string" ? parseVersion(v) : null;
+    return p !== null && compareVersions(p, target) < 0;
+  };
+  let changed = 0;
+  if (isObj(lock.packages)) {
+    for (const [k, e] of Object.entries(lock.packages)) {
+      if ((k === `node_modules/${name}` || k.endsWith(`/node_modules/${name}`)) && isObj(e) && below(e.version)) {
+        e.version = version;
+        delete e.resolved;
+        delete e.integrity;
+        changed++;
+      }
+    }
+  }
+  const walk = (deps: unknown): void => {
+    if (!isObj(deps)) return;
+    for (const [k, e] of Object.entries(deps)) {
+      if (!isObj(e)) continue;
+      if (k === name && below(e.version)) {
+        e.version = version;
+        delete e.resolved;
+        delete e.integrity;
+      }
+      walk(e.dependencies);
+    }
+  };
+  walk(lock.dependencies);
+  if (changed === 0 || !setOverride(pkg, name, version)) return null;
   return {
     pkg: JSON.stringify(pkg, null, jsonIndent(pkgText)) + "\n",
     lock: JSON.stringify(lock, null, jsonIndent(lockText)) + "\n",
@@ -146,19 +195,39 @@ export async function graft(ctx: NecromancerCtx, requestPath: string): Promise<G
     if (!cl || cl.spawned !== true) return done("REFUSED_NOT_SPAWNED");
     if (ref.ecosystem !== "npm") return done("NO_FIX_AVAILABLE");
 
-    const vulns = Array.isArray(cl.vulns) ? cl.vulns : [];
-    const advisories: Advisory[] = [];
-    for (const v of vulns) {
-      const a = await ctx.advisories(v.id);
+    // One graft per package: every installed copy, every known advisory of the package.
+    const copies = limbs.filter((l) => l && l.ecosystem === ref.ecosystem && l.name === ref.name);
+    const vulnList = copies.flatMap((c) => (Array.isArray(c.vulns) ? c.vulns : []));
+    const ids = [...new Set(vulnList.map((v) => v.id))];
+    const perId: Advisory[] = [];
+    for (const id of ids) {
+      const a = await ctx.advisories(id);
       if (!a) return done("ERROR"); // missing evidence: change nothing
-      advisories.push(a);
+      perId.push(a);
     }
-    const choice = chooseVersion(ref.ecosystem, ref.name, ref.version, advisories);
+    const forPackage = ctx.packageAdvisories ?? ctx.advisories.forPackage;
+    let advisories: Advisory[] = perId;
+    if (forPackage) {
+      const all = await forPackage(ref.ecosystem, ref.name);
+      if (!all) return done("ERROR");
+      advisories = unionAdvisories(perId, all);
+    }
+    const installed = [...new Set(copies.map((c) => c.version))];
+    const rotting = [...new Set(copies.filter((c) => (Array.isArray(c.vulns) && c.vulns.length > 0) || c.state === "Rotting" || c.state === "Possessed").map((c) => c.version))];
+    const choice = chooseGroupVersion(ref.ecosystem, ref.name, installed, rotting, advisories);
     if (!choice) return done("NO_FIX_AVAILABLE");
+    const transitive = !copies.some((c) => c.direct !== false);
+    const directCopy = copies.find((c) => c.direct !== false);
+    const versions = choice.affected;
+    const toV = parseVersion(choice.version);
+    const dv = directCopy ? parseVersion(directCopy.version) : null;
+    if (!transitive && (!toV || !dv || compareVersions(dv, toV) >= 0)) return done("NO_FIX_AVAILABLE");
+    const fromVersion = transitive ? choice.from : directCopy!.version;
 
     const branch = `crypt/graft-${limb.toLowerCase()}-${choice.version}${ctx.sabotage === true ? "-sabotage" : ""}`;
     const records: PrRecord[] = readPrRecords(io, ctx.prsDir);
-    if (records.some((r) => r.branch === branch || r.limb === limb)) return done("PR_EXISTS");
+    // One PR per package, not per installed copy.
+    if (records.some((r) => r.branch === branch || r.limb === limb || (r.ecosystem === ref.ecosystem && r.name === ref.name))) return done("PR_EXISTS");
     // A raid is the set of PRs not yet healed: healed and rejected records do not count.
     const state = readState(io, ctx.statePath);
     const open = records.filter((r) => state.limbs[r.limb]?.state !== "healed");
@@ -179,14 +248,15 @@ export async function graft(ctx: NecromancerCtx, requestPath: string): Promise<G
     const lockText = await readFile("package-lock.json");
     let edited: { pkg: string; lock: string } | null;
     if (meta) {
-      const r = bumpLockfile({ pkgText, lockText, name: ref.name, from: ref.version, meta, fixed: choice.version });
+      const input = { pkgText, lockText, name: ref.name, from: fromVersion, meta, fixed: choice.version };
+      const r = transitive ? overrideLockfile(input) : bumpLockfile(input);
       if (!r.ok) {
         process.stderr.write(`necromancer: ${BUMP_MESSAGES[r.reason]} (${r.reason})\n`);
         return done(r.reason === "not-direct-dependency" || r.reason === "lock-entry-count" ? "NO_FIX_AVAILABLE" : "ERROR");
       }
       edited = r;
     } else {
-      edited = editManifests(pkgText, lockText, ref.name, choice.version);
+      edited = editManifests(pkgText, lockText, ref.name, choice.version, { transitive });
     }
     if (!edited) return done("NO_FIX_AVAILABLE");
     const sabotage = ctx.sabotage === true;
@@ -197,13 +267,15 @@ export async function graft(ctx: NecromancerCtx, requestPath: string): Promise<G
     if (sabotage) files.push({ path: SABOTAGE_PATH, content: sabotageSmokeTest(await readFile(SABOTAGE_PATH)) });
 
     const auditId = auditIdFor(ctx.now(), limb);
-    const cves = [...new Set(vulns.flatMap((v) => (Array.isArray(v.cves) ? v.cves : [])))].sort();
+    const cves = [...new Set(vulnList.flatMap((v) => (Array.isArray(v.cves) ? v.cves : [])))].sort();
     const body = prBody({
       limb,
       name: ref.name,
-      from: ref.version,
+      from: choice.from,
       to: choice.version,
       breaking: choice.breaking,
+      kind: transitive ? "transitive" : "direct",
+      versions,
       cves,
       kev: cl.kev === true,
       epss: typeof cl.epss === "number" ? cl.epss : null,
@@ -212,7 +284,7 @@ export async function graft(ctx: NecromancerCtx, requestPath: string): Promise<G
       fromRegistry: meta !== null,
       sabotage,
     });
-    const title = `${sabotage ? SABOTAGE_TITLE_PREFIX : ""}fix: graft ${ref.name} ${ref.version} to ${choice.version} (${limb})`;
+    const title = `${sabotage ? SABOTAGE_TITLE_PREFIX : ""}${prTitle({ name: ref.name, from: choice.from, versions, to: choice.version, limb, breaking: choice.breaking })}`;
     // Complete mediation: re-check the seal before each remote write step.
     if (isSealed(io, ctx.sealPath)) return done("REJECTED_SEALED");
     await ctx.client.createBranchWithFiles({ branch, message: title, files });
@@ -226,7 +298,7 @@ export async function graft(ctx: NecromancerCtx, requestPath: string): Promise<G
         branch,
         title,
         body,
-        meta: { limb, ecosystem: ref.ecosystem, name: ref.name, from: ref.version, to: choice.version, breaking: choice.breaking },
+        meta: { limb, ecosystem: ref.ecosystem, name: ref.name, from: choice.from, to: choice.version, breaking: choice.breaking },
       });
     } catch (e) {
       // The branch exists but no PR does: remove it so no orphan remains (best effort).
@@ -235,7 +307,7 @@ export async function graft(ctx: NecromancerCtx, requestPath: string): Promise<G
     }
     if (!ctx.client.dryRun) {
       const rec = {
-        branch, limb, ecosystem: ref.ecosystem, name: ref.name, from: ref.version, to: choice.version, breaking: choice.breaking,
+        branch, limb, ecosystem: ref.ecosystem, name: ref.name, from: choice.from, to: choice.version, breaking: choice.breaking,
         number: pr.number, url: pr.url, headSha: pr.headSha, sabotage, auditId,
       };
       try {

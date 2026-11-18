@@ -22,6 +22,8 @@ export interface OsvRange {
 export interface OsvAffected {
   package: { ecosystem: string; name: string };
   ranges: OsvRange[];
+  /** Explicit affected versions listed by OSV (optional). */
+  versions?: string[];
 }
 
 export interface Advisory {
@@ -125,10 +127,44 @@ export interface Choice {
   breaking: boolean;
 }
 
+/** Shown in the payload, the PR title and the PR body when a graft crosses a breaking boundary. */
+export const BREAKING_NOTE = "\u26a0 major: review carefully";
+
+/** True when moving from `from` to `to` can break callers: a higher major, or a higher minor while still 0.x. */
+export function isBreaking(from: Semver, to: Semver): boolean {
+  if (to.major > from.major) return true;
+  return from.major === 0 && to.major === 0 && to.minor > from.minor;
+}
+
+function listedVersions(advisories: Advisory[], ecosystem: string, name: string): Set<string> {
+  const out = new Set<string>();
+  for (const a of advisories) {
+    for (const af of a.affected) {
+      if (af.package.ecosystem !== ecosystem || af.package.name !== name) continue;
+      for (const v of af.versions ?? []) out.add(v);
+    }
+  }
+  return out;
+}
+
+/** True/false when the version is known to be affected by any advisory of the package. Null when a range is unclear. */
+export function affectedByAny(
+  ecosystem: string,
+  name: string,
+  version: string,
+  advisories: Advisory[],
+): boolean | null {
+  if (listedVersions(advisories, ecosystem, name).has(version)) return true;
+  const v = parseVersion(version);
+  if (!v) return null;
+  return isAffected(v, advisories.flatMap((a) => usableRanges(a, ecosystem, name)));
+}
+
 /**
- * Smallest stable version > current that is outside every range of every advisory.
+ * Smallest stable version > current that is outside every range of every advisory given.
+ * Callers pass every known advisory for the package, not only those of one installed version.
  * Candidates: each `fixed` bound and the next patch after each `last_affected`.
- * Same major as current is preferred; a higher major sets breaking. Null when nothing qualifies or anything is unclear.
+ * Breaking is set by a higher major, or a higher minor while 0.x. Null when nothing qualifies or anything is unclear.
  */
 export function chooseVersion(
   ecosystem: string,
@@ -140,6 +176,7 @@ export function chooseVersion(
   if (!cur || advisories.length === 0) return null;
   const ranges = advisories.flatMap((a) => usableRanges(a, ecosystem, name));
   if (ranges.length === 0) return null;
+  const listed = listedVersions(advisories, ecosystem, name);
   const candidates = new Map<string, Semver>();
   for (const r of ranges) {
     for (const ev of r.events) {
@@ -156,10 +193,51 @@ export function chooseVersion(
   for (const c of candidates.values()) {
     const hit = isAffected(c, ranges);
     if (hit === null) return null;
-    if (!hit) good.push(c);
+    if (!hit && !listed.has(formatVersion(c))) good.push(c);
   }
   good.sort(compareVersions);
-  const pick = good.find((c) => c.major === cur.major) ?? good[0];
+  const pick = good[0];
   if (!pick) return null;
-  return { version: formatVersion(pick), breaking: pick.major > cur.major };
+  return { version: formatVersion(pick), breaking: isBreaking(cur, pick) };
+}
+
+export interface GroupChoice extends Choice {
+  /** Lowest installed version that the graft moves. */
+  from: string;
+  /** Every installed version that the chosen version replaces, ascending. */
+  affected: string[];
+}
+
+/**
+ * One fixed version for every installed copy of a package.
+ * `installed` lists the versions in the lockfile; `rotting` lists versions already known to carry findings.
+ * The chosen version is above every affected copy and outside all advisories of the package.
+ */
+export function chooseGroupVersion(
+  ecosystem: string,
+  name: string,
+  installed: string[],
+  rotting: string[],
+  advisories: Advisory[],
+): GroupChoice | null {
+  const affected: Semver[] = [];
+  for (const raw of new Set([...installed, ...rotting])) {
+    const v = parseVersion(raw);
+    if (!v) continue;
+    const hit = affectedByAny(ecosystem, name, raw, advisories);
+    if (hit === null) return null;
+    if (hit || rotting.includes(raw)) affected.push(v);
+  }
+  if (affected.length === 0) return null;
+  affected.sort(compareVersions);
+  const top = affected[affected.length - 1]!;
+  const choice = chooseVersion(ecosystem, name, formatVersion(top), advisories);
+  if (!choice) return null;
+  const to = parseVersion(choice.version)!;
+  return {
+    version: choice.version,
+    breaking: affected.some((a) => isBreaking(a, to)),
+    from: formatVersion(affected[0]!),
+    affected: affected.map(formatVersion),
+  };
 }

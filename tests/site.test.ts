@@ -252,7 +252,7 @@ describe.skipIf(!haveToolchain)("build:site output", () => {
       for (const f of ["index.html", "app.js", "style.css", ...files(join(a, "js")).map((x) => x.slice(a.length + 1))]) {
         const text = readFileSync(join(a, f), "utf8");
         // The live exhume modules (paste your repo) read raw.githubusercontent.com and api.osv.dev, and nothing else.
-        const live = f === "js/web/live-exhume.js" || f === "js/exhume/osv-client.js";
+        const live = f === "js/web/live-exhume.js" || f === "js/exhume/osv-client.js" || f === "js/necromancer/package-advisories.js";
         const allowed = live ? "(?!github\\.com\\/owner\\/repo|raw\\.githubusercontent\\.com|api\\.osv\\.dev|github\\.com\\/e-1305\\/)" : "(?!github\\.com\\/owner\\/repo)";
         expect(text, f).not.toMatch(new RegExp(`https?:\\/\\/${allowed}`));
         if (!live) expect(text, f).not.toMatch(/\b(XMLHttpRequest|WebSocket|sendBeacon)\b|method:\s*["']POST/);

@@ -1,0 +1,27 @@
+{
+  "id": "GQ-MINIMIST-2",
+  "aliases": [
+    "CVE-2020-11023"
+  ],
+  "affected": [
+    {
+      "package": {
+        "ecosystem": "npm",
+        "name": "minimist"
+      },
+      "ranges": [
+        {
+          "type": "SEMVER",
+          "events": [
+            {
+              "introduced": "1.0.0"
+            },
+            {
+              "fixed": "1.2.6"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

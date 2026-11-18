@@ -13,7 +13,8 @@ export type BumpAbort =
   | "dependencies-changed"
   | "integrity-invalid"
   | "version-mismatch"
-  | "version-below-fixed";
+  | "version-below-fixed"
+  | "overrides-conflict";
 
 export const BUMP_MESSAGES: Record<BumpAbort, string> = {
   "invalid-json": "package.json or package-lock.json is not valid JSON",
@@ -24,6 +25,7 @@ export const BUMP_MESSAGES: Record<BumpAbort, string> = {
   "integrity-invalid": "the registry gave no sha512 integrity for the new version",
   "version-mismatch": "the registry answered for a different version than requested",
   "version-below-fixed": "the new version is below the fixed version",
+  "overrides-conflict": "package.json already has an overrides entry for the package that cannot be extended safely",
 };
 
 export type BumpResult = { ok: true; pkg: string; lock: string } | { ok: false; reason: BumpAbort };
@@ -125,6 +127,101 @@ export function bumpLockfile(input: BumpInput): BumpResult {
     const legacy = lock.dependencies[name] as Json;
     if (legacy.version === from) lock.dependencies[name] = rewriteEntry(legacy, meta);
   }
+  return {
+    ok: true,
+    pkg: JSON.stringify(pkg, null, jsonIndent(input.pkgText)) + "\n",
+    lock: JSON.stringify(lock, null, jsonIndent(input.lockText)) + "\n",
+  };
+}
+
+/** The value written to package.json `overrides` for a transitive graft. */
+export function overrideSpec(version: string): string {
+  return `>=${version}`;
+}
+
+/** Sets overrides[name] in a parsed package.json. False when an existing entry would conflict. */
+export function setOverride(pkg: Json, name: string, version: string): boolean {
+  const cur = pkg.overrides;
+  if (cur === undefined) {
+    pkg.overrides = { [name]: overrideSpec(version) };
+    return true;
+  }
+  if (!isObj(cur)) return false;
+  const old = cur[name];
+  if (old !== undefined && typeof old !== "string") return false;
+  cur[name] = overrideSpec(version);
+  return true;
+}
+
+function belowVersion(v: unknown, limit: string): boolean | null {
+  if (typeof v !== "string") return null;
+  const a = parseVersion(v);
+  const b = parseVersion(limit);
+  if (!a || !b) return null;
+  return compareVersions(a, b) < 0;
+}
+
+/** Legacy (lockfileVersion 2) nested tree: rewrite every copy of `name` below `limit`. Returns false on any unclear entry. */
+function rewriteLegacy(deps: unknown, name: string, meta: RegistryVersion): boolean {
+  if (!isObj(deps)) return true;
+  for (const [k, raw] of Object.entries(deps)) {
+    if (!isObj(raw)) continue;
+    if (k === name) {
+      const below = belowVersion(raw.version, meta.version);
+      if (below === null) return false;
+      if (below) deps[k] = rewriteEntry(raw, meta);
+    }
+    if (!rewriteLegacy((deps[k] as Json).dependencies, name, meta)) return false;
+  }
+  return true;
+}
+
+/**
+ * Transitive graft: `overrides` in package.json forces the package, and every lockfile copy below the fixed version
+ * is rewritten from registry metadata. Aborts when a copy would change its own dependencies.
+ */
+export function overrideLockfile(input: BumpInput): BumpResult {
+  const { name, meta } = input;
+  const fail = (reason: BumpAbort): BumpResult => ({ ok: false, reason });
+  let pkg: unknown;
+  let lock: unknown;
+  try {
+    pkg = JSON.parse(input.pkgText);
+    lock = JSON.parse(input.lockText);
+  } catch {
+    return fail("invalid-json");
+  }
+  if (!isObj(pkg) || !isObj(lock)) return fail("invalid-json");
+  if (lock.lockfileVersion !== 2 && lock.lockfileVersion !== 3) return fail("lockfile-version");
+  const packages = lock.packages;
+  if (!isObj(packages)) return fail("lockfile-version");
+  const newV = parseVersion(meta.version);
+  const fixedV = parseVersion(input.fixed);
+  if (!newV || !fixedV) return fail("version-mismatch");
+  if (compareVersions(newV, fixedV) < 0) return fail("version-below-fixed");
+  if (!/^sha512-[A-Za-z0-9+/]+={0,2}$/.test(meta.integrity) || !/^https:\/\//.test(meta.resolved)) return fail("integrity-invalid");
+
+  const keys = Object.keys(packages).filter((k) => k === `node_modules/${name}` || k.endsWith(`/node_modules/${name}`));
+  let changed = 0;
+  for (const k of keys) {
+    const e = packages[k];
+    if (!isObj(e)) return fail("lock-entry-count");
+    const below = belowVersion(e.version, meta.version);
+    if (below === null) return fail("lock-entry-count");
+    if (!below) continue;
+    if (
+      !sameMap(e.dependencies, meta.dependencies) ||
+      !sameMap(e.optionalDependencies, meta.optionalDependencies) ||
+      !sameMap(e.peerDependencies, meta.peerDependencies)
+    ) {
+      return fail("dependencies-changed");
+    }
+    packages[k] = rewriteEntry(e, meta);
+    changed++;
+  }
+  if (changed === 0) return fail("lock-entry-count");
+  if (lock.lockfileVersion === 2 && !rewriteLegacy(lock.dependencies, name, meta)) return fail("lock-entry-count");
+  if (!setOverride(pkg, name, meta.version)) return fail("overrides-conflict");
   return {
     ok: true,
     pkg: JSON.stringify(pkg, null, jsonIndent(input.pkgText)) + "\n",
