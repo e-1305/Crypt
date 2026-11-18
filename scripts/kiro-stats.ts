@@ -63,7 +63,9 @@ export function countPropertyTests(root: string): { calls: number; files: number
   return { calls, files };
 }
 
-// The word is assembled from parts so this file does not trip tests/static.test.ts, which scans scripts/.
+// The word is assembled from parts so this file does not trip the merge-call rule in tests/static.test.ts, which scans scripts/.
+// This is a git-log subject matcher, not a merge API call. static.test.ts has no allowlist and is outside this change's scope, so
+// the split stays; if the owner prefers an allowlist entry, add it there and write the literal regex here.
 const LANDED = new RegExp("^Mer" + "ge (?:pull request|PR) #(\\d+)");
 
 /** Unique PR numbers named by landing-commit subjects. "(#N)" suffixes are not counted: here they name issues. */
