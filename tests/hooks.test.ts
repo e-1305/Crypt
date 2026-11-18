@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { numRuns } from "./runs.js";
 import { vi } from "vitest";
+import { check as checkHookEvidence } from "../scripts/ci/hook-evidence-check.mjs";
 
 // These properties spawn a shell per run: cap runs (even in CI) and allow a longer timeout.
 vi.setConfig({ testTimeout: 120_000 });
@@ -293,19 +294,25 @@ describe("hook definitions in .kiro/hooks", () => {
     for (const p of ["src/raise/generate.ts", "src/bridge/watch.ts"]) expect(matches(h, p), p).toBe(false);
   });
   it("hook 3 matches spec tasks.md only", () => {
-    const h = byName(/traceability/);
+    const h = byName(/traceability.*\(agent\)/);
     expect(matches(h, ".kiro/specs/epic-a-production/tasks.md")).toBe(true);
     expect(matches(h, ".kiro/specs/epic-a-production/design.md")).toBe(false);
     expect(h.action.type).toBe("agent");
   });
   it("hook 4 matches package.json and asks the agent to update the attribution file", () => {
-    const h = byName(/Attribution/);
+    const h = byName(/Attribution.*\(agent\)/);
     expect(matches(h, "package.json")).toBe(true);
     expect(matches(h, "fixtures/vulnerable-npm/package.json")).toBe(true);
     expect(matches(h, "package-lock.json")).toBe(false);
     expect(h.action.type).toBe("agent");
     expect(h.action.prompt).toContain("docs/ATTRIBUTION.md");
     expect(h.action.prompt).toContain("deps-check.sh");
+  });
+  it("hooks 3 and 4 also keep a command entry with the same matcher", () => {
+    for (const [cmd, agent] of [[/tasks save$/, /traceability.*\(agent\)/], [/package\.json save$/, /Attribution.*\(agent\)/]] as const) {
+      expect(byName(cmd).action.type).toBe("command");
+      expect(byName(cmd).matcher).toBe(byName(agent).matcher);
+    }
   });
   it("hook 5 matches src/raise and web copy", () => {
     const h = byName(/Blameless/);
@@ -315,6 +322,58 @@ describe("hook definitions in .kiro/hooks", () => {
   it("no hook writes, commits or reaches the network", () => {
     for (const h of hooks.filter((x) => x.action.type === "command")) {
       expect(h.action.command, h.file).not.toMatch(/git (commit|push)|curl|wget|npm publish|>/);
+    }
+  });
+});
+
+describe("run-logged.sh and the hook evidence check", () => {
+  const logOf = (d: string) => readFileSync(join(d, "docs", "evidence", "hook-runs.jsonl"), "utf8").trim().split("\n").map((l) => JSON.parse(l) as Record<string, unknown>);
+
+  it("logs one valid line, keeps the exit code, and never stores the payload or a token", () => {
+    const d = repo({ "src/mcp/a.ts": 'console.log(process.env.GITHUB_TOKEN);\n' });
+    try {
+      const payload = JSON.stringify({ trigger: "PostFileSave", path: join(d, "src/mcp/a.ts"), secret: "ghp_abcdefghijklmnop1234", author: "Jane Roe" });
+      const r = spawnSync("bash", ["scripts/hooks/run-logged.sh", "failsafe-guard-on-save", "scripts/hooks/failsafe-check.sh"], { cwd: d, encoding: "utf8", input: payload });
+      expect(r.status).toBe(1);
+      const rows = logOf(d);
+      expect(rows).toHaveLength(1);
+      expect(Object.keys(rows[0]!)).toEqual(["ts", "hook", "trigger", "file", "exit", "summary"]);
+      expect(rows[0]).toMatchObject({ hook: "failsafe-guard-on-save", trigger: "PostFileSave", file: "src/mcp/a.ts", exit: 1 });
+      const raw = readFileSync(join(d, "docs", "evidence", "hook-runs.jsonl"), "utf8");
+      expect(raw).not.toContain("ghp_");
+      expect(raw).not.toContain("Jane");
+    } finally {
+      rmSync(d, { recursive: true, force: true });
+    }
+  });
+
+  it("marks a run without an event as manual", () => {
+    const d = repo({ "src/mcp/a.ts": clean });
+    try {
+      const r = spawnSync("bash", ["scripts/hooks/run-logged.sh", "failsafe-guard-on-save", "scripts/hooks/failsafe-check.sh", "src/mcp/a.ts"], { cwd: d, encoding: "utf8", input: "" });
+      expect(r.status, r.stderr).toBe(0);
+      expect(logOf(d)[0]).toMatchObject({ trigger: "manual", file: "src/mcp/a.ts", exit: 0 });
+    } finally {
+      rmSync(d, { recursive: true, force: true });
+    }
+  });
+
+  it("the repository hooks all log, and the log is valid", () => {
+    expect(checkHookEvidence(ROOT)).toEqual([]);
+  });
+
+  it("flags a hook without a command action, timeout or enabled", () => {
+    const d = mkdtempSync(join(tmpdir(), "crypt-hev-"));
+    try {
+      mkdirSync(join(d, ".kiro", "hooks"), { recursive: true });
+      writeFileSync(join(d, ".kiro", "hooks", "a.json"), JSON.stringify({ hooks: [{ name: "a", action: { type: "agent", prompt: "x" } }] }));
+      writeFileSync(join(d, ".kiro", "hooks", "b.json"), JSON.stringify({ hooks: [{ name: "b", action: { type: "command", command: "bash scripts/hooks/run-logged.sh b scripts/hooks/x.sh" } }] }));
+      const p = checkHookEvidence(d).join("\n");
+      expect(p).toContain("a.json: no command action");
+      expect(p).toContain("b.json: the command hook needs an explicit timeout");
+      expect(p).toContain("b.json: \"b\" needs enabled: true");
+    } finally {
+      rmSync(d, { recursive: true, force: true });
     }
   });
 });

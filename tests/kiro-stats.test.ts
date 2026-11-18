@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { END, STATS_DOCS, checkDocStats, checkLinks, renderDocStats, spliceDocStats, countAgents, countHooks, countPropertyTests, countSpecs, countSteering, countTasks, prNumbers, render, splice } from "../scripts/kiro-stats.js";
+import { END, STATS_DOCS, checkDocStats, checkLinks, renderDocStats, spliceDocStats, countAgents, countHooks, countPropertyTests, countSpecs, countSteering, countTasks, hookRunsByHook, kiroSessionRuns, readHookRuns, collect, prNumbers, render, splice } from "../scripts/kiro-stats.js";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const tmp = mkdtempSync(join(tmpdir(), "kiro-stats-test-"));
@@ -125,6 +125,33 @@ describe("stats blocks in DEVPOST.md and BLOG.md", () => {
       expect(texts.length, rel).toBeGreaterThan(0);
       const expected = renderDocStats(ROOT, 0).replace(/ and \d+ tests.*$/, "");
       for (const t of texts) expect(t, rel).toContain(expected);
+    }
+  });
+});
+
+describe("hook runs recorded in a Kiro session", () => {
+  const line = (hook: string, trigger: string) => JSON.stringify({ ts: "2026-01-01T00:00:00.000Z", hook, trigger, file: "", exit: 0, summary: "ok" });
+  it("is null when the log is missing", () => {
+    const d = mkdtempSync(join(tmpdir(), "kiro-stats-runs-"));
+    try {
+      expect(readHookRuns(d)).toBeNull();
+      expect(collect(d, false).find((s) => s.name.startsWith("Hook runs"))?.value).toBe("unavailable");
+    } finally {
+      rmSync(d, { recursive: true, force: true });
+    }
+  });
+  it("counts only lines whose trigger is not manual and skips broken lines", () => {
+    const d = mkdtempSync(join(tmpdir(), "kiro-stats-runs-"));
+    try {
+      mkdirSync(join(d, "docs", "evidence"), { recursive: true });
+      writeFileSync(join(d, "docs", "evidence", "hook-runs.jsonl"), [line("b", "PostFileSave"), line("a", "manual"), line("a", "PostFileSave"), "{broken", "", line("b", "PostFileSave")].join("\n") + "\n");
+      const runs = readHookRuns(d)!;
+      expect(runs).toHaveLength(4);
+      expect(kiroSessionRuns(runs)).toHaveLength(3);
+      expect(hookRunsByHook(runs)).toEqual({ a: 1, b: 2 });
+      expect(collect(d, false).find((s) => s.name.startsWith("Hook runs"))?.value).toBe("3");
+    } finally {
+      rmSync(d, { recursive: true, force: true });
     }
   });
 });

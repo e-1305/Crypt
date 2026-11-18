@@ -51,6 +51,43 @@ export const countHooks = (root: string): number => list(join(root, ".kiro", "ho
 export const countAgents = (root: string): number => list(join(root, ".kiro", "agents"), ".json").length;
 export const countSteering = (root: string): number => list(join(root, ".kiro", "steering"), ".md").length;
 
+export const HOOK_RUNS = join("docs", "evidence", "hook-runs.jsonl");
+
+export interface HookRun {
+  ts: string;
+  hook: string;
+  trigger: string;
+  file: string;
+  exit: number;
+  summary: string;
+}
+
+/** Valid run lines of docs/evidence/hook-runs.jsonl, or null when the file is missing. Unparseable lines are skipped. */
+export function readHookRuns(root: string): HookRun[] | null {
+  const f = join(root, HOOK_RUNS);
+  if (!existsSync(f)) return null;
+  const runs: HookRun[] = [];
+  for (const l of readFileSync(f, "utf8").split("\n")) {
+    try {
+      const o = JSON.parse(l) as HookRun;
+      if (o && typeof o.hook === "string" && typeof o.trigger === "string") runs.push(o);
+    } catch {
+      /* blank or broken line */
+    }
+  }
+  return runs;
+}
+
+/** Runs from a Kiro session: every line whose trigger is not "manual". */
+export const kiroSessionRuns = (runs: HookRun[]): HookRun[] => runs.filter((r) => r.trigger !== "manual");
+
+/** Count of Kiro-session runs per hook name, sorted by name. */
+export function hookRunsByHook(runs: HookRun[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const r of kiroSessionRuns(runs)) out[r.hook] = (out[r.hook] ?? 0) + 1;
+  return Object.fromEntries(Object.entries(out).sort(([a], [b]) => a.localeCompare(b)));
+}
+
 const PROP = /\b(?:fc\.assert|fc\.property|fc\.asyncProperty|test\.prop|it\.prop)\s*\(/g;
 
 export function countPropertyTests(root: string): { calls: number; files: number } {
@@ -113,10 +150,12 @@ export function collect(root: string, runTests: boolean): Stat[] {
   const prs = countPrs(root);
   const t = runTests ? vitestTotals(root) : null;
   const un = "unavailable";
+  const runs = readHookRuns(root);
   return [
     { name: "Specs", value: String(countSpecs(root).length), source: "directories in `.kiro/specs`" },
     { name: "Spec tasks", value: `${tasks.done} ticked of ${tasks.total}`, source: "`- [x]` and `- [ ]` lines in `.kiro/specs/*/tasks.md`" },
     { name: "Hooks", value: String(countHooks(root)), source: "`.kiro/hooks/*.json`" },
+    { name: "Hook runs recorded in a Kiro session", value: runs ? String(kiroSessionRuns(runs).length) : un, source: "lines of `docs/evidence/hook-runs.jsonl` whose trigger is not `manual`" },
     { name: "Steering files", value: String(countSteering(root)), source: "`.kiro/steering/*.md`" },
     { name: "Custom agents", value: String(countAgents(root)), source: "`.kiro/agents/*.json` (Oracle has no file)" },
     { name: "Property test call sites", value: `${prop.calls} in ${prop.files} files`, source: "`fc.assert`, `fc.property`, `fc.asyncProperty`, `test.prop` in `tests/*.test.ts`" },
