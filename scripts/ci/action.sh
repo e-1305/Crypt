@@ -3,7 +3,7 @@
 #   report  exhume the checked-out repo, write the plate and the noise funnel to the step summary. Writes nothing to it.
 #   graft   opt-in. Needs GITHUB_TOKEN. Runs scripts/ci/live-raid.sh graft (existing preflight). Never merges.
 # Env: CRYPT_TARGET (repo to scan, default $GITHUB_WORKSPACE or .), CRYPT_OUT_DIR (all output, default a temp dir),
-#      CRYPT_CMD and CRYPT_FEEDS_CMD (stubs for tests), GITHUB_STEP_SUMMARY, GITHUB_OUTPUT.
+#      CRYPT_CMD, CRYPT_PLATE_CMD and CRYPT_FEEDS_CMD (stubs for tests), GITHUB_STEP_SUMMARY, GITHUB_OUTPUT.
 # Exit codes: 0 ok, 1 a step failed or the state is unknown, 2 bad arguments (nothing was run).
 # Fail-safe: any error or unknown state exits nonzero with a FAILED summary, never a green "all clean".
 set -euo pipefail
@@ -45,6 +45,8 @@ cd "$OUT_DIR" # crypt writes out/, data/ and crypt-audit.log to the current dire
 if [ -n "${GITHUB_OUTPUT:-}" ]; then echo "dir=${OUT_DIR}/out" >>"$GITHUB_OUTPUT"; fi
 
 CRYPT="${CRYPT_CMD:-node $ROOT/bin/crypt.mjs}"
+# The plate has no crypt subcommand: it is scripts/plate.ts (npm run plate).
+PLATE="${CRYPT_PLATE_CMD:-$ROOT/node_modules/.bin/tsx $ROOT/scripts/plate.ts}"
 FEEDS="${CRYPT_FEEDS_CMD:-npm --prefix $ROOT run --silent feeds:update -- $OUT_DIR/data/feeds}"
 mkdir -p out
 log="out/action-${mode}.log"
@@ -102,7 +104,7 @@ funnel="$(node -e '
 read -r findings exorcised spawned unresolved unknown <<<"$funnel"
 
 # shellcheck disable=SC2086
-plate="$($CRYPT plate out/creature.json 2>>"$log")" || fail "crypt plate failed."
+plate="$($PLATE out/creature.json 2>>"$log")" || fail "plate rendering failed."
 # shellcheck disable=SC2086
 $CRYPT autopsy 2>&1 | tee -a "$log" || fail "crypt autopsy failed."
 [ -s out/autopsy.html ] || fail "crypt autopsy wrote no out/autopsy.html."

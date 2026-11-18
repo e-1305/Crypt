@@ -17,7 +17,6 @@ case "$1" in
     if [ -n "\${STUB_EXHUME_FAIL:-}" ]; then exit 4; fi
     mkdir -p out
     if [ -n "\${STUB_BAD_JSON:-}" ]; then echo 'not json' > out/creature.json; else echo "$STUB_CREATURE" > out/creature.json; fi ;;
-  plate) echo "PLATE LINE lodash" ;;
   autopsy) mkdir -p out; echo '<html></html>' > out/autopsy.html; echo "Autopsy report written" ;;
   raise) echo '{}' > out/limbs.json ;;
   graft) mkdir -p out/prs; echo "$2: PR_OPENED" ;;
@@ -30,6 +29,9 @@ function run(args: string[], env: Record<string, string> = {}, counts: unknown =
   const stub = join(d, "stub.sh");
   writeFileSync(stub, STUB);
   chmodSync(stub, 0o755);
+  const plate = join(d, "plate.sh");
+  writeFileSync(plate, '#!/usr/bin/env bash\necho "PLATE LINE lodash"\n');
+  chmodSync(plate, 0o755);
   const target = join(d, "repo");
   mkdirSync(target);
   writeFileSync(join(target, "package-lock.json"), "{}");
@@ -43,6 +45,7 @@ function run(args: string[], env: Record<string, string> = {}, counts: unknown =
       PATH: process.env.PATH ?? "",
       CRYPT_CMD: stub,
       CRYPT_FEEDS_CMD: "true",
+      CRYPT_PLATE_CMD: plate,
       CRYPT_TARGET: target,
       CRYPT_OUT_DIR: work,
       STUB_CALLS: calls,
@@ -138,6 +141,27 @@ describe("action.sh report mode", () => {
       expect(x.summary).toMatch(/cannot be trusted as clean/);
     }
   });
+});
+
+describe("action.sh against the real CLI surface", () => {
+  it("only uses crypt subcommands that scripts/cli/main.ts dispatches, and a plate script that exists", () => {
+    const main = readFileSync(join(ROOT, "scripts", "cli", "main.ts"), "utf8");
+    const sh = readFileSync(SCRIPT, "utf8");
+    const used = [...sh.matchAll(/\$CRYPT (\w+)/g)].map((m) => m[1]);
+    expect(used).toEqual(expect.arrayContaining(["exhume", "autopsy"]));
+    for (const c of used) expect(main).toContain(`case "${c}"`);
+    expect(sh).not.toMatch(/\$CRYPT plate/);
+    expect(existsSync(join(ROOT, "scripts", "plate.ts"))).toBe(true);
+  });
+
+  it("the real exhume output renders with the default plate command", () => {
+    const d = mkdtempSync(join(tmpdir(), "crypt-plate-"));
+    const ex = spawnSync("node", [join(ROOT, "bin", "crypt.mjs"), "exhume", join(ROOT, "fixtures", "vulnerable-npm")], { cwd: d, encoding: "utf8" });
+    expect(ex.status).toBe(0);
+    const r = spawnSync(join(ROOT, "node_modules", ".bin", "tsx"), [join(ROOT, "scripts", "plate.ts"), join(d, "out", "creature.json")], { encoding: "utf8" });
+    expect(r.status).toBe(0);
+    expect(r.stdout.length).toBeGreaterThan(20);
+  }, 60000);
 });
 
 describe("action.sh graft mode", () => {

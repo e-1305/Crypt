@@ -6,7 +6,7 @@ branding:
   color: green
 inputs:
   mode:
-    description: "report (default, read only, no token needed) or graft (opens a pull request, needs token, a human merges)"
+    description: "report (default, read only, no token needed) or graft (DEMO ONLY: opens a pull request on e-1305/crypt-demo, needs token, a human merges)"
     required: false
     default: report
   path:
@@ -14,11 +14,11 @@ inputs:
     required: false
     default: .
   token:
-    description: Fine-grained token for mode graft only. Ignored in report mode.
+    description: Fine-grained token for the demo repository, mode graft only. Ignored in report mode.
     required: false
     default: ""
   limb:
-    description: Limb to graft (LODASH or JQUERY). Used by mode graft only.
+    description: Demo only. Limb to graft (LODASH or JQUERY). Used by mode graft only.
     required: false
     default: LODASH
   sabotage:
@@ -45,7 +45,10 @@ runs:
         INPUT_TOKEN: ${{ inputs.token }}
         INPUT_PATH: ${{ inputs.path }}
       run: |
-        export CRYPT_TARGET="${GITHUB_WORKSPACE}/${INPUT_PATH}"
+        ws="$(cd "$GITHUB_WORKSPACE" && pwd -P)"
+        target="$(cd "$ws/$INPUT_PATH" 2>/dev/null && pwd -P)" || { echo "::error::path '$INPUT_PATH' not found in the workspace"; exit 2; }
+        case "$target/" in "$ws/"*) ;; *) echo "::error::path must stay inside the workspace"; exit 2 ;; esac
+        export CRYPT_TARGET="$target"
         if [ "$INPUT_MODE" = "graft" ] && [ -n "$INPUT_TOKEN" ]; then
           echo "::add-mask::$INPUT_TOKEN"
           export GITHUB_TOKEN="$INPUT_TOKEN"
@@ -55,7 +58,7 @@ runs:
       if: always() && steps.crypt.outputs.dir != ''
       uses: actions/upload-artifact@v4
       with:
-        name: crypt-creature
+        name: crypt-creature-${{ github.job }}-${{ strategy.job-index }}-${{ github.action }}
         path: |
           ${{ steps.crypt.outputs.dir }}/creature.json
           ${{ steps.crypt.outputs.dir }}/autopsy.html

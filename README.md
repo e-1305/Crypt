@@ -100,6 +100,7 @@ npm run necromancer:check                     # offline acceptance: GRAFT JQUERY
 ```
 
 `exhume` reads `package-lock.json` (v2/v3) and `requirements.txt` (`==` pins only), asks OSV once per `package@version` (cached in `data/cache/osv/`), ranks with local KEV/EPSS files and prints totals (dependencies, findings, limbs that spawn, findings below the noise line). A limb whose status cannot be established is reported as unknown, never as clean. Schema: `.kiro/specs/exhume-and-rank/design.md`.
+
 ## GitHub Action
 
 Add `uses: e-1305/Crypt@main` to a workflow and every run writes your repo's creature to the job summary. Report only by default, it never writes to the repo. See [docs/INSTALL-ACTION.md](docs/INSTALL-ACTION.md).

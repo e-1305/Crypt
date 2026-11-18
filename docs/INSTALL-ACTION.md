@@ -13,7 +13,7 @@ Add this step to a workflow, after `actions/checkout`:
 
 - Needs no token beyond the default read-only `GITHUB_TOKEN`. Use `permissions: contents: read`.
 - Fetches the KEV and EPSS feeds, exhumes the checked-out repository (lockfile and CODEOWNERS only, nothing is run or installed from it) and writes the plate and the noise funnel to the job summary: findings, exorcised as noise, monsters left to fight.
-- Uploads `creature.json` and `autopsy.html` as the `crypt-creature` artifact.
+- Uploads `creature.json` and `autopsy.html` as an artifact named `crypt-creature-<job>-<job index>-<step id>`, so several uses in one run do not collide.
 - Never writes to the repository. All output goes to a temporary directory.
 
 ## Fail-safe
