@@ -1,4 +1,4 @@
-[![CI](https://github.com/e-1305/Crypt/actions/workflows/ci.yml/badge.svg)](https://github.com/e-1305/Crypt/actions/workflows/ci.yml)
+[![CI](https://github.com/e-1305/Crypt/actions/workflows/ci.yml/badge.svg)](https://github.com/e-1305/Crypt/actions/workflows/ci.yml) [![npm downloads](https://img.shields.io/npm/dw/@e-1305/crypt)](https://www.npmjs.com/package/@e-1305/crypt)
 
 # CRYPT
 ### Don't abandon your creature.
@@ -13,7 +13,7 @@
 
 **Zork that patches your code, and can never break it.**
 
-**Live demo: [e-1305.github.io/Crypt](https://e-1305.github.io/Crypt/)** · [How it works in 60 seconds](https://e-1305.github.io/Crypt/manual.html#how-it-works) · [Pitch](docs/PITCH.md)
+**Live demo: [e-1305.github.io/Crypt](https://e-1305.github.io/Crypt/)** · [How it works in 60 seconds](https://e-1305.github.io/Crypt/manual.html#how-it-works) · [Pitch](docs/PITCH.md) · [Business case](docs/BUSINESS.md)
 
 ```bash
 npm install --global @e-1305/crypt     # or skip this line and use npx

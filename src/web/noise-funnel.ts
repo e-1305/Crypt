@@ -34,3 +34,37 @@ export function funnelOwners(limbs: readonly (FunnelLimb & { owner?: string | nu
   for (const l of limbs) if (l.spawned) set.add(ownerLabel(l.owner));
   return set.size === 0 ? [ownerLabel(null)] : [...set].sort();
 }
+
+/** Plain limits line shown under the exorcised list. */
+export const LOCKFILE_LIMIT_LINE = "Lockfile only. A finding means the locked version has an advisory, not that the code runs it.";
+
+export interface ExorcisedInput extends FunnelLimb {
+  name: string;
+  version: string;
+  kev?: boolean;
+  epss?: number | null;
+  unknown?: boolean;
+  unknownReason?: string | null;
+}
+
+export interface ExorcisedRow {
+  name: string;
+  version: string;
+  unknown: boolean;
+  reason: string;
+}
+
+/** Findings that do not spawn, each with the reason from the SLA policy. Unknown limbs stay labelled unknown. Same finding rule as noiseFunnel, so spawned + rows = findings. */
+export function exorcisedRows(limbs: readonly ExorcisedInput[]): ExorcisedRow[] {
+  const rows: ExorcisedRow[] = [];
+  for (const l of limbs) {
+    if ((l.state !== "Rotting" && l.state !== "Possessed") || l.spawned) continue;
+    const unknown = l.unknown === true;
+    let reason: string;
+    if (unknown) reason = `Unknown: not fully checked${l.unknownReason ? " (" + l.unknownReason + ")" : ""}. Stays Rotting, not cleared.`;
+    else if (l.epss === null || l.epss === undefined) reason = "No EPSS score, not in KEV";
+    else reason = `EPSS ${l.epss.toFixed(2)} is below 0.1, not in KEV`;
+    rows.push({ name: l.name, version: l.version, unknown, reason });
+  }
+  return rows;
+}

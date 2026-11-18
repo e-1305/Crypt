@@ -25,7 +25,12 @@ describe("Devpost front door", () => {
   });
 
   it("README, PITCH and DEVPOST contain no em dash", () => {
-    for (const f of ["README.md", "docs/PITCH.md", "docs/DEVPOST.md", "docs/KIRO.md", "docs/DEMO.md", "docs/USER_MANUAL.md"]) expect(read(f), f).not.toContain(EM_DASH);
+    for (const f of ["README.md", "docs/PITCH.md", "docs/DEVPOST.md", "docs/KIRO.md", "docs/DEMO.md", "docs/USER_MANUAL.md", "docs/BUSINESS.md"]) expect(read(f), f).not.toContain(EM_DASH);
+  });
+
+  it("README, DEVPOST and WHO-PAYS link BUSINESS.md, and it labels the pricing HYPOTHESIS", () => {
+    for (const f of ["README.md", "docs/DEVPOST.md", "docs/WHO-PAYS.md"]) expect(read(f), f).toContain("BUSINESS.md");
+    expect(read("docs/BUSINESS.md")).toContain("## 3. Pricing: HYPOTHESIS");
   });
 
   it("DEVPOST.md has the Devpost headings in at most 60 lines and states what is not verified", () => {

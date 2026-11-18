@@ -238,6 +238,10 @@ async function checkJudge(browser, vp) {
     return { named, running: document.body.classList.contains("judge-running"), scrollW: document.documentElement.scrollWidth - document.documentElement.clientWidth };
   });
   const n = seen.named;
+  if (vp.w === 390) {
+    const y = await page.evaluate(() => document.getElementById("cmd").getBoundingClientRect().y + scrollY);
+    if (y > 1700) fail(tag, `the game input is ${Math.round(y)}px down in judge mode, over the 1700px limit`);
+  }
   if (!seen.running) fail(tag, "judge mode is not running at 30 s");
   if (!n["#judge-caption"]) fail(tag, "judge caption is not visible");
   if (!n["#judge-counter"] || !/findings/.test(n["#judge-counter"].text)) fail(tag, "findings badge is not visible at 30 s");
@@ -307,6 +311,16 @@ async function checkCard(browser, vp) {
   const funnel = await page.textContent("#paste-funnel");
   if (!/^\d+ findings -> \d+ exorcised as noise -> \d+ monsters$/.test(funnel || "")) fail(tag, `unexpected funnel text: ${funnel}`);
   if (!/no owner/.test((await page.textContent("#paste-funnel-owners")) || "")) fail(tag, "owners line should say no owner for a repo without CODEOWNERS");
+  // Exorcised list (R1 fix 9): one click opens it, every row has a reason, the limits line is visible.
+  await page.click("#paste-exorcised-toggle");
+  const exo = await page.evaluate(() => ({ rows: [...document.querySelectorAll("#paste-exorcised-list li")].map((l) => l.textContent), limit: document.getElementById("paste-limits")?.textContent || "", scrollW: document.documentElement.scrollWidth - document.documentElement.clientWidth }));
+  if (exo.rows.some((t) => !/: .{5,}/.test(t))) fail(tag, "an exorcised row has no reason");
+  if (!exo.limit.startsWith("Lockfile only.")) fail(tag, "the lockfile-only line is missing");
+  if (vp.w < 900 && exo.scrollW > 0) fail(tag, `exorcised list overflows by ${exo.scrollW}px`);
+  mkdirSync(outDir, { recursive: true });
+  await page.locator("#paste-exorcised").scrollIntoViewIfNeeded();
+  await page.screenshot({ path: join(outDir, `exorcised-${vp.w}x${vp.h}.png`) });
+  if (process.env.VISUAL_QA_COPY_DOCS === "1") { mkdirSync(imgDir, { recursive: true }); copyFileSync(join(outDir, `exorcised-${vp.w}x${vp.h}.png`), join(imgDir, `exorcised-${vp.w}x${vp.h}.png`)); }
   const paste = present(tag, await boxes(page, CARD_PASTE));
   for (const [a, b] of findOverlaps(paste)) fail(tag, `card controls overlap: ${a} and ${b}`);
   if (vp.w < 900) for (const b of paste) if (b.height < TAP_MIN) fail(tag, `tap target ${b.name} is ${Math.round(b.height)}px tall, under ${TAP_MIN}`);
@@ -759,6 +773,11 @@ async function checkHero(browser, vp) {
     const hero = (await boxes(page, ["#hero"]))[0];
     if (vp.w === 390 && hero && hero.height > vp.h * 0.55) fail(tag, `the hero is ${Math.round(hero.height)}px tall, over 55% of the ${vp.h}px viewport`);
     if (vp.w === 390 && (!cmd || cmd.y > vp.h * 3)) fail(tag, `the game input is ${Math.round(cmd?.y ?? -1)}px down`);
+    if (vp.w === 390 && cmd && cmd.y > 1700) fail(tag, `the game input is ${Math.round(cmd.y)}px down, over the 1700px (two screens) limit`);
+    if (vp.w === 390) {
+      // R2: the problem line, Scan your repo and the scan input are on the first screen.
+      for (const b of await boxes(page, ["#hero-problem", "#hero-scan", "#paste-url"])) if (b.y + b.height > vp.h) fail(tag, `${b.name} ends at ${Math.round(b.y + b.height)}px, below the first screen (${vp.h}px)`);
+    }
     if (vp.w === 390 && cmd) {
       // The hero may push the game input at most one screen down: measure the input with the hero hidden, then shown.
       const without = await page.evaluate(() => { const h = document.getElementById("hero"); const old = h.style.display; h.style.display = "none"; const y = document.getElementById("cmd").getBoundingClientRect().y + scrollY; h.style.display = old; return y; });
