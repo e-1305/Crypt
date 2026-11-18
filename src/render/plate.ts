@@ -102,7 +102,7 @@ export function plateInput(creature: unknown): { repo?: string; team?: { scanSta
       // Pipeline records: neutral facts about the limb. healedBy is praise only (a cleaned login).
       ...(l.status === "awaiting-human-merge" ? { status: "awaiting-human-merge" } : {}),
       ...(l.ciVerdict === "red" && Number.isInteger(l.ciPr) ? { ciVerdict: "red", ciPr: l.ciPr } : {}),
-      ...(l.healed === true && safeLogin(l.healedBy) ? { healed: true, healedBy: safeLogin(l.healedBy) } : {}),
+      ...(l.healed === true ? { healed: true, ...(safeLogin(l.healedBy) ? { healedBy: safeLogin(l.healedBy) } : {}) } : {}),
     });
   }
   const team = c.team && typeof c.team === "object" ? (c.team as Record<string, unknown>) : {};

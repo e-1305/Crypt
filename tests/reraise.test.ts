@@ -1,7 +1,8 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { numRuns } from "./runs.js";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
+import { renderPlate } from "../src/render/plate.js";
 import { nodeIo } from "../src/common/io.js";
 import { applyHealed, reraise } from "../src/reraise/index.js";
 import { generate } from "../src/raise/generate.js";
@@ -118,6 +119,68 @@ describe("reraise properties", () => {
         return ok;
       }),
       { numRuns: numRuns(20) },
+    );
+  });
+});
+
+describe("issue #141: reraise after a re-exhume", () => {
+  const lodash = (version: string, extra: Record<string, unknown> = {}) => ({
+    ecosystem: "npm", name: "lodash", version, state: "Healthy", rank: 1, spawned: false, ...extra,
+  });
+
+  it("graft, human merge, re-exhume (lodash 4.18.1), reraise: the plate shows HEALED 1", async () => {
+    const env = makeAgentEnv([{ name: "lodash", version: "4.17.15", fixed: "4.18.1" }]);
+    env.writeRecord(env.idOf("lodash"), "lodash", 10, "4.18.1");
+    const m = mockClient({ prState: () => ({ open: false, landed: true, landedBy: "octo-cat" }) });
+    const ctx = { ...env.paths, io: nodeIo, client: m.client, now: env.now };
+    // The later graft run re-exhumed the merged repo: lodash is already 4.18.1 and is not a finding.
+    const creature = creatureOf(env);
+    creature.limbs[0] = { ...creature.limbs[0], version: "4.18.1", state: "Healthy", spawned: false, kev: false, vulns: [] };
+    writeFileSync(env.paths.creaturePath, JSON.stringify(creature));
+    const r = await reraise(ctx);
+    expect(r.healed).toHaveLength(1);
+    const after = creatureOf(env);
+    expect(after.limbs[0]).toMatchObject({ version: "4.18.1", state: "Healthy", healed: true, healedBy: "octo-cat" });
+    const plate = renderPlate(after);
+    expect(plate).toContain("HEALED 1");
+    expect(plate).toContain("HEALTHY 0");
+    env.cleanup();
+  });
+
+  it("plate counts a healed limb even without healedBy", () => {
+    const c = applyHealed({ limbs: [lodash("4.18.1")] }, [{ ecosystem: "npm", name: "lodash", from: "4.17.15", to: "4.18.1" }]);
+    expect(renderPlate(c)).toContain("HEALED 1");
+  });
+
+  it("a later different version is not healed by this PR", () => {
+    const c = { limbs: [lodash("4.19.0")] };
+    const r = applyHealed(c, [{ ecosystem: "npm", name: "lodash", from: "4.17.15", to: "4.18.1" }]) as any;
+    expect(r.limbs[0]).toEqual(c.limbs[0]);
+  });
+
+  it("property: a limb matches iff its version is from or to; counts stay consistent", () => {
+    const ver = fc.constantFrom("1.0.0", "1.0.1", "2.0.0", "3.0.0");
+    fc.assert(
+      fc.property(
+        fc.array(fc.record({ name: fc.constantFrom("a", "b"), version: ver, state: fc.constantFrom("Rotting", "Possessed", "Healthy") }), { maxLength: 8 }),
+        fc.constantFrom("a", "b"), ver, ver,
+        (ls, name, from, to) => {
+          const limbs = ls.map((l) => ({ ecosystem: "npm", ...l, spawned: l.state !== "Healthy" }));
+          const r = applyHealed({ limbs }, [{ ecosystem: "npm", name, from, to }]) as any;
+          r.limbs.forEach((l: any, i: number) => {
+            const o = limbs[i]!;
+            const hit = o.name === name && (o.version === from || o.version === to);
+            if (hit) expect(l).toMatchObject({ state: "Healthy", healed: true, spawned: false, version: to });
+            else expect(l).toEqual(o);
+          });
+          const n = (f: (l: any) => boolean) => r.limbs.filter(f).length;
+          expect(r.counts).toMatchObject({
+            spawned: n((l) => l.spawned === true), healthy: n((l) => l.state === "Healthy"),
+            rotting: n((l) => l.state === "Rotting"), possessed: n((l) => l.state === "Possessed"),
+          });
+        },
+      ),
+      { numRuns: numRuns(100) },
     );
   });
 });
