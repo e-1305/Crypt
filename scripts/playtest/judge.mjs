@@ -152,6 +152,24 @@ await scenario("keyboard-only", {}, async (page, out) => {
   await shot(page, "04-keyboard");
 });
 
+// 3b. First Tab stop on both pages is the skip link, and on 3D no control overlaps the plate title (Round 3 item 1).
+await scenario("first-tab-and-overlap", {}, async (page, out) => {
+  const firstTab = async (url) => {
+    await page.goto(url, { waitUntil: "load" });
+    await page.waitForTimeout(4000);
+    await page.keyboard.press("Tab");
+    return page.evaluate(() => document.activeElement?.textContent?.trim());
+  };
+  out.firstTab3d = await firstTab(BASE);
+  out.manualBox = await page.evaluate(() => { const r = document.getElementById("theatre-manual")?.getBoundingClientRect(); return r ? { x: r.x, y: r.y, w: r.width, h: r.height } : null; });
+  await shot(page, "04b-3d-first-seconds");
+  out.firstTab2d = await firstTab(BASE + "?theatre=off");
+  const skip = "Skip to the game input";
+  // The plate title sits at about y 60 to 80 and x 140 to 280 at 1280x720; the manual button must stay above y 50 there.
+  const m = out.manualBox;
+  out.checks = { skipFirst3d: out.firstTab3d === skip, skipFirst2d: out.firstTab2d === skip, manualClearOfPlateTitle: !m || m.y + m.h < 55 };
+});
+
 // 4. Reduced motion.
 await scenario("reduced-motion", { reducedMotion: "reduce" }, async (page, out) => {
   await page.goto(BASE, { waitUntil: "load" });

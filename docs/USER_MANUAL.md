@@ -248,6 +248,8 @@ lockfile --> OSV + CISA KEV + EPSS --> creature.json --> Inform 6 --> creature.z
 
 **The failsafe.** There is no merge call anywhere in the code. `SEAL CRYPT` blocks every graft. Every agent action goes to `crypt-audit.log`. Without `GITHUB_TOKEN`, a graft is a dry run and writes its payload to `out/prs/`. A person merges every pull request. [failsafe.md](../.kiro/steering/failsafe.md) lists the rules, and property-based tests enforce them.
 
+**Why the story says `(at)`.** The plate shows an owner as `@team`, and the story text shows `(at)team`. The Inform 6 compiler reads `@` as an escape inside strings, so `src/raise/sanitize.ts` spells it `(at)` in every generated string, and the same pass strips brackets and quotes. Same owner, same CODEOWNERS entry, two spellings by design.
+
 **One file format, two front ends.** The Pages site and the CLI read the same `creature.json`. The page can rehearse: play the story, read dry-run payloads and simulate CI. Only the CLI can open a real pull request (`crypt raid <url> --live`). Tier 1 scope: npm and pip lockfiles.
 
 ### Built with Kiro

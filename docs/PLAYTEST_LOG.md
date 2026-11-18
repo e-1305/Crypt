@@ -253,3 +253,20 @@ Mean 7.4 (Round 2: 6.9, Round 1: 6.1). Gain 0.5, above the 0.3 plateau line, so 
 ## Round 3 PM note
 
 Four items in [BACKLOG.md](BACKLOG.md), ordered by value over effort: the 3D first-10-seconds polish (small), the CLI "next step" and `play` context (medium, the biggest credibility win for a geek who runs the README command), the `(at)` explanation (small), and the GIF plus one real Kiro hook run (small for a person, not possible here). Items 1 to 3 can be built in the sandbox. Item 4 stays marked "not recorded" until a person does it.
+
+## Round 3 after-fix check
+
+Build: `feat/h1-judge-loop` plus the Round 3 changes. Harness run with `npm run web`, all scenarios ran with every `checks` value true, including the new `first-tab-and-overlap`.
+
+| Item | Check | Result |
+|---|---|---|
+| 1 | First Tab stop on `/` and `/?theatre=off` | "Skip to the game input" on both. The 3D stage and the 2D page no longer focus the prompt at load, and typing on the bare page still reaches it |
+| 1 | Manual button vs plate title at 1280x720 | Button moved to the top row beside Recording mode, clear of "PLATE I: THE CREATURE" (screenshot `04b-3d-first-seconds.png` read by eye) |
+| 1 | "Nights Without Possession" size | Drawn full width at 28 px on the board canvas, about 12 px on screen at 1280x720. The DOM text keeps the "counted from this browser's first visit" note |
+| 2 | `crypt raid` Next line | Interactive: printed after the plate. Piped: printed on stderr after the session. Names the top limb (`GRAFT JQUERY` on the fixture) |
+| 2 | `crypt play` after `raid` | Reads `out/raid-context.json` (target, advisory source, first limb). Flags still win. A raid of a temporary clone says to pass `--target` |
+| 2 | Failure reasons | `NO_FIX_AVAILABLE` and `ERROR` each print a one-line reason |
+| 2 | Stale `.crypt-seal` | First output line: "The crypt is sealed (found .crypt-seal). Run 'crypt unseal' to lift it." No file under `out/prs/` (pinned in `tests/cli-next-step.test.ts`) |
+| 3 | `(at)` | Sanitiser kept. Explained in the manual's "How it works" and in `docs/KIRO.md` |
+
+Not verified: real GPU, screen readers, axe-core on the 3D page. Item 4 (GIF, a real Kiro hook run) stays not recorded.

@@ -332,7 +332,11 @@ async function main() {
     onError: (m) => addLine("Interpreter stopped: " + m),
   });
   cmd.disabled = false;
-  cmd.focus({ preventScroll: true });
+  // No initial focus, so the skip link is the first Tab stop. Typing on the bare page reaches the prompt.
+  document.addEventListener("keydown", (ev) => {
+    if (ev.target !== document.body || ev.ctrlKey || ev.metaKey || ev.altKey || cmd.disabled) return;
+    if (ev.key.length === 1 && ev.key !== " ") cmd.focus({ preventScroll: true });
+  });
   form.addEventListener("submit", (ev) => {
     ev.preventDefault();
     const text = cmd.value;

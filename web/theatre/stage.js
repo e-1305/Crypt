@@ -239,7 +239,7 @@ export async function mountStage() {
   }
   let frames = 0;
   raf = requestAnimationFrame(frame);
-  focusCmd();
+  // No initial focus: the skip link must be the first Tab stop. Typing still reaches the prompt (keydown handler above).
 
   function destroy() {
     stopped = true;

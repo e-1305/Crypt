@@ -34,9 +34,6 @@ export function makeBoard() {
     // Left column is 380 px wide so it never reaches the right column that starts at x=430.
     ctx.fillText(t["raid-score"], 36, 214, LEFT_W);
     ctx.fillText(t["raid-rank"], 36, 254, LEFT_W);
-    ctx.font = "20px " + MONO;
-    ctx.fillText(t["raid-nights"], 36, 298, LEFT_W);
-    ctx.font = "26px " + MONO;
     ctx.fillStyle = "#ffb000";
     ctx.font = "18px " + MONO;
     ctx.fillText((t["raid-combo"].split(".")[0] || "").slice(0, 22), 430, 214, RIGHT_W);
@@ -51,9 +48,13 @@ export function makeBoard() {
       ctx.fillStyle = "#d8c590";
       ctx.fillText("Health " + health, 430, 318, RIGHT_W);
     }
+    // Nights line: full width and 28 px on the canvas (about 12 px on screen at 1280x720). The DOM text keeps the "counted from" note.
+    ctx.fillStyle = "#d8c590";
+    ctx.font = "28px " + MONO;
+    ctx.fillText(t["raid-nights"].replace(/\s*\(.*?\)/, ""), 36, 344, W - 72);
     ctx.fillStyle = "#8c8366";
     ctx.font = "italic 20px " + MONO;
-    ctx.fillText(t["raid-epitaph"] || t["raid-state"], 36, 356, W - 72);
+    ctx.fillText(t["raid-epitaph"] || t["raid-state"], 36, 380, W - 72);
     dirty = false;
   }
   return {

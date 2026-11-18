@@ -12,6 +12,10 @@
 - The safety claims rest on tests (property-based, run in CI) and on the scripts above, not on a recorded Kiro session.
 - Nothing here measures how much time Kiro saved. There is no such measurement.
 
+## Design notes
+
+- **`(at)` in owner names.** The plate prints `@team`. The story text prints `(at)team`, because `@` is an escape character in Inform 6 strings and `src/raise/sanitize.ts` replaces it (with brackets, quotes and control characters) for every generated string. We kept the sanitiser whole and explain the spelling in the manual's "How it works".
+
 ## Specs
 | Spec | Folder | Outcome |
 |---|---|---|

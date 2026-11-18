@@ -14,6 +14,7 @@ import type { GithubClient } from "../../src/github/client.js";
 import type { RegistryClient } from "../../src/registry/types.js";
 import { STATUS_LINE } from "../play.js";
 import { dfrotzPath } from "../toolchain-dir.js";
+import { outcomeReason } from "./context.js";
 import { handleLiveGraft } from "./live-graft.js";
 import { onInterrupt } from "./signals.js";
 
@@ -25,8 +26,12 @@ export interface SessionOpts {
   advisories: AdvisoryLookup;
   out?: { write(s: string): unknown };
   /** Live mode: a real GitHub client and registry; the Inquisitor watches each opened pull request. */
+  /** True when the caller already printed the seal notice. */
+  sealNoticed?: boolean;
   live?: { client: GithubClient; registry: RegistryClient; timeoutMs: number; repo: string };
 }
+
+export const SEAL_NOTICE = "The crypt is sealed (found .crypt-seal). Run 'crypt unseal' to lift it.";
 
 const POLL_INTERVAL_MS = 20_000;
 
@@ -52,7 +57,7 @@ export function playStory(o: SessionOpts): Promise<number> {
   const requestsDir = join(o.cwd, "out", "requests");
   // A new session numbers its requests from 1 again, so requests of an earlier session are cleared.
   for (const f of nodeIo.listDir(requestsDir)) if (REQUEST_FILE.test(f)) nodeIo.remove(join(requestsDir, f));
-  if (existsSync(paths.sealPath)) process.stderr.write("The crypt is sealed. Run 'crypt unseal' to lift it. Grafts stay rejected until then.\n");
+  if (!o.sealNoticed && existsSync(paths.sealPath)) process.stderr.write(SEAL_NOTICE + "\n");
 
   const handled = new Set<string>();
   async function runNewGrafts(): Promise<void> {
@@ -83,10 +88,11 @@ export function playStory(o: SessionOpts): Promise<number> {
           const payload = relative(o.cwd, join(paths.prsDir, branchFile(res.branch)));
           out.write(`Graft ${limb}: dry-run payload written to ${payload}${res.breaking ? " (breaking: true)" : ""}\n`);
         } else {
-          out.write(`Graft ${limb}: ${res.outcome}, no payload written\n`);
+          const why = outcomeReason(res.outcome);
+          out.write(`Graft ${limb}: ${res.outcome}, no payload written${why ? `: ${why}` : ""}\n`);
         }
       } catch (e) {
-        out.write(`Graft ${limb}: ERROR, no payload written (${(e as Error).message})\n`);
+        out.write(`Graft ${limb}: ERROR, no payload written: ${outcomeReason("ERROR", (e as Error).message)}\n`);
       }
     }
   }
