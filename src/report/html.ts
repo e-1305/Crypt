@@ -1,6 +1,6 @@
 // Autopsy page: one self-contained printable HTML string. Every value is escaped. No script, no external request.
 import type { AutopsyModel, HistoryPoint, LimbRef } from "./model.js";
-import { FOOTNOTES, PDF_HINT, STYLE } from "./template.js";
+import { FOOTNOTES, PDF_HINT, SAMPLE_BANNER, SAMPLE_NOTE, STYLE } from "./template.js";
 
 export function esc(v: unknown): string {
   return String(v)
@@ -65,15 +65,15 @@ export function renderAutopsyHtml(m: AutopsyModel): string {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CRYPT Autopsy Report${m.repo ? ` - ${esc(m.repo)}` : ""}</title>
+<title>CRYPT Autopsy Report${m.sample ? " (sample)" : ""}${m.repo ? ` - ${esc(m.repo)}` : ""}</title>
 <style>${STYLE}</style>
 </head>
 <body>
-<div class="page">
+${m.sample ? `<div class="wm" aria-hidden="true"><span>${esc(SAMPLE_BANNER)}</span></div>\n` : ""}<div class="page">
 <header>
 <h1>CRYPT Autopsy Report</h1>
 <p class="sub">${m.repo ? `${esc(m.repo)}, ` : ""}${esc(m.findings)} findings, generated ${esc(day(m.generatedAt))}</p>
-<p class="hint no-print">${esc(PDF_HINT)}</p>
+${m.sample ? `<p class="banner" role="note">${esc(SAMPLE_BANNER)}<span>${esc(SAMPLE_NOTE)}</span></p>\n` : ""}<p class="hint no-print">${esc(PDF_HINT)}</p>
 </header>
 <main>
 <div class="grid">
