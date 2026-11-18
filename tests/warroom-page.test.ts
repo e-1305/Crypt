@@ -29,6 +29,12 @@ describe("war room page", () => {
     for (const id of ["scene", "bosses", "score", "countdown", "combo", "feed", "badges"]) expect(html).toContain(`id="${id}`);
   });
 
+  it("renders boss cards and the empty arena with the nights count, and ties the rejection to its limb", () => {
+    for (const t of ["No possession tonight", "Nights Without Possession", "kev-badge", "boss-sla", "EPSS ", "Owner team:", "SIMULATED raid", "SLA start unknown", "rejection-limb", "not in scan data"]) expect(js).toContain(t);
+    expect(js).toContain("scene.rejection");
+    expect(css).toMatch(/\.nights\s*\{[^}]*font-size:\s*4/);
+  });
+
   it("keeps the token in a password field and in memory only", () => {
     expect(html).toMatch(/id="token-input"[^>]*type="password"[^>]*autocomplete="off"/);
     expect(html).toMatch(/<label for="token-input">/);

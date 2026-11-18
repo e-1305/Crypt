@@ -131,28 +131,35 @@ function drawPlate(scene, now) {
   });
 }
 
+function slaText(ms) {
+  if (ms <= 0) return "SLA overdue";
+  const h = Math.floor(ms / 3600000);
+  const m = Math.floor((ms % 3600000) / 60000);
+  return "SLA " + h + "h " + String(m).padStart(2, "0") + "m left of 48h";
+}
+
+function mk(tag, cls, text) {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text !== undefined) n.textContent = text;
+  return n;
+}
+
 function drawBosses(scene) {
-  const sig = JSON.stringify(scene.bosses.map((b) => [b.key, Math.round(b.hp * 1000), b.healed]));
+  const sig = JSON.stringify([scene.nights, scene.bosses.map((b) => [b.key, Math.round(b.hp * 1000), b.healed, b.slaRemainingMs === null ? null : Math.floor(b.slaRemainingMs / 60000)])]);
   if (!changed("bosses", sig)) return;
   el.bossList.textContent = "";
-  if (scene.bosses.length === 0) {
-    const li = document.createElement("li");
-    li.className = "muted";
-    li.textContent = "No possessed limbs on the slab.";
+  if (!scene.bosses.some((b) => !b.healed)) {
+    const li = mk("li", "arena-empty");
+    li.append(mk("p", "arena-title", "No possession tonight"), mk("p", "nights", String(scene.nights)), mk("p", "muted", "Nights Without Possession"));
     el.bossList.appendChild(li);
-    return;
   }
   for (const b of scene.bosses) {
-    const li = document.createElement("li");
-    const row = document.createElement("div");
-    row.className = "boss-name";
-    const name = document.createElement("span");
-    name.textContent = b.name;
-    const hp = document.createElement("span");
-    hp.textContent = b.healed ? "HEALED" : "HP " + Math.round(b.hp * 100);
-    row.append(name, hp);
-    const bar = document.createElement("div");
-    bar.className = "bar" + (b.healed ? " healed" : "");
+    const li = mk("li", "boss-card" + (b.healed ? " is-healed" : ""));
+    li.dataset.limb = b.key;
+    const row = mk("div", "boss-name");
+    row.append(mk("span", "", b.name), mk("span", "", b.healed ? "HEALED" : "HP " + Math.round(b.hp * 100)));
+    const bar = mk("div", "bar" + (b.healed ? " healed" : ""));
     bar.setAttribute("role", "progressbar");
     bar.setAttribute("aria-label", b.name + " boss HP");
     bar.setAttribute("aria-valuemin", "0");
@@ -161,7 +168,17 @@ function drawBosses(scene) {
     const fill = document.createElement("span");
     fill.style.width = Math.round(b.hp * 100) + "%";
     bar.appendChild(fill);
-    li.append(row, bar);
+    const facts = mk("p", "boss-facts");
+    facts.append(
+      mk("span", "kev-badge", "KEV"),
+      mk("span", "", (b.cves === null ? "CVE count not in scan data" : b.cves + (b.cves === 1 ? " CVE" : " CVEs"))),
+      mk("span", "", "EPSS " + (b.epss === null ? "unknown" : b.epss.toFixed(2))),
+      mk("span", "", "Owner team: " + (b.team ?? "not in scan data")),
+    );
+    const unknownSla = !b.healed && b.slaRemainingMs === null;
+    const sla = mk("p", "boss-sla" + (!b.healed && !unknownSla && b.slaRemainingMs <= 0 ? " overdue" : ""), b.healed ? "SLA met" : unknownSla ? "SLA start unknown (no detection time)" : slaText(b.slaRemainingMs));
+    li.append(row, bar, facts, sla);
+    if (run.mode === "simulated") li.appendChild(mk("p", "muted boss-sim", "SIMULATED raid. The SLA clock starts with the replay."));
     el.bossList.appendChild(li);
   }
 }
@@ -206,7 +223,7 @@ async function showRecap(scene) {
 
 function render(now) {
   const visible = run.mode === "simulated" ? run.events.filter((e) => e.at <= now) : run.events;
-  const scene = sceneFrom(visible, run.limbs, now, { raidStart: run.t0 });
+  const scene = sceneFrom(visible, run.limbs, now, { raidStart: run.t0, scanStart: run.scanStart, live: run.mode !== "simulated" });
   run.scene = scene;
   // New effects: thunder and flash once per heal, the rejection line while a limb stays red.
   for (const fx of scene.effects) {
@@ -215,8 +232,16 @@ function render(now) {
     run.seen.add(id);
     if (fx.kind === "heal" && now - fx.at < FRESH_MS) { flash(); thunder(); }
   }
-  const red = scene.limbs.some((l) => l.phase === "ci-red");
-  el.rejection.textContent = red ? scene.effects.find((e) => e.kind === "convulse")?.line ?? "" : "";
+  // Tied to its limb: gone when that limb's next event arrives or another limb heals. The feed keeps the history.
+  const rej = scene.rejection;
+  el.rejection.textContent = "";
+  if (rej) {
+    const who = document.createElement("span");
+    who.className = "rejection-limb";
+    who.textContent = rej.name;
+    el.rejection.append(who, document.createTextNode(" "), document.createTextNode(rej.line));
+  }
+  if (rej) el.rejection.dataset.limb = rej.limb; else delete el.rejection.dataset.limb;
   drawPlate(scene, now);
   drawBosses(scene);
   el.score.textContent = String(Math.round(scene.score * 10) / 10);

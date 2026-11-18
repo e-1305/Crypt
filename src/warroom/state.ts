@@ -3,7 +3,7 @@
 // Team only: nothing is counted or ordered per person. A name exists only inside a "healed by" praise string.
 import { clean } from "../render/plate.js";
 import { REJECTION_LINE, SIMULATED_LABEL } from "../theatre/heal-events.js";
-import { RAID_MS, formatClock, riskOf, teamScore, type RaidLimb } from "../theatre/raid.js";
+import { RAID_MS, SLA_KEV_MS, formatClock, nightsWithoutPossession, riskOf, teamScore, type RaidLimb } from "../theatre/raid.js";
 import { comboState, type ComboState } from "../theatre/gamify.js";
 import { WAR_EVENT_TYPES, parseWarEvent, type WarEvent } from "./events.js";
 
@@ -12,6 +12,10 @@ export type Phase = "possessed" | "rotting" | "pr-open" | "ci-running" | "ci-gre
 /** What the scene needs to know about a limb. `exposure` is a deterministic value, 0..1. */
 export interface WarLimb extends RaidLimb {
   exposure?: unknown;
+  /** Optional scan facts for the boss card. Unknown stays unknown. */
+  cves?: unknown;
+  cveCount?: unknown;
+  ownerTeam?: unknown;
 }
 
 export interface SceneLimb {
@@ -29,6 +33,25 @@ export interface Boss {
   /** 0..1. EPSS times exposure, 0 once healed. */
   hp: number;
   healed: boolean;
+  /** Always true: a boss is a KEV limb. */
+  kev: boolean;
+  epss: number | null;
+  /** Count of CVE ids when the scan data carries them, else null (shown as unknown, never guessed). */
+  cves: number | null;
+  /** Owning team (never a person) when the scan data carries one, else null. */
+  team: string | null;
+  /** Ms left of the 48h SLA, counted from detection (or the raid start). 0 or less means overdue. null once healed. */
+  slaRemainingMs: number | null;
+  /** Where the SLA clock starts: the limb's detection time, the replay start (simulated), or unknown (live, no detection time). */
+  slaStart: "detected" | "replay" | "unknown";
+}
+
+/** A rejection line is tied to the limb whose CI went red. */
+export interface Rejection {
+  limb: string;
+  name: string;
+  line: string;
+  at: number;
 }
 
 export type WarEffect =
@@ -48,6 +71,10 @@ export interface Scene {
   healTimes: number[];
   feed: string[];
   effects: WarEffect[];
+  /** The current rejection, or null. Cleared by the limb's next event or by a heal elsewhere. The feed keeps the history. */
+  rejection: Rejection | null;
+  /** Whole days without a KEV limb open past its 48h SLA. */
+  nights: number;
   simulated: boolean;
 }
 
@@ -105,7 +132,7 @@ function line(ev: WarEvent, name: string): string {
 }
 
 /** Builds the scene. Only Possessed and Rotting limbs take part. Events for other limbs are ignored. */
-export function sceneFrom(events: readonly unknown[] | WarState, limbs: readonly WarLimb[], now: number, opts: { raidStart?: number } = {}): Scene {
+export function sceneFrom(events: readonly unknown[] | WarState, limbs: readonly WarLimb[], now: number, opts: { raidStart?: number; scanStart?: number; live?: boolean } = {}): Scene {
   const log = Array.isArray(events) ? reduceAll(events).events : (events as WarState).events;
   const sick = limbs.filter((l) => l.state === "Possessed" || l.state === "Rotting");
   const byKey = new Map<string, { limb: WarLimb; view: SceneLimb; healedAt?: number }>();
@@ -141,12 +168,31 @@ export function sceneFrom(events: readonly unknown[] | WarState, limbs: readonly
   const view = [...byKey.values()];
   const healedSlots = view.filter((s) => s.view.phase === "healed");
   const healTimes = healedSlots.map((s) => s.healedAt as number).sort((a, b) => a - b);
-  const bosses = bossOrder(view.map((s) => s.limb).filter((l) => l.kev === true)).map((l) => {
+  const start = finite(opts.raidStart) ? opts.raidStart : (log[0]?.at ?? now);
+  const bosses: Boss[] = bossOrder(view.map((s) => s.limb).filter((l) => l.kev === true)).map((l) => {
     const key = limbKeyOf(l);
     const healed = byKey.get(key)?.view.phase === "healed";
-    return { key, name: clean(l.name, 40) || "unnamed", hp: healed ? 0 : bossHp(l.epss, l.exposure), healed };
+    const o = l;
+    const cves = Array.isArray(o.cves) ? o.cves.length : finite(o.cveCount) && o.cveCount >= 0 ? Math.floor(o.cveCount) : null;
+    const team = typeof o.ownerTeam === "string" && clean(o.ownerTeam, 40).trim() !== "" ? clean(o.ownerTeam, 40).trim() : null;
+    // Live mode never starts the clock at page load: without a detection time the SLA start is unknown.
+    const slaStart: Boss["slaStart"] = finite(l.detectedAt) ? "detected" : opts.live === true ? "unknown" : "replay";
+    const since = finite(l.detectedAt) ? l.detectedAt : start;
+    return {
+      key, name: clean(l.name, 40) || "unnamed", hp: healed ? 0 : bossHp(l.epss, l.exposure), healed, kev: true,
+      epss: finite(l.epss) && l.epss >= 0 && l.epss <= 1 ? l.epss : null, cves, team,
+      slaRemainingMs: healed || slaStart === "unknown" || !finite(now) ? null : SLA_KEV_MS - Math.max(0, now - since), slaStart,
+    };
   });
-  const start = finite(opts.raidStart) ? opts.raidStart : (log[0]?.at ?? now);
+  // The rejection stays only while its limb is still red (no later event for it) and no limb was healed at or after it (a same-time heal sorts after ci-red).
+  const red = [...effects].reverse().find((e) => e.kind === "convulse" && byKey.get(e.limb)?.view.phase === "ci-red");
+  const healedAfter = red !== undefined && effects.some((e) => e.kind === "heal" && e.at >= red.at);
+  const rejection: Rejection | null = red && red.kind === "convulse" && !healedAfter
+    ? { limb: red.limb, name: byKey.get(red.limb)?.view.name ?? red.limb, line: red.line, at: red.at }
+    : null;
+  const nights = nightsWithoutPossession(
+    view.map((s) => ({ ...s.limb, healed: s.view.phase === "healed" })), now, finite(opts.scanStart) ? opts.scanStart : start,
+  );
   const elapsed = Math.min(RAID_MS, Math.max(0, finite(now) ? now - start : 0));
   return {
     limbs: view.map((s) => s.view).sort((a, b) => cmp(a.key, b.key)),
@@ -159,6 +205,8 @@ export function sceneFrom(events: readonly unknown[] | WarState, limbs: readonly
     healTimes,
     feed: feed.slice(-FEED_MAX),
     effects,
+    rejection,
+    nights,
     simulated,
   };
 }
