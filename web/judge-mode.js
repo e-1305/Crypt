@@ -10,7 +10,7 @@ export const REPLAY_TEXT = "Replay the 45-second demo";
 // Copy of TITLE_CARD_TEXT in src/theatre/polish.ts (a test keeps them equal).
 // Built from two pieces because scripts/hooks/blameless-copy-check.sh reads a literal "Don't" as a prohibition; this is the fixed brand tagline.
 export const TITLE_TEXT = ["CRYPT \u2014 Do", "n't abandon your creature."].join("");
-export const FINAL_CAPTION = "Real PRs, real CI, a human always merges. Your turn.";
+export const FINAL_CAPTION = "This page is a rehearsal. The CLI opens real PRs, CI checks them, a person merges. Your turn.";
 export const HANDOVER_TEXT = "Your turn. Type EXAMINE JQUERY.";
 export const LIMB = "JQUERY";
 const TYPE_LEAD_MS = 1200;
