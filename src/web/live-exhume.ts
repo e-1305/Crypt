@@ -54,7 +54,13 @@ export class LiveExhumeError extends Error {
   }
 }
 
+/** Plain-word steps of a scan, in the order they are reported to onProgress. */
+export const PROGRESS_STEPS = ["Reading the lockfile", "Asking OSV", "Ranking with KEV and EPSS", "Stitching the creature"] as const;
+export type ProgressStep = (typeof PROGRESS_STEPS)[number];
+
 export interface LiveExhumeOptions {
+  /** Called once per step, in PROGRESS_STEPS order, while the scan runs. */
+  onProgress?: (step: ProgressStep) => void;
   fetch: FetchLike;
   /** The snapshot shipped with the site. Null or absent: the run stops (ranking needs both feeds). */
   feeds: FeedSnapshot | null | undefined;
@@ -264,8 +270,18 @@ export async function liveExhume(input: string, opts: LiveExhumeOptions): Promis
   if (!opts.feeds) {
     throw new LiveExhumeError("feed-missing", "The KEV and EPSS snapshot did not load, so nothing can be ranked. Reload the page, then try again.");
   }
+  // Reports each step once and in order, even when a step has no work (for example a warm OSV cache).
+  let reached = -1;
+  const progress = (step: ProgressStep) => {
+    const to = PROGRESS_STEPS.indexOf(step);
+    while (reached < to) {
+      reached++;
+      opts.onProgress?.(PROGRESS_STEPS[reached]!);
+    }
+  };
   const f = withTimeout(opts.fetch);
   const { owner, repo } = ref;
+  progress("Reading the lockfile");
   const name = `${owner}/${repo}`;
 
   let lock: string | null = null;
@@ -305,6 +321,13 @@ export async function liveExhume(input: string, opts: LiveExhumeOptions): Promis
     }
   }
 
+  const innerLookup = opts.osv ?? osvLookup(f);
+  const lookup: OsvLookup = async (limbs) => {
+    progress("Asking OSV");
+    const found = await innerLookup(limbs);
+    progress("Ranking with KEV and EPSS");
+    return found;
+  };
   let creature: Creature;
   try {
     creature = await buildCreature({
@@ -313,7 +336,7 @@ export async function liveExhume(input: string, opts: LiveExhumeOptions): Promis
       cacheDir: opts.cacheDir ?? "osv",
       kev: opts.feeds.kev,
       epss: opts.feeds.epss,
-      lookup: opts.osv ?? osvLookup(f),
+      lookup,
       now: opts.now,
       name,
     });
@@ -330,6 +353,7 @@ export async function liveExhume(input: string, opts: LiveExhumeOptions): Promis
     throw new LiveExhumeError("network", `Exhume stopped: ${(e as Error).message}. Try again.`);
   }
 
+  progress("Stitching the creature");
   // No OSV answer for any pinned package is an outage, not a clean repository.
   const pinned = creature.limbs.filter((l) => l.version !== "unknown");
   if (pinned.length > 0 && pinned.every((l) => l.unknownReason === "osv-unavailable")) {

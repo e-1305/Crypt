@@ -22,7 +22,6 @@ const browser = await chromium.launch({ args: ["--no-sandbox"] });
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 1400 } });
   await page.goto(`http://127.0.0.1:${server.address().port}/?theatre=2d`);
-  await page.click("#paste-open");
   await page.fill("#paste-url", `https://github.com/${repo}`);
   const t0 = Date.now();
   await page.press("#paste-url", "Enter");

@@ -21,7 +21,7 @@ const imgDir = join(root, "docs", "img");
 const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".woff2": "font/woff2", ".txt": "text/plain" };
 
 // The first screen: one primary button, the CRT input and the page links. The Bench drawer controls are checked with the drawer open.
-const CONTROLS = ["#paste-open", "#bench-toggle", "#hc-toggle", "#cmd", "#try-chip", "#download", "#manual-link", "#landing-graveyard"];
+const CONTROLS = ["#paste-url", "#paste-go", "#paste-example", "#bench-toggle", "#hc-toggle", "#cmd", "#try-chip", "#download", "#manual-link", "#landing-graveyard"];
 const BENCH_CONTROLS = ["#sim-green", "#sim-red", "#raid-start", "#sound-toggle", "#record-toggle", "#view-3d", "#install-copy", "#lookup", "#kiro-link", "#graveyard-link"];
 // Fixed-position elements checked on the 3D bench. The caption is pointer-events:none, so it is listed by name.
 const CAPTION = "#theatre-caption";
@@ -140,7 +140,7 @@ async function check(browser, vp, query) {
   const is3d = theatre0.startsWith("3d");
   const all = present(tag, await boxes(page, is3d ? CONTROLS.filter((c) => c !== "#bench-toggle") : CONTROLS));
   const primary = await page.evaluate(() => [...document.querySelectorAll("button.primary, a.primary")].filter((e) => e.getClientRects().length > 0).map((e) => e.textContent.trim()));
-  if (primary.length !== 1 || primary[0] !== "Paste your GitHub repo") fail(tag, `expected one primary button "Paste your GitHub repo", got ${JSON.stringify(primary)}`);
+  if (primary.length !== 1 || primary[0] !== "Scan my repo") fail(tag, `expected one primary button "Scan my repo", got ${JSON.stringify(primary)}`);
   if (!is3d) {
     // The Bench holds the raid, Simulated CI and the rest: closed they are not on screen, open they do not overlap.
     const hidden = await page.evaluate((sels) => sels.filter((s) => { const e = document.querySelector(s); return e && e.getClientRects().length > 0; }), ["#sim-green", "#raid-start", "#record-toggle", "#sound-toggle", "#gallery-list"]);
@@ -287,13 +287,20 @@ async function checkCard(browser, vp) {
   await page.goto(base + "?theatre=2d");
   await page.waitForFunction(() => document.getElementById("plate")?.textContent.trim().length > 0 && !document.getElementById("cmd")?.disabled, null, { timeout: 30000 })
     .catch(() => fail(tag, "page did not load within 30s"));
-  await page.click("#paste-open");
+  const inputBox = await boxes(page, ["#paste-url", "#paste-go"]);
+  if (present(tag, inputBox).length !== 2) fail(tag, "the repo input and Scan button are not visible on load without a click");
   await page.fill("#paste-url", "https://github.com/acme/widgets");
   await page.click("#paste-go");
   await page.waitForSelector("#card-creature-canvas", { timeout: 30000 }).catch(() => fail(tag, "no card panel after paste"));
   await page.waitForFunction(() => document.getElementById("card-creature-canvas")?.getAttribute("aria-label"), null, { timeout: 10000 }).catch(() => {});
   await page.locator("#card-creature-canvas").scrollIntoViewIfNeeded().catch(() => {});
 
+  const scan = present(tag, await boxes(page, ["#paste-url", "#paste-go", "#paste-status", "#paste-funnel", "#paste-funnel-owners", "#paste-source", "#paste-share", "#paste-share-link"]));
+  if (scan.length !== 8) fail(tag, `input, status, funnel, owners and Share must all be visible after a scan, found ${scan.map((b) => b.name).join(",")}`);
+  for (const [a, b] of findOverlaps([...scan, ...present(tag, await boxes(page, CARD_PASTE)), ...present(tag, await boxes(page, ["#card-creature-canvas"]))])) fail(tag, `scan input/result overlap: ${a} and ${b}`);
+  const funnel = await page.textContent("#paste-funnel");
+  if (!/^\d+ findings -> \d+ exorcised as noise -> \d+ monsters$/.test(funnel || "")) fail(tag, `unexpected funnel text: ${funnel}`);
+  if (!/no owner/.test((await page.textContent("#paste-funnel-owners")) || "")) fail(tag, "owners line should say no owner for a repo without CODEOWNERS");
   const paste = present(tag, await boxes(page, CARD_PASTE));
   for (const [a, b] of findOverlaps(paste)) fail(tag, `card controls overlap: ${a} and ${b}`);
   if (vp.w < 900) for (const b of paste) if (b.height < TAP_MIN) fail(tag, `tap target ${b.name} is ${Math.round(b.height)}px tall, under ${TAP_MIN}`);
@@ -338,6 +345,27 @@ async function checkCard(browser, vp) {
   if (rinfo.alt.includes("widgets")) fail(tag, "raid card names the repo while the toggle is off");
   await page.locator("#card-raid-canvas").screenshot({ path: join(outDir, `card-raid-${vp.w}x${vp.h}.png`) });
   console.log(`ok   [${tag}] paste controls=${paste.length} raid controls=${raid.length}`);
+  await ctx.close();
+}
+
+// Scan errors (R1): a mocked rate limit shows a message and no creature, with the input still usable, at every viewport.
+async function checkScanError(browser, vp) {
+  const tag = `${vp.w}x${vp.h} scan-error`;
+  const ctx = await browser.newContext({ viewport: { width: vp.w, height: vp.h }, hasTouch: vp.touch, isMobile: vp.touch });
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => fail(tag, `page error: ${e.message}`));
+  await page.route("https://raw.githubusercontent.com/**", (route) => route.fulfill({ status: 429, body: "" }));
+  await page.route("https://api.osv.dev/**", (route) => route.fulfill({ status: 500, body: "" }));
+  await page.goto(base + "?theatre=2d&repo=acme/widgets");
+  await page.waitForFunction(() => /rate limiting/.test(document.getElementById("paste-status")?.textContent || ""), null, { timeout: 30000 })
+    .catch(() => fail(tag, "no rate limit message after a mocked 429"));
+  const state = await page.evaluate(() => ({ resultHidden: document.getElementById("paste-result").hidden, canvas: !!document.getElementById("card-creature-canvas"), funnel: !!document.getElementById("paste-funnel"), value: document.getElementById("paste-url").value }));
+  if (!state.resultHidden || state.canvas || state.funnel) fail(tag, "a creature or funnel is shown after a rate limit");
+  if (state.value !== "https://github.com/acme/widgets") fail(tag, "the input lost the pasted address");
+  const shown = present(tag, await boxes(page, ["#paste-url", "#paste-go", "#paste-status"]));
+  if (shown.length !== 3) fail(tag, "input, Scan button and message must be visible");
+  for (const [a, b] of findOverlaps(shown)) fail(tag, `error state overlap: ${a} and ${b}`);
+  console.log(`ok   [${tag}] message shown, no creature`);
   await ctx.close();
 }
 
@@ -699,6 +727,7 @@ try {
   for (const vp of VIEWPORTS) await checkImport(browser, vp);
   for (const vp of JUDGE_VIEWPORTS) await checkJudge(browser, vp);
   for (const vp of VIEWPORTS) await checkCard(browser, vp);
+  for (const vp of VIEWPORTS) await checkScanError(browser, vp);
   if (process.env.VISUAL_QA_COPY_DOCS === "1") await captureCards(browser);
   for (const vp of WAR_VIEWPORTS) await checkWarRoom(browser, vp);
   for (const vp of VIEWPORTS) await checkGraveyard(browser, vp);
