@@ -3,7 +3,7 @@ import { UsageError } from "./exit.js";
 import { IMPORT_FORMATS, isImportFormat } from "../import/types.js";
 import { GITHUB_BASE, looksRemote, parseGithubUrl } from "./url.js";
 
-export const COMMANDS = ["exhume", "raise", "play", "graft", "inquisit", "reraise", "seal", "unseal", "raid"] as const;
+export const COMMANDS = ["exhume", "raise", "play", "graft", "inquisit", "reraise", "seal", "unseal", "raid", "autopsy", "gazette"] as const;
 export type CommandName = (typeof COMMANDS)[number];
 export type Command = CommandName | "help" | "version";
 
@@ -38,7 +38,11 @@ export const SPECS: Record<CommandName, Spec> = {
   seal: { positional: [], flags: {} },
   unseal: { positional: [], flags: {} },
   raid: { positional: TARGET, flags: { offline: "bool", feeds: "value", cache: "value", live: "bool", timeout: "value" } },
+  autopsy: { positional: [], flags: { out: "value", last: "value", sample: "bool" } },
+  gazette: { positional: [], flags: { "webhook-env": "value", "dry-run": "bool", send: "bool", "war-room": "value", format: "value", sample: "bool" } },
 };
+
+export const WEBHOOK_ENVS = ["SLACK_WEBHOOK_URL", "TEAMS_WEBHOOK_URL"] as const;
 
 const REPO = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
 const LIMB_ID = /^[A-Z]{1,32}$/;
@@ -115,6 +119,35 @@ export function parseCli(argv: readonly string[], env: Record<string, string | u
     const t = String(flags.timeout);
     if (!/^\d+$/.test(t) || Number(t) < TIMEOUT_MIN || Number(t) > TIMEOUT_MAX) {
       throw new UsageError(`--timeout must be a whole number of seconds from ${TIMEOUT_MIN} to ${TIMEOUT_MAX}, got '${t.slice(0, 20)}'`);
+    }
+  }
+  if (flags.last !== undefined) {
+    const n = String(flags.last);
+    if (!/^\d+$/.test(n) || Number(n) < 1 || Number(n) > 52) {
+      throw new UsageError(`--last must be a whole number of raids from 1 to 52, got '${n.slice(0, 20)}'`);
+    }
+  }
+  if (command === "gazette") {
+    const w = flags["webhook-env"];
+    if (w !== undefined && !(WEBHOOK_ENVS as readonly string[]).includes(String(w))) {
+      throw new UsageError(`--webhook-env must be ${WEBHOOK_ENVS.join(" or ")}. The name of the variable is given, never the URL.`);
+    }
+    if (flags.format !== undefined && flags.format !== "slack" && flags.format !== "teams") throw new UsageError("--format must be slack or teams.");
+    const fromEnv = w === undefined ? undefined : w === "SLACK_WEBHOOK_URL" ? "slack" : "teams";
+    if (fromEnv !== undefined && flags.format !== undefined && flags.format !== fromEnv) {
+      throw new UsageError(`--format ${String(flags.format)} does not match ${String(w)}.`);
+    }
+    if (flags.send === true && w === undefined) throw new UsageError("--send needs --webhook-env SLACK_WEBHOOK_URL or TEAMS_WEBHOOK_URL.");
+    if (flags.send === true && flags["dry-run"] === true) throw new UsageError("--send and --dry-run cannot be combined. Remove one.");
+    if (flags.send === true && flags.sample === true) throw new UsageError("--send posts real data. Remove --sample to send.");
+    if (typeof flags["war-room"] === "string") {
+      let ok = false;
+      try {
+        ok = new URL(flags["war-room"]).protocol === "https:";
+      } catch {
+        ok = false;
+      }
+      if (!ok) throw new UsageError("--war-room must be an https URL.");
     }
   }
   const needsToken = (what: string) => {
