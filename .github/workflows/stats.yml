@@ -17,7 +17,7 @@ concurrency:
 jobs:
   regenerate:
     # Loop guard: skip pushes whose head commit is a stats commit. Manual runs always run.
-    if: github.event_name == 'workflow_dispatch' || !startsWith(github.event.head_commit.message, 'chore(stats): regenerate')
+    if: "${{ github.event_name == 'workflow_dispatch' || !startsWith(github.event.head_commit.message, 'chore(stats): regenerate') }}"
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
