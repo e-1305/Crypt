@@ -296,6 +296,8 @@ body.record .theatre-caption { display: none; }
   body:not(.theatre) #hc-toggle { order: 15; margin: .35rem 1rem; }
   body.record:not(.theatre) .top { display: none; }
   body.judge-running:not(.theatre) .intro { padding-top: 2.75rem; }
+  /* The workflow line is desktop only on small screens it would push the game down. */
+  body:not(.theatre) .workflow-line { display: none; }
   /* The hero already carries the proof line on small screens; the header copy would push the game down. */
   body:not(.theatre) #proof-line { display: none; }
   body:not(.theatre)::after { display: none; }
@@ -425,6 +427,8 @@ body.record .judge-skip, body.record .judge-replay { display: none; }
 .paste-source { font-weight: bold; margin: .25rem 0; }
 
 .proof-line { margin: .25rem 0 0; }
+.workflow-line { margin: 0; flex: 1 1 100%; font-size: .9rem; }
+.workflow-line a { color: var(--fg); text-decoration: underline; }
 .rehearsal { margin: 0 0 .5rem; }
 .proof { margin: 1rem; }
 .proof-list { margin: .5rem 0; padding-left: 1.5rem; overflow-wrap: anywhere; }
