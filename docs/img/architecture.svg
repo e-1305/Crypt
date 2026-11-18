@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 560" width="1000" height="560" role="img" aria-labelledby="t d">
+  <title id="t">CRYPT architecture: a game, a watcher, and four Kiro features around them</title>
+  <desc id="d">Flow: Z-machine game, transcript markers, watcher (grammar and limbs.json), Necromancer (PR only), CI, Inquisitor, human merge, reraise. Overlays: steering is the constitution, hooks are the guards, specs and property tests are the proof, MCP is the door other agents use.</desc>
+  <style>
+    .bg { fill: #ffffff; }
+    .box { fill: #f1f5f9; stroke: #334155; stroke-width: 2; }
+    .human { fill: #fef3c7; stroke: #92400e; stroke-width: 3; }
+    .card { fill: #ffffff; stroke: #64748b; stroke-width: 2; }
+    .tx { fill: #0f172a; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 14px; }
+    .h { font-weight: bold; font-size: 16px; }
+    .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 14px; }
+    .arrow { stroke: #334155; stroke-width: 2.5; fill: none; }
+    .head { fill: #334155; }
+    .k1 { fill: #1d4ed8; } .k2 { fill: #b45309; } .k3 { fill: #047857; } .k4 { fill: #7e22ce; }
+    .badge { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 14px; font-weight: bold; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #0b1220; }
+      .box { fill: #1e293b; stroke: #94a3b8; }
+      .human { fill: #422006; stroke: #fbbf24; }
+      .card { fill: #111827; stroke: #94a3b8; }
+      .tx { fill: #f1f5f9; }
+      .arrow { stroke: #cbd5e1; }
+      .head { fill: #cbd5e1; }
+      .k1 { fill: #60a5fa; } .k2 { fill: #fbbf24; } .k3 { fill: #34d399; } .k4 { fill: #c084fc; }
+      .badge { fill: #0b1220; }
+    }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="head"/></marker>
+  </defs>
+  <rect class="bg" x="0" y="0" width="1000" height="560"/>
+
+  <!-- row 1, left to right -->
+  <rect class="box" x="40" y="30" width="200" height="90" rx="8"/>
+  <text class="tx h" x="56" y="58">Z-machine game</text>
+  <text class="tx" x="56" y="82">the story you play</text>
+  <text class="tx" x="56" y="102">one limb per bug</text>
+
+  <rect class="box" x="280" y="30" width="200" height="90" rx="8"/>
+  <text class="tx h" x="296" y="58">Transcript markers</text>
+  <text class="tx mono" x="296" y="82">[[CRYPT ...]]</text>
+  <text class="tx" x="296" y="102">printed by the game</text>
+
+  <rect class="box" x="520" y="30" width="200" height="90" rx="8"/>
+  <text class="tx h" x="536" y="58">Watcher</text>
+  <text class="tx" x="536" y="82">grammar + limbs.json</text>
+  <text class="tx" x="536" y="102">MCP asks enter here</text>
+
+  <rect class="box" x="760" y="30" width="200" height="90" rx="8"/>
+  <text class="tx h" x="776" y="58">Necromancer</text>
+  <text class="tx" x="776" y="82">opens a PR, only a PR</text>
+  <text class="tx" x="776" y="102">never merges</text>
+
+  <path class="arrow" d="M240 75H278" marker-end="url(#a)"/>
+  <path class="arrow" d="M480 75H518" marker-end="url(#a)"/>
+  <path class="arrow" d="M720 75H758" marker-end="url(#a)"/>
+  <path class="arrow" d="M860 120V168" marker-end="url(#a)"/>
+
+  <!-- row 2, right to left -->
+  <rect class="box" x="760" y="170" width="200" height="90" rx="8"/>
+  <text class="tx h" x="776" y="198">CI</text>
+  <text class="tx" x="776" y="222">tests + failsafe-guard</text>
+  <text class="tx" x="776" y="242">job on every PR</text>
+
+  <rect class="box" x="520" y="170" width="200" height="90" rx="8"/>
+  <text class="tx h" x="536" y="198">Inquisitor</text>
+  <text class="tx" x="536" y="222">read-only verifier</text>
+  <text class="tx" x="536" y="242">checks the fix</text>
+
+  <rect class="human" x="280" y="170" width="200" height="90" rx="8"/>
+  <text class="tx h" x="296" y="198">HUMAN MERGE</text>
+  <text class="tx" x="296" y="222">a person reads the PR</text>
+  <text class="tx" x="296" y="242">and lands it</text>
+
+  <rect class="box" x="40" y="170" width="200" height="90" rx="8"/>
+  <text class="tx h" x="56" y="198">reraise</text>
+  <text class="tx" x="56" y="222">the limb is re-scored</text>
+  <text class="tx" x="56" y="242">and shows HEALED</text>
+
+  <path class="arrow" d="M758 215H722" marker-end="url(#a)"/>
+  <path class="arrow" d="M518 215H482" marker-end="url(#a)"/>
+  <path class="arrow" d="M278 215H242" marker-end="url(#a)"/>
+
+  <text class="tx h" x="40" y="306">What Kiro added around the flow</text>
+
+  <!-- overlay cards -->
+  <rect class="card" x="40" y="322" width="450" height="100" rx="8"/>
+  <rect class="k1" x="40" y="322" width="10" height="100" rx="4"/>
+  <text class="tx h" x="66" y="350">Steering: the lab's constitution</text>
+  <text class="tx" x="66" y="374">Failsafe, blameless, SLA rules, always in context.</text>
+  <text class="tx mono" x="66" y="398">.kiro/steering/*</text>
+
+  <rect class="card" x="510" y="322" width="450" height="100" rx="8"/>
+  <rect class="k2" x="510" y="322" width="10" height="100" rx="4"/>
+  <text class="tx h" x="536" y="350">Hooks: the guards</text>
+  <text class="tx" x="536" y="374">Five hooks, trigger PostFileSave: related tests,</text>
+  <text class="tx" x="536" y="396">failsafe, blameless copy, attribution, task trace.</text>
+
+  <rect class="card" x="40" y="436" width="450" height="100" rx="8"/>
+  <rect class="k3" x="40" y="436" width="10" height="100" rx="4"/>
+  <text class="tx h" x="66" y="464">Specs + property tests: the proof</text>
+  <text class="tx" x="66" y="488">Requirements first, then code, then a test that</text>
+  <text class="tx" x="66" y="510">tries to break the rule (e.g. no request after SEAL).</text>
+
+  <rect class="card" x="510" y="436" width="450" height="100" rx="8"/>
+  <rect class="k4" x="510" y="436" width="10" height="100" rx="4"/>
+  <text class="tx h" x="536" y="464">MCP: the door other agents use</text>
+  <text class="tx" x="536" y="488">request_graft and seal go through the watcher,</text>
+  <text class="tx" x="536" y="510">so an agent gets the same rules as a player.</text>
+</svg>
