@@ -32,6 +32,7 @@ Nothing from the target is run, and no dependencies are installed.
 Options:
   --offline           raid, exhume: make no network call (OSV answers come from the cache)
   --feeds <dir>       raid, exhume: directory with kev.json and epss.csv
+  --from <format>     exhume: <target> is a scanner file: sarif, dependabot, trivy, grype or snyk (no OSV call)
   --cache <dir>       raid, exhume: directory for cached OSV answers
   --out <path>        exhume: creature file (default out/creature.json); raise: output directory;
                       autopsy: report file (default out/autopsy.html)

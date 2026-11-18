@@ -1,26 +1,28 @@
 import { mkdirSync, writeFileSync } from "node:fs";
-import { dirname, isAbsolute, resolve } from "node:path";
+import { basename, dirname, isAbsolute, resolve } from "node:path";
 import { NoManifestError, buildCreature, serializeCreature, summarize } from "../src/exhume/creature.js";
 import { parseEpss, parseKev } from "../src/exhume/feeds.js";
 import { LockfileError } from "../src/exhume/lockfile.js";
 import { CODEOWNERS_LOCATIONS } from "../src/exhume/owners.js";
 import type { ExhumeFs } from "../src/exhume/types.js";
 import { creatureRepoName, packageJsonName } from "../src/exhume/name.js";
+import { buildImportedCreature } from "../src/import/build.js";
+import { ImportError, isImportFormat } from "../src/import/index.js";
 import { nodeFs } from "./node-fs.js";
 import { osvLookup } from "./osv-client.js";
 
 const USAGE =
-  "usage: crypt exhume <path-or-github-url> [--out out/creature.json] [--feeds data/feeds] [--cache data/cache/osv] [--offline] [--name repo]";
+  "usage: crypt exhume <path-or-github-url> [--out out/creature.json] [--feeds data/feeds] [--cache data/cache/osv] [--offline] [--name repo] [--from sarif|dependabot|trivy|grype|snyk]";
 
 function parseArgs(argv: string[]) {
-  const o = { target: "", out: "out/creature.json", feeds: "data/feeds", cache: "data/cache/osv", offline: false, name: "" };
+  const o = { target: "", out: "out/creature.json", feeds: "data/feeds", cache: "data/cache/osv", offline: false, name: "", from: "" };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]!;
     if (a === "--offline") o.offline = true;
-    else if (a === "--out" || a === "--feeds" || a === "--cache" || a === "--name") {
+    else if (a === "--out" || a === "--feeds" || a === "--cache" || a === "--name" || a === "--from") {
       const v = argv[++i];
       if (!v) throw new Error(`${a} needs a value`);
-      o[a.slice(2) as "out" | "feeds" | "cache" | "name"] = v;
+      o[a.slice(2) as "out" | "feeds" | "cache" | "name" | "from"] = v;
     } else if (a.startsWith("--") || o.target) throw new Error(`unexpected argument ${a}`);
     else o.target = a;
   }
@@ -61,6 +63,25 @@ function warnIfStale(name: string, date: string | undefined): void {
 
 async function main(): Promise<void> {
   const a = parseArgs(process.argv.slice(2));
+  if (a.from) {
+    if (!isImportFormat(a.from)) throw new Error(`--from must be sarif, dependabot, trivy, grype or snyk, got '${a.from.slice(0, 20)}'`);
+    const text = nodeFs(dirname(resolve(a.target))).read(basename(a.target));
+    if (text === null) throw new Error(`cannot read ${a.target}`);
+    const feedFs = nodeFs(a.feeds);
+    const kevText = feedFs.read("kev.json");
+    const epssText = feedFs.read("epss.csv");
+    const kev = kevText === null ? null : parseKev(kevText);
+    const epss = epssText === null ? null : parseEpss(epssText);
+    // Build first: an invalid file throws here and nothing is written.
+    const creature = buildImportedCreature({ format: a.from, text, file: basename(a.target), name: a.name || basename(a.target).replace(/\.json$/i, ""), kev, epss });
+    warnIfStale("KEV", kev?.date);
+    warnIfStale("EPSS", epss?.date);
+    mkdirSync(dirname(a.out), { recursive: true });
+    writeFileSync(a.out, serializeCreature(creature));
+    console.log(summarize(creature));
+    console.log(`  wrote ${a.out}`);
+    return;
+  }
   const gh = GITHUB.exec(a.target);
   const repo = gh ? await githubRepo(gh[1]!, gh[2]!) : nodeFs(a.target);
   // Feeds only come from --feeds (default data/feeds), never from the scanned repository.
@@ -92,6 +113,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((e) => {
-  console.error(e instanceof LockfileError || e instanceof NoManifestError ? `exhume: ${e.message}` : `exhume: ${(e as Error).message}\n${USAGE}`);
+  console.error(e instanceof LockfileError || e instanceof NoManifestError || e instanceof ImportError ? `exhume: ${e.message}` : `exhume: ${(e as Error).message}\n${USAGE}`);
   process.exit(1);
 });

@@ -40,6 +40,19 @@
       <button id="sound-toggle" class="sound-toggle" type="button" aria-pressed="false">Sound: off</button>
       <button id="record-toggle" class="record-toggle" type="button" aria-pressed="false" aria-label="Recording mode: hide the page controls for screen capture">Recording mode</button>
     </div>
+    <section id="import" class="import" aria-labelledby="import-h">
+      <h2 id="import-h">Import a scanner report</h2>
+      <p class="muted">SARIF, Dependabot alerts, Trivy, Grype or Snyk JSON. Drop a file here or choose one.</p>
+      <p id="import-privacy" class="import-privacy">Parsed in your browser. The file stays on your device and is not uploaded.</p>
+      <div id="import-drop" class="import-drop">
+        <label for="import-file">Choose a report file</label>
+        <input id="import-file" type="file" accept=".json,.sarif,application/json">
+      </div>
+      <p><label for="import-format">Format</label>
+        <select id="import-format"><option value="auto">Detect</option><option value="sarif">SARIF</option><option value="dependabot">Dependabot</option><option value="trivy">Trivy</option><option value="grype">Grype</option><option value="snyk">Snyk</option></select></p>
+      <p id="import-status" class="muted" role="status"></p>
+      <div id="import-result" class="paste-result" hidden></div>
+    </section>
     <p class="view-3d-row"><a id="view-3d" class="view-3d" href="?theatre=3d" hidden>View the 3D bench</a></p>
     <p class="install bench-extra"><span class="install-label">Try it on your own repo:</span>
       <code id="install-cmd">npx @e-1305/crypt raid &lt;path-or-github-url&gt;</code>

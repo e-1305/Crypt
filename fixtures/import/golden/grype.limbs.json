@@ -1,0 +1,155 @@
+[
+  {
+    "rank": 1,
+    "id": "npm:jquery@3.4.1",
+    "ecosystem": "npm",
+    "name": "jquery",
+    "version": "3.4.1",
+    "direct": false,
+    "manifest": "grype.json",
+    "owner": "unowned",
+    "state": "Possessed",
+    "unknown": false,
+    "unknownReason": null,
+    "spawned": true,
+    "score": 1008488700,
+    "kev": true,
+    "epss": 0.84887,
+    "severity": 0,
+    "vendorSeverity": "MEDIUM",
+    "vulns": [
+      {
+        "id": "GHSA-JPCQ-CGW6-V4J6",
+        "cves": [
+          "CVE-2020-11023"
+        ]
+      }
+    ]
+  },
+  {
+    "rank": 2,
+    "id": "npm:lodash@4.17.15",
+    "ecosystem": "npm",
+    "name": "lodash",
+    "version": "4.17.15",
+    "direct": false,
+    "manifest": "grype.json",
+    "owner": "unowned",
+    "state": "Rotting",
+    "unknown": false,
+    "unknownReason": null,
+    "spawned": false,
+    "score": 521300,
+    "kev": false,
+    "epss": 0.05213,
+    "severity": 0,
+    "vendorSeverity": "HIGH",
+    "vulns": [
+      {
+        "id": "GHSA-P6MC-M468-83GW",
+        "cves": [
+          "CVE-2020-8203"
+        ]
+      }
+    ]
+  },
+  {
+    "rank": 3,
+    "id": "npm:minimist@0.0.8",
+    "ecosystem": "npm",
+    "name": "minimist",
+    "version": "0.0.8",
+    "direct": false,
+    "manifest": "grype.json",
+    "owner": "unowned",
+    "state": "Rotting",
+    "unknown": false,
+    "unknownReason": null,
+    "spawned": false,
+    "score": 458099.99999999994,
+    "kev": false,
+    "epss": 0.04581,
+    "severity": 0,
+    "vendorSeverity": "CRITICAL",
+    "vulns": [
+      {
+        "id": "GHSA-XVCH-5GV4-984H",
+        "cves": [
+          "CVE-2021-44906"
+        ]
+      }
+    ]
+  },
+  {
+    "rank": 4,
+    "id": "PyPI:pyyaml@5.3",
+    "ecosystem": "PyPI",
+    "name": "pyyaml",
+    "version": "5.3",
+    "direct": false,
+    "manifest": "grype.json",
+    "owner": "unowned",
+    "state": "Rotting",
+    "unknown": false,
+    "unknownReason": null,
+    "spawned": false,
+    "score": 0,
+    "kev": false,
+    "epss": null,
+    "severity": 0,
+    "vendorSeverity": "CRITICAL",
+    "vulns": [
+      {
+        "id": "GHSA-8Q59-Q68H-6HV4",
+        "cves": [
+          "CVE-2020-14343"
+        ]
+      }
+    ]
+  },
+  {
+    "rank": 5,
+    "id": "npm:go-module:example.invalid/mod@unknown",
+    "ecosystem": "npm",
+    "name": "go-module:example.invalid/mod",
+    "version": "unknown",
+    "direct": false,
+    "manifest": "grype.json",
+    "owner": "unowned",
+    "state": "Rotting",
+    "unknown": true,
+    "unknownReason": "version-unpinned",
+    "spawned": false,
+    "score": 0,
+    "kev": false,
+    "epss": null,
+    "severity": 0,
+    "vendorSeverity": "LOW",
+    "vulns": [
+      {
+        "id": "GHSA-aaaa-bbbb-cccc",
+        "cves": []
+      }
+    ]
+  },
+  {
+    "rank": 6,
+    "id": "npm:no-id-pkg@1.0.0",
+    "ecosystem": "npm",
+    "name": "no-id-pkg",
+    "version": "1.0.0",
+    "direct": false,
+    "manifest": "grype.json",
+    "owner": "unowned",
+    "state": "Rotting",
+    "unknown": true,
+    "unknownReason": "osv-unavailable",
+    "spawned": false,
+    "score": 0,
+    "kev": false,
+    "epss": null,
+    "severity": 0,
+    "vendorSeverity": null,
+    "vulns": []
+  }
+]

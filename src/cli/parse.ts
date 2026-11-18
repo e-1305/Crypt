@@ -1,5 +1,6 @@
 // Pure argument parser. parseCli never throws anything but UsageError.
 import { UsageError } from "./exit.js";
+import { IMPORT_FORMATS, isImportFormat } from "../import/types.js";
 import { GITHUB_BASE, looksRemote, parseGithubUrl } from "./url.js";
 
 export const COMMANDS = ["exhume", "raise", "play", "graft", "inquisit", "reraise", "seal", "unseal", "raid", "autopsy", "gazette"] as const;
@@ -25,7 +26,7 @@ const TARGET = [{ name: "target", required: true }];
 const LIMB = [{ name: "LIMB", required: true }];
 
 export const SPECS: Record<CommandName, Spec> = {
-  exhume: { positional: TARGET, flags: { out: "value", feeds: "value", cache: "value", offline: "bool" } },
+  exhume: { positional: TARGET, flags: { out: "value", feeds: "value", cache: "value", offline: "bool", from: "value" } },
   raise: { positional: [{ name: "creature.json", required: false }], flags: { out: "value" } },
   play: { positional: [], flags: { story: "value", target: "value", advisories: "value" } },
   graft: {
@@ -98,7 +99,11 @@ export function parseCli(argv: readonly string[], env: Record<string, string | u
 
   if (command === "exhume" || command === "raid") {
     const t = args[0]!;
-    if (looksRemote(t) && !parseGithubUrl(t)) {
+    if (flags.from !== undefined && !isImportFormat(String(flags.from))) {
+      throw new UsageError(`--from must be one of ${IMPORT_FORMATS.join(", ")}, got '${String(flags.from).slice(0, 20)}'`);
+    }
+    if (flags.from !== undefined && looksRemote(t)) throw new UsageError("--from needs a local file path, not a URL.");
+    if (flags.from === undefined && looksRemote(t) && !parseGithubUrl(t)) {
       throw new UsageError(`'${t.slice(0, 60)}' is not a GitHub repository URL. Use ${GITHUB_BASE}/<owner>/<repo> or a local path.`);
     }
   }

@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "Synthetic Scanner",
+          "rules": [
+            {
+              "id": "CVE-2020-11023",
+              "name": "jquery xss"
+            },
+            {
+              "id": "CVE-2020-8203"
+            },
+            {
+              "id": "CVE-2021-44906"
+            },
+            {
+              "id": "CVE-2022-0001"
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "CVE-2020-11023",
+          "level": "error",
+          "message": {
+            "text": "Package: jquery\nInstalled Version: 3.4.1"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "package-lock.json"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "purl": "pkg:npm/jquery@3.4.1",
+            "security-severity": "6.1"
+          }
+        },
+        {
+          "ruleId": "CVE-2020-8203",
+          "level": "error",
+          "message": {
+            "text": "lodash prototype pollution"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "package-lock.json"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "purl": "pkg:npm/lodash@4.17.15",
+            "security-severity": "7.4",
+            "aliases": [
+              "GHSA-p6mc-m468-83gw"
+            ]
+          }
+        },
+        {
+          "ruleId": "CVE-2021-44906",
+          "level": "error",
+          "message": {
+            "text": "minimist prototype pollution"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "package-lock.json"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "purl": "pkg:npm/minimist@0.0.8",
+            "security-severity": "9.8"
+          }
+        },
+        {
+          "ruleId": "CVE-2022-0001",
+          "level": "error",
+          "message": {
+            "text": "pyyaml issue"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "package-lock.json"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "purl": "pkg:pypi/PyYAML@5.3",
+            "security-severity": "5.5"
+          }
+        },
+        {
+          "ruleId": "no-eval",
+          "level": "warning",
+          "message": {
+            "text": "eval used"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/app.js"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
