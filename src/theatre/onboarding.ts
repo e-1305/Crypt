@@ -11,20 +11,28 @@ export const IDLE_HINT_MS = 8000;
 export const WARN_MINUTES = [10, 5, 1] as const;
 
 export interface TutorialStep {
-  id: "look" | "examine" | "assign" | "graft" | "review";
+  id: "look" | "examine" | "assign" | "graft" | "ci" | "seal" | "review";
   /** Shown in the strip. "{limb}" is replaced by the limb id the player types. */
   text: string;
   /** The command the player types, with "{limb}" in place of the limb. null for read-only steps. */
   command: string | null;
   /** Read-only steps finish with the Got it button; command steps finish when the game accepts the verb. */
   verb: "EXAMINE" | "ASSIGN" | "GRAFT" | null;
+  /** Steps that finish on a page event, not on a typed verb: the simulated CI went green, or a graft was refused by the seal. */
+  event?: TutorialEvent;
+  /** The idle hint for an event step that has no command to type. */
+  hint?: string;
 }
+
+export type TutorialEvent = "ci-green" | "seal-refused";
 
 export const tutorialSteps: readonly TutorialStep[] = [
   { id: "look", text: "Look at the creature in Plate I. Limbs marked possessed or rotting are the ones to heal.", command: null, verb: null },
   { id: "examine", text: "Type EXAMINE {limb} in the game input to inspect a limb that has a rehearsal pull request.", command: "EXAMINE {limb}", verb: "EXAMINE" },
   { id: "assign", text: "Type ASSIGN {limb} to put a healer on it.", command: "ASSIGN {limb}", verb: "ASSIGN" },
   { id: "graft", text: "Type GRAFT {limb} yourself to open a rehearsal pull request. Nothing leaves this page.", command: "GRAFT {limb}", verb: "GRAFT" },
+  { id: "ci", text: "Run Simulate CI: green, below the raid panel. A limb heals only when CI is green.", command: null, verb: null, event: "ci-green", hint: "Hint: press the Simulate CI: green button and watch the plate." },
+  { id: "seal", text: "Type SEAL CRYPT, then GRAFT {limb}. The graft is rejected, because a sealed crypt runs nothing.", command: "SEAL CRYPT", verb: null, event: "seal-refused" },
   { id: "review", text: "The pull request now waits for a human to review it. CRYPT leaves the final decision to people.", command: null, verb: null },
 ];
 
@@ -48,6 +56,8 @@ export function nextHint(stepDone: readonly boolean[], idleMs: number, limb = ""
   if (i < 0) return null;
   const step = tutorialSteps[i];
   const cmd = tutorialCommand(step, limb);
+  if (step.event === "seal-refused") return "Hint: type SEAL CRYPT and press Enter, then type GRAFT " + (LIMB_ID.test(limb) ? limb : "followed by a limb name") + ".";
+  if (step.event && step.hint) return step.hint;
   if (cmd !== null) return "Hint: type " + cmd + " and press Enter.";
   if (step.command !== null) return "Hint: type " + step.verb + " followed by a limb name from the plate, in capital letters.";
   return "Hint: read the step above, then press Got it.";

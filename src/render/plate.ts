@@ -256,8 +256,11 @@ export function layoutPlate(creature: unknown, options: PlateOptions = {}): Plat
   lines.push(plain(rule));
   const n = (s: PlateState) => all.filter((i) => i.state === s).length;
   lines.push(
-    plain(`LIMBS ${all.length}  POSSESSED ${n("Possessed")}  ROTTING ${n("Rotting")}  HEALED ${n("Healed")}  HEALTHY ${n("Healthy")}`),
+    plain(`DEPENDENCIES ${all.length}  POSSESSED ${n("Possessed")}  ROTTING ${n("Rotting")}  HEALED ${n("Healed")}  HEALTHY ${n("Healthy")}`),
   );
+  const found = all.filter((i) => i.state !== "Healthy");
+  const spawnedN = found.filter((i) => i.spawned).length;
+  lines.push(plain(`LIMBS THAT SPAWN ${spawnedN} OF ${found.length} FINDINGS, ${found.length - spawnedN} BELOW THE NOISE LINE`));
   lines.push(plain(rule));
   return lines;
 }

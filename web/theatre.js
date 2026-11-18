@@ -46,6 +46,7 @@ function setRecord(on) {
   if (recordBtn) {
     recordBtn.setAttribute("aria-pressed", String(on));
     recordBtn.textContent = on ? "Exit recording mode" : "Recording mode";
+    recordBtn.setAttribute("aria-label", on ? "Exit recording mode: show the page controls again" : "Recording mode: hide the page controls for screen capture");
   }
 }
 setRecord(parseRecordFlag(location.search));

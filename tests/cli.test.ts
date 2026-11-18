@@ -357,7 +357,7 @@ describe("raid end to end", () => {
       expect([pay.name, pay.from, pay.to]).toEqual(["jquery", "3.4.1", "3.5.0"]);
       expect(r.stdout).toContain("dry-run payload written to out/prs/crypt-graft-jquery-3.5.0.json");
       const outcomes = readFileSync(join(d, "crypt-audit.log"), "utf8").split("\n").filter(Boolean).map((l) => l.split("\t")[3]);
-      expect(outcomes).toEqual(["REQUEST_WRITTEN", "PR_OPENED", "SEALED", "REJECTED_SEALED"]);
+      expect(outcomes).toEqual(["REQUEST_WRITTEN", "DRYRUN_WRITTEN", "SEALED", "REJECTED_SEALED"]);
       expect(existsSync(join(d, ".crypt-seal"))).toBe(true);
     } finally {
       rmSync(d, { recursive: true, force: true });

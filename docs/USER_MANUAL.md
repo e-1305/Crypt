@@ -160,7 +160,7 @@ The page loads the plain 2D view instead when any of these hold: no WebGL2, redu
 
 ### Simulated CI
 
-The "Simulate CI: green" and "Simulate CI: red" buttons replay a dry-run graft for the first sick limb. Everything is labelled SIMULATED CI, uses no token or network, and is kept out of the raid score. Green heals the limb on screen with a flash and thunder. Red makes the limb convulse and leaves its state unchanged. Real heals appear when the page loads a creature file in which a limb has become healthy after a human merge.
+The "Simulate CI: green" and "Simulate CI: red" buttons replay a dry-run graft for the first sick limb. Everything is labelled SIMULATED CI, uses no token or network, and is kept out of the raid score. Green heals the limb on screen with a flash and thunder. Red makes the limb convulse and leaves its state unchanged. After a green result the plate marks the limb HEALED within three seconds, the event log adds "SIMULATED: jquery healed" and a screen reader hears it. After a red result the limb stays ROTTING and the log says so. Real heals appear when the page loads a creature file in which a limb has become healthy after a human merge.
 
 ### The raid
 
@@ -188,13 +188,17 @@ The raid adds arcade touches on top of the team score. They are display only: th
 
 ### Getting started
 
-A strip above the game walks through the first minute on the demo creature. It has five steps: look at the plate, type `EXAMINE <limb>`, type `ASSIGN <limb>`, type `GRAFT <limb>`, then read how the pull request waits for a human to review it. The strip names a limb that has a rehearsal pull request.
+A strip above the game walks through the first minute on the demo creature. It has seven steps: look at the plate, type `EXAMINE <limb>`, type `ASSIGN <limb>`, type `GRAFT <limb>`, press "Simulate CI: green" and watch the limb heal, type `SEAL CRYPT` then `GRAFT <limb>` to see the graft rejected, then read how the pull request waits for a human to review it. The strip names a limb that has a rehearsal pull request.
 
 - You type every command. The strip shows what to type and never runs anything, `GRAFT` included. Each command goes through the same strict grammar as the rest of the game.
-- A step finishes when the game accepts its verb. Steps 1 and 5 finish with the "Got it" button.
+- A step finishes when the game accepts its verb. Steps 1 and 7 finish with the "Got it" button. The two seal and CI steps finish when the page sees the green result or the refused graft.
 - After 8 seconds without typing, one hint appears under the strip and is read out politely by screen readers. Typing clears the wait.
 - "Skip" closes the strip. "Hide for good" keeps it closed on later visits. Both are remembered in this browser.
 - A banner above the page shows one of eight daily lines, chosen from the date, so everyone sees the same line on the same day.
+
+### The seal on the page
+
+Typing `SEAL CRYPT` shows a badge, "SEALED: no graft will run.", on the 2D page and over the 3D bench. A `GRAFT` is then rejected and no payload is made. The "Unseal" button lifts the seal for this page only.
 
 ### Pressure
 
@@ -227,3 +231,34 @@ Limits of the 3D bench, stated plainly:
 | No sound | Press "Sound: off" to turn it on. Browsers allow audio only after a click. |
 | `--live` is refused | Set `GITHUB_TOKEN` to a fine-grained token limited to the one target repository. |
 | Offline run has no data for a package | `--offline` answers only from the cache in `data/cache/osv/`. Run once with network access to fill it. |
+
+## How it works
+
+One lockfile in, one playable story out, and a human at the end. Each arrow is a file you can read.
+
+```
+lockfile --> OSV + CISA KEV + EPSS --> creature.json --> Inform 6 --> creature.z8
+   (Z-machine story) --prints--> [[CRYPT GRAFT JQUERY]] --> watcher --> Necromancer
+   --> fix PR (dry run by default) --> CI --> a person merges --> reraise --> limb HEALED
+```
+
+**Why a Z-machine.** The story is one small file that runs anywhere. Infocom's interpreters (Frotz, Lectrote, Parchment) open the `.z8` you download from the page. The game is the interface, so there is no dashboard to build.
+
+**Only the game triggers anything.** The watcher reacts to `[[CRYPT ...]]` markers that the story prints after it accepts a command. Text you type never counts as a marker, and the command grammar is strict (capitals, one space).
+
+**The failsafe.** There is no merge call anywhere in the code. `SEAL CRYPT` blocks every graft. Every agent action goes to `crypt-audit.log`. Without `GITHUB_TOKEN`, a graft is a dry run and writes its payload to `out/prs/`. A person merges every pull request. [failsafe.md](../.kiro/steering/failsafe.md) lists the rules, and property-based tests enforce them.
+
+**Why the story says `(at)`.** The plate shows an owner as `@team`, and the story text shows `(at)team`. The Inform 6 compiler reads `@` as an escape inside strings, so `src/raise/sanitize.ts` spells it `(at)` in every generated string, and the same pass strips brackets and quotes. Same owner, same CODEOWNERS entry, two spellings by design.
+
+**One file format, two front ends.** The Pages site and the CLI read the same `creature.json`. The page can rehearse: play the story, read dry-run payloads and simulate CI. Only the CLI can open a real pull request (`crypt raid <url> --live`). Tier 1 scope: npm and pip lockfiles.
+
+### Built with Kiro
+
+CRYPT was built with Kiro, using four of its features together:
+
+- **Specs** in [`.kiro/specs/`](../.kiro/specs/): every feature began as requirements, a design and tasks. [necromancer/requirements.md](../.kiro/specs/necromancer/requirements.md) is the one behind the graft flow.
+- **Steering** in [`.kiro/steering/`](../.kiro/steering/): the rules that bind every change (no merge call, SEAL blocks grafts, one team score, blameless wording). Tests check them.
+- **Hooks** in [`.kiro/hooks/`](../.kiro/hooks/): checks that run when a file is saved. [failsafe-guard-on-save.json](../.kiro/hooks/failsafe-guard-on-save.json) fails a save that adds a merge call.
+- **Agents** in [`.kiro/agents/`](../.kiro/agents/): the Necromancer and the Inquisitor.
+
+[KIRO.md](KIRO.md) has the evidence and the limits. The playtest loop in [PLAYTEST_LOG.md](PLAYTEST_LOG.md) and [BACKLOG.md](BACKLOG.md) shows how a judge persona and a product manager persona drive each round of fixes.

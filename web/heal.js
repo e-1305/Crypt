@@ -6,7 +6,7 @@ import { applyHealEvent, demoPayload, simulateFromPayload, SIMULATED_LABEL } fro
 
 const reduced = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-export function initHeal({ addLine, announce, getLimbs, redraw }) {
+export function initHeal({ addLine, announce, getLimbs, redraw, logEvent = () => {}, signal = () => {} }) {
   const label = document.getElementById("sim-label");
   const simGreen = document.getElementById("sim-green");
   const simRed = document.getElementById("sim-red");
@@ -36,13 +36,16 @@ export function initHeal({ addLine, announce, getLimbs, redraw }) {
         fx("heal", e.limb);
         if (!simulated) addLine("The creature stirs. " + short(e.limb) + " is healed.");
         announce((simulated ? SIMULATED_LABEL + ". " : "") + "Healed: " + short(e.limb) + ".");
+        if (simulated) logEvent("SIMULATED: " + short(e.limb) + " healed");
       } else if (e.kind === "convulse") {
         fx("convulse", e.limb);
         redraw([], e.limb);
         if (!simulated) addLine(e.line, "reject");
         announce((simulated ? SIMULATED_LABEL + ". " : "") + e.line);
+        if (simulated) logEvent("SIMULATED: " + short(e.limb) + " stays ROTTING, CI was red", true);
       } else if (e.kind === "ci-green") {
         announce((simulated ? SIMULATED_LABEL + ". " : "") + "CI is green for " + short(e.limb) + ".");
+        signal("ci-green");
       }
     } catch { /* leave the limb rotting */ }
   }

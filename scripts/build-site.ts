@@ -61,7 +61,7 @@ async function demoPayloads(work: string, creaturePath: string, limbs: LimbRefs)
       now: () => stamp,
     };
     const r = await graft(ctx, req);
-    if (r.outcome === "PR_OPENED" && r.branch) {
+    if (r.outcome === "DRYRUN_WRITTEN" && r.branch) {
       const file = nodeIo.listDir(paths.prsDir).find((f) => f.includes(id.toLowerCase()));
       if (!file) continue;
       const p = JSON.parse(readFileSync(join(paths.prsDir, file), "utf8"));

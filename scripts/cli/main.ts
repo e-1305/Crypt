@@ -12,6 +12,7 @@ import { dryRunClient } from "../../src/github/client.js";
 import { graft } from "../../src/necromancer/index.js";
 import { fixtureAdvisories, osvAdvisories } from "../osv-advisory.js";
 import { preflightedClients, resolveRepo } from "./live.js";
+import { readRaidContext } from "./context.js";
 import { exhumeCommand, raidCommand } from "./raid.js";
 import { runScript, runScriptOrFail } from "./run.js";
 import { seal, unseal } from "./seal.js";
@@ -87,11 +88,30 @@ async function run(argv: string[]): Promise<number> {
     case "play": {
       await ensureToolchain();
       const cwd = process.cwd();
+      // Flags win. Without them, play uses the target and advisories of the last raid in this directory.
+      const rc = readRaidContext(cwd);
+      const ctxAdvisories = rc?.advisories;
+      if (typeof p.flags.target !== "string" && rc && rc.target === null) {
+        process.stderr.write("crypt: the last raid scanned a temporary clone. Pass --target <dir> with a checkout of that repository to write fixes.\n");
+      }
+      if (rc && typeof p.flags.target !== "string" && rc.target !== null) {
+        process.stderr.write(`crypt: using target ${resolve(rc.target)} from out/raid-context.json (last raid). Pass --target to override.\n`);
+      }
+      if (rc && typeof p.flags.advisories !== "string" && ctxAdvisories) {
+        process.stderr.write(`crypt: using advisory source ${ctxAdvisories.kind} from out/raid-context.json. Pass --advisories to override.\n`);
+      }
       return playStory({
         story: resolve(typeof p.flags.story === "string" ? p.flags.story : "out/creature.z8"),
         cwd,
-        targetDir: resolve(typeof p.flags.target === "string" ? p.flags.target : "."),
-        advisories: advisoriesFor(p.flags.advisories),
+        targetDir: resolve(typeof p.flags.target === "string" ? p.flags.target : (rc?.target ?? ".")),
+        advisories:
+          typeof p.flags.advisories === "string" || !ctxAdvisories
+            ? advisoriesFor(p.flags.advisories)
+            : ctxAdvisories.kind === "folder"
+              ? fixtureAdvisories(ctxAdvisories.dir)
+              : ctxAdvisories.kind === "none"
+                ? async () => null
+                : osvAdvisories(),
       });
     }
     case "graft":

@@ -74,3 +74,22 @@ Rules for the new pieces:
 - **Title card** (`CRYPT — Don't abandon your creature.`): 3D path only, 3 seconds, `aria-hidden`. Any key or click skips it. It never appears on the 2D page or under `prefers-reduced-motion`, and reduced motion already selects the 2D page.
 - **Dolly-in**: the camera moves toward the CRT at the first key pressed in the command input. It is instant under reduced motion (which never mounts the bench in the first place).
 - **Recording mode** (`?record=1` or the "Recording mode" button): hides the header, event log, plain-page link, sound toggle and the raid and simulated CI buttons. The CRT and the plate stay. Escape leaves it. The toggle button stays in the tab order and shows when it has focus, so keyboard users can leave without knowing the shortcut. The game input keeps working. Recording mode is for screen capture, not for everyday use, because it removes the event log and its announcements from view (the announcer region still speaks).
+
+## Round 1 playtest fixes: keyboard order and announcements
+
+Tab order on the 2D page, from the top: "Skip to the game input" (skip link), Sound, Recording mode, "Copy command", the "Built with Kiro" link, "How to play (manual)", High-contrast reader mode, the tutorial buttons (Got it, Skip, Hide for good), then the game input. The game input no longer has `autofocus`. The script focuses it with `preventScroll`, so the title and pitch stay in view. Shift+Tab from the game input walks the same list backwards.
+
+- The high-contrast toggle announces "High-contrast reader mode on" and "High-contrast reader mode off" through the status region.
+- The SEAL badge ("SEALED: no graft will run.") is a status region with an "Unseal" button. Unseal affects this page only.
+- The Recording mode button has the accessible name "Recording mode: hide the page controls for screen capture".
+- A simulated heal adds "SIMULATED: jquery healed" to the event log and announces it. A simulated red result adds "SIMULATED: jquery stays ROTTING, CI was red".
+- `tests/page-above-fold.test.ts` and `tests/web-glue.test.ts` check the order and the announcements. axe-core was not re-run for that round; Round 2 below re-ran it.
+
+
+## Round 2: prompt in reach, Try chip, 3D caption
+
+- axe-core 4.x, run by `scripts/playtest/judge.mjs` (`AXE_CORE=<path to axe.min.js>`) in headless Chromium on `/?theatre=off` at 1280x720: 0 violations, 43 rules passed. The first run found two issues, both fixed: the Try chip's accessible name did not contain its visible text ("label-content-name-mismatch") and the daily banner was outside any landmark ("region"). Not run: the 3D page, Lighthouse, screen readers.
+- The game pane now comes before the plate on the 2D page (CSS `order`). The DOM order is unchanged, so the tab and reading order are the same as before.
+- "Try: GRAFT JQUERY" is a button. Enter or Space fills the command box, focus moves to it and `#announcer` says "Command box filled with GRAFT JQUERY. Press Enter to run it." It never submits.
+- The 3D caption is `aria-hidden` because the same sentence is in the page header for screen readers. Recording mode hides it. Reduced motion and high contrast select the 2D page, which shows the pitch in the header.
+- After "Simulate CI: green" the tutorial strip moves to the next unfinished step (step 6 of 7, "Type SEAL CRYPT"). Steps skipped on the way are marked done.

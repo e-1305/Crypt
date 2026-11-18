@@ -15,12 +15,15 @@ export interface SealOutcome {
 export interface SealGate {
   readonly sealed: boolean;
   apply(events: readonly SealEvent[]): SealOutcome;
+  /** Lifts the seal for this page only. Nothing outside the page changes. */
+  unseal(): void;
 }
 
 export function createSealGate(): SealGate {
   let sealed = false;
   return {
     get sealed() { return sealed; },
+    unseal() { sealed = false; },
     apply(events) {
       const allowed: SealEvent[] = [];
       const refused: SealEvent[] = [];
@@ -38,6 +41,6 @@ export function createSealGate(): SealGate {
 /** The line shown in the transcript and read out for a refused event. */
 export function refusalMessage(e: SealEvent): string {
   return e.parsed?.verb === "RAID"
-    ? "The crypt is sealed. The raid does not start. Reload the page to unseal it."
-    : "The crypt is sealed. The graft is rejected and no payload is made. Reload the page to unseal it.";
+    ? "The crypt is sealed. The raid does not start. Press Unseal to lift it on this page."
+    : "The crypt is sealed. The graft is rejected and no payload is made. Press Unseal to lift it on this page.";
 }

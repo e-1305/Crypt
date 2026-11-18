@@ -1,8 +1,69 @@
 # How CRYPT was built with Kiro
 
-> Fill this in as you go. Judges score how thoroughly and skilfully Kiro was used.
+- **Spec first.** 13 specs in `.kiro/specs/`, each with requirements, a design and tasks committed before the code. The table below lists nine; the rest cover CI, the CLI, census and art direction.
+- **Steering that binds.** 5 files in `.kiro/steering/` (no merge call, SEAL blocks grafts, one team score, blameless wording, deterministic ranking). `tests/failsafe-guard.test.ts` and `tests/theatre-blameless.test.ts` enforce them, and the CI job `failsafe-guard` runs the same rules.
+- **Hooks.** 5 in `.kiro/hooks/`, each a save trigger with a tested script in `scripts/hooks/`. The blameless-copy hook caught a real "Do not edit" header in generated stories; the attribution hook found five missing dependencies on its first run.
+- **Agents.** `.kiro/agents/necromancer.json` (read and write, no shell) drafts the fix PR. `.kiro/agents/inquisitor.json` (read only) judges it.
+- **What Kiro changed.** The hooks and steering turned the safety rules into checks that run on every save and in CI, instead of review comments. Commit [`65c945c`](https://github.com/e-1305/Crypt/commit/65c945c) added the five hooks.
+
+## Limits
+
+- No hook has fired inside a Kiro session yet. The captured runs in the appendix are the same scripts run by hand, with the terminal output copied.
+- The safety claims rest on tests (property-based, run in CI) and on the scripts above, not on a recorded Kiro session.
+- Nothing here measures how much time Kiro saved. There is no such measurement.
+
+## Design notes
+
+- **`(at)` in owner names.** The plate prints `@team`. The story text prints `(at)team`, because `@` is an escape character in Inform 6 strings and `src/raise/sanitize.ts` replaces it (with brackets, quotes and control characters) for every generated string. We kept the sanitiser whole and explain the spelling in the manual's "How it works".
 
 ## Specs
+| Spec | Folder | Outcome |
+|---|---|---|
+| transcript-bridge-spike | `.kiro/specs/transcript-bridge-spike/` | Requirements, design with interpreter limits, and tasks written first. Implemented (tasks 1 to 11). The PR step is pending. |
+| bridge-v2 | `.kiro/specs/bridge-v2/` | Defines the `[[CRYPT ...]]` marker protocol. The watcher triggers only on markers the game prints, never on typed `> ` lines. |
+| exhume-and-rank | `.kiro/specs/exhume-and-rank/` | Defines the creature.json schema and the KEV/EPSS ranking. `crypt exhume` ranks deterministically and works offline once cached. |
+| raise-the-creature | `.kiro/specs/raise-the-creature/` | Defines limb IDs, the sanitizer and marker templates. `crypt raise` compiles creature.json into a playable `.z8` with an ASSIGN verb. |
+| necromancer | `.kiro/specs/necromancer/` | Requirements N1 to N8 and the audit outcomes. GRAFT becomes a fix PR; SEAL, dry run, Inquisitor and re-raise are implemented and tested. |
+| web-player | `.kiro/specs/web-player/` | Plays the story in the browser. The event log is fed only by `parseGameOutput`, so typed text cannot spoof a marker. |
+| mcp-server | `.kiro/specs/mcp-server/` | Lets an MCP client query the creature and request a graft through the same watcher and failsafe rules. |
+| live-raid | `.kiro/specs/live-raid/` | `crypt raid <url> --live` opens a real PR on crypt-demo; a human lands it and `reraise` shows HEALED. Every API call is audited. |
+| epic-b-operating-theatre | `.kiro/specs/epic-b-operating-theatre/` | A 3D bench with a plain 2D fallback, a 15 minute team raid, simulated CI heals, synthesised sound and a recording mode. |
+
+Longer notes for each spec are under "Spec details" in the appendix.
+
+## Steering
+| File | Purpose |
+|---|---|
+| `product.md` | Product scope and Tier 1 boundary |
+| `tech.md` | Stack and data sources |
+| `failsafe.md` | Saltzer & Schroeder safety rules |
+| `sla-policy.md` | Deterministic ranking and SLAs |
+| `blameless.md` | Bartol's blameless rules |
+
+
+## Hooks
+Five hooks in `.kiro/hooks/*.json`, in the [documented Kiro format](https://kiro.dev/docs/hooks/) (`version: v1`, `trigger: PostFileSave`). The logic is in `scripts/hooks/` and is tested in `tests/hooks.test.ts`. Command hooks only read and report. The two hooks that change a file are agent actions, so the change shows in the session.
+
+| Hook | Trigger (`matcher`) | Action | What it caught or saved |
+|---|---|---|---|
+| `related-tests-on-save.json` | save of `src/**/*.ts` | command: `scripts/hooks/related-tests.sh` runs `vitest related --run` for the saved file | Saves running the whole suite (313 tests when run 1 was captured; the final count is in the numbers section): saving `src/bridge/grammar.ts` ran 11 of 20 test files (178 tests, 3.2 s). See run 1 |
+| `failsafe-guard-on-save.json` | save under `src/necromancer`, `src/inquisitor`, `src/mcp` | command: `scripts/hooks/failsafe-check.sh` fails on a merge endpoint or command, a `git blame` call (also as an argument array), or a token that reaches a log or audit call (same line, a multi-line call, or via a variable). The rules live in `scripts/ci/failsafe-rules.sh` and are shared with the CI guard | Nothing real yet: the code is clean. Demonstration runs against planted violations, see run 2 |
+| `trace-on-tasks-save.json` | save of `.kiro/specs/*/tasks.md` | agent: `npx tsx scripts/hooks/kiro-trace.ts --write` refreshes the table in the traceability section below | Replaces hand-typed commit names with the first commit that contains each ticked task line (`git log -S`). Tasks ticked together in one commit share a hash, so a milestone ticked in a single commit shows one hash for all its rows. See run 3 |
+| `attribution-on-package-save.json` | save of `package.json` | agent: runs `scripts/hooks/deps-check.sh`, adds each missing dependency to `docs/ATTRIBUTION.md` with licence and link | Caught five real gaps on its first run: `tsx`, `@types/node`, `fast-check`, `typescript` and `vitest` were in `package.json` and not in the attribution file. See run 4 |
+| `blameless-copy-on-save.json` | save under `src/raise` or `web/` (not `web/vendor`) | command: `scripts/hooks/blameless-copy-check.sh` fails on copy that names a person in failure or states a prohibition | Caught a real prohibition: the header of every generated story said "Do not edit". Reworded. See run 5 |
+
+## Custom agents
+| Agent | Role |
+|---|---|
+| Oracle | Wraps the deterministic scorer (code in `src/`, no `.kiro/agents/` file) |
+| Necromancer | Drafts the fix PR. `.kiro/agents/necromancer.json`: read and write tools, no shell, no web |
+| Inquisitor | Verifies the fix. `.kiro/agents/inquisitor.json`: read-only, no write, no shell (separation of privilege, failsafe 3) |
+
+## Appendix: evidence and long notes
+
+This part is reference material. The summary above is complete without it.
+
+### Spec details
 | Spec | Folder | Outcome |
 |---|---|---|
 | transcript-bridge-spike | `.kiro/specs/transcript-bridge-spike/` | requirements, design (with interpreter limitations and fallbacks) and tasks written; implemented (tasks 1 to 11), PR step pending |
@@ -14,28 +75,6 @@
 | mcp-server | `.kiro/specs/mcp-server/` | requirements (M1 to M6), design (core handlers, write path through the watcher, allowlisted outputs, redaction) and tasks written before coding; implemented. Issue #19: any MCP client can query the creature and request a graft under the failsafe rules |
 | live-raid | `.kiro/specs/live-raid/` | requirements (L1 to L8), design and tasks committed before any code. Driven by issue #24: `crypt raid <url> --live` opens a real PR on crypt-demo through the Git Data API with a registry-backed lockfile bump, the Inquisitor polls the `test` check, a human lands it, `crypt reraise` shows HEALED; demo-only `--sabotage`; every API call audited. Implemented; script in `docs/DEMO.md` |
 | epic-b-operating-theatre | `.kiro/specs/epic-b-operating-theatre/` | requirements (B1 to B5), design (capability decision, fallback rules, budgets, branching) and tasks written and committed before any code (`docs: add Epic B spec`); implemented as five stacked milestone branches. Result: a 3D bench around the CRT that falls back to the plain 2D page, a 15 minute team raid, simulated live heals, synthesised sound and a recording mode for the demo video |
-
-## Steering
-| File | Purpose |
-|---|---|
-| `product.md` | Product scope and Tier 1 boundary |
-| `tech.md` | Stack and data sources |
-| `failsafe.md` | Saltzer & Schroeder safety rules |
-| `sla-policy.md` | Deterministic ranking and SLAs |
-| `blameless.md` | Bartol's blameless rules |
-
-## Hooks
-Five hooks in `.kiro/hooks/*.json`, in the [documented Kiro format](https://kiro.dev/docs/hooks/) (`version: v1`, `trigger: PostFileSave`, a path regex in `matcher`, a `command` or `agent` action; see `design.md` of `epic-a-production`). The logic is in `scripts/hooks/` so it is tested in `tests/hooks.test.ts` (passes on clean input, fails on a violation). Command hooks only read and report. The two hooks that change a file are agent actions, so the change shows in the session.
-
-| Hook | Trigger (`matcher`) | Action | What it caught or saved |
-|---|---|---|---|
-| `related-tests-on-save.json` | save of `src/**/*.ts` | command: `scripts/hooks/related-tests.sh` runs `vitest related --run` for the saved file | Saves running the whole suite (313 tests when run 1 was captured; the final count is in the numbers section): saving `src/bridge/grammar.ts` ran 11 of 20 test files (178 tests, 3.2 s). See run 1 |
-| `failsafe-guard-on-save.json` | save under `src/necromancer`, `src/inquisitor`, `src/mcp` | command: `scripts/hooks/failsafe-check.sh` fails on a merge endpoint or command, a `git blame` call (also as an argument array), or a token that reaches a log or audit call (same line, a multi-line call, or via a variable). The rules live in `scripts/ci/failsafe-rules.sh` and are shared with the CI guard | Nothing real yet: the code is clean. Demonstration runs against planted violations, see run 2 |
-| `trace-on-tasks-save.json` | save of `.kiro/specs/*/tasks.md` | agent: `npx tsx scripts/hooks/kiro-trace.ts --write` refreshes the table in the traceability section below | Replaces hand-typed commit names with the first commit that contains each ticked task line (`git log -S`). Tasks ticked together in one commit share a hash, so a milestone ticked in a single commit shows one hash for all its rows. See run 3 |
-| `attribution-on-package-save.json` | save of `package.json` | agent: runs `scripts/hooks/deps-check.sh`, adds each missing dependency to `docs/ATTRIBUTION.md` with licence and link | Caught five real gaps on its first run: `tsx`, `@types/node`, `fast-check`, `typescript` and `vitest` were in `package.json` and not in the attribution file. See run 4 |
-| `blameless-copy-on-save.json` | save under `src/raise` or `web/` (not `web/vendor`) | command: `scripts/hooks/blameless-copy-check.sh` fails on copy that names a person in failure or states a prohibition | Caught a real prohibition: the header of every generated story said "Do not edit". Reworded. See run 5 |
-
-None of these has fired inside a Kiro session yet. The runs below are the scripts run by hand, the same way the hook runs them, and the output is copied from the terminal. Entries from A3, A4 and Epic B get appended here as the hooks fire.
 
 ### Captured runs
 Run 1, `related-tests.sh src/bridge/grammar.ts` (summary lines):
@@ -114,7 +153,7 @@ A4 changed no file under `src/`, so `related-tests` and `failsafe-check` had not
 What the new check caught: the first dry run of `npm pack` listed 131 files including `scripts/ci`, `scripts/hooks`, `scripts/census`, the Pages build and `src/web`. Negations in `files` cut that to 108 files (64 kB). `scripts/ci/pack-install-test.sh` fails when the tarball lacks a runtime file or carries `tests/`, `.kiro/`, `web/` or `out/`.
 Install runs (tarball into an empty project, `crypt --help`, `--version`, offline exhume, scripted raid with `CRYPT_PACK_RAID=1`): `pack-install: ok` on Node 20.20.2, 22.23.4 and 24.22.1.
 
-## Custom agents
+## Custom agents (full table)
 | Agent | Role |
 |---|---|
 | Oracle | Wraps the deterministic scorer |

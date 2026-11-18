@@ -11,7 +11,10 @@ import { fixtureAdvisories, osvAdvisories } from "../osv-advisory.js";
 import { PACKAGE_ROOT } from "../toolchain-dir.js";
 import { preflightedClients, timeoutMsFrom, writeTargetRecord } from "./live.js";
 import { runScriptOrFail } from "./run.js";
-import { playStory } from "./session.js";
+import { SEAL_NOTICE, playStory } from "./session.js";
+import { nextLine, writeRaidContext } from "./context.js";
+import { generate } from "../../src/raise/generate.js";
+import { defaultPaths } from "../../src/common/agent.js";
 import { openTarget, type Target } from "./target.js";
 import { ensureToolchain } from "./toolchain.js";
 
@@ -61,6 +64,9 @@ export async function exhumeCommand(p: Parsed): Promise<number> {
 }
 
 export async function raidCommand(p: Parsed): Promise<number> {
+  // First line of output: a stale .crypt-seal seals this raid, so say so before the plate.
+  const sealed = existsSync(defaultPaths(process.cwd()).sealPath);
+  if (sealed) process.stderr.write(SEAL_NOTICE + "\n");
   const live = p.flags.live === true;
   const gh = live ? parseGithubUrl(p.args[0]!) : null;
   // Live: every check runs before anything is cloned or written.
@@ -72,20 +78,31 @@ export async function raidCommand(p: Parsed): Promise<number> {
     const creature = await exhumeTarget(t, { ...p.flags, out: "out/creature.json" });
     if (lc) writeTargetRecord(cwd, { repo: lc.repo, url: p.args[0]!, live: true });
     raiseCreature(creature, "out");
-    process.stdout.write("\n" + renderPlate(JSON.parse(readFileSync(creature, "utf8")), { repo: t.name }) + "\n");
+    const creatureJson: unknown = JSON.parse(readFileSync(creature, "utf8"));
+    process.stdout.write("\n" + renderPlate(creatureJson as Parameters<typeof renderPlate>[0], { repo: t.name }) + "\n");
     const offline = p.flags.offline === true;
-    const advisories: AdvisoryLookup = offline
-      ? isBundledFixture(t.dir)
-        ? fixtureAdvisories(join(FIXTURE, "advisories"))
-        : async () => null
-      : osvAdvisories();
-    return await playStory({
+    const fixtureDir = join(FIXTURE, "advisories");
+    const advisories: AdvisoryLookup = offline ? (isBundledFixture(t.dir) ? fixtureAdvisories(fixtureDir) : async () => null) : osvAdvisories();
+    const firstLimb = Object.keys(generate(creatureJson as Parameters<typeof generate>[0]).limbs)[0] ?? null;
+    writeRaidContext(cwd, {
+      version: 1,
+      target: t.cloned ? null : t.dir,
+      advisories: offline ? (isBundledFixture(t.dir) ? { kind: "folder", dir: fixtureDir } : { kind: "none" }) : { kind: "osv" },
+      firstLimb,
+    });
+    // At a terminal the player is about to get the prompt, so say what to type now. Otherwise say it after the session, on stderr.
+    const interactive = process.stdin.isTTY === true && process.stdout.isTTY === true;
+    if (interactive) process.stdout.write(nextLine(firstLimb) + "\n");
+    const code = await playStory({
       story: join(cwd, "out", "creature.z8"),
       cwd,
       targetDir: t.dir,
       advisories,
+      sealNoticed: sealed,
       live: lc ? { client: lc.client, registry: lc.registry, timeoutMs: timeoutMsFrom(p.flags), repo: lc.repo } : undefined,
     });
+    if (!interactive) process.stderr.write(nextLine(firstLimb) + "\n");
+    return code;
   } finally {
     t.cleanup();
   }
