@@ -104,7 +104,7 @@ button:disabled { opacity: .5; cursor: default; }
 body.theatre { overflow: hidden; background: #050403; }
 body.theatre::after { display: none; }
 body.theatre #theatre-canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
-body.theatre .top, body.theatre .crt { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+body.theatre .top > :not(.intro), body.theatre .intro > :not(h1), body.theatre .crt { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 #theatre-plain { position: fixed; right: var(--bar-edge); bottom: var(--bar-edge); box-sizing: border-box; max-width: var(--bar-right); z-index: 5; color: var(--fg); background: #000; border: 1px solid var(--dim); padding: .25rem .75rem; }
 #theatre-manual { position: fixed; left: 13rem; top: .5rem; z-index: 6; color: var(--fg); background: #000; border: 1px solid var(--dim); padding: .25rem .75rem; min-height: 24px; }
 .manual-link { color: var(--fg); border: 1px solid var(--dim); padding: .25rem .75rem; min-height: 24px; display: inline-block; }
@@ -381,3 +381,31 @@ body.record .judge-skip, body.record .judge-replay { display: none; }
 .import-drop:focus-within, .import select:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
 .import select { min-height: 44px; background: transparent; color: var(--fg); border: 1px solid var(--dim); font: inherit; }
 @media (prefers-reduced-motion: no-preference) { .import-drop { transition: border-color .15s; } }
+
+/* Hero (issue #120): the problem, what CRYPT does, proof and three next actions, compact so the game stays above the fold. */
+.hero { margin: .25rem 1rem 0; padding: .4rem .75rem; border: 1px solid var(--dim); }
+.hero-line { margin: .15rem 0; max-width: 70rem; }
+.hero-line a { color: var(--fg); }
+.hero-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin: .4rem 0 .3rem; }
+.hero-cta { font: inherit; display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: .25rem .9rem; color: var(--fg); background: transparent; border: 1px solid var(--fg); text-decoration: none; cursor: pointer; }
+.hero-cta:hover { background: var(--fg); color: #000; }
+.hero-steps { display: flex; flex-wrap: wrap; gap: .25rem 1.5rem; list-style: none; margin: .25rem 0 0; padding: 0; color: var(--dim); }
+.hero-steps li + li::before { content: ">"; margin-right: .5rem; }
+body.record .hero, body.judge-running .hero, body.theatre.drawer-open .hero { display: none; }
+/* On the 3D bench the hero is a fixed panel above the caption, between the Bench drawer and the Plain page link. */
+body.theatre .hero { position: fixed; left: 50%; bottom: 5.5rem; transform: translateX(-50%); z-index: 5; margin: 0; width: min(52rem, calc(100vw - 24rem)); background: rgba(0, 0, 0, .88); font-size: .85rem; }
+body.theatre .hero-cta { min-height: 32px; padding: .1rem .75rem; }
+body.theatre .hero-actions { margin: .3rem 0 .2rem; }
+body.hc .hero-cta { border-color: #fff; }
+@media (max-width: 899px) {
+  .hero { padding: .3rem .5rem; font-size: .9rem; }
+  .hero-actions { gap: .35rem; }
+  .hero-cta { flex: 1 1 100%; min-height: 44px; }
+  .hero-steps { gap: .1rem .75rem; font-size: .8rem; }
+  .hero-steps li + li::before { margin-right: .25rem; }
+}
+/* On the 3D bench the page title stays visible at the top left, clear of the manual link and the Paste button. */
+body.theatre .top { position: fixed; left: 1rem; top: .5rem; z-index: 6; width: auto; padding: 0; display: block; }
+body.theatre .intro { flex: none; }
+body.theatre .top h1 { margin: 0; padding: .25rem .5rem; background: rgba(0, 0, 0, .85); }
+body.theatre.drawer-open .top { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); }

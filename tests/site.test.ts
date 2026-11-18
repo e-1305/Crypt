@@ -271,7 +271,9 @@ describe.skipIf(!haveToolchain)("build:site output", () => {
         const text = readFileSync(join(a, f), "utf8");
         // The live exhume modules (paste your repo) read raw.githubusercontent.com and api.osv.dev, and nothing else.
         const live = f === "js/web/live-exhume.js" || f === "js/exhume/osv-client.js" || f === "js/necromancer/package-advisories.js" || f === "js/render/card.js";
-        const allowed = live ? "(?!github\\.com\\/owner\\/repo|raw\\.githubusercontent\\.com|api\\.osv\\.dev|e-1305\\.github\\.io|www\\.linkedin\\.com|github\\.com\\/e-1305\\/)" : "(?!github\\.com\\/owner\\/repo)";
+        // index.html may link out once, to the merged proof PR in the hero. A link is not a connection.
+        const proofOnly = f === "index.html" ? "|github\\.com\\/e-1305\\/crypt-demo\\/pull\\/1\""  : "";
+        const allowed = live ? "(?!github\\.com\\/owner\\/repo|raw\\.githubusercontent\\.com|api\\.osv\\.dev|e-1305\\.github\\.io|www\\.linkedin\\.com|github\\.com\\/e-1305\\/)" : `(?!github\\.com\\/owner\\/repo${proofOnly})`;
         expect(text, f).not.toMatch(new RegExp(`https?:\\/\\/${allowed}`));
         if (!live) expect(text, f).not.toMatch(/\b(XMLHttpRequest|WebSocket|sendBeacon)\b|method:\s*["']POST/);
         else expect(text, f).not.toMatch(/\b(XMLHttpRequest|WebSocket|sendBeacon)\b/);
