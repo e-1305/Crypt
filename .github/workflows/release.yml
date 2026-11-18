@@ -1,0 +1,75 @@
+name: Release
+
+# Publishes @e-1305/crypt to npm. Needs the NPM_TOKEN repository secret (see docs/RELEASE.md).
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  CRYPT_TOOLCHAIN_DIR: ${{ github.workspace }}/.toolchain
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      - name: Tag must match package.json version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          pkg="v$(node -p "require('./package.json').version")"
+          if [ "$GITHUB_REF_NAME" != "$pkg" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match package.json version $pkg" >&2
+            exit 1
+          fi
+      - run: npm ci
+      - run: npm run typecheck
+      - name: Cache toolchain
+        uses: actions/cache@v4
+        with:
+          path: .toolchain
+          key: toolchain-${{ runner.os }}-${{ hashFiles('scripts/setup-tools.sh') }}
+      - name: Build toolchain
+        run: bash scripts/setup-tools.sh
+      # Spike builds the story that the integration tests play, so it runs before vitest.
+      - run: npm run spike
+      - name: Exhume and raise the fixture creature
+        run: |
+          npm run exhume -- fixtures/vulnerable-npm --feeds fixtures/vulnerable-npm/feeds --offline
+          npm run raise -- out/creature.json
+      - name: Full test suite
+        run: npx vitest run
+        env:
+          CRYPT_NUM_RUNS: "1000"
+      - name: Pack and install the tarball
+        run: bash scripts/ci/pack-install-test.sh
+        env:
+          CRYPT_PACK_RAID: "1"
+      - name: npm pack dry run
+        run: npm pack --dry-run
+      - name: Check the NPM_TOKEN secret is set
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "NPM_TOKEN repository secret is not set. See docs/RELEASE.md." >&2
+            exit 1
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish
+        run: npm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -22,7 +22,7 @@ On the live demo the first screen is the creature plate, the CRT, the pitch and 
 
 ![Paste your repo: the creature, ranked limbs and dry-run payloads for a real public repo](docs/img/paste-your-repo.png)
 
-The package is not published to npm yet, so use the checkout form until it is.
+If `npx @e-1305/crypt` reports that the package is not found, it has not been published yet (maintainers: see [docs/RELEASE.md](docs/RELEASE.md)). Use the checkout form until then.
 
 ![The CRYPT bench: the creature plate, the game on the CRT and the simulated CI buttons](docs/img/bench-3d.png)
 
