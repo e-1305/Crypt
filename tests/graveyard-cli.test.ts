@@ -100,6 +100,22 @@ describe("crypt graveyard", () => {
     for (const f of allFiles(cwd)) expect(readFileSync(f, "utf8")).not.toContain(TOKEN);
     expect(r.stdout).not.toContain(TOKEN);
   });
+  it("rejects path-like --repos values before any request", async () => {
+    const cwd = work();
+    const f = fakes();
+    for (const bad of ["../..", "a/b?x=1", "a/../b"]) {
+      const p = parseCli(["graveyard", "--org", "acme", "--token-env", "GH_PAT"], { GH_PAT: TOKEN });
+      p.flags.repos = bad;
+      let msg = "";
+      try {
+        await graveyardCommand(p, { cwd, env: { GH_PAT: TOKEN }, fetchImpl: f.gh, osvFetchImpl: f.osv, feedsDir: FEEDS, now: () => 1_000_000_000_000, out: () => {} });
+      } catch (e) {
+        msg = (e as Error).message;
+      }
+      expect(msg).toMatch(/--repos must be/);
+    }
+    expect(existsSync(join(cwd, "out", "graveyard.json"))).toBe(false);
+  });
   it("stops without writing and without the token when GitHub fails", async () => {
     const cwd = work();
     const f = fakes();

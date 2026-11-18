@@ -11,7 +11,7 @@ import { parseEpss, parseKev } from "../../src/exhume/feeds.js";
 import { osvLookup } from "../../src/exhume/osv-client.js";
 import { CODEOWNERS_LOCATIONS } from "../../src/exhume/owners.js";
 import type { ExhumeFs } from "../../src/exhume/types.js";
-import { fromExhume, serializeGraveyard, type RepoRecord } from "../../src/graveyard/model.js";
+import { fromExhume, safeRepo, serializeGraveyard, type RepoRecord } from "../../src/graveyard/model.js";
 import { SAMPLE_REPOS } from "../../src/graveyard/sample.js";
 import { makeCall, redact, type Fetcher } from "../github-client.js";
 import { SEAL_NOTICE } from "./session.js";
@@ -121,16 +121,26 @@ export async function graveyardCommand(p: Parsed, deps: GraveyardDeps = {}): Pro
   const osvFetch = deps.osvFetchImpl ?? ((deps.fetchImpl as Fetcher | undefined) ?? (fetch as unknown as Fetcher));
   const call = makeCall({ token, fetch: f, audit: (l) => audit(io, paths.auditPath, stamp, "GRAVEYARD", "-", "API_CALL", `${l.method} ${l.path}`) });
 
+  let named: string[] | null = null;
+  if (typeof p.flags.repos === "string") {
+    const list = p.flags.repos.split(",").map((x) => x.trim()).filter(Boolean);
+    const bad = list.filter((x) => safeRepo(x) === "" || x.split("/").some((seg) => /^\.+$/.test(seg)));
+    if (bad.length > 0) throw new CliError("--repos must be a comma separated list of owner/name, for example a/b,c/d. Nothing was read.", EXIT.USAGE);
+    named = list.slice(0, MAX_REPOS_PER_RUN);
+  }
+
   const scannedAt = now();
   const records: RepoRecord[] = [];
   let skipped = 0;
+  const notScanned: string[] = [];
   try {
-    const repos = typeof p.flags.repos === "string" ? p.flags.repos.split(",").map((s) => s.trim()).filter(Boolean).slice(0, MAX_REPOS_PER_RUN) : await listRepos(call, org);
+    const repos = named ?? (await listRepos(call, org));
     for (const repo of repos) {
       const files = new Map<string, string>();
       const lock = await readFile(call, repo, "package-lock.json");
       if (lock === null) {
         skipped++;
+        notScanned.push(repo);
         continue;
       }
       files.set("package-lock.json", lock);
@@ -147,9 +157,13 @@ export async function graveyardCommand(p: Parsed, deps: GraveyardDeps = {}): Pro
         const creature = await buildCreature({ repo: { read: (x) => files.get(x) ?? null }, cacheFs, cacheDir: "osv", kev: feeds.kev, epss: feeds.epss, lookup: osvLookup(osvFetch as never), now: scannedAt, name: repo });
         const r = fromExhume(creature, scannedAt);
         if (r) records.push(r);
-        else skipped++;
+        else {
+          skipped++;
+          notScanned.push(repo);
+        }
       } catch {
         skipped++;
+        notScanned.push(repo);
       }
     }
   } catch (e) {
@@ -159,5 +173,6 @@ export async function graveyardCommand(p: Parsed, deps: GraveyardDeps = {}): Pro
   }
   write(serializeGraveyard({ source: "cli", org, repos: records }));
   out(`Graveyard written to ${outPath}: ${records.length} repositor${records.length === 1 ? "y" : "ies"}${skipped > 0 ? `, ${skipped} skipped (no package-lock.json or unreadable)` : ""}. The file stays on this machine.\n`);
+  if (notScanned.length > 0) out(`Not scanned (never shown as healthy): ${notScanned.slice(0, 50).join(", ")}${notScanned.length > 50 ? `, and ${notScanned.length - 50} more` : ""}.\n`);
   return EXIT.OK;
 }

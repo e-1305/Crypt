@@ -113,6 +113,45 @@ describe("scan queue", () => {
   });
 });
 
+describe("cache lookups in the queue", () => {
+  const mem = (): StoreLike & { m: Map<string, string> } => {
+    const m = new Map<string, string>();
+    return { m, getItem: (k) => m.get(k) ?? null, setItem: (k, v) => void m.set(k, v) };
+  };
+  it("a throwing cached callback is a miss: the repo is scanned and the queue finishes", async () => {
+    const got: string[] = [];
+    const q = createQueue<string>({ repos: ["a/a"], scan: async (r) => `scan:${r}`, cached: () => { throw new Error("boom"); }, onResult: (_r, v) => got.push(v) });
+    const s = await q.start();
+    expect(s.status).toBe("finished");
+    expect(got).toEqual(["scan:a/a"]);
+  });
+  it("a second run over a stub sessionStorage restores from the cache with no scan", async () => {
+    const store = mem();
+    const parse = (x: unknown) => (x && typeof x === "object" && (x as { record?: unknown }).record ? x : null);
+    let scans = 0;
+    const mk = (got: unknown[]) =>
+      createQueue<{ record: { repo: string } }>({
+        repos: ["a/a"],
+        scan: async (repo) => {
+          scans++;
+          const out = { record: { repo } };
+          writeCache(store, repo, out);
+          return out;
+        },
+        cached: (repo) => readCache(store, repo, parse) as { record: { repo: string } } | null,
+        onResult: (_r, v, fromCache) => got.push([v.record.repo, fromCache]),
+      });
+    const first: unknown[] = [];
+    await mk(first).start();
+    const second: unknown[] = [];
+    const s = await mk(second).start();
+    expect(s.status).toBe("finished");
+    expect(scans).toBe(1);
+    expect(first).toEqual([["a/a", false]]);
+    expect(second).toEqual([["a/a", true]]);
+  });
+});
+
 describe("session cache", () => {
   it("round trips, versions the key, and survives broken storage", () => {
     const mem = new Map<string, string>();

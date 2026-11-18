@@ -62,6 +62,18 @@ describe("graveyard.js", () => {
   });
 });
 
+describe("graveyard.js scan wiring", () => {
+  it("restores a cached repo from the stored record and handles a rejected start()", () => {
+    expect(js).not.toMatch(/c\.slugOf/);
+    expect(js).toContain("slugOf(c.record.repo)");
+    expect(js).toMatch(/S\.queue\.start\(\)\.catch\(/);
+  });
+  it("lists unreadable repositories as not scanned", () => {
+    expect(html).toContain('id="not-scanned-list"');
+    expect(js).toContain(": not scanned.");
+  });
+});
+
 describe("graveyard.css", () => {
   it("keeps tap targets at 44px and respects reduced motion", () => {
     expect(css).toMatch(/min-height: 44px/);

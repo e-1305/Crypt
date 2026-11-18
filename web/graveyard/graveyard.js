@@ -541,7 +541,7 @@ function startScan(text) {
     scan: async (repo) => (await scanRepo(repo)),
     cached: (repo) => {
       const c = cachedRepo(repo);
-      if (c) S.live.set(c.slugOf(record.repo), c.panel);
+      if (c) S.live.set(slugOf(c.record.repo), c.panel);
       return c;
     },
     onResult: (_repo, r) => {
@@ -552,12 +552,25 @@ function startScan(text) {
       bar.setAttribute("aria-valuenow", String(s.done));
       bar.setAttribute("aria-valuetext", s.done + " of " + s.total + " repositories");
       $("bar").style.width = (s.total === 0 ? 0 : Math.round((s.done / s.total) * 100)) + "%";
+      renderNotScanned(s.failed);
       say(s.status === "running" ? "Reading " + s.done + " of " + s.total + ". " + s.message : s.message);
       $("resume").hidden = s.status !== "paused";
       $("scan").disabled = s.status === "running";
     },
   });
-  S.queue.start();
+  S.queue.start().catch(() => {
+    $("scan").disabled = false;
+    say("The scan stopped unexpectedly. Check the addresses and choose Scan again. Finished repositories are kept in this tab.");
+  });
+}
+
+/** Repos that could not be read are listed as "not scanned", never drawn as healthy. */
+function renderNotScanned(failed) {
+  const box = $("not-scanned");
+  const ul = $("not-scanned-list");
+  ul.textContent = "";
+  for (const f of failed) ul.appendChild(el("li", f.repo + ": not scanned. " + f.message));
+  box.hidden = failed.length === 0;
 }
 
 // ---- Input B and C ----------------------------------------------------------------------------------------------

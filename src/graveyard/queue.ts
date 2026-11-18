@@ -68,7 +68,7 @@ export interface QueueState {
   total: number;
   /** Repositories handled so far (scanned, cached or failed). */
   done: number;
-  /** Repositories that could not be read. They stay out of the graveyard (fail safe: nothing is drawn as healthy). */
+  /** Repositories that could not be read. The page lists them as "not scanned" (fail safe: nothing is drawn as healthy). */
   failed: { repo: string; message: string }[];
   pending: string[];
   requests: number;
@@ -115,11 +115,20 @@ export function createQueue<R>(opts: QueueOptions<R>): Queue {
     emit();
     while (s.pending.length > 0) {
       const repo = s.pending[0]!;
-      const hit = opts.cached?.(repo) ?? null;
+      let hit: R | null = null;
+      try {
+        hit = opts.cached?.(repo) ?? null;
+      } catch {
+        hit = null; // a broken cache lookup is a miss, never a wedge
+      }
       if (hit !== null) {
         s.pending.shift();
         s.done++;
-        opts.onResult(repo, hit, true);
+        try {
+          opts.onResult(repo, hit, true);
+        } catch (e) {
+          s.failed.push({ repo, message: messageOf(e) });
+        }
         emit();
         continue;
       }
@@ -155,7 +164,7 @@ export function createQueue<R>(opts: QueueOptions<R>): Queue {
       }
     }
     s.status = "finished";
-    s.message = s.failed.length === 0 ? "All repositories are read." : `Done. ${s.failed.length} could not be read and are not drawn. Check the address and run them again later.`;
+    s.message = s.failed.length === 0 ? "All repositories are read." : `Done. ${s.failed.length} could not be read and are listed as not scanned. Check the address and run them again later.`;
     emit();
     running = false;
     return { ...s };
