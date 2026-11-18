@@ -4,6 +4,17 @@ Written by the product manager role from [PLAYTEST_LOG.md](PLAYTEST_LOG.md). Ite
 
 Constraints that apply to every item: no merge call, SEAL CRYPT blocks grafts, one team score and no leaderboard, no em dashes in user-facing copy, page weight at most 5 MB, sound off by default, the 2D page and reduced motion keep every feature. Claims that cannot be checked here (GPU, audio, Lighthouse, axe-core, screen readers) stay marked "not verified" in the text that makes them.
 
+## Round 3 status
+
+| # | Item | Status | Evidence |
+|---|---|---|---|
+| 1 | 3D first 10 seconds | Done | harness `first-tab-and-overlap` all true, screenshot `04b-3d-first-seconds.png` read in Round 4 |
+| 2 | CLI next step and `play` context | Done | `raid` prints Next line, `play` with no flags wrote the payload (Round 4 by hand), `tests/cli-next-step.test.ts` |
+| 3 | `(at)` explained | Done | manual "How it works", `docs/KIRO.md` |
+| 4 | GIF and a real Kiro hook run | Not recorded. A person must do it | See the Loop summary in [PLAYTEST_LOG.md](PLAYTEST_LOG.md) |
+
+Round 4 mean 7.7, gain 0.3: plateau, loop closed. Remaining work is human evidence, not code.
+
 ## Round 2 status
 
 | # | Item | Status | Evidence |

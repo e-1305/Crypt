@@ -2,6 +2,44 @@
 
 A loop between two roles. The judge plays the product cold and scores it. The product manager turns the findings into a backlog ([BACKLOG.md](BACKLOG.md)). The team ships the top items, then the judge plays again. Scores only go up when the product changes.
 
+## Loop summary
+
+Four judge rounds and three PM backlogs on `feat/h1-judge-loop`. Each round the judge played the built site and the CLI cold, scored the rubric below, and the PM turned the findings into [BACKLOG.md](BACKLOG.md). Scores moved only when the product changed.
+
+| Criterion | R1 | R2 | R3 | R4 |
+|---|---|---|---|---|
+| First-minute clarity | 6 | 7 | 8 | 8 |
+| Wow factor | 7 | 7 | 7 | 7 |
+| Technical credibility | 6 | 7 | 8 | 9 |
+| Kiro usage story | 5 | 6 | 7 | 7 |
+| Polish | 5 | 6 | 7 | 8 |
+| Accessibility | 7 | 7 | 7 | 7 |
+| Safety story | 7 | 8 | 8 | 8 |
+| **Mean** | **6.1** | **6.9** | **7.4** | **7.7** |
+| Gain over previous round | | +0.8 | +0.5 | +0.3 |
+
+### Plateau analysis
+
+The gain fell from 0.8 to 0.5 to 0.3, which is the plateau line, so the loop stops here. The cheap, checkable fixes are spent: front door, how-it-works, prompt in reach, CLI next step, skip link, overlap. What is left cannot be produced in this sandbox:
+
+- Wow factor has been 7 for three rounds. It needs motion (a GIF of "Simulate CI: green" and the SEAL rejection), not another still.
+- Kiro usage story is capped at 7 while `docs/KIRO.md` says no hook has fired inside a Kiro session. Only a recorded run changes that.
+- Accessibility is capped at 7 because axe-core was not run on the 3D page and no screen reader was used.
+
+A different judge could score any of these one point either way. The 0.3 gain is within that noise, so read the trajectory as "clearly better than R1, not provably better than R3".
+
+### What a human must still do before submission
+
+1. Record the GIF (under 2 MB, with a text alternative) of "Simulate CI: green" and the SEAL rejection. Commit it to `docs/img/` and link it under the README screenshot.
+2. Run one hook in a real Kiro session (for example `.kiro/hooks/failsafe-guard-on-save.json`), commit the captured log under `.kiro/`, and update the "Limits" paragraph in `docs/KIRO.md`.
+3. After merge, open the live Pages site and check the landing page, the manual links, the `.kiro/` links on the default branch, and the 3D bench on a real GPU. Run Lighthouse and state the number.
+4. Run axe-core on the 3D page and try the 2D page with one screen reader.
+5. Re-run `scripts/playtest/judge.mjs` against the live URL (`BASE_URL`) as a last smoke test.
+
+None of these was done by this loop. Everything above is marked "not recorded" or "not verified" in the text that makes the claim.
+
+---
+
 ## Rubric
 
 Each criterion is scored 1 to 10. 5 means "works, would not remember it". 8 means "I would show this to a colleague". 10 is not given.
@@ -270,3 +308,38 @@ Build: `feat/h1-judge-loop` plus the Round 3 changes. Harness run with `npm run 
 | 3 | `(at)` | Sanitiser kept. Explained in the manual's "How it works" and in `docs/KIRO.md` |
 
 Not verified: real GPU, screen readers, axe-core on the 3D page. Item 4 (GIF, a real Kiro hook run) stays not recorded.
+
+## Round 4
+
+Build: `feat/h1-judge-loop` at `0e32afd` (Round 3 fixes), `npm run build:site`, `npm run web`, `scripts/playtest/judge.mjs` (17 scenario entries; every `checks` value true, apart from one "not required on mobile" note that is not a failure). I read screenshots `04b-3d-first-seconds.png` and `01-landing-default.png`, and ran the CLI by hand. Same rubric and persona, scored hard.
+
+### Scores
+
+| Criterion | R3 | R4 | Reason |
+|---|---|---|---|
+| First-minute clarity | 8 | 8 | Caption, pitch and prompt are in the first view. Not 9: a visitor who has never seen interactive fiction still has to guess what the `>` prompt wants beyond the caption |
+| Wow factor | 7 | 7 | Same bench, still no motion in the README. Nothing new on screen |
+| Technical credibility | 8 | 9 | `raid` ends with "Next: type GRAFT JQUERY at the prompt". `echo "GRAFT JQUERY" | crypt play` in the same directory wrote `out/prs/crypt-graft-jquery-3.5.0.json` with no flags. The failure I reported in R3 is gone. Not 10: I did not rerun the full vitest suite, and `--live` is untested here |
+| Kiro usage story | 7 | 7 | Unchanged, and capped by "no hook has fired inside a Kiro session" |
+| Polish | 7 | 8 | Screenshot shows the skip link (x 0 to 188) and the manual button (x 208 to 393) side by side with a gap of about 20 px, and the manual button clear of "PLATE I: THE CREATURE". The harness `manualClearOfPlateTitle` is true. Four software-GL console warnings remain on 3D |
+| Accessibility | 7 | 7 | First Tab stop is "Skip to the game input" on both pages, which fixes the R3 finding. Not higher: axe-core not run on 3D, no screen reader |
+| Safety story | 8 | 8 | Unchanged. `crypt unseal` exists, prints "The seal is lifted." and removes `.crypt-seal` (checked by hand) |
+
+Mean 7.7 (R3: 7.4). Gain 0.3, at the plateau line. Loop stops.
+
+### Re-checks the PM asked for
+
+- Skip link vs manual button at 1280x720: no overlap in the screenshot. This was noted as not re-screenshotted in the Round 3 check, and is now seen.
+- `crypt unseal`: listed in `--help`, run by hand, works.
+- Round 3 item 4 (GIF and a real Kiro hook run): still not recorded.
+
+### What I did not verify
+
+- Real GPU, frame rate, audio, Lighthouse, screen readers, Safari, Firefox.
+- The live Pages site, `--live` mode, real pull requests.
+- That `.kiro/` links resolve on the default branch after merge.
+- axe-core on the 3D page.
+- Any hook inside a Kiro session.
+- The full test suite and CI in this round (only `tests/devpost-docs.test.ts` is run for this change).
+- This is one judge reading the repo they helped build. Treat the scores as a checklist result, not an independent review.
+
