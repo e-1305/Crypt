@@ -45,6 +45,8 @@ Each command dispatches AI agents built with [Kiro](https://kiro.dev) that open 
 
 **For a SOC:** `crypt alerts --format ocsf` writes OCSF Vulnerability Finding events for Amazon Security Lake, Splunk or Sentinel, and `crypt alerts --format issues` opens one ticket per actively exploited dependency: [docs/SOC.md](docs/SOC.md).
 
+**For a vendor review:** what data CRYPT handles and stores, every network call, token scopes, the SEAL kill switch and what is not offered: [docs/SECURITY-REVIEW.md](docs/SECURITY-REVIEW.md).
+
 ## Live demo
 
 **[e-1305.github.io/Crypt](https://e-1305.github.io/Crypt/)**: the first vulnerability report you can play. The page opens on a demo creature built offline from `fixtures/crypt-demo`, a snapshot of [e-1305/crypt-demo](https://github.com/e-1305/crypt-demo) at commit `bd82e8e` (owner @e-1305), with its plate and a playable story. A gallery lists 20 public projects, each with its own creature. "Download the playable report" saves the loaded `.z8`, which any Z-machine interpreter (Frotz, Lectrote, Parchment) opens.

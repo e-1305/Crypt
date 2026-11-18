@@ -98,6 +98,7 @@ footer{border-top-color:#555;color:#111}
 <li>Trend: open limbs (possessed plus rotting) after each of the last raids, read from the history that crypt autopsy and crypt gazette keep in out/autopsy-history.json (one entry per day they run), plus any history in out/state.json.</li>
 <li>Noise exorcised: findings below the noise line (counts.exorcised) divided by all findings (counts.findings).</li>
 </ol>
+<p class="detail">Vendor security review: <a href="https://github.com/e-1305/Crypt/blob/main/docs/SECURITY-REVIEW.md">docs/SECURITY-REVIEW.md</a></p>
 </footer>
 </div>
 </body>

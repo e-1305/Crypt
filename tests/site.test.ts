@@ -264,7 +264,9 @@ describe.skipIf(!haveToolchain)("build:site output", () => {
       expect(readFileSync(join(a, "war-room.html"), "utf8")).toContain("SIMULATED");
       const autopsy = readFileSync(join(a, "autopsy.html"), "utf8");
       expect(autopsy).toContain("SAMPLE DATA");
-      expect(autopsy).not.toMatch(/<script|https?:\/\//i);
+      // The only URL is the link to the vendor security review.
+      expect(autopsy).not.toMatch(/<script/i);
+      expect(autopsy.replace(/https:\/\/github\.com\/e-1305\/Crypt\/blob\/main\/docs\/SECURITY-REVIEW\.md/g, "")).not.toMatch(/https?:\/\//i);
 
       // Relative URLs only, and the page code opens no connection except to its own files.
       for (const f of ["index.html", "app.js", "style.css", ...files(join(a, "js")).map((x) => x.slice(a.length + 1))]) {

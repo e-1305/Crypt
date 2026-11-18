@@ -1,6 +1,6 @@
-// Autopsy page: one self-contained printable HTML string. Every value is escaped. No script, no external request.
+// Autopsy page: one self-contained printable HTML string. Every value is escaped. No script, no external request (one link to the vendor security review).
 import type { AutopsyModel, HistoryPoint, LimbRef } from "./model.js";
-import { FOOTNOTES, PDF_HINT, SAMPLE_BANNER, SAMPLE_NOTE, STYLE } from "./template.js";
+import { FOOTNOTES, PDF_HINT, SAMPLE_BANNER, SAMPLE_NOTE, SECURITY_REVIEW_PATH, SECURITY_REVIEW_URL, STYLE } from "./template.js";
 
 export function esc(v: unknown): string {
   return String(v)
@@ -111,6 +111,7 @@ ${trendBody}</section>
 <li>${esc(FOOTNOTES.trend)}</li>
 <li>${esc(FOOTNOTES.noise)}</li>
 </ol>
+<p class="detail">Vendor security review: <a href="${SECURITY_REVIEW_URL}">${SECURITY_REVIEW_PATH}</a></p>
 </footer>
 </div>
 </body>
