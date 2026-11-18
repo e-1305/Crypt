@@ -6,7 +6,7 @@ import { numRuns } from "./runs.js";
 import { feedSnapshotText } from "../scripts/build-site.js";
 import { parseFeedSnapshot } from "../src/web/feed-snapshot.js";
 import { LiveExhumeError, PROGRESS_STEPS, liveExhume, type FetchLike, type ProgressStep } from "../src/web/live-exhume.js";
-import { funnelOwners, funnelText, noiseFunnel } from "../src/web/noise-funnel.js";
+import { LOCKFILE_LIMIT_LINE, exorcisedRows, funnelOwners, funnelText, noiseFunnel } from "../src/web/noise-funnel.js";
 import { parseRepoUrl, repoFromQuery } from "../src/web/repo-url.js";
 import type { OsvLookup } from "../src/exhume/osv.js";
 
@@ -186,5 +186,53 @@ describe("paste hint and source label", () => {
   it("labels whether the result is the pasted repo or the demo", () => {
     expect(js).toContain("This is the repo you pasted");
     expect(js).toContain("not your own");
+  });
+});
+
+describe("exorcised list", () => {
+  const limb = (name: string, state: string, spawned: boolean, extra: object = {}) => ({ name, version: "1.0.0", state, spawned, ...extra });
+  it("gives every exorcised row a reason and keeps shown + exorcised = findings", () => {
+    fc.assert(
+      fc.property(
+        fc.array(
+          fc.record({
+            state: fc.constantFrom("Healthy", "Rotting", "Possessed"),
+            spawned: fc.boolean(),
+            unknown: fc.boolean(),
+            epss: fc.option(fc.double({ min: 0, max: 0.099, noNaN: true }), { nil: null }),
+          }),
+          { maxLength: 30 },
+        ),
+        (specs) => {
+          const limbs = specs.map((s, i) => limb("p" + i, s.state, s.spawned, { unknown: s.unknown, epss: s.epss, kev: false }));
+          const f = noiseFunnel(limbs);
+          const rows = exorcisedRows(limbs);
+          expect(rows.length + f.monsters).toBe(f.findings);
+          expect(rows.length).toBe(f.noise);
+          for (const r of rows) expect(r.reason.trim().length).toBeGreaterThan(0);
+        },
+      ),
+      { numRuns: numRuns(100) },
+    );
+  });
+
+  it("states the EPSS reason, and keeps unknown limbs unknown", () => {
+    const rows = exorcisedRows([
+      limb("a", "Rotting", false, { epss: 0.02 }),
+      limb("b", "Rotting", false, { unknown: true, unknownReason: "osv-unavailable" }),
+      limb("c", "Rotting", true, { epss: 0.5 }),
+    ]);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]!.reason).toBe("EPSS 0.02 is below 0.1, not in KEV");
+    expect(rows[1]!.unknown).toBe(true);
+    expect(rows[1]!.reason).toMatch(/^Unknown/);
+  });
+
+  it("matches a real scan and ships the lockfile limit line", async () => {
+    const osv: OsvLookup = async (limbs) => new Map(limbs.map((l) => [`${l.ecosystem}:${l.name}@${l.version}`, []]));
+    const r = await run(mock(lockOk), { osv });
+    expect(exorcisedRows(r.limbs).length).toBe(noiseFunnel(r.limbs).noise);
+    expect(LOCKFILE_LIMIT_LINE).toBe("Lockfile only. A finding means the locked version has an advisory, not that the code runs it.");
+    expect(readFileSync("web/live-exhume.js", "utf8")).toContain("LOCKFILE_LIMIT_LINE");
   });
 });

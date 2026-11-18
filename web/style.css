@@ -443,3 +443,8 @@ body.theatre.drawer-open .top { position: absolute; width: 1px; height: 1px; mar
   .paste-form .paste-hint { font-size: .8rem; }
   .paste-form input { flex: 1 1 10rem; min-width: 0; }
 }
+.paste-exorcised { margin: .5rem 0; }
+.paste-exorcised summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; }
+.paste-exorcised-list { overflow-wrap: anywhere; }
+.paste-exorcised a { display: inline-block; min-height: 44px; line-height: 44px; }
+.paste-exorcised a { color: inherit; text-decoration: underline; }
