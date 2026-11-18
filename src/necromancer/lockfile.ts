@@ -141,6 +141,7 @@ export function overrideSpec(version: string): string {
 
 /** Sets overrides[name] in a parsed package.json. False when an existing entry would conflict. */
 export function setOverride(pkg: Json, name: string, version: string): boolean {
+  // Overrides path: no overrides yet: create it; a non-object or non-string entry conflicts; otherwise the entry for name is replaced.
   const cur = pkg.overrides;
   if (cur === undefined) {
     pkg.overrides = { [name]: overrideSpec(version) };

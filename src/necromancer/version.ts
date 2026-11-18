@@ -35,6 +35,7 @@ export interface Advisory {
 const SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+)?$/;
 const MAX = Number.MAX_SAFE_INTEGER;
 
+/** Parses a semver string into its parts. Null when the string is not valid semver. */
 export function parseVersion(v: string): Semver | null {
   const m = SEMVER.exec(v);
   if (!m) return null;
