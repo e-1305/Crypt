@@ -22,6 +22,7 @@ Commands:
   reraise             After a human landed pull requests: mark those limbs healed and recompile.
   autopsy             Write out/autopsy.html: a one-page report for a CISO (print it to PDF from a browser).
   gazette             Print the weekly digest as Slack or Teams JSON. Posts only with --send.
+  alerts              Write OCSF Vulnerability Finding events for a SOC (--format ocsf) to out/alerts.ocsf.json. Local only.
   graveyard           Scan an organisation (read-only) and write out/graveyard.json for the Graveyard page. Needs --org and --token-env.
   seal                Stop every agent action. Writes .crypt-seal.
   unseal              Lift the seal.
@@ -37,13 +38,14 @@ Options:
   --cache <dir>       raid, exhume: directory for cached OSV answers
   --out <path>        exhume: creature file (default out/creature.json); raise: output directory;
                       autopsy: report file (default out/autopsy.html);
-                      graveyard: data file (default out/graveyard.json)
+                      graveyard: data file (default out/graveyard.json);
+                      alerts: events file (default out/alerts.ocsf.json)
   --last <N>          autopsy: raids shown in the trend (1 to 52, default 8)
   --webhook-env <VAR> gazette: SLACK_WEBHOOK_URL or TEAMS_WEBHOOK_URL (the variable holds the URL; it is never printed)
   --send              gazette: post to the webhook (default: print the payload)
   --dry-run           gazette: print the payload only (the default)
   --war-room <url>    gazette: https link for the "Open the War Room" button
-  --format <kind>     gazette: slack or teams (default: from --webhook-env, else slack)
+  --format <kind>     gazette: slack or teams (default: from --webhook-env, else slack); alerts: ocsf (required)
   --org <org>         graveyard: organisation login to scan (the file stays on this machine)
   --token-env <VAR>   graveyard: NAME of the variable that holds a read-only GitHub token (it is never printed or written)
   --repos <a/b,c/d>   graveyard: scan only these repositories

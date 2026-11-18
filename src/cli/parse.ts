@@ -3,7 +3,7 @@ import { UsageError } from "./exit.js";
 import { IMPORT_FORMATS, isImportFormat } from "../import/types.js";
 import { GITHUB_BASE, looksRemote, parseGithubUrl } from "./url.js";
 
-export const COMMANDS = ["exhume", "raise", "play", "graft", "inquisit", "reraise", "seal", "unseal", "raid", "autopsy", "gazette", "graveyard"] as const;
+export const COMMANDS = ["exhume", "raise", "play", "graft", "inquisit", "reraise", "seal", "unseal", "raid", "autopsy", "gazette", "graveyard", "alerts"] as const;
 export type CommandName = (typeof COMMANDS)[number];
 export type Command = CommandName | "help" | "version";
 
@@ -40,6 +40,7 @@ export const SPECS: Record<CommandName, Spec> = {
   raid: { positional: TARGET, flags: { offline: "bool", feeds: "value", cache: "value", live: "bool", timeout: "value" } },
   autopsy: { positional: [], flags: { out: "value", last: "value", sample: "bool" } },
   gazette: { positional: [], flags: { "webhook-env": "value", "dry-run": "bool", send: "bool", "war-room": "value", format: "value", sample: "bool" } },
+  alerts: { positional: [], flags: { format: "value", out: "value" } },
   graveyard: { positional: [], flags: { org: "value", "token-env": "value", out: "value", repos: "value", sample: "bool" } },
 };
 
@@ -151,6 +152,7 @@ export function parseCli(argv: readonly string[], env: Record<string, string | u
       if (!ok) throw new UsageError("--war-room must be an https URL.");
     }
   }
+  if (command === "alerts" && flags.format !== "ocsf") throw new UsageError("alerts needs --format ocsf.");
   if (command === "graveyard") {
     if (typeof flags.org === "string" && !/^[A-Za-z0-9_.-]{1,39}$/.test(flags.org)) throw new UsageError(`--org must be an organisation login, got '${flags.org.slice(0, 40)}'`);
     if (typeof flags["token-env"] === "string" && !/^[A-Za-z_][A-Za-z0-9_]{0,63}$/.test(flags["token-env"])) {
