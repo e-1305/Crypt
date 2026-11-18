@@ -33,7 +33,7 @@ Any error or unknown state fails the step with a FAILED summary, never a green "
 
 ## Alerts
 
-`crypt alerts --format issues` prints one issue per Possessed (KEV) limb, titled `[CRYPT] KEV: <pkg> <version>`, with the CVEs, the owner team from CODEOWNERS, the 48 hour SLA and the graft command. Add `--live --repo owner/name` (with `GITHUB_TOKEN`, same preflight as live graft) to open them: at most 5 new issues per run, and never a second issue with the same open title. Titles that are already open are skipped first, so limbs beyond the first 5 still get issues on later runs. The check lists the open issues, so it sees an issue created seconds ago. A closed issue is not matched: a closed but unfixed limb gets a new issue on the next run.
+`crypt alerts --format issues` prints one issue per Possessed (KEV) limb, titled `[CRYPT] KEV: <pkg> <version>`, with the CVEs, the owner team from CODEOWNERS, the 48 hour SLA and the graft command. Add `--live --repo owner/name` (with `GITHUB_TOKEN`, same preflight as live graft) to open them: at most 5 new issues per run, and never a second issue with the same open title. Titles that are already open are skipped first, so limbs beyond the first 5 still get issues on later runs. The check lists the open issues, so it sees an issue created seconds ago. A closed issue is not matched: a closed but unfixed limb gets a new issue on the next run. Only team owners (`@org/team`) are shown; an individual or an email shows as "no owner yet". With more than 1000 open issues the live run stops without opening anything.
 
 ## Graft mode (opt-in)
 

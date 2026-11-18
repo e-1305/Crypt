@@ -38,7 +38,7 @@ export async function alertsCommand(p: Parsed, deps: AlertsDeps = {}): Promise<n
   } catch {
     throw new CliError("out/creature.json is not readable. Run crypt raid <target> again.", EXIT.FAILURE);
   }
-  
+
   if (!live) {
     const issues = buildIssues(creature, repo);
     out(`Dry run: ${issues.length} issue${issues.length === 1 ? "" : "s"} would be opened (at most ${MAX_ISSUES}). Add --live --repo owner/name to open them.\n`);
@@ -76,6 +76,7 @@ export async function alertsCommand(p: Parsed, deps: AlertsDeps = {}): Promise<n
         if (typeof r.title === "string" && r.pull_request === undefined) open.add(r.title);
       }
       if (list.length < 100) break;
+      if (page === 10) throw new Error("more than 1000 open issues, so the open-title check would be incomplete");
     }
     for (const i of issues) {
       if (open.has(i.title)) {

@@ -1,7 +1,7 @@
 // Pure builder for `crypt alerts --format issues`: one issue per Possessed (KEV) limb.
 // Owners come from CODEOWNERS data in creature.json. No person is ever named.
 import { limbIds, spawnedLimbs, type LimbInput } from "../raise/generate.js";
-import { ownerLabel } from "../exhume/owners.js";
+import { NO_OWNER_TEXT } from "../exhume/owners.js";
 
 export const MAX_ISSUES = 5;
 export const SLA_HOURS = 48;
@@ -15,7 +15,7 @@ export interface AlertIssue {
 const rec = (v: unknown): Record<string, unknown> => (typeof v === "object" && v !== null && !Array.isArray(v) ? (v as Record<string, unknown>) : {});
 const clean = (v: unknown, max: number): string => (typeof v === "string" ? v.replace(/[^\x20-\x7e]/g, "").trim().slice(0, max) : "");
 
-/** Real limb IDs, from the same code that writes the game. A Possessed limb that is not spawned has no game ID, so it falls back to its own. */
+/** Real limb IDs, from the same code that writes the game. A limb that is not spawned has no game ID and gets no graft command. */
 function graftIds(limbs: Record<string, unknown>[]): Map<Record<string, unknown>, string> {
   const spawned = spawnedLimbs(limbs as LimbInput[]) as Record<string, unknown>[];
   const ids = limbIds(spawned.map((l) => (typeof l.name === "string" ? l.name : "")));
@@ -26,6 +26,14 @@ function graftIds(limbs: Record<string, unknown>[]): Map<Record<string, unknown>
 
 /** Inside a code span a name cannot mention anyone. */
 const code = (v: string): string => v.replace(/`/g, "'");
+
+/** Only team handles (@org/team) are shown. An individual @user or an email is never printed, so the body names no person. */
+export function teamOwners(owner: unknown): string {
+  const teams = clean(owner, 200)
+    .split(/\s+/)
+    .filter((o) => /^@[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(o));
+  return teams.length > 0 ? teams.join(" ") : NO_OWNER_TEXT;
+}
 
 export const issueTitle = (name: string, version: string): string => `[CRYPT] KEV: ${name} ${version}`;
 
@@ -51,18 +59,18 @@ export function buildIssues(creature: unknown, repo = "<owner/name>", cap = MAX_
           .filter((c) => /^CVE-\d{4}-\d+$/.test(c)),
       ),
     ].sort();
+    const gid = gids.get(l);
+    const graft = gid
+      ? ["Graft command:", "", "```", `crypt graft ${gid} --live --repo ${repo}`, "```"]
+      : ["This limb is not in the current game, so there is no graft command. Run crypt raid again to refresh the game."];
     const body = [
       `\`${code(name)} ${code(version)}\` is Possessed: it is in the CISA KEV catalog, so it is exploited in the wild.`,
       "",
       `CVEs: ${cves.length > 0 ? cves.join(", ") : "none listed"}`,
-      `Owner: ${ownerLabel(clean(l.owner, 100))}`,
+      `Owner: ${teamOwners(l.owner)}`,
       `SLA: fix within ${SLA_HOURS} hours of the raid.`,
       "",
-      "Graft command:",
-      "",
-      "```",
-      `crypt graft ${(gids.get(l) ?? limbIds([name])[0])} --live --repo ${repo}`,
-      "```",
+      ...graft,
       "",
       "A person reviews and lands the pull request.",
     ].join("\n");

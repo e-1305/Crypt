@@ -97,7 +97,22 @@ describe("buildIssues", () => {
     expect(b).toContain("Owner: @acme/platform");
     expect(issues[1]!.body).toContain("Owner: no owner yet");
     expect(b).toContain("48 hours");
-    expect(b).toContain("crypt graft PKG --live --repo o/r");
+    expect(b).not.toContain("crypt graft");
+    expect(b).toContain("not in the current game");
+  });
+  it("prints the graft command for a spawned limb", () => {
+    const c = { limbs: [limb(1, "Possessed", { spawned: true })] };
+    expect(buildIssues(c, "o/r")[0]!.body).toContain("crypt graft PKG --live --repo o/r");
+  });
+  it("renders only team owners; a person or an email becomes 'no owner yet'", () => {
+    const owner = (o: string) => buildIssues({ limbs: [limb(1, "Possessed", { owner: o })] })[0]!.body;
+    expect(owner("@alice")).toContain("Owner: no owner yet");
+    expect(owner("alice@example.com")).toContain("Owner: no owner yet");
+    expect(owner("@alice @acme/platform bob@x.io")).toContain("Owner: @acme/platform\n");
+    for (const o of ["@alice", "alice@example.com", "@alice bob@x.io"]) {
+      const b = owner(o);
+      expect(b).not.toMatch(/alice|bob|@x\.io/);
+    }
   });
   it("never carries author-like data from the creature", () => {
     fc.assert(
@@ -174,6 +189,14 @@ describe("crypt alerts", () => {
     const c = { limbs: [limb(1, "Possessed", { name: 'a"b', version: "1" })] };
     const g = fakeGithub({ open: ['[CRYPT] KEV: a"b 1'] });
     await run(["--format", "issues", "--live", "--repo", "o/r"], work(c), g.fetch);
+    expect(g.created).toEqual([]);
+  });
+});
+
+describe("open-issue listing limit", () => {
+  it("stops with an error when 1000 open issues fill every page", async () => {
+    const g = fakeGithub({ open: Array.from({ length: 1000 }, (_, i) => `other ${i}`) });
+    await expect(run(["--format", "issues", "--live", "--repo", "o/r"], work(creatureOf(1)), g.fetch)).rejects.toThrow(/1000 open issues/);
     expect(g.created).toEqual([]);
   });
 });
