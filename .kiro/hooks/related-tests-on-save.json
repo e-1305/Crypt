@@ -12,6 +12,18 @@
       },
       "timeout": 180,
       "enabled": true
+    },
+    {
+      "name": "Related tests on save (Kiro Web, PostToolUse)",
+      "description": "Runs the vitest tests related to a saved src/**/*.ts file (scripts/hooks/related-tests.sh). Twin for Kiro Web, which has no File Save trigger.",
+      "trigger": "PostToolUse",
+      "matcher": "write",
+      "action": {
+        "type": "command",
+        "command": "CRYPT_HOOK_TRIGGER=PostToolUse CRYPT_HOOK_FILTER='(^|/)src/.*\\.ts$' bash scripts/hooks/run-logged.sh related-tests-on-save scripts/hooks/related-tests.sh"
+      },
+      "timeout": 180,
+      "enabled": true
     }
   ]
 }

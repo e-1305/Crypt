@@ -9,13 +9,13 @@ Generated 2026-11-18 (UTC).
 | Item | Count | Source |
 |---|---|---|
 | Specs | 22 | directories in `.kiro/specs` |
-| Spec tasks | 190 ticked of 192 | `- [x]` and `- [ ]` lines in `.kiro/specs/*/tasks.md` |
-| Hooks | 5 | `.kiro/hooks/*.json` |
+| Spec tasks | 191 ticked of 194 | `- [x]` and `- [ ]` lines in `.kiro/specs/*/tasks.md` |
+| Hooks | 7 | `.kiro/hooks/*.json` |
 | Hook runs recorded in a Kiro session | 0 | lines of `docs/evidence/hook-runs.jsonl` whose trigger is not `manual` |
 | Steering files | 6 | `.kiro/steering/*.md` |
 | Custom agents | 2 | `.kiro/agents/*.json` (Oracle has no file) |
 | Property test call sites | 268 in 32 files | `fc.assert`, `fc.property`, `fc.asyncProperty`, `test.prop` in `tests/*.test.ts` |
-| Tests | 713 passed, 4 skipped | `npx vitest run --reporter=json` (numPassedTests, numPendingTests) |
+| Tests | 718 passed, 4 skipped | `npx vitest run --reporter=json` (numPassedTests, numPendingTests) |
 | Test files | 49 | `npx vitest run --reporter=json` (testResults) |
 | PRs | 47 | unique `#N` in landing-commit subjects of `git log` (`pull request #N` or `PR #N`); `(#N)` suffixes are issues and are not counted; `gh` is not used |
 <!-- kiro-stats:end -->
@@ -24,7 +24,7 @@ Checked against the repository by a test: specs, hooks, steering files and custo
 
 ## Limits
 
-- No hook has been seen to fire inside a Kiro session. In the Kiro Web session that built `hook-evidence` (issue #74), files matching each hook's matcher were saved by the editor tools (trigger tried: `PostFileSave`, see "Hook runs"), and `docs/evidence/hook-runs.jsonl` gained no line. Every line in it carries the trigger `manual`: the wrapper run by hand.
+- No hook has been seen to fire inside a Kiro session. The File Save trigger (`PostFileSave`) is not supported in Kiro Web ([Kiro hook types](https://kiro.dev/docs/hooks/types/)), which is why it never fired there. Issue #87 added `PostToolUse` (matcher `write`), `Stop` and `SessionStart` hooks that Kiro Web does support. They were written, but the session that wrote them did not load them (hooks are read at session start), and editing matching files there wrote no line. Every line in `docs/evidence/hook-runs.jsonl` carries the trigger `manual`.
 - The safety claims rest on tests (property-based, run in CI) and on the scripts named here, not on a recorded Kiro session.
 - Nothing here measures how much time Kiro saved. There is no such measurement.
 - Only the specs, hooks, steering and agents rows are compared with the repository by a test. The other rows (tasks, property call sites, tests, test files, PRs) change only when someone runs `npm run kiro:stats -- --write`, and CI does not refresh them.
@@ -81,10 +81,21 @@ The hooks are in `.kiro/hooks/*.json`, in the [documented Kiro format](https://k
 | `attribution-on-package-save.json` | save of `package.json` | Dependencies missing from `docs/ATTRIBUTION.md` on its first run (run 4). |
 | `blameless-copy-on-save.json` | save under `src/raise` or `web/` | The "Do not edit" header in every generated story (run 5). |
 
+Triggers by surface, from the [Kiro hook types page](https://kiro.dev/docs/hooks/types/):
+
+| Trigger | IDE | CLI V3 | Kiro Web | Used here |
+|---|---|---|---|---|
+| File Save (`PostFileSave`) | yes | yes | no | the five save hooks, for IDE and CLI users |
+| Post Tool Use (`PostToolUse`, matcher `write`) | yes | yes | yes | one twin per save hook, same filter regex |
+| Agent Stop (`Stop`) | yes | yes | yes | `failsafe-guard-on-stop.json` (guard over all of `src/` and `bin/`) |
+| Session Start (`SessionStart`) | yes | yes | yes | `session-start-log.json` |
+
+The `PostToolUse` twins run `run-logged.sh` with `CRYPT_HOOK_FILTER` set to the save hook's regex. The wrapper reads the written path from the session JSON on STDIN, does nothing when the path does not match, and otherwise runs the check and logs `trigger: "PostToolUse"`. The tool IDs of the write tools were not observed (no run has fired), so `write` is the documented category and nothing more is claimed.
+
 The hooks and their scripts were added in `65c945c`; the A2 spec is `771e8be`.
 
 ### Hook runs
-Each hook file has a `command` action that runs `scripts/hooks/run-logged.sh`. The wrapper runs the check, keeps its exit code, and appends one line `{ts, hook, trigger, file, exit, summary}` to `docs/evidence/hook-runs.jsonl`. It never stores the event JSON, a secret or an author name. `hook-evidence-check.mjs` in CI checks the five hook files and every line. The spec is `.kiro/specs/hook-evidence/`. The trace and attribution hooks keep their agent prompt as a second entry with the same matcher.
+Each hook file has a `command` action that runs `scripts/hooks/run-logged.sh`. The wrapper runs the check, keeps its exit code, and appends one line `{ts, hook, trigger, file, exit, summary}` to `docs/evidence/hook-runs.jsonl`. It never stores the event JSON, a secret or an author name. `hook-evidence-check.mjs` in CI checks every hook file (each save hook needs its `PostToolUse` twin) and every line, and once any non-manual line exists it requires one for every hook. The spec is `.kiro/specs/hook-evidence/`. The trace and attribution hooks keep their agent prompt as a second entry with the same matcher.
 
 The count of runs recorded in a Kiro session is in the numbers block ("Hook runs recorded in a Kiro session"). It counts lines whose trigger is not `manual`.
 
@@ -98,7 +109,7 @@ What the file holds today, from `docs/evidence/hook-runs.jsonl`:
 | `attribution-on-package-save` | 0 | 1 | `deps-check: ok (8 dependencies attributed)` |
 | `trace-on-tasks-save` | 0 | 1 | `trace-report: ok (187 table rows, ...)` |
 
-Date of all five manual runs: 2026-11-18. None of them caught anything. What was tried: in the Kiro Web session for issue #74, `package.json`, `web/copy.js`, `src/necromancer/index.ts` (which matches the `src/**/*.ts` and failsafe matchers) and `.kiro/specs/hook-evidence/tasks.md` were each edited and restored with the editor's replace tool, so each matcher saw a `PostFileSave`. No hook ran and the file stayed absent until the wrappers were run by hand, which is what `manual` records. Kiro Web does not appear to run workspace hooks. The table is typed from the file on the date above; the Kiro-session column stays 0 until a line with another trigger exists, and a session on the desktop IDE would be the way to get one.
+Date of all five manual runs: 2026-11-18. None of them caught anything. What was tried: in the Kiro Web session for issue #74, `package.json`, `web/copy.js`, `src/necromancer/index.ts` (which matches the `src/**/*.ts` and failsafe matchers) and `.kiro/specs/hook-evidence/tasks.md` were each edited and restored with the editor's replace tool, so each matcher saw a `PostFileSave`. No hook ran and the file stayed absent until the wrappers were run by hand, which is what `manual` records. The issue #74 run used `PostFileSave`, which Kiro Web does not support. A second attempt for issue #87 edited and restored `package.json`, `web/copy.js`, `src/necromancer/index.ts` and `.kiro/specs/hook-evidence/tasks.md` with the editor's replace tool after adding the `PostToolUse`, `Stop` and `SessionStart` hooks. That session did not run them: no line was added, so there is no `PostToolUse`, `Stop` or `SessionStart` evidence yet. The next Kiro session that starts with this branch checked out is the one that can produce it. The table is typed from the file on the date above; the Kiro-session column stays 0 until a line with another trigger exists, and a session on the desktop IDE would be the way to get one.
 
 ## Custom agents
 | Agent | Role |

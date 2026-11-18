@@ -19,3 +19,13 @@ Terms. **Run line** is one JSON line in `docs/evidence/hook-runs.jsonl`. **Kiro-
 ## H3 Checks
 1. `npm run kiro:stats` SHALL print "Hook runs recorded in a Kiro session" from the Kiro-session lines, `unavailable` when the file is missing.
 2. A CI step SHALL fail when a hook file lacks the command action, timeout or `enabled: true`, or when a run line is invalid.
+
+## H4 Kiro Web twins (issue #87)
+Source: the [Kiro hook types page](https://kiro.dev/docs/hooks/types/). File Save is supported in the IDE and CLI V3, not in Kiro Web. Kiro Web supports Prompt Submit, Agent Stop, Session Start, Pre Tool Use and Post Tool Use.
+1. Each hook file with a `PostFileSave` command entry SHALL also hold a `PostToolUse` entry with matcher `write` (the docs' category for all built-in file write tools). Its command sets `CRYPT_HOOK_TRIGGER=PostToolUse` and `CRYPT_HOOK_FILTER` to the same regex as the `PostFileSave` matcher.
+2. With `CRYPT_HOOK_FILTER` set, the wrapper reads the written path from the session context JSON on STDIN (`scripts/hooks/tool-write-filter.mjs`). When no path matches it runs nothing and logs nothing. Otherwise it runs the check and logs `trigger: "PostToolUse"`.
+3. `failsafe-guard-on-stop.json` (trigger `Stop`) SHALL run `scripts/ci/failsafe-guard.sh` over all of `src/` and `bin/` and log one line.
+4. `session-start-log.json` (trigger `SessionStart`) SHALL log one line and read no payload.
+5. `CRYPT_HOOK_TRIGGER`, when set, wins over a trigger found in the payload.
+6. Once the log holds any non-manual line, `hook-evidence-check.mjs` SHALL require at least one non-manual line for every hook name.
+7. If `write` does not match in a session, the tool IDs that session's write tools use SHALL be recorded here. None has been recorded: no PostToolUse run has been observed yet (see `docs/KIRO.md`, "Hook runs").

@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Log session start",
+      "description": "Logs one line when a Kiro session starts, so the evidence shows which runs came from Kiro sessions. No payload is read or stored.",
+      "trigger": "SessionStart",
+      "action": {
+        "type": "command",
+        "command": "CRYPT_HOOK_TRIGGER=SessionStart bash scripts/hooks/run-logged.sh session-start-log scripts/hooks/session-start.sh"
+      },
+      "timeout": 30,
+      "enabled": true
+    }
+  ]
+}

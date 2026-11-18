@@ -12,6 +12,18 @@
       },
       "timeout": 30,
       "enabled": true
+    },
+    {
+      "name": "Blameless copy check on save (Kiro Web, PostToolUse)",
+      "description": "Flags game prose and UI copy that names a person in failure or phrases a prohibition (.kiro/steering/blameless.md). Twin for Kiro Web, which has no File Save trigger.",
+      "trigger": "PostToolUse",
+      "matcher": "write",
+      "action": {
+        "type": "command",
+        "command": "CRYPT_HOOK_TRIGGER=PostToolUse CRYPT_HOOK_FILTER='(^|/)(src/raise|web)/.*\\.(ts|js|html|css)$' bash scripts/hooks/run-logged.sh blameless-copy-on-save scripts/hooks/blameless-copy-check.sh"
+      },
+      "timeout": 30,
+      "enabled": true
     }
   ]
 }

@@ -12,6 +12,18 @@
       },
       "timeout": 30,
       "enabled": true
+    },
+    {
+      "name": "Failsafe guard on save (Kiro Web, PostToolUse)",
+      "description": "Fails on a merge endpoint or command, or a token flowing into a log or audit call, in necromancer, inquisitor and mcp code (failsafe rules 2 and 8). Twin for Kiro Web, which has no File Save trigger.",
+      "trigger": "PostToolUse",
+      "matcher": "write",
+      "action": {
+        "type": "command",
+        "command": "CRYPT_HOOK_TRIGGER=PostToolUse CRYPT_HOOK_FILTER='(^|/)src/(necromancer|inquisitor|mcp)/.*\\.ts$' bash scripts/hooks/run-logged.sh failsafe-guard-on-save scripts/hooks/failsafe-check.sh"
+      },
+      "timeout": 30,
+      "enabled": true
     }
   ]
 }

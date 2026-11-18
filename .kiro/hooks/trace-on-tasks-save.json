@@ -14,6 +14,18 @@
       "enabled": true
     },
     {
+      "name": "Update traceability on tasks save (Kiro Web, PostToolUse)",
+      "description": "When a spec's tasks.md changes, the agent refreshes the task, commit, test table in docs/KIRO.md with scripts/hooks/kiro-trace.ts. Twin for Kiro Web, which has no File Save trigger.",
+      "trigger": "PostToolUse",
+      "matcher": "write",
+      "action": {
+        "type": "command",
+        "command": "CRYPT_HOOK_TRIGGER=PostToolUse CRYPT_HOOK_FILTER='(^|/)\\.kiro/specs/[^/]+/tasks\\.md$' bash scripts/hooks/run-logged.sh trace-on-tasks-save scripts/hooks/trace-report.sh"
+      },
+      "timeout": 60,
+      "enabled": true
+    },
+    {
       "name": "Update traceability on tasks save (agent)",
       "description": "When a spec's tasks.md changes, the agent refreshes the task, commit, test table in docs/KIRO.md with scripts/hooks/kiro-trace.ts.",
       "trigger": "PostFileSave",
