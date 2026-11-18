@@ -43,6 +43,7 @@ export function parseVersion(v: string): Semver | null {
   return { major, minor, patch, pre: m[4] ? m[4].split(".") : [] };
 }
 
+/** Renders a parsed version back to `major.minor.patch[-pre]`. Build metadata is not kept. */
 export function formatVersion(s: Semver): string {
   return `${s.major}.${s.minor}.${s.patch}${s.pre.length ? "-" + s.pre.join(".") : ""}`;
 }
