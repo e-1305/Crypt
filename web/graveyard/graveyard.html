@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CRYPT Graveyard: every repository a creature</title>
+<meta name="description" content="A night view of many repositories at once. Each repo is a tombstone, its creature rises from it. Read in your browser, nothing is uploaded.">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="graveyard.css">
+</head>
+<body class="gy">
+<a class="skip" href="#main">Skip to the graveyard</a>
+<header class="gy-top">
+  <h1>CRYPT Graveyard</h1>
+  <p class="gy-sub">Every repository is a tombstone, its creature rises from it. <a href="../">Back to the crypt</a></p>
+</header>
+<main id="main">
+  <section class="gy-controls" id="controls" aria-label="Choose repositories and views">
+    <div class="gy-row">
+      <button type="button" id="load-census" aria-pressed="true">Census demo (offline)</button>
+      <label class="gy-file">Load graveyard.json
+        <input type="file" id="file" accept=".json,application/json">
+      </label>
+      <button type="button" id="view-toggle" aria-pressed="false">List view</button>
+      <button type="button" id="record-on" aria-pressed="false">Recording mode</button>
+    </div>
+    <form id="scan-form" class="gy-row" autocomplete="off">
+      <label for="repos">Public GitHub repositories (npm), one per line or comma separated</label>
+      <textarea id="repos" rows="3" spellcheck="false" placeholder="owner/repo, https://github.com/owner/repo"></textarea>
+      <div class="gy-row">
+        <button type="submit" id="scan">Scan in this browser</button>
+        <button type="button" id="resume" hidden>Resume</button>
+      </div>
+      <p id="estimate" class="gy-muted">Up to 20 repositories per run. GitHub allows 60 requests an hour without a token, so the scan reads one repository at a time and keeps results in this tab.</p>
+    </form>
+    <div class="gy-row gy-views">
+      <label for="sort">Order</label>
+      <select id="sort">
+        <option value="name">Alphabetical</option>
+        <option value="risk">Exploitable risk</option>
+        <option value="sla">SLA state</option>
+        <option value="owner">Owner team</option>
+      </select>
+      <label for="filter-sla">SLA</label>
+      <select id="filter-sla">
+        <option value="">All</option>
+        <option value="breached">Breached</option>
+        <option value="at-risk">At risk</option>
+        <option value="ok">Within SLA</option>
+      </select>
+      <label for="filter-owner">Owner team</label>
+      <select id="filter-owner"><option value="">All</option></select>
+    </div>
+    <p class="gy-muted">Views of each repo's own data. No repo is ranked against another.</p>
+  </section>
+
+  <div class="gy-progress-wrap">
+    <div id="progress" class="gy-progress" role="progressbar" aria-label="Repositories read" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0" hidden><span id="bar"></span></div>
+    <p id="status" role="status" aria-live="polite">Loading the census graveyard.</p>
+  </div>
+
+  <section id="scene-wrap" class="gy-stage" aria-label="Graveyard scene">
+    <canvas id="scene" aria-hidden="true"></canvas>
+    <ul id="tombs" class="gy-tombs" aria-label="Tombstones"></ul>
+    <div id="tip" class="gy-tip" role="tooltip" hidden></div>
+  </section>
+
+  <section id="list-wrap" aria-label="Repository list" hidden>
+    <ul id="cards" class="gy-cards"></ul>
+  </section>
+
+  <div class="sr-only"><table id="sr-table">
+    <caption>Repositories in the graveyard, each with its own numbers. Alphabetical unless you chose another order.</caption>
+    <thead><tr><th scope="col">Repository</th><th scope="col">SLA state</th><th scope="col">Exploitable risk</th><th scope="col">Possessed limbs</th><th scope="col">Rotting limbs</th><th scope="col">Unowned limbs</th><th scope="col">Owner team</th></tr></thead>
+    <tbody id="sr-body"></tbody>
+  </table></div>
+
+  <section id="panel" class="gy-panel" role="dialog" aria-labelledby="panel-title" hidden>
+    <div class="gy-panel-head">
+      <h2 id="panel-title" tabindex="-1">Repository</h2>
+      <button type="button" id="panel-close">Close (Esc)</button>
+    </div>
+    <div id="panel-body"></div>
+  </section>
+</main>
+<script type="module" src="graveyard.js"></script>
+</body>
+</html>
