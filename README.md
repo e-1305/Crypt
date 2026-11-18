@@ -3,8 +3,11 @@
 # CRYPT
 ### Don't abandon your creature.
 
-> Every app is a Frankenstein, stitched from strangers' code.
-> CRYPT finds the rotting limbs, names a surgeon, and proves the fix.
+**The problem:** 248 findings across 20 popular repos, 95.2% were noise, and 84.7% of dependencies had no owner ([census](docs/census/RESULTS.md)).
+
+**CRYPT:** finds the few vulnerable dependencies that matter, names an owner from CODEOWNERS, opens one fix PR, and a human merges.
+
+**Proof:** [lodash 4.17.15 to 4.18.1, CI green, merged by a human](https://github.com/e-1305/crypt-demo/pull/1).
 
 **Zork that patches your code, and can never break it.**
 
@@ -41,6 +44,8 @@ Each command dispatches AI agents built with [Kiro](https://kiro.dev) that open 
 ## Live demo
 
 **[e-1305.github.io/Crypt](https://e-1305.github.io/Crypt/)**: the first vulnerability report you can play. The page opens on a demo creature built offline from `fixtures/crypt-demo`, a snapshot of [e-1305/crypt-demo](https://github.com/e-1305/crypt-demo) at commit `bd82e8e` (owner @e-1305), with its plate and a playable story. A gallery lists 20 public projects, each with its own creature. "Download the playable report" saves the loaded `.z8`, which any Z-machine interpreter (Frotz, Lectrote, Parchment) opens.
+
+**Views** (linked from the landing page, all in the same site): [Play](https://e-1305.github.io/Crypt/) · [War Room](https://e-1305.github.io/Crypt/war-room.html) (simulated big-screen raid) · [Graveyard](https://e-1305.github.io/Crypt/graveyard/graveyard.html) (`graveyard/` also works) · [CISO report (sample)](https://e-1305.github.io/Crypt/autopsy.html) (labelled SAMPLE DATA, the output of `crypt autopsy --sample`).
 
 GRAFT on the page is a rehearsal: it shows the dry-run pull request payload and sends nothing.
 
@@ -100,6 +105,11 @@ npm run necromancer:check                     # offline acceptance: GRAFT JQUERY
 ```
 
 `exhume` reads `package-lock.json` (v2/v3) and `requirements.txt` (`==` pins only), asks OSV once per `package@version` (cached in `data/cache/osv/`), ranks with local KEV/EPSS files and prints totals (dependencies, findings, limbs that spawn, findings below the noise line). A limb whose status cannot be established is reported as unknown, never as clean. Schema: `.kiro/specs/exhume-and-rank/design.md`.
+
+## GitHub Action
+
+Add `uses: e-1305/Crypt@main` to a workflow and every run writes your repo's creature to the job summary. Report only by default, it never writes to the repo. See [docs/INSTALL-ACTION.md](docs/INSTALL-ACTION.md).
+
 ## Live raid
 
 `crypt raid https://github.com/<owner>/<repo> --live` opens a real fix pull request through the GitHub API, the Inquisitor watches its `test` check, a human lands it on GitHub, and `crypt reraise --live` shows the limb HEALED. Step by step for the video, including how to create the token: [docs/DEMO.md](docs/DEMO.md).
