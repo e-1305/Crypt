@@ -275,6 +275,8 @@ body.record .theatre-caption { display: none; }
   body:not(.theatre) #sim { order: 4; margin: 0 1rem 1rem; }
   body:not(.theatre) .side > .pane { order: 5; margin: 0 1rem 1rem; }
   body:not(.theatre) #proof { order: 6; margin: 0 1rem 1rem; }
+  /* The workflow line sits in the header, above the game; it is desktop only so it adds no height there. */
+  body:not(.theatre) .workflow-line { display: none; }
   /* The hero already carries the proof line on small screens; the header copy would push the game down. */
   body:not(.theatre) #proof-line { display: none; }
   body:not(.theatre)::after { display: none; }
