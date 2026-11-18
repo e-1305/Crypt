@@ -120,7 +120,7 @@ if (benchToggle && benchBody) {
   });
 }
 
-// Hero actions (issue #120): "Play the creature" moves focus to the game input, "Scan your repo" focuses the paste input under the hero.
+// Hero actions (issue #120): "Play the creature" moves focus to the game input, "Scan your repo" focuses the paste field under the hero.
 document.getElementById("hero-play")?.addEventListener("click", () => {
   document.getElementById("cmd")?.focus();
 });
