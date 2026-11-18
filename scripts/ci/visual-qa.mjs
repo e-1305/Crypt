@@ -6,6 +6,8 @@
 import { createRequire } from "node:module";
 import { homedir } from "node:os";
 import { join, extname, resolve, sep } from "node:path";
+import { spawnSync } from "node:child_process";
+import { pathToFileURL } from "node:url";
 import { readdirSync, existsSync, readFileSync, mkdirSync, copyFileSync } from "node:fs";
 import http from "node:http";
 import { findOverlaps, filterFixedBoxes } from "./overlap.mjs";
@@ -309,6 +311,132 @@ async function checkWarRoom(browser, vp) {
   await ctx.close();
 }
 
+// Autopsy report (D5): the one-page CISO report from `crypt autopsy --sample`. Loaded from a file URL at two viewports.
+// Checks no page error, no horizontal overflow, the h1 and the three measure cards visible and apart, the footnotes,
+// a basic accessibility pass (lang, landmark, alt text, text contrast) and that print emulation fits one A4 page.
+const AUTOPSY_VIEWPORTS = [{ w: 1440, h: 900, touch: false }, { w: 390, h: 844, touch: true }];
+const MEASURES = ["#h-impl", "#h-eff", "#h-imp"];
+
+async function checkAutopsy(browser, vp, file) {
+  const tag = `${vp.w}x${vp.h} autopsy`;
+  const ctx = await browser.newContext({ viewport: { width: vp.w, height: vp.h }, hasTouch: vp.touch, isMobile: vp.touch });
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => fail(tag, `page error: ${e.message}`));
+  await page.goto(pathToFileURL(file).href);
+  const seen = await page.evaluate((sels) => {
+    const box = (e) => { const r = e.getBoundingClientRect(); return { x: r.x + scrollX, y: r.y + scrollY, width: r.width, height: r.height }; };
+    const shown = (e) => e && e.getClientRects().length > 0 && getComputedStyle(e).visibility !== "hidden";
+    const h1 = document.querySelector("h1");
+    const cards = sels.map((s) => { const h = document.querySelector(s); const c = h?.closest("section"); return { name: s, ok: shown(c) && shown(h), ...(c ? box(c) : {}) }; });
+    const lum = (c) => { const [r, g, b] = c.map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+    const rgba = (s) => (s.match(/[\d.]+/g) || []).map(Number);
+    const bgOf = (e) => { for (; e; e = e.parentElement) { const c = rgba(getComputedStyle(e).backgroundColor); if (c.length >= 3 && (c.length === 3 || c[3] > 0.95)) return c.slice(0, 3); } return [255, 255, 255]; };
+    const low = [];
+    for (const e of document.body.querySelectorAll("h1,h2,p,li,td,th,span,a,footer,small,dt,dd,div")) {
+      if (![...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()) || !shown(e)) continue;
+      const fg = rgba(getComputedStyle(e).color).slice(0, 3);
+      const a = lum(fg), b = lum(bgOf(e));
+      const ratio = (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+      if (ratio < 4.5) low.push(`${e.tagName.toLowerCase()}${e.className ? "." + e.className : ""} ${ratio.toFixed(2)}`);
+    }
+    return {
+      h1: shown(h1) ? h1.textContent.trim() : "",
+      h1box: h1 ? box(h1) : null,
+      cards,
+      footnotes: document.querySelectorAll("footer li, footer ol, footer p").length,
+      overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      lang: document.documentElement.lang,
+      main: document.querySelectorAll("main").length,
+      noAlt: [...document.querySelectorAll("img")].filter((i) => !i.hasAttribute("alt")).length,
+      title: document.title.trim(),
+      low: [...new Set(low)],
+    };
+  }, MEASURES);
+  if (!seen.h1) fail(tag, "h1 is not visible");
+  for (const c of seen.cards) if (!c.ok) fail(tag, `measure card ${c.name} is missing or hidden`);
+  const present = seen.cards.filter((c) => c.ok);
+  for (const [a, b] of findOverlaps(present)) fail(tag, `measure cards overlap: ${a} and ${b}`);
+  if (seen.h1box) for (const c of present) if (findOverlaps([{ name: "h1", ...seen.h1box }, c]).length) fail(tag, `h1 overlaps ${c.name}`);
+  if (seen.footnotes < 1) fail(tag, "footnotes are missing");
+  if (seen.overflow > 0) fail(tag, `horizontal overflow of ${seen.overflow}px`);
+  if (!seen.lang) fail(tag, "html lang is missing");
+  if (seen.main !== 1) fail(tag, `expected one main landmark, found ${seen.main}`);
+  if (seen.noAlt) fail(tag, `${seen.noAlt} img without alt`);
+  if (!seen.title) fail(tag, "page title is empty");
+  if (seen.low.length) fail(tag, `text contrast under 4.5:1: ${seen.low.join(", ")}`);
+
+  let pages = 0;
+  if (vp.w >= 900) {
+    // Print emulation: Chromium honours @page size A4 and prints to PDF. One page means one "/Type /Page" object.
+    await page.emulateMedia({ media: "print" });
+    const pdf = await page.pdf({ preferCSSPageSize: true, printBackground: true });
+    pages = (pdf.toString("latin1").match(/\/Type\s*\/Page\b(?!s)/g) || []).length;
+    if (pages !== 1) fail(tag, `print output is ${pages} pages, expected 1 A4 page`);
+    await page.emulateMedia({ media: "screen" });
+  }
+
+  mkdirSync(outDir, { recursive: true });
+  const shot = join(outDir, `autopsy-${vp.w}x${vp.h}.png`);
+  await page.screenshot({ path: shot, fullPage: true });
+  if (process.env.VISUAL_QA_COPY_DOCS === "1" && vp.w === 1440) {
+    mkdirSync(imgDir, { recursive: true });
+    copyFileSync(shot, join(imgDir, "autopsy.png"));
+  }
+  console.log(`ok   [${tag}] cards=${present.length} footnotes=${seen.footnotes}${pages ? ` printPages=${pages}` : ""}`);
+  await ctx.close();
+}
+
+// Import drop zone (issue #101): open the Bench on the plain page, check the zone and its privacy line, import the Trivy
+// fixture through the file input and check the ranked list, that no request carries the file, and that nothing overflows.
+const IMPORT_FIXTURE = join(root, "fixtures", "import", "trivy.json");
+const IMPORT_CONTROLS = ["#import-drop", "#import-file", "#import-format"];
+
+async function checkImport(browser, vp) {
+  const tag = `${vp.w}x${vp.h} import`;
+  const ctx = await browser.newContext({ viewport: { width: vp.w, height: vp.h }, hasTouch: vp.touch, isMobile: vp.touch });
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => fail(tag, `page error: ${e.message}`));
+  const sent = [];
+  page.on("request", (r) => sent.push({ url: r.url(), method: r.method(), body: r.postData() ?? "" }));
+  await page.goto(base + "?theatre=2d");
+  await page.waitForFunction(() => document.getElementById("plate")?.textContent.trim().length > 0 && !document.getElementById("cmd")?.disabled, null, { timeout: 30000 })
+    .catch(() => fail(tag, "plate or game did not load within 30s"));
+  mkdirSync(outDir, { recursive: true });
+  const closed = await page.evaluate(() => document.getElementById("import-drop")?.getClientRects().length > 0);
+  if (closed) fail(tag, "import drop zone is visible with the Bench closed");
+  await page.click("#bench-toggle");
+  const open = present(tag, await boxes(page, IMPORT_CONTROLS));
+  if (open.length !== IMPORT_CONTROLS.length) fail(tag, "import drop zone is not visible with the Bench open");
+  const bench = present(tag, await boxes(page, BENCH_CONTROLS));
+  for (const [a, b] of findOverlaps([...open, ...bench].filter((b) => b.name !== "#import-file"))) fail(tag, `controls overlap with the import zone: ${a} and ${b}`);
+  if (vp.w < 900) for (const b of open) if (b.height < TAP_MIN) fail(tag, `tap target ${b.name} is ${Math.round(b.height)}px tall, under ${TAP_MIN}`);
+  const privacy = (await page.textContent("#import-privacy")) ?? "";
+  if (!privacy.includes("Parsed in your browser. The file stays on your device and is not uploaded.")) fail(tag, "privacy sentence is missing");
+  await page.locator("#import-drop").scrollIntoViewIfNeeded();
+  await page.screenshot({ path: join(outDir, `import-zone-${vp.w}x${vp.h}.png`) });
+
+  const before = sent.length;
+  await page.setInputFiles("#import-file", IMPORT_FIXTURE);
+  await page.waitForSelector("#import-result:not([hidden]) .import-limbs li", { timeout: 15000 }).catch(() => fail(tag, "import result did not render"));
+  const rows = await page.$$eval("#import-result .import-limbs li", (l) => l.map((e) => e.textContent));
+  if (rows.length === 0) fail(tag, "import result has no ranked limbs");
+  if (!rows.some((t) => /lodash/.test(t))) fail(tag, "import result does not list lodash from the Trivy fixture");
+  if (rows.some((t) => /: Healthy/.test(t) && /Unknown/.test(t))) fail(tag, "an unknown limb is shown as Healthy");
+  const marker = readFileSync(IMPORT_FIXTURE, "utf8");
+  const after = sent.slice(before);
+  for (const r of after) {
+    if (r.method !== "GET" || r.body) fail(tag, `request with a body during import: ${r.method} ${r.url}`);
+    if (r.url.includes("CVE-2020-8203") || r.body.includes("CVE-2020-8203") || (r.body && marker.includes(r.body))) fail(tag, `request carries file content: ${r.url}`);
+    if (!r.url.startsWith(base)) fail(tag, `import made an outside request: ${r.url}`);
+  }
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  if (vp.w < 900 && overflow > 0) fail(tag, `horizontal overflow of ${overflow}px`);
+  await page.locator("#import-result").scrollIntoViewIfNeeded();
+  await page.screenshot({ path: join(outDir, `import-result-${vp.w}x${vp.h}.png`) });
+  console.log(`ok   [${tag}] rows=${rows.length} requests-during-import=${after.length}`);
+  await ctx.close();
+}
+
 let browser;
 try {
   browser = await chromium.launch(launchOptions());
@@ -316,8 +444,14 @@ try {
     await check(browser, vp, "");
     if (vp.w >= 900) await check(browser, vp, "?theatre=2d");
   }
+  for (const vp of VIEWPORTS) await checkImport(browser, vp);
   for (const vp of JUDGE_VIEWPORTS) await checkJudge(browser, vp);
   for (const vp of WAR_VIEWPORTS) await checkWarRoom(browser, vp);
+  mkdirSync(outDir, { recursive: true });
+  const autopsyFile = join(outDir, "autopsy.html");
+  const gen = spawnSync(process.execPath, [join(root, "bin", "crypt.mjs"), "autopsy", "--sample", "--out", autopsyFile], { cwd: root, encoding: "utf8" });
+  if (gen.status !== 0) fail("autopsy", `crypt autopsy --sample failed: ${gen.stderr || gen.stdout}`);
+  else for (const vp of AUTOPSY_VIEWPORTS) await checkAutopsy(browser, vp, autopsyFile);
 } finally {
   await browser?.close();
   server.close();

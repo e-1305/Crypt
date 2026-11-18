@@ -18,6 +18,20 @@ const ROOT = resolve(".");
 const BIN = join(ROOT, "bin", "crypt.mjs");
 const FIXTURE = join(ROOT, "fixtures", "vulnerable-npm");
 
+describe("parseCli: exhume --from", () => {
+  it("accepts each import format", () => {
+    for (const f of ["sarif", "dependabot", "trivy", "grype", "snyk"]) {
+      expect(parseCli(["exhume", "scan.json", "--from", f]).flags).toEqual({ from: f });
+    }
+  });
+  it("rejects an unknown format, a URL, and other commands", () => {
+    expect(() => parseCli(["exhume", "scan.json", "--from", "bogus"])).toThrow(UsageError);
+    expect(() => parseCli(["exhume", "https://github.com/a/b", "--from", "sarif"])).toThrow(UsageError);
+    expect(() => parseCli(["raid", "scan.json", "--from", "sarif"])).toThrow(UsageError);
+    expect(() => parseCli(["exhume", "scan.json", "--from"])).toThrow(UsageError);
+  });
+});
+
 describe("parseCli: commands and flags", () => {
   it("parses exhume with every flag", () => {
     const p = parseCli(["exhume", "some/dir", "--out", "o.json", "--feeds", "f", "--cache", "c", "--offline"]);
@@ -69,6 +83,16 @@ describe("parseCli: commands and flags", () => {
     expect(() => parseCli(["exhume", "git@github.com:a/b.git"])).toThrow(UsageError);
     expect(() => parseCli(["exhume", `${GITHUB_BASE}/a/b/extra`])).toThrow(UsageError);
   });
+  it("graft --target takes a GitHub URL only with --live and without a different --repo", () => {
+    const url = "https://github.com/e-1305/crypt-demo";
+    const env = { GITHUB_TOKEN: "t" };
+    expect(parseCli(["graft", "LODASH", "--live", "--target", url], env).flags).toEqual({ live: true, target: url });
+    expect(parseCli(["graft", "LODASH", "--live", "--target", url, "--repo", "e-1305/crypt-demo"], env).flags.repo).toBe("e-1305/crypt-demo");
+    expect(() => parseCli(["graft", "LODASH", "--target", url], env)).toThrow(/needs --live/);
+    expect(() => parseCli(["graft", "LODASH", "--live", "--target", url, "--repo", "o/n"], env)).toThrow(/different repositories/);
+    expect(() => parseCli(["graft", "LODASH", "--live", "--target", "https://example.com/a/b"], env)).toThrow(/not a GitHub repository URL/);
+  });
+
   it("graft --live needs GITHUB_TOKEN; --repo may come from out/target.json (resolved by the command)", () => {
     expect(() => parseCli(["graft", "JQUERY", "--live", "--repo", "o/n"], {})).toThrow(/GITHUB_TOKEN/);
     expect(parseCli(["graft", "JQUERY", "--live"], { GITHUB_TOKEN: "t" }).flags).toEqual({ live: true });

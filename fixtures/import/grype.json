@@ -1,0 +1,103 @@
+{
+  "matches": [
+    {
+      "vulnerability": {
+        "id": "GHSA-jpcq-cgw6-v4j6",
+        "severity": "Medium",
+        "relatedVulnerabilities": [
+          {
+            "id": "CVE-2020-11023"
+          }
+        ]
+      },
+      "relatedVulnerabilities": [],
+      "artifact": {
+        "name": "jquery",
+        "version": "3.4.1",
+        "type": "npm",
+        "purl": "pkg:npm/jquery@3.4.1"
+      }
+    },
+    {
+      "vulnerability": {
+        "id": "GHSA-p6mc-m468-83gw",
+        "severity": "High",
+        "relatedVulnerabilities": [
+          {
+            "id": "CVE-2020-8203"
+          }
+        ]
+      },
+      "relatedVulnerabilities": [],
+      "artifact": {
+        "name": "lodash",
+        "version": "4.17.15",
+        "type": "npm"
+      }
+    },
+    {
+      "vulnerability": {
+        "id": "GHSA-xvch-5gv4-984h",
+        "severity": "Critical",
+        "relatedVulnerabilities": [
+          {
+            "id": "CVE-2021-44906"
+          }
+        ]
+      },
+      "relatedVulnerabilities": [],
+      "artifact": {
+        "name": "minimist",
+        "version": "0.0.8",
+        "type": "npm"
+      }
+    },
+    {
+      "vulnerability": {
+        "id": "GHSA-8q59-q68h-6hv4",
+        "severity": "Critical",
+        "relatedVulnerabilities": [
+          {
+            "id": "CVE-2020-14343"
+          }
+        ]
+      },
+      "relatedVulnerabilities": [],
+      "artifact": {
+        "name": "PyYAML",
+        "version": "5.3",
+        "type": "python"
+      }
+    },
+    {
+      "vulnerability": {
+        "id": "GHSA-aaaa-bbbb-cccc",
+        "severity": "Low",
+        "relatedVulnerabilities": []
+      },
+      "relatedVulnerabilities": [],
+      "artifact": {
+        "name": "example.invalid/mod",
+        "version": "v1.0.0",
+        "type": "go-module"
+      }
+    },
+    {
+      "vulnerability": {
+        "severity": "High"
+      },
+      "artifact": {
+        "name": "no-id-pkg",
+        "version": "1.0.0",
+        "type": "npm"
+      }
+    }
+  ],
+  "source": {
+    "type": "directory",
+    "target": "synthetic"
+  },
+  "descriptor": {
+    "name": "grype"
+  }
+}

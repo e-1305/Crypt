@@ -1,0 +1,186 @@
+[
+  {
+    "number": 1,
+    "state": "open",
+    "dependency": {
+      "package": {
+        "ecosystem": "npm",
+        "name": "jquery"
+      },
+      "manifest_path": "package-lock.json",
+      "scope": "runtime"
+    },
+    "security_advisory": {
+      "ghsa_id": "GHSA-jpcq-cgw6-v4j6",
+      "cve_id": "CVE-2020-11023",
+      "severity": "medium",
+      "identifiers": [
+        {
+          "type": "GHSA",
+          "value": "GHSA-jpcq-cgw6-v4j6"
+        },
+        {
+          "type": "CVE",
+          "value": "CVE-2020-11023"
+        }
+      ]
+    },
+    "security_vulnerability": {
+      "package": {
+        "ecosystem": "npm",
+        "name": "jquery"
+      },
+      "severity": "medium",
+      "vulnerable_version_range": "< 9.9.9"
+    }
+  },
+  {
+    "number": 1,
+    "state": "open",
+    "dependency": {
+      "package": {
+        "ecosystem": "npm",
+        "name": "lodash"
+      },
+      "manifest_path": "package-lock.json",
+      "scope": "runtime"
+    },
+    "security_advisory": {
+      "ghsa_id": "GHSA-p6mc-m468-83gw",
+      "cve_id": "CVE-2020-8203",
+      "severity": "high",
+      "identifiers": [
+        {
+          "type": "GHSA",
+          "value": "GHSA-p6mc-m468-83gw"
+        },
+        {
+          "type": "CVE",
+          "value": "CVE-2020-8203"
+        }
+      ]
+    },
+    "security_vulnerability": {
+      "package": {
+        "ecosystem": "npm",
+        "name": "lodash"
+      },
+      "severity": "high",
+      "vulnerable_version_range": "< 9.9.9"
+    }
+  },
+  {
+    "number": 1,
+    "state": "open",
+    "dependency": {
+      "package": {
+        "ecosystem": "pip",
+        "name": "pyyaml"
+      },
+      "manifest_path": "package-lock.json",
+      "scope": "runtime"
+    },
+    "security_advisory": {
+      "ghsa_id": "GHSA-8q59-q68h-6hv4",
+      "cve_id": "CVE-2020-14343",
+      "severity": "critical",
+      "identifiers": [
+        {
+          "type": "GHSA",
+          "value": "GHSA-8q59-q68h-6hv4"
+        },
+        {
+          "type": "CVE",
+          "value": "CVE-2020-14343"
+        }
+      ]
+    },
+    "security_vulnerability": {
+      "package": {
+        "ecosystem": "pip",
+        "name": "pyyaml"
+      },
+      "severity": "critical",
+      "vulnerable_version_range": "< 9.9.9"
+    }
+  },
+  {
+    "number": 1,
+    "state": "fixed",
+    "dependency": {
+      "package": {
+        "ecosystem": "npm",
+        "name": "minimist"
+      },
+      "manifest_path": "package-lock.json",
+      "scope": "runtime"
+    },
+    "security_advisory": {
+      "ghsa_id": "GHSA-xvch-5gv4-984h",
+      "cve_id": "CVE-2021-44906",
+      "severity": "critical",
+      "identifiers": [
+        {
+          "type": "GHSA",
+          "value": "GHSA-xvch-5gv4-984h"
+        },
+        {
+          "type": "CVE",
+          "value": "CVE-2021-44906"
+        }
+      ]
+    },
+    "security_vulnerability": {
+      "package": {
+        "ecosystem": "npm",
+        "name": "minimist"
+      },
+      "severity": "critical",
+      "vulnerable_version_range": "< 9.9.9"
+    }
+  },
+  {
+    "number": 1,
+    "state": "open",
+    "dependency": {
+      "package": {
+        "ecosystem": "go",
+        "name": "example.invalid/mod"
+      },
+      "manifest_path": "package-lock.json",
+      "scope": "runtime"
+    },
+    "security_advisory": {
+      "ghsa_id": "GHSA-aaaa-bbbb-cccc",
+      "cve_id": null,
+      "severity": "low",
+      "identifiers": [
+        {
+          "type": "GHSA",
+          "value": "GHSA-aaaa-bbbb-cccc"
+        }
+      ]
+    },
+    "security_vulnerability": {
+      "package": {
+        "ecosystem": "go",
+        "name": "example.invalid/mod"
+      },
+      "severity": "low",
+      "vulnerable_version_range": "< 9.9.9"
+    }
+  },
+  {
+    "number": 9,
+    "state": "open",
+    "dependency": {
+      "package": {
+        "ecosystem": "npm",
+        "name": "mystery"
+      }
+    },
+    "security_advisory": {
+      "severity": "high"
+    }
+  }
+]

@@ -1,0 +1,92 @@
+{
+  "ok": false,
+  "projectName": "synthetic",
+  "packageManager": "npm",
+  "vulnerabilities": [
+    {
+      "id": "SNYK-JS-JQUERY-565129",
+      "title": "jquery issue",
+      "severity": "medium",
+      "packageName": "jquery",
+      "version": "3.4.1",
+      "packageManager": "npm",
+      "identifiers": {
+        "CVE": [
+          "CVE-2020-11023"
+        ],
+        "CWE": [],
+        "GHSA": [
+          "GHSA-jpcq-cgw6-v4j6"
+        ]
+      }
+    },
+    {
+      "id": "SNYK-JS-LODASH-567746",
+      "title": "lodash issue",
+      "severity": "high",
+      "packageName": "lodash",
+      "version": "4.17.15",
+      "packageManager": "npm",
+      "identifiers": {
+        "CVE": [
+          "CVE-2020-8203"
+        ],
+        "CWE": [],
+        "GHSA": []
+      }
+    },
+    {
+      "id": "SNYK-JS-LODASH-1018905",
+      "title": "lodash issue",
+      "severity": "high",
+      "packageName": "lodash",
+      "version": "4.17.15",
+      "packageManager": "npm",
+      "identifiers": {
+        "CVE": [
+          "CVE-2021-23337"
+        ],
+        "CWE": [],
+        "GHSA": []
+      }
+    },
+    {
+      "id": "SNYK-JS-MINIMIST-559764",
+      "title": "minimist issue",
+      "severity": "critical",
+      "packageName": "minimist",
+      "version": "0.0.8",
+      "packageManager": "npm",
+      "identifiers": {
+        "CVE": [
+          "CVE-2021-44906"
+        ],
+        "CWE": [],
+        "GHSA": []
+      }
+    },
+    {
+      "id": "SNYK-PYTHON-PYYAML-559098",
+      "title": "PyYAML issue",
+      "severity": "critical",
+      "packageName": "PyYAML",
+      "version": "5.3",
+      "packageManager": "pip",
+      "identifiers": {
+        "CVE": [
+          "CVE-2020-14343"
+        ],
+        "CWE": [],
+        "GHSA": []
+      }
+    },
+    {
+      "id": "SNYK-JS-MYSTERY-1",
+      "severity": "high",
+      "identifiers": {
+        "CVE": [],
+        "GHSA": []
+      }
+    }
+  ]
+}

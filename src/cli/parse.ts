@@ -1,8 +1,9 @@
 // Pure argument parser. parseCli never throws anything but UsageError.
 import { UsageError } from "./exit.js";
+import { IMPORT_FORMATS, isImportFormat } from "../import/types.js";
 import { GITHUB_BASE, looksRemote, parseGithubUrl } from "./url.js";
 
-export const COMMANDS = ["exhume", "raise", "play", "graft", "inquisit", "reraise", "seal", "unseal", "raid"] as const;
+export const COMMANDS = ["exhume", "raise", "play", "graft", "inquisit", "reraise", "seal", "unseal", "raid", "autopsy", "gazette"] as const;
 export type CommandName = (typeof COMMANDS)[number];
 export type Command = CommandName | "help" | "version";
 
@@ -25,7 +26,7 @@ const TARGET = [{ name: "target", required: true }];
 const LIMB = [{ name: "LIMB", required: true }];
 
 export const SPECS: Record<CommandName, Spec> = {
-  exhume: { positional: TARGET, flags: { out: "value", feeds: "value", cache: "value", offline: "bool" } },
+  exhume: { positional: TARGET, flags: { out: "value", feeds: "value", cache: "value", offline: "bool", from: "value" } },
   raise: { positional: [{ name: "creature.json", required: false }], flags: { out: "value" } },
   play: { positional: [], flags: { story: "value", target: "value", advisories: "value" } },
   graft: {
@@ -37,7 +38,11 @@ export const SPECS: Record<CommandName, Spec> = {
   seal: { positional: [], flags: {} },
   unseal: { positional: [], flags: {} },
   raid: { positional: TARGET, flags: { offline: "bool", feeds: "value", cache: "value", live: "bool", timeout: "value" } },
+  autopsy: { positional: [], flags: { out: "value", last: "value", sample: "bool" } },
+  gazette: { positional: [], flags: { "webhook-env": "value", "dry-run": "bool", send: "bool", "war-room": "value", format: "value", sample: "bool" } },
 };
+
+export const WEBHOOK_ENVS = ["SLACK_WEBHOOK_URL", "TEAMS_WEBHOOK_URL"] as const;
 
 const REPO = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
 const LIMB_ID = /^[A-Z]{1,32}$/;
@@ -94,7 +99,11 @@ export function parseCli(argv: readonly string[], env: Record<string, string | u
 
   if (command === "exhume" || command === "raid") {
     const t = args[0]!;
-    if (looksRemote(t) && !parseGithubUrl(t)) {
+    if (flags.from !== undefined && !isImportFormat(String(flags.from))) {
+      throw new UsageError(`--from must be one of ${IMPORT_FORMATS.join(", ")}, got '${String(flags.from).slice(0, 20)}'`);
+    }
+    if (flags.from !== undefined && looksRemote(t)) throw new UsageError("--from needs a local file path, not a URL.");
+    if (flags.from === undefined && looksRemote(t) && !parseGithubUrl(t)) {
       throw new UsageError(`'${t.slice(0, 60)}' is not a GitHub repository URL. Use ${GITHUB_BASE}/<owner>/<repo> or a local path.`);
     }
   }
@@ -112,6 +121,35 @@ export function parseCli(argv: readonly string[], env: Record<string, string | u
       throw new UsageError(`--timeout must be a whole number of seconds from ${TIMEOUT_MIN} to ${TIMEOUT_MAX}, got '${t.slice(0, 20)}'`);
     }
   }
+  if (flags.last !== undefined) {
+    const n = String(flags.last);
+    if (!/^\d+$/.test(n) || Number(n) < 1 || Number(n) > 52) {
+      throw new UsageError(`--last must be a whole number of raids from 1 to 52, got '${n.slice(0, 20)}'`);
+    }
+  }
+  if (command === "gazette") {
+    const w = flags["webhook-env"];
+    if (w !== undefined && !(WEBHOOK_ENVS as readonly string[]).includes(String(w))) {
+      throw new UsageError(`--webhook-env must be ${WEBHOOK_ENVS.join(" or ")}. The name of the variable is given, never the URL.`);
+    }
+    if (flags.format !== undefined && flags.format !== "slack" && flags.format !== "teams") throw new UsageError("--format must be slack or teams.");
+    const fromEnv = w === undefined ? undefined : w === "SLACK_WEBHOOK_URL" ? "slack" : "teams";
+    if (fromEnv !== undefined && flags.format !== undefined && flags.format !== fromEnv) {
+      throw new UsageError(`--format ${String(flags.format)} does not match ${String(w)}.`);
+    }
+    if (flags.send === true && w === undefined) throw new UsageError("--send needs --webhook-env SLACK_WEBHOOK_URL or TEAMS_WEBHOOK_URL.");
+    if (flags.send === true && flags["dry-run"] === true) throw new UsageError("--send and --dry-run cannot be combined. Remove one.");
+    if (flags.send === true && flags.sample === true) throw new UsageError("--send posts real data. Remove --sample to send.");
+    if (typeof flags["war-room"] === "string") {
+      let ok = false;
+      try {
+        ok = new URL(flags["war-room"]).protocol === "https:";
+      } catch {
+        ok = false;
+      }
+      if (!ok) throw new UsageError("--war-room must be an https URL.");
+    }
+  }
   const needsToken = (what: string) => {
     if (!env.GITHUB_TOKEN) throw new UsageError(`${what} needs GITHUB_TOKEN in the environment. Create a fine-grained token limited to the target repository, then export GITHUB_TOKEN.`);
   };
@@ -123,6 +161,15 @@ export function parseCli(argv: readonly string[], env: Record<string, string | u
     }
     if (demo && !sabotage) throw new UsageError("--i-know-this-is-a-demo only goes with --sabotage. Remove it, or add --sabotage and --live.");
     if (flags.live === true) needsToken("--live");
+    if (typeof flags.target === "string" && parseGithubUrl(flags.target)) {
+      const t = parseGithubUrl(flags.target)!;
+      if (flags.live !== true) throw new UsageError("--target with a GitHub URL needs --live. Without --live, pass a local checkout.");
+      if (typeof flags.repo === "string" && flags.repo.toLowerCase() !== `${t.owner}/${t.repo}`.toLowerCase()) {
+        throw new UsageError("--target and --repo name different repositories. Pass one of them.");
+      }
+    } else if (typeof flags.target === "string" && looksRemote(flags.target)) {
+      throw new UsageError(`'${flags.target.slice(0, 60)}' is not a GitHub repository URL. Use ${GITHUB_BASE}/<owner>/<repo> or a local path.`);
+    }
   }
   if ((command === "inquisit" || command === "reraise") && flags.live === true) needsToken("--live");
   if (command === "raid" && flags.live === true) {

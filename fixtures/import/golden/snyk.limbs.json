@@ -1,0 +1,141 @@
+[
+  {
+    "rank": 1,
+    "id": "npm:jquery@3.4.1",
+    "ecosystem": "npm",
+    "name": "jquery",
+    "version": "3.4.1",
+    "direct": false,
+    "manifest": "snyk.json",
+    "owner": "unowned",
+    "state": "Possessed",
+    "unknown": false,
+    "unknownReason": null,
+    "spawned": true,
+    "score": 1008488700,
+    "kev": true,
+    "epss": 0.84887,
+    "severity": 0,
+    "vendorSeverity": "MEDIUM",
+    "vulns": [
+      {
+        "id": "SNYK-JS-JQUERY-565129",
+        "cves": [
+          "CVE-2020-11023"
+        ]
+      }
+    ]
+  },
+  {
+    "rank": 2,
+    "id": "npm:lodash@4.17.15",
+    "ecosystem": "npm",
+    "name": "lodash",
+    "version": "4.17.15",
+    "direct": false,
+    "manifest": "snyk.json",
+    "owner": "unowned",
+    "state": "Rotting",
+    "unknown": false,
+    "unknownReason": null,
+    "spawned": true,
+    "score": 2015800,
+    "kev": false,
+    "epss": 0.20158,
+    "severity": 0,
+    "vendorSeverity": "HIGH",
+    "vulns": [
+      {
+        "id": "SNYK-JS-LODASH-1018905",
+        "cves": [
+          "CVE-2021-23337"
+        ]
+      },
+      {
+        "id": "SNYK-JS-LODASH-567746",
+        "cves": [
+          "CVE-2020-8203"
+        ]
+      }
+    ]
+  },
+  {
+    "rank": 3,
+    "id": "npm:minimist@0.0.8",
+    "ecosystem": "npm",
+    "name": "minimist",
+    "version": "0.0.8",
+    "direct": false,
+    "manifest": "snyk.json",
+    "owner": "unowned",
+    "state": "Rotting",
+    "unknown": false,
+    "unknownReason": null,
+    "spawned": false,
+    "score": 458099.99999999994,
+    "kev": false,
+    "epss": 0.04581,
+    "severity": 0,
+    "vendorSeverity": "CRITICAL",
+    "vulns": [
+      {
+        "id": "SNYK-JS-MINIMIST-559764",
+        "cves": [
+          "CVE-2021-44906"
+        ]
+      }
+    ]
+  },
+  {
+    "rank": 4,
+    "id": "PyPI:pyyaml@5.3",
+    "ecosystem": "PyPI",
+    "name": "pyyaml",
+    "version": "5.3",
+    "direct": false,
+    "manifest": "snyk.json",
+    "owner": "unowned",
+    "state": "Rotting",
+    "unknown": false,
+    "unknownReason": null,
+    "spawned": false,
+    "score": 0,
+    "kev": false,
+    "epss": null,
+    "severity": 0,
+    "vendorSeverity": "CRITICAL",
+    "vulns": [
+      {
+        "id": "SNYK-PYTHON-PYYAML-559098",
+        "cves": [
+          "CVE-2020-14343"
+        ]
+      }
+    ]
+  },
+  {
+    "rank": 5,
+    "id": "npm:unidentified/SNYK-JS-MYSTERY-1@unknown",
+    "ecosystem": "npm",
+    "name": "unidentified/SNYK-JS-MYSTERY-1",
+    "version": "unknown",
+    "direct": false,
+    "manifest": "snyk.json",
+    "owner": "unowned",
+    "state": "Rotting",
+    "unknown": true,
+    "unknownReason": "version-unpinned",
+    "spawned": false,
+    "score": 0,
+    "kev": false,
+    "epss": null,
+    "severity": 0,
+    "vendorSeverity": "HIGH",
+    "vulns": [
+      {
+        "id": "SNYK-JS-MYSTERY-1",
+        "cves": []
+      }
+    ]
+  }
+]
