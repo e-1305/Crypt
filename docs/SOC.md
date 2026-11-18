@@ -4,9 +4,27 @@ An actively exploited vulnerability (in the CISA KEV catalogue) sitting in produ
 
 ## 1. OCSF events for your SIEM
 
+From an empty folder (Node 20 or later). State goes to `out/` in the current folder; nothing is written elsewhere.
+
 ```bash
-npx @e-1305/crypt raid https://github.com/<owner>/<repo>     # or: crypt exhume <dir> && crypt raise
-npx @e-1305/crypt alerts --format ocsf                       # writes out/alerts.ocsf.json
+mkdir crypt-soc && cd crypt-soc
+npx @e-1305/crypt raid https://github.com/e-1305/crypt-demo </dev/null
+npx @e-1305/crypt alerts --format ocsf
+```
+
+`</dev/null` keeps the raid non-interactive: it digs up the dependencies, writes `out/creature.json`, plays the story to its end on empty input and exits 0. The first command clones the repository and asks OSV, CISA KEV and FIRST EPSS, so it needs network access. The second command writes `out/alerts.ocsf.json`.
+
+Without a raid, `exhume` alone is enough, because `alerts` reads only `out/creature.json`:
+
+```bash
+npx @e-1305/crypt exhume <dir> && npx @e-1305/crypt alerts --format ocsf
+```
+
+To try it with no network at all, use the fixture bundled in the package (answers come from the shipped cache):
+
+```bash
+npx @e-1305/crypt exhume <path-to-package>/fixtures/vulnerable-npm --offline
+npx @e-1305/crypt alerts --format ocsf
 ```
 
 `out/alerts.ocsf.json` holds one **OCSF 1.1 Vulnerability Finding** (`class_uid` 2002, category Findings) per limb that spawned, most urgent first. Schema: https://schema.ocsf.io/1.1.0/classes/vulnerability_finding
@@ -27,7 +45,7 @@ Where it goes:
 - **Splunk**: send the file to an HTTP Event Collector, or monitor the file with a forwarder, `sourcetype=ocsf:vulnerability_finding`.
 - **Microsoft Sentinel**: ingest with the Logs Ingestion API into a custom table, then map `class_uid = 2002` rows in your analytics rules.
 
-The command makes no network call. If `out/creature.json` is missing or invalid it writes nothing and exits non-zero (fail-safe: no events is not the same as no findings).
+`alerts` makes no network call. If `out/creature.json` is missing or invalid it writes nothing and exits non-zero (fail-safe: no events is not the same as no findings).
 
 ### Sample event (SAMPLE DATA, the e-1305/crypt-demo repo)
 
