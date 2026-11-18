@@ -12,6 +12,9 @@ import { dryRunClient } from "../src/github/client.js";
 import { graft } from "../src/necromancer/index.js";
 import { galleryIndex, previewPayload, type GalleryIndexEntry, type GallerySnapshot, type PayloadPreview } from "../src/site/gallery.js";
 import { renderManual } from "../src/site/manual.js";
+import { renderAutopsyHtml } from "../src/report/html.js";
+import { buildAutopsy } from "../src/report/model.js";
+import { SAMPLE_INPUT } from "../src/report/sample.js";
 import { fromSnapshot, serializeGraveyard } from "../src/graveyard/model.js";
 import { parseEpss, parseKev } from "../src/exhume/feeds.js";
 import { serializeFeedSnapshot, SNAPSHOT_MIN_EPSS } from "../src/web/feed-snapshot.js";
@@ -152,6 +155,10 @@ export async function buildSite(outDir: string): Promise<void> {
     }
     // The graveyard page (D1) and its offline census data: each repo's own public snapshot, owners dropped, no network.
     cpSync(join(WEB, "graveyard"), join(outDir, "graveyard"), { recursive: true });
+    // graveyard/ alone serves the same page, so the directory URL does not 404 on Pages.
+    cpSync(join(WEB, "graveyard", "graveyard.html"), join(outDir, "graveyard", "index.html"));
+    // The CISO report sample: `crypt autopsy --sample` on the fixed sample clock (deterministic), labelled SAMPLE DATA by the page itself.
+    writeFileSync(join(outDir, "autopsy.html"), renderAutopsyHtml(buildAutopsy(SAMPLE_INPUT)));
     const records = readdirSync(snapDir)
       .filter((n) => n.endsWith(".json"))
       .sort()

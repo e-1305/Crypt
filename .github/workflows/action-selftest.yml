@@ -1,0 +1,25 @@
+name: action-selftest
+
+# Runs this repository's own action in report mode against e-1305/crypt-demo. Read only: no token, no writes.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  selftest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: e-1305/crypt-demo
+          path: target
+      - uses: actions/checkout@v4
+        with:
+          path: crypt
+      - uses: ./crypt
+        with:
+          mode: report
+          path: target
