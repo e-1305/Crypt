@@ -12,7 +12,9 @@ npx @e-1305/crypt raid https://github.com/e-1305/crypt-demo </dev/null
 npx @e-1305/crypt alerts --format ocsf
 ```
 
-`</dev/null` keeps the raid non-interactive: it digs up the dependencies, writes `out/creature.json`, plays the story to its end on empty input and exits 0. The first command clones the repository and asks OSV, CISA KEV and FIRST EPSS, so it needs network access. The second command writes `out/alerts.ocsf.json`.
+`</dev/null` keeps the raid non-interactive: it digs up the dependencies, writes `out/creature.json`, plays the story to its end on empty input and exits 0. The first command clones the repository and asks OSV, CISA KEV and FIRST EPSS, so it needs network access. The second command writes `out/alerts.ocsf.json`. The first `raid` on a machine also builds the game toolchain once (git, make and a C compiler are needed); `exhume` does not.
+
+**KEV and EPSS feeds.** `exhume` reads `data/feeds/kev.json` and `data/feeds/epss.csv` from the current folder, or the folder you pass with `--feeds <dir>`. The npm package does not ship them. In an empty folder both feeds report `missing`, no limb is flagged KEV, and `unmapped.sla` is `backlog`. To get KEV flags, run `npm run feeds:update` in a clone of the repository and pass `--feeds <clone>/data/feeds`.
 
 Without a raid, `exhume` alone is enough, because `alerts` reads only `out/creature.json`:
 

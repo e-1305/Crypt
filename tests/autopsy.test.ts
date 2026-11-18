@@ -182,7 +182,9 @@ describe("autopsy page", () => {
     for (const w of ["Implementation", "Efficiency", "Impact", "SLA compliance", "Trend", "Noise exorcised", "exploitable risk removed", "How computed", "NIST SP 800-55", "Print or save as PDF from your browser", "@media print", "<svg"]) {
       expect(html).toContain(w);
     }
-    expect(html).not.toMatch(/<script|https?:\/\/|<link/i);
+    expect(html).not.toMatch(/<script|<link/i);
+    // The only URL is the link to the vendor security review.
+    expect(html.replace(/https:\/\/github\.com\/e-1305\/Crypt\/blob\/main\/docs\/SECURITY-REVIEW\.md/g, "")).not.toMatch(/https?:\/\//i);
   });
   it("matches the snapshot", () => {
     expect(html).toMatchSnapshot();

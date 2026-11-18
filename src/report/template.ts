@@ -2,6 +2,9 @@
 
 export const PDF_HINT = "Print or save as PDF from your browser";
 
+export const SECURITY_REVIEW_PATH = "docs/SECURITY-REVIEW.md";
+export const SECURITY_REVIEW_URL = "https://github.com/e-1305/Crypt/blob/main/docs/SECURITY-REVIEW.md";
+
 export const FOOTNOTES = {
   implementation:
     "Implementation (NIST SP 800-55 measure): finding limbs with a CODEOWNERS owner, divided by all finding limbs (not Healthy, or healed). Owners are counted, not listed.",

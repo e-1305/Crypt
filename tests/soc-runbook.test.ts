@@ -73,3 +73,22 @@ describe("docs/SOC.md commands", () => {
     }
   });
 });
+
+describe("docs/SECURITY-REVIEW.md", () => {
+  const doc = readFileSync(join(ROOT, "docs", "SECURITY-REVIEW.md"), "utf8");
+  it("covers every review topic and says what is not offered", () => {
+    for (const h of ["## Data handled", "## Data stored", "## Network calls", "## Token scopes", "## No merge capability", "## SEAL kill switch", "## Audit log format", "## Supply chain", "## Not offered"]) expect(doc).toContain(h);
+    for (const w of ["api.osv.dev", "epss.empiricalsecurity.com", "www.cisa.gov", "--live", "--provenance", "SSO", "Multi-tenancy", "Retention SLA", "Support contract"]) expect(doc).toContain(w);
+    expect(doc).not.toContain(String.fromCharCode(0x2014));
+  });
+  it("names files that exist", () => {
+    for (const m of doc.matchAll(/`((?:src|scripts|\.github)\/[A-Za-z0-9_./-]+\.(?:ts|sh|yml))`/g)) expect(existsSync(join(ROOT, m[1]!)), m[1]).toBe(true);
+  });
+  it("is linked from README and the autopsy report", async () => {
+    expect(readFileSync(join(ROOT, "README.md"), "utf8")).toContain("docs/SECURITY-REVIEW.md");
+    const { renderAutopsyHtml } = await import("../src/report/html.js");
+    const { buildAutopsy } = await import("../src/report/model.js");
+    const { SAMPLE_INPUT } = await import("../src/report/sample.js");
+    expect(renderAutopsyHtml(buildAutopsy(SAMPLE_INPUT))).toContain("docs/SECURITY-REVIEW.md");
+  });
+});
