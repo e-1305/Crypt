@@ -1,5 +1,6 @@
 /* The manual page (src/site/manual.ts). Dark, high contrast, readable line length, no effects. */
 @font-face { font-family: "JetBrains Mono"; font-style: normal; font-weight: 400; font-display: swap; src: url("fonts/jetbrains-mono-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "JetBrains Mono"; font-style: normal; font-weight: 700; font-display: swap; src: url("fonts/jetbrains-mono-latin-700-normal.woff2") format("woff2"); }
 :root { --fg: #e6f7e6; --link: #8dff8d; --dim: #7fbf7f; --bg: #050805; --warn: #ffb000; }
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); color: var(--fg); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 18px; line-height: 1.6; }

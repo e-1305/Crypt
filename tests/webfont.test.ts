@@ -18,6 +18,12 @@ describe("self-hosted monospace webfont (#60)", () => {
     expect(readdirSync(join(WEB, "fonts")).filter((f) => f.endsWith(".woff2")).sort()).toEqual(FILES);
   });
 
+  it("card download waits for fonts, manual declares the bold face, ensureFonts has a timeout", () => {
+    expect(read("theatre/card-draw.js")).toMatch(/async function downloadCard[\s\S]*await ensureFonts\(\)/);
+    expect(read("manual.css")).toContain("font-weight: 700");
+    expect(read("theatre/font.js")).toContain("Promise.race");
+  });
+
   it("declares both faces in style.css and records the font in ATTRIBUTION.md", () => {
     const css = read("style.css");
     for (const f of FILES) expect(css).toContain(`fonts/${f}`);
