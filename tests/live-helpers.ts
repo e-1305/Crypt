@@ -20,6 +20,7 @@ export interface WorldOpts {
   refExists?: string[];
   checkRuns?: unknown[];
   userRepos?: string[];
+  publicRepos?: string[];
   userReposStatus?: number;
   push?: boolean;
 }
@@ -76,7 +77,7 @@ export function makeWorld(o: WorldOpts = {}) {
     const p = u.pathname;
     if (p === "/user/repos") {
       const names = o.userRepos ?? [REPO];
-      return o.userReposStatus ? reply(o.userReposStatus) : reply(200, names.map((full_name) => ({ full_name })));
+      return o.userReposStatus ? reply(o.userReposStatus) : reply(200, [...names.map((full_name) => ({ full_name, private: true })), ...(o.publicRepos ?? []).map((full_name) => ({ full_name, private: false }))]);
     }
     const prefix = `/repos/${REPO}`;
     if (!p.startsWith(prefix)) {

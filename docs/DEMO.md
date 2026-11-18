@@ -40,7 +40,6 @@ CRYPT refuses a token that is wider than it needs to be, so create a fine-graine
 5. **Repository permissions**:
    - **Contents**: Read and write
    - **Pull requests**: Read and write
-   - **Checks**: Read-only
    - **Metadata**: Read-only (added automatically)
    Leave every other permission at "No access".
 6. Click **Generate token** and copy it. GitHub shows it once.
@@ -55,7 +54,7 @@ Notes:
 
 ## Run the live raid from a phone
 
-The workflow `.github/workflows/live-raid.yml` runs the live raid on GitHub, so no token sits on a laptop. The token is the repository secret `CRYPT_DEMO_TOKEN`. It reaches only the one step that runs `crypt`, the workflow itself has `contents: read`, and the workflow cannot merge. The live preflight still runs: a token that sees any repository besides `e-1305/crypt-demo` is refused.
+The workflow `.github/workflows/live-raid.yml` runs the live raid on GitHub, so no token sits on a laptop. The token is the repository secret `CRYPT_DEMO_TOKEN`. It reaches only the one step that runs `crypt`, the workflow itself has `contents: read`, and the workflow cannot merge. The live preflight still runs: a token that sees any other private repository is refused; public repositories are listed for every token and only produce a note.
 
 Trust note: anyone who can dispatch a workflow on a branch of this repository runs that branch's code with the secret, and the secret can write to `crypt-demo`. That is how repository secrets work, so only give dispatch rights to people you trust.
 
@@ -184,7 +183,7 @@ If an audit line cannot be written, the request is not sent.
 | exit 1, `Use a fine-grained token` | classic token (`ghp_`, `gho_`) | create a fine-grained token |
 | exit 1, `... is not readable with this token` | token not granted on the repository | add the repository to the token |
 | exit 1, `This token cannot push` | Contents permission is read-only | set Contents to Read and write |
-| exit 1, `This token can also reach N other repositories` | token is not limited to the demo repository | recreate it with Only select repositories |
+| exit 1, `This token can also reach N other private repositories` | token is not limited to the demo repository | recreate it with Only select repositories |
 | `ERROR` after `GRAFT`, no pull request | registry or GitHub error, a changed dependency tree (handlebars and node-fetch abort this way), no fixed version (mkdirp) | nothing was written; pick lodash or jquery |
 | `The graft was rejected` after 10 minutes with no check | the `test` check never reported | confirm the workflow runs on pull requests; raise `--timeout` |
 | HTTP 403 or 429 in an error line | GitHub or registry rate limit | wait and retry; the error names the status, never the token |

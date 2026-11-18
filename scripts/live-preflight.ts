@@ -10,7 +10,7 @@ export interface PreflightOpts {
   warn: (message: string) => void;
 }
 
-const NARROW = "Create a fine-grained token limited to this one repository with Contents: read and write, Pull requests: read and write, Checks: read.";
+const NARROW = "Create a fine-grained token with Repository access: Only select repositories (this one), and Contents: read and write, Pull requests: read and write.";
 
 export async function livePreflight(o: PreflightOpts): Promise<void> {
   if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(o.repo)) throw new UsageError("The target must look like owner/name.");
@@ -35,8 +35,15 @@ export async function livePreflight(o: PreflightOpts): Promise<void> {
     o.warn("Note: the least-privilege check could not run (unexpected listing); continuing.");
     return;
   }
+  // Every token can read every public repository, so public repositories in the listing say nothing about scope.
+  // A fine-grained token limited to one repository cannot see any other private repository: a private one here means
+  // the token is wider than this run needs (fail-safe: refuse).
   const others = repos.filter((r: any) => typeof r?.full_name === "string" && r.full_name.toLowerCase() !== o.repo.toLowerCase());
+  const privateOthers = others.filter((r: any) => r?.private !== false);
+  if (privateOthers.length > 0) {
+    throw new CliError(`This token can also reach ${privateOthers.length} other private repositor${privateOthers.length === 1 ? "y" : "ies"}. ${NARROW}`);
+  }
   if (others.length > 0) {
-    throw new CliError(`This token can also reach ${others.length} other repositor${others.length === 1 ? "y" : "ies"}. ${NARROW}`);
+    o.warn(`Note: the token also lists ${others.length} public repositor${others.length === 1 ? "y" : "ies"} (any token can read public repositories). Write scope to public repositories cannot be checked from the API; make sure the token uses Only select repositories.`);
   }
 }

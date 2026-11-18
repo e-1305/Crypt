@@ -432,8 +432,14 @@ describe("live preflight", () => {
       expect(w.requests).toEqual([]);
     }
   });
-  it("refuses a token that can see another repository", async () => {
-    await expect(run({ userRepos: [REPO, "o/other"] }).p).rejects.toThrow(/1 other repository/);
+  it("refuses a token that can see another private repository", async () => {
+    await expect(run({ userRepos: [REPO, "o/other"] }).p).rejects.toThrow(/1 other private repository/);
+  });
+
+  it("accepts public repositories in the listing (every token reads public repos) and warns", async () => {
+    const { p, warnings } = run({ publicRepos: ["o/pub1", "o/pub2"] });
+    await expect(p).resolves.toBeUndefined();
+    expect(warnings.join("\n")).toMatch(/2 public repositories/);
   });
   it("warns once and continues when the listing is unavailable", async () => {
     for (const status of [403, 404]) {
