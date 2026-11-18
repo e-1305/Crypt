@@ -74,7 +74,7 @@ async function run(argv: string[], d: string, fetch?: Fetcher, env: Record<strin
 describe("alerts parsing", () => {
   it("needs --format issues", () => {
     expect(() => parseCli(["alerts"])).toThrow(UsageError);
-    expect(() => parseCli(["alerts", "--format", "slack"])).toThrow(/--format issues/);
+    expect(() => parseCli(["alerts", "--format", "slack"])).toThrow(/--format issues or --format ocsf/);
     expect(parseCli(["alerts", "--format", "issues"]).flags).toEqual({ format: "issues" });
   });
   it("--live needs --repo and GITHUB_TOKEN", () => {
