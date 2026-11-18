@@ -34,7 +34,7 @@ const found = event ? strings(event, "", []) : [];
 const byKey = (keys) => found.find(([k, v]) => keys.includes(k) && v)?.[1];
 const pathLike = found.map(([, v]) => v).find((v) => /\.(ts|tsx|js|mjs|json|md|html|css)$/.test(v));
 
-let trigger = process.env.CRYPT_HOOK_TRIGGER || byKey(["trigger", "hookTrigger", "event", "eventType"]) || "manual";
+let trigger = process.env.CRYPT_HOOK_TRIGGER || byKey(["trigger", "hookTrigger", "hook_event_name", "event", "eventType"]) || "manual";
 trigger = clean(trigger, 40) || "manual";
 let file = args[0] ?? (process.env.CRYPT_HOOK_FILE || pathLike) ?? "";
 if (file.startsWith("/")) file = relative(root, file);

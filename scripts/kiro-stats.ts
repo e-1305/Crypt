@@ -60,6 +60,7 @@ export interface HookRun {
   file: string;
   exit: number;
   summary: string;
+  source?: string;
 }
 
 /** Valid run lines of docs/evidence/hook-runs.jsonl, or null when the file is missing. Unparseable lines are skipped. */
@@ -78,15 +79,26 @@ export function readHookRuns(root: string): HookRun[] | null {
   return runs;
 }
 
-/** Runs from a Kiro session: every line whose trigger is not "manual". */
+/** Runs made by hand: trigger "manual". */
+export const manualRuns = (runs: HookRun[]): HookRun[] => runs.filter((r) => r.trigger === "manual");
+
+/** Real Kiro runs: trigger is not "manual". A manual trigger is never counted, even if the line carries a source. */
 export const kiroSessionRuns = (runs: HookRun[]): HookRun[] => runs.filter((r) => r.trigger !== "manual");
 
-/** Count of Kiro-session runs per hook name, sorted by name. */
-export function hookRunsByHook(runs: HookRun[]): Record<string, number> {
+/** Real Kiro runs captured by Kiro CLI in GitHub Actions. */
+export const kiroCliCiRuns = (runs: HookRun[]): HookRun[] => kiroSessionRuns(runs).filter((r) => r.source === "kiro-cli-ci");
+
+const countBy = (runs: HookRun[]): Record<string, number> => {
   const out: Record<string, number> = {};
-  for (const r of kiroSessionRuns(runs)) out[r.hook] = (out[r.hook] ?? 0) + 1;
+  for (const r of runs) out[r.hook] = (out[r.hook] ?? 0) + 1;
   return Object.fromEntries(Object.entries(out).sort(([a], [b]) => a.localeCompare(b)));
-}
+};
+
+/** Count of real Kiro runs per hook name, sorted by name. */
+export const hookRunsByHook = (runs: HookRun[]): Record<string, number> => countBy(kiroSessionRuns(runs));
+
+/** Count of manual runs per hook name, sorted by name. */
+export const manualRunsByHook = (runs: HookRun[]): Record<string, number> => countBy(manualRuns(runs));
 
 const PROP = /\b(?:fc\.assert|fc\.property|fc\.asyncProperty|test\.prop|it\.prop)\s*\(/g;
 
@@ -155,7 +167,9 @@ export function collect(root: string, runTests: boolean): Stat[] {
     { name: "Specs", value: String(countSpecs(root).length), source: "directories in `.kiro/specs`" },
     { name: "Spec tasks", value: `${tasks.done} ticked of ${tasks.total}`, source: "`- [x]` and `- [ ]` lines in `.kiro/specs/*/tasks.md`" },
     { name: "Hooks", value: String(countHooks(root)), source: "`.kiro/hooks/*.json`" },
-    { name: "Hook runs recorded in a Kiro session", value: runs ? String(kiroSessionRuns(runs).length) : un, source: "lines of `docs/evidence/hook-runs.jsonl` whose trigger is not `manual`" },
+    { name: "Hook runs by hand (manual)", value: runs ? String(manualRuns(runs).length) : un, source: "lines of `docs/evidence/hook-runs.jsonl` whose trigger is `manual`" },
+    { name: "Hook runs recorded in a real Kiro session", value: runs ? String(kiroSessionRuns(runs).length) : un, source: "lines of `docs/evidence/hook-runs.jsonl` whose trigger is not `manual`" },
+    { name: "of which Kiro CLI in GitHub Actions (source kiro-cli-ci)", value: runs ? String(kiroCliCiRuns(runs).length) : un, source: "real Kiro lines of `docs/evidence/hook-runs.jsonl` with `\"source\":\"kiro-cli-ci\"`" },
     { name: "Steering files", value: String(countSteering(root)), source: "`.kiro/steering/*.md`" },
     { name: "Custom agents", value: String(countAgents(root)), source: "`.kiro/agents/*.json` (Oracle has no file)" },
     { name: "Property test call sites", value: `${prop.calls} in ${prop.files} files`, source: "`fc.assert`, `fc.property`, `fc.asyncProperty`, `test.prop` in `tests/*.test.ts`" },
