@@ -14,6 +14,18 @@
       "enabled": true
     },
     {
+      "name": "Attribution reminder on package.json save (Kiro Web, PostToolUse)",
+      "description": "Reminds the agent to add every new dependency to docs/ATTRIBUTION.md with licence and link (Kiroween disclosure rule). Twin for Kiro Web, which has no File Save trigger.",
+      "trigger": "PostToolUse",
+      "matcher": "write",
+      "action": {
+        "type": "command",
+        "command": "CRYPT_HOOK_TRIGGER=PostToolUse CRYPT_HOOK_FILTER='(^|/)package\\.json$' bash scripts/hooks/run-logged.sh attribution-on-package-save scripts/hooks/deps-check.sh"
+      },
+      "timeout": 30,
+      "enabled": true
+    },
+    {
       "name": "Attribution reminder on package.json save (agent)",
       "description": "Reminds the agent to add every new dependency to docs/ATTRIBUTION.md with licence and link (Kiroween disclosure rule).",
       "trigger": "PostFileSave",
