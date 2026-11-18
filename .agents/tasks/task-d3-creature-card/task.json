@@ -1,0 +1,1 @@
+{"task_id": "task-d3-creature-card", "task_description": "Issue #102 D3: shareable 1200x627 creature/raid card (canvas, client-side, blameless), spec, tests, visual-qa, screenshots, on branch feat/d3-creature-card", "status": "completed", "feature_order": ["FEAT-001", "FEAT-002"], "blocked_reason": null}

@@ -178,6 +178,13 @@ Type `RAID` in the game input, or press "Start the 15 minute raid". The readout 
 
 Scores are for the team. CRYPT does not rank, total or compare individuals, and has no leaderboard. Raid state is stored in the browser, per creature, so clearing site data resets it.
 
+### Share your creature
+
+After paste your repo, and again when a raid ends, a share panel draws a 1200 by 627 PNG card in your browser: the plate, the creature's name, `N findings -> M monsters`, possessed and rotting counts, limbs healed, and the line "Don't abandon your creature" with the site address. The raid card adds the team score, limbs healed and the raid time. Nothing is uploaded and nothing is tracked.
+
+- **Include the repo name** puts the repo on the card. It starts on for a public repo you pasted and off after a raid. No person, owner or commit author is ever drawn.
+- **Download PNG** saves the card. **Copy image** puts it on the clipboard. **Share on LinkedIn** opens the LinkedIn share page with the site link and copies a short post text with `#KiroweenHackathon26`, which is also shown under the card. Paste the image into the post.
+
 ### Game feel
 
 The raid adds arcade touches on top of the team score. They are display only: the team risk removed and the rank above do not change because of them. Nothing here is counted per person.
