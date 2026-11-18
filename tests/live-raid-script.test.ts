@@ -16,6 +16,7 @@ case "$1" in
   exhume) mkdir -p out; echo '{}' > out/creature.json ;;
   raise) mkdir -p out; echo '{}' > out/limbs.json ;;
   graft)
+    if [ -n "\${STUB_GRAFT_OUTCOME:-}" ]; then echo "$2: \${STUB_GRAFT_OUTCOME}"; exit 0; fi
     mkdir -p out/prs
     echo '{"branch":"crypt/graft-lodash-4.18.0","limb":"'"$2"'","name":"lodash","from":"4.17.15","to":"4.18.0","url":"https://github.com/e-1305/crypt-demo/pull/7"}' > out/prs/crypt-graft-lodash-4.18.0.json
     echo "$2: PR_OPENED"; echo "Pull request: https://github.com/e-1305/crypt-demo/pull/7" ;;
@@ -41,7 +42,7 @@ function run(args: string[], env: Record<string, string> = {}) {
   const r = spawnSync("bash", [SCRIPT, ...args], {
     cwd: d,
     encoding: "utf8",
-    env: { PATH: process.env.PATH ?? "", CRYPT_CMD: stub, STUB_CALLS: calls, GITHUB_STEP_SUMMARY: summary, GITHUB_TOKEN: TOKEN, ...env },
+    env: { PATH: process.env.PATH ?? "", CRYPT_CMD: stub, CRYPT_FEEDS_CMD: "true", STUB_CALLS: calls, GITHUB_STEP_SUMMARY: summary, GITHUB_TOKEN: TOKEN, ...env },
   });
   const read = (f: string) => (existsSync(f) ? readFileSync(f, "utf8") : "");
   return { r, d, calls: read(calls), summary: read(summary), out: `${r.stdout}${r.stderr}` };
@@ -71,6 +72,25 @@ describe("live-raid.sh argument handling", () => {
     expect(x.r.status).toBe(0);
     expect(x.calls).toContain(`graft LODASH --live --target ${URL}`);
     expect(x.calls).not.toMatch(/sabotage|i-know-this-is-a-demo/);
+  });
+
+  it("graft rebuilds the limb table even when a restored one exists", () => {
+    const d = run(["graft", "LODASH", "false"]).d;
+    const calls = join(d, "c4.txt");
+    spawnSync("bash", [SCRIPT, "graft", "JQUERY", "false"], {
+      cwd: d,
+      encoding: "utf8",
+      env: { PATH: process.env.PATH ?? "", CRYPT_CMD: join(d, "stub.sh"), CRYPT_FEEDS_CMD: "true", STUB_CALLS: calls, GITHUB_STEP_SUMMARY: join(d, "s4.md") },
+    });
+    expect(readFileSync(calls, "utf8").split("\n").filter(Boolean)).toEqual([`exhume ${URL}`, "raise out/creature.json", `graft JQUERY --live --target ${URL}`]);
+  });
+
+  it.each(["REJECTED_UNKNOWN_LIMB", "REFUSED_NOT_SPAWNED", "NO_FIX_AVAILABLE"])("graft that opens nothing (%s) fails the step", (outcome) => {
+    const x = run(["graft", "LODASH", "false"], { STUB_GRAFT_OUTCOME: outcome });
+    expect(x.r.status).toBe(1);
+    expect(x.summary).toContain("opened no pull request");
+    expect(x.summary).toContain(outcome);
+    expect(x.summary).not.toContain("Verdict:");
   });
 
   it("graft builds the limb table first when there is none", () => {

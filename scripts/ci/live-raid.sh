@@ -11,6 +11,8 @@ set -euo pipefail
 REPO="e-1305/crypt-demo"
 URL="https://github.com/${REPO}"
 CRYPT="${CRYPT_CMD:-npx --no-install crypt}"
+# KEV and EPSS feeds. Without them exhume cannot rank, every finding stays unresolved and nothing spawns.
+FEEDS="${CRYPT_FEEDS_CMD:-npm run --silent feeds:update}"
 SUMMARY="${GITHUB_STEP_SUMMARY:-/dev/null}"
 
 usage() {
@@ -94,13 +96,28 @@ if [ "$sabotage" = "true" ]; then title="Live raid: SABOTAGE ${mode} ${limb}"; f
 
 case "$mode" in
   graft)
-    if [ ! -f out/limbs.json ]; then
-      run_crypt exhume "$URL"
-      run_crypt raise out/creature.json
-    fi
+    # Always rebuild the limb table from the repository as it is now: a table restored from an
+    # earlier run may be stale or empty. Pull request records in out/prs/ are kept.
+    # shellcheck disable=SC2086
+    $FEEDS 2>&1 | tee -a "$log"
+    run_crypt exhume "$URL"
+    run_crypt raise out/creature.json
     args=(graft "$limb" --live --target "$URL")
     if [ "$sabotage" = "true" ]; then args+=(--sabotage --i-know-this-is-a-demo); fi
     run_crypt "${args[@]}"
+    # Fail-safe: a graft that opened nothing is a failed step, never a green run.
+    if ! grep -qE "PR_OPENED|PR_EXISTS" "$log"; then
+      outcome="$(grep -oE "REJECTED_[A-Z_]+|REFUSED_[A-Z_]+|NO_FIX_AVAILABLE|RAID_LIMIT|ERROR" "$log" | tail -n 1)"
+      {
+        echo "## Live raid: graft ${limb} opened no pull request"
+        echo
+        echo "- Outcome: ${outcome:-none reported}"
+        echo "- Nothing was written to ${REPO}. See the step log."
+      } >>"$SUMMARY"
+      echo "live-raid: graft ${limb} opened no pull request (${outcome:-no outcome})" >&2
+      trap - EXIT
+      exit 1
+    fi
     verdict="pull request opened, wait for the test check, then merge it yourself"
     if [ "$sabotage" = "true" ]; then verdict="SABOTAGE: the pull request carries a failing test on purpose; CI should go red"; fi
     ;;
