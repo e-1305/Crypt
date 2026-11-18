@@ -87,7 +87,7 @@ export function limbKey(ecosystem: unknown, name: unknown): string {
 }
 
 /** Only the fields the plate reads. Owners and everything else stay out of the browser. */
-export function plateInput(creature: unknown): { repo?: string; limbs: Record<string, unknown>[] } {
+export function plateInput(creature: unknown): { repo?: string; team?: { scanStart: number }; limbs: Record<string, unknown>[] } {
   const c = (creature && typeof creature === "object" ? creature : {}) as Record<string, unknown>;
   const raw = Array.isArray(c.limbs) ? c.limbs : [];
   const limbs: Record<string, unknown>[] = [];
@@ -105,7 +105,9 @@ export function plateInput(creature: unknown): { repo?: string; limbs: Record<st
       ...(l.healed === true && safeLogin(l.healedBy) ? { healed: true, healedBy: safeLogin(l.healedBy) } : {}),
     });
   }
-  return typeof c.repo === "string" ? { repo: c.repo, limbs } : { limbs };
+  const team = c.team && typeof c.team === "object" ? (c.team as Record<string, unknown>) : {};
+  const scanStart = typeof team.scanStart === "number" && Number.isFinite(team.scanStart) ? { team: { scanStart: team.scanStart } } : {};
+  return typeof c.repo === "string" ? { repo: c.repo, ...scanStart, limbs } : { ...scanStart, limbs };
 }
 
 /** Same repo name, same creature name, e.g. "Wretch-7". */

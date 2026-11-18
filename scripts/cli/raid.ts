@@ -1,6 +1,6 @@
 // exhume, raise, plate and play for one target. State (out/, .crypt-seal, crypt-audit.log) lives in the
 // current directory. Scripts, fixtures and tsx are found relative to the package.
-import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { Parsed } from "../../src/cli/parse.js";
 import type { AdvisoryLookup } from "../../src/necromancer/index.js";
@@ -13,6 +13,7 @@ import { preflightedClients, timeoutMsFrom, writeTargetRecord } from "./live.js"
 import { runScriptOrFail } from "./run.js";
 import { SEAL_NOTICE, playStory } from "./session.js";
 import { nextLine, writeRaidContext } from "./context.js";
+import { stampTeam } from "../../src/common/team-record.js";
 import { generate } from "../../src/raise/generate.js";
 import { defaultPaths } from "../../src/common/agent.js";
 import { openTarget, type Target } from "./target.js";
@@ -75,7 +76,19 @@ export async function raidCommand(p: Parsed): Promise<number> {
   try {
     await ensureToolchain();
     const cwd = process.cwd();
+    let previous: string | null = null;
+    try {
+      previous = readFileSync(join(cwd, "out", "creature.json"), "utf8");
+    } catch {
+      previous = null;
+    }
     const creature = await exhumeTarget(t, { ...p.flags, out: "out/creature.json" });
+    try {
+      const exhumed = readFileSync(creature, "utf8");
+      writeFileSync(creature, JSON.stringify(stampTeam(JSON.parse(exhumed) as unknown, previous, Date.now()), null, 2) + "\n");
+    } catch {
+      // Fail-safe: leave creature.json as exhume wrote it.
+    }
     if (lc) writeTargetRecord(cwd, { repo: lc.repo, url: p.args[0]!, live: true });
     raiseCreature(creature, "out");
     const creatureJson: unknown = JSON.parse(readFileSync(creature, "utf8"));
