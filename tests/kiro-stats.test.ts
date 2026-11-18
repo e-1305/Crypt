@@ -73,11 +73,22 @@ describe("docs/KIRO.md numbers block", () => {
     expect(block).toMatch(/Generated \d{4}-\d{2}-\d{2} \(UTC\)/);
   });
 
-  it("matches the current count of specs, hooks, steering files and agents", () => {
-    expect(value("Specs")).toBe(String(countSpecs(ROOT).length));
-    expect(value("Hooks")).toBe(String(countHooks(ROOT)));
-    expect(value("Steering files")).toBe(String(countSteering(ROOT)));
-    expect(value("Custom agents")).toBe(String(countAgents(ROOT)));
+  // Only the stats workflow on main refreshes the block (issue #112), so a PR that adds a spec,
+  // hook, steering file or agent must not have to match it. The counters are covered above.
+  it("has numeric rows for specs, hooks, steering files and agents", () => {
+    for (const name of ["Specs", "Hooks", "Steering files", "Custom agents"]) expect(value(name), name).toMatch(/^\d+$/);
+  });
+
+  it("the --write computation is idempotent on the real docs/KIRO.md", () => {
+    const b = render(collect(ROOT, false), "2000-01-01");
+    const once = splice(doc, b);
+    expect(splice(once, b)).toBe(once);
+  });
+
+  it("splice appends a missing block once and is then idempotent", () => {
+    const b = render([{ name: "Specs", value: "1", source: "x" }], "2000-01-01");
+    const once = splice("# Title\n", b);
+    expect(splice(once, b)).toBe(once);
   });
 
   it("splice replaces the block in place and is idempotent", () => {
@@ -118,13 +129,13 @@ describe("stats blocks in DEVPOST.md and BLOG.md", () => {
     expect(checkDocStats(tmp, "T", (rel) => docs[rel]!)).toEqual([]);
   });
 
-  it("the committed blocks carry the current stable counts", () => {
+  // Counts are refreshed only on main by the stats workflow (issue #112), so PRs check the shape, not the numbers.
+  it("the committed blocks carry a counts sentence", () => {
     for (const rel of STATS_DOCS) {
       const doc = readFileSync(join(ROOT, rel), "utf8");
       const texts = [...doc.matchAll(/<!-- stats:start -->(.*?)<!-- stats:end -->/g)].map((m) => m[1]!);
       expect(texts.length, rel).toBeGreaterThan(0);
-      const expected = renderDocStats(ROOT, 0).replace(/ and \d+ tests.*$/, "");
-      for (const t of texts) expect(t, rel).toContain(expected);
+      for (const t of texts) expect(t, rel).toMatch(/\d+ specs in `\.kiro\/specs\/`/);
     }
   });
 });
@@ -153,5 +164,27 @@ describe("hook runs recorded in a Kiro session", () => {
     } finally {
       rmSync(d, { recursive: true, force: true });
     }
+  });
+});
+
+describe("stats regeneration happens only on main (issue #112)", () => {
+  const wf = (name: string) => readFileSync(join(ROOT, ".github/workflows", name), "utf8");
+
+  it("stats.yml runs on main and manual dispatch, writes contents, and skips its own commits", () => {
+    const y = wf("stats.yml");
+    expect(y).toMatch(/branches: \[main\]/);
+    expect(y).toContain("workflow_dispatch");
+    expect(y).toContain("contents: write");
+    expect(y).toContain("startsWith(github.event.head_commit.message, 'chore(stats): regenerate')");
+    expect(y).toContain("chore(stats): regenerate [skip ci]");
+    expect(y).toContain("npm run kiro:stats -- --write");
+    expect(y).toContain("npm run kiro:timeline");
+  });
+
+  it("ci.yml is read-only and has no stale-block check or write step", () => {
+    const y = wf("ci.yml");
+    expect(y).not.toContain("--check-docs");
+    expect(y).not.toContain("contents: write");
+    expect(y).not.toMatch(/kiro:stats -- --write|kiro:timeline/);
   });
 });
