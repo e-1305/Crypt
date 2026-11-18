@@ -424,3 +424,12 @@ body.theatre .top { position: fixed; left: 1rem; top: .5rem; z-index: 6; width: 
 body.theatre .intro { flex: none; }
 body.theatre .top h1 { margin: 0; padding: .25rem .5rem; background: rgba(0, 0, 0, .85); }
 body.theatre.drawer-open .top { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); }
+
+/* Scan input under the hero: keep it compact on phones so the game input stays within reach (issue #123). */
+@media (max-width: 899px) {
+  .paste { margin: .25rem .5rem; }
+  .paste-form { gap: .25rem; margin: .25rem 0; }
+  .paste-form label { font-size: 1rem; }
+  .paste-form .paste-hint { font-size: .8rem; }
+  .paste-form input { flex: 1 1 10rem; min-width: 0; }
+}
