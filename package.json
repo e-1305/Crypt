@@ -74,6 +74,7 @@
     "census": "npm run feeds:update && tsx scripts/census/run.ts",
     "web": "tsx scripts/web.ts",
     "mcp": "tsx scripts/mcp.ts",
+    "kiro:stats": "tsx scripts/kiro-stats.ts",
     "build:web": "tsc -p tsconfig.web.json",
     "build:site": "bash scripts/setup-tools.sh && tsx scripts/build-site.ts",
     "gallery:snapshot": "tsx scripts/gallery-snapshot.ts",
