@@ -7,9 +7,13 @@ port=8765
 python3 -m http.server "$port" --bind 127.0.0.1 --directory _site >/dev/null 2>&1 &
 srv=$!
 trap 'kill $srv 2>/dev/null || true' EXIT
-sleep 1
+for _ in $(seq 1 50); do
+  curl -sf "http://127.0.0.1:$port/" >/dev/null && break
+  sleep 0.2
+done
+curl -sf "http://127.0.0.1:$port/" >/dev/null || { echo "static server did not start" >&2; exit 1; }
 mkdir -p out/visual-qa
-npx --yes lighthouse@12 "http://127.0.0.1:$port/?theatre=2d" \
+npx --yes lighthouse@13.6.0 "http://127.0.0.1:$port/?theatre=2d" \
   --only-categories=accessibility --output=json --output-path=out/visual-qa/lighthouse.json \
   --chrome-flags="--headless --no-sandbox --disable-gpu --disable-dev-shm-usage" --quiet
 node -e '
