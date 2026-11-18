@@ -6,6 +6,8 @@
 import { createRequire } from "node:module";
 import { homedir } from "node:os";
 import { join, extname, resolve, sep } from "node:path";
+import { spawnSync } from "node:child_process";
+import { pathToFileURL } from "node:url";
 import { readdirSync, existsSync, readFileSync, mkdirSync, copyFileSync } from "node:fs";
 import http from "node:http";
 import { findOverlaps, filterFixedBoxes } from "./overlap.mjs";
@@ -256,6 +258,81 @@ async function checkJudge(browser, vp) {
   await ctx.close();
 }
 
+// Autopsy report (D5): the one-page CISO report from `crypt autopsy --sample`. Loaded from a file URL at two viewports.
+// Checks no page error, no horizontal overflow, the h1 and the three measure cards visible and apart, the footnotes,
+// a basic accessibility pass (lang, landmark, alt text, text contrast) and that print emulation fits one A4 page.
+const AUTOPSY_VIEWPORTS = [{ w: 1440, h: 900, touch: false }, { w: 390, h: 844, touch: true }];
+const MEASURES = ["#h-impl", "#h-eff", "#h-imp"];
+
+async function checkAutopsy(browser, vp, file) {
+  const tag = `${vp.w}x${vp.h} autopsy`;
+  const ctx = await browser.newContext({ viewport: { width: vp.w, height: vp.h }, hasTouch: vp.touch, isMobile: vp.touch });
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => fail(tag, `page error: ${e.message}`));
+  await page.goto(pathToFileURL(file).href);
+  const seen = await page.evaluate((sels) => {
+    const box = (e) => { const r = e.getBoundingClientRect(); return { x: r.x + scrollX, y: r.y + scrollY, width: r.width, height: r.height }; };
+    const shown = (e) => e && e.getClientRects().length > 0 && getComputedStyle(e).visibility !== "hidden";
+    const h1 = document.querySelector("h1");
+    const cards = sels.map((s) => { const h = document.querySelector(s); const c = h?.closest("section"); return { name: s, ok: shown(c) && shown(h), ...(c ? box(c) : {}) }; });
+    const lum = (c) => { const [r, g, b] = c.map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+    const rgba = (s) => (s.match(/[\d.]+/g) || []).map(Number);
+    const bgOf = (e) => { for (; e; e = e.parentElement) { const c = rgba(getComputedStyle(e).backgroundColor); if (c.length >= 3 && (c.length === 3 || c[3] > 0.95)) return c.slice(0, 3); } return [255, 255, 255]; };
+    const low = [];
+    for (const e of document.body.querySelectorAll("h1,h2,p,li,td,th,span,a,footer,small,dt,dd,div")) {
+      if (![...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()) || !shown(e)) continue;
+      const fg = rgba(getComputedStyle(e).color).slice(0, 3);
+      const a = lum(fg), b = lum(bgOf(e));
+      const ratio = (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+      if (ratio < 4.5) low.push(`${e.tagName.toLowerCase()}${e.className ? "." + e.className : ""} ${ratio.toFixed(2)}`);
+    }
+    return {
+      h1: shown(h1) ? h1.textContent.trim() : "",
+      h1box: h1 ? box(h1) : null,
+      cards,
+      footnotes: document.querySelectorAll("footer li, footer ol, footer p").length,
+      overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      lang: document.documentElement.lang,
+      main: document.querySelectorAll("main").length,
+      noAlt: [...document.querySelectorAll("img")].filter((i) => !i.hasAttribute("alt")).length,
+      title: document.title.trim(),
+      low: [...new Set(low)],
+    };
+  }, MEASURES);
+  if (!seen.h1) fail(tag, "h1 is not visible");
+  for (const c of seen.cards) if (!c.ok) fail(tag, `measure card ${c.name} is missing or hidden`);
+  const present = seen.cards.filter((c) => c.ok);
+  for (const [a, b] of findOverlaps(present)) fail(tag, `measure cards overlap: ${a} and ${b}`);
+  if (seen.h1box) for (const c of present) if (findOverlaps([{ name: "h1", ...seen.h1box }, c]).length) fail(tag, `h1 overlaps ${c.name}`);
+  if (seen.footnotes < 1) fail(tag, "footnotes are missing");
+  if (seen.overflow > 0) fail(tag, `horizontal overflow of ${seen.overflow}px`);
+  if (!seen.lang) fail(tag, "html lang is missing");
+  if (seen.main !== 1) fail(tag, `expected one main landmark, found ${seen.main}`);
+  if (seen.noAlt) fail(tag, `${seen.noAlt} img without alt`);
+  if (!seen.title) fail(tag, "page title is empty");
+  if (seen.low.length) fail(tag, `text contrast under 4.5:1: ${seen.low.join(", ")}`);
+
+  let pages = 0;
+  if (vp.w >= 900) {
+    // Print emulation: Chromium honours @page size A4 and prints to PDF. One page means one "/Type /Page" object.
+    await page.emulateMedia({ media: "print" });
+    const pdf = await page.pdf({ preferCSSPageSize: true, printBackground: true });
+    pages = (pdf.toString("latin1").match(/\/Type\s*\/Page\b(?!s)/g) || []).length;
+    if (pages !== 1) fail(tag, `print output is ${pages} pages, expected 1 A4 page`);
+    await page.emulateMedia({ media: "screen" });
+  }
+
+  mkdirSync(outDir, { recursive: true });
+  const shot = join(outDir, `autopsy-${vp.w}x${vp.h}.png`);
+  await page.screenshot({ path: shot, fullPage: true });
+  if (process.env.VISUAL_QA_COPY_DOCS === "1" && vp.w === 1440) {
+    mkdirSync(imgDir, { recursive: true });
+    copyFileSync(shot, join(imgDir, "autopsy.png"));
+  }
+  console.log(`ok   [${tag}] cards=${present.length} footnotes=${seen.footnotes}${pages ? ` printPages=${pages}` : ""}`);
+  await ctx.close();
+}
+
 let browser;
 try {
   browser = await chromium.launch(launchOptions());
@@ -264,6 +341,11 @@ try {
     if (vp.w >= 900) await check(browser, vp, "?theatre=2d");
   }
   for (const vp of JUDGE_VIEWPORTS) await checkJudge(browser, vp);
+  mkdirSync(outDir, { recursive: true });
+  const autopsyFile = join(outDir, "autopsy.html");
+  const gen = spawnSync(process.execPath, [join(root, "bin", "crypt.mjs"), "autopsy", "--sample", "--out", autopsyFile], { cwd: root, encoding: "utf8" });
+  if (gen.status !== 0) fail("autopsy", `crypt autopsy --sample failed: ${gen.stderr || gen.stdout}`);
+  else for (const vp of AUTOPSY_VIEWPORTS) await checkAutopsy(browser, vp, autopsyFile);
 } finally {
   await browser?.close();
   server.close();
