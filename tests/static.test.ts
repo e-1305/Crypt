@@ -8,7 +8,8 @@ function sources(dir: string): string[] {
   );
 }
 
-const withoutLabel = (t: string) => t.replace(/awaiting[-_]human[-_]merge/gi, "");
+// The state label, the human-merged event type (data a person produced) and the GitHub data fields merged_at and merged_by are not calls.
+const withoutLabel = (t: string) => t.replace(/awaiting[-_]human[-_]merge|human-merged|merged_at|merged_by/gi, "");
 
 /** Merge endpoints and commands: banned in src/ and scripts/ (failsafe 2). Returns the offending patterns. */
 export function mergeOffenses(text: string): string[] {
