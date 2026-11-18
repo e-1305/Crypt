@@ -1,5 +1,7 @@
 # Playtest log
 
+The judge and the product manager are personas run by the authors, not outside reviewers. Every score below, including the 7.7 mean, is a self-assessment by the team that also fixed the findings. Click counts in the how-it-works table are the number of navigation steps the harness takes plus a text match on the destination, not a measured user study.
+
 A loop between two roles. The judge plays the product cold and scores it. The product manager turns the findings into a backlog ([BACKLOG.md](BACKLOG.md)). The team ships the top items, then the judge plays again. Scores only go up when the product changes.
 
 ## Loop summary

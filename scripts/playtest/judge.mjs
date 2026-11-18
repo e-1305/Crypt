@@ -336,7 +336,7 @@ await scenario("caption-3d", {}, async (page, out) => {
   out.checks = { visibleOn3D: !!on.caption && out.bodyClass.includes("theatre"), noCollisions: out.collisions.length === 0, hiddenInRecording: out.hiddenInRecording };
 });
 
-// 14. How it works: clicks from "/" (and from the bench drawer) to each fact, and every .kiro link on the page.
+// 14. How it works: clicks (one real click to the page, then a text match per fact; "1 click" means the text is present, not that a user navigated) from "/" (and from the bench drawer) to each fact, and every .kiro link on the page.
 await scenario("how-it-works-clicks", {}, async (page, out) => {
   const targets = { zmachine: /Why a Z-machine/, failsafe: /The failsafe/, humanMerge: /A person merges every pull request/, specs: /\.kiro\/specs\/$/, steering: /\.kiro\/steering\/$/, hooks: /\.kiro\/hooks\/$/, agents: /\.kiro\/agents\/$/ };
   await page.goto(BASE + "?theatre=off", { waitUntil: "load" });

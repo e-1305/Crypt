@@ -1,3 +1,5 @@
+// STRUCTURAL: these tests read source text, not a rendered page. Order, focus and Tab claims are
+// verified in a real browser by scripts/playtest/judge.mjs (dev-only, not part of npm test).
 // What a visitor and a keyboard user meet first on web/index.html. Static checks on the page source:
 // the pitch, the install command and the Kiro line come before the game, controls are in a sensible order,
 // and nothing steals focus or scroll position on load.
@@ -24,6 +26,15 @@ describe("index.html above the fold", () => {
   it("does not steal focus or scroll on load", () => {
     expect(html).not.toMatch(/\bautofocus\b/);
     expect(readFileSync(join(import.meta.dirname, "..", "web", "app.js"), "utf8")).toContain("cmd.focus({ preventScroll: true })");
+  });
+
+  it("lets only the Unseal button click handler lift the seal (a typed command cannot)", () => {
+    const app = readFileSync(join(import.meta.dirname, "..", "web", "app.js"), "utf8");
+    expect(app.match(/seal\.unseal\(/g)?.length).toBe(1);
+    expect(app).toMatch(/getElementById\("unseal"\)\?\.addEventListener\("click", \(\) => \{\s*seal\.unseal\(/);
+    for (const f of ["heal.js", "raid.js", "theatre.js"]) {
+      expect(readFileSync(join(import.meta.dirname, "..", "web", f), "utf8")).not.toMatch(/unseal/i);
+    }
   });
 
   it("keeps the recording button out of the heading and names what it does", () => {

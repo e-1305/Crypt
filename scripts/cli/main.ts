@@ -94,6 +94,12 @@ async function run(argv: string[]): Promise<number> {
       if (typeof p.flags.target !== "string" && rc && rc.target === null) {
         process.stderr.write("crypt: the last raid scanned a temporary clone. Pass --target <dir> with a checkout of that repository to write fixes.\n");
       }
+      if (rc && typeof p.flags.target !== "string" && rc.target !== null) {
+        process.stderr.write(`crypt: using target ${resolve(rc.target)} from out/raid-context.json (last raid). Pass --target to override.\n`);
+      }
+      if (rc && typeof p.flags.advisories !== "string" && ctxAdvisories) {
+        process.stderr.write(`crypt: using advisory source ${ctxAdvisories.kind} from out/raid-context.json. Pass --advisories to override.\n`);
+      }
       return playStory({
         story: resolve(typeof p.flags.story === "string" ? p.flags.story : "out/creature.z8"),
         cwd,

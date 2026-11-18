@@ -50,7 +50,7 @@ Input: current version `c`; for every spawned vuln of the limb, the OSV `affecte
 
 ## Audit outcomes
 
-Line format as before: `ISO\tcommand\tlimb\tOUTCOME\tURL-or-dash`. New outcomes: `REJECTED_UNKNOWN_LIMB`, `PR_OPENED`, `PR_EXISTS`, `ERROR`, `NO_FIX_AVAILABLE`, `REFUSED_NOT_SPAWNED`, `RAID_LIMIT`, `AWAITING_HUMAN_MERGE`, `GRAFT_REJECTED`, `HEALED`.
+Line format as before: `ISO\tcommand\tlimb\tOUTCOME\tURL-or-dash`. New outcomes: `REJECTED_UNKNOWN_LIMB`, `PR_OPENED`, `DRYRUN_WRITTEN` (a dry run wrote its payload; no pull request was opened), `PR_EXISTS`, `ERROR`, `NO_FIX_AVAILABLE`, `REFUSED_NOT_SPAWNED`, `RAID_LIMIT`, `AWAITING_HUMAN_MERGE`, `GRAFT_REJECTED`, `HEALED`.
 
 ## PR body
 
