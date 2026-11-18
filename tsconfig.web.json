@@ -9,5 +9,5 @@
     "outDir": "web/js",
     "types": []
   },
-  "include": ["src/web/*.ts", "src/import/*.ts", "src/theatre/*.ts", "src/render/plate.ts", "src/bridge/parse-output.ts", "src/bridge/grammar.ts"]
+  "include": ["src/web/*.ts", "src/graveyard/model.ts", "src/import/*.ts", "src/theatre/*.ts", "src/render/plate.ts", "src/bridge/parse-output.ts", "src/bridge/grammar.ts"]
 }
