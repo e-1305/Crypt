@@ -89,6 +89,20 @@ describe("reduce", () => {
     const done = sceneFrom([{ type: "human-merged", limb: "npm:jquery", at: 1 }], LIMBS, 5).bosses[0]!;
     expect(done.slaRemainingMs).toBeNull();
   });
+  it("live mode never anchors the SLA at page load, and an overdue clock goes negative", () => {
+    const h = 3600_000;
+    const live = sceneFrom([], LIMBS, 5 * h, { raidStart: 0, live: true }).bosses[0]!;
+    expect(live).toMatchObject({ slaRemainingMs: null, slaStart: "unknown" });
+    const known = sceneFrom([], [{ ...LIMBS[0]!, detectedAt: 0 }], 5 * h, { raidStart: 0, live: true }).bosses[0]!;
+    expect(known).toMatchObject({ slaRemainingMs: 43 * h, slaStart: "detected" });
+    const late = sceneFrom([], [{ ...LIMBS[0]!, detectedAt: 0 }], 50 * h, { raidStart: 0 }).bosses[0]!;
+    expect(late.slaRemainingMs).toBeLessThanOrEqual(0);
+    expect(sceneFrom([], LIMBS, 0, { raidStart: 0 }).bosses[0]!.slaStart).toBe("replay");
+  });
+  it("a heal at the same timestamp as the red CI clears the rejection", () => {
+    const red = { type: "ci-red", limb: "npm:lodash", pr: 2, at: 10 };
+    expect(sceneFrom([red, { type: "human-merged", limb: "npm:jquery", pr: 1, at: 10 }], LIMBS, 20).rejection).toBeNull();
+  });
   it("counts Nights Without Possession for the empty arena", () => {
     const day = 86400000;
     expect(sceneFrom([], [LIMBS[1]!], 3 * day, { raidStart: 0, scanStart: 0 }).nights).toBe(3);

@@ -30,7 +30,7 @@ describe("war room page", () => {
   });
 
   it("renders boss cards and the empty arena with the nights count, and ties the rejection to its limb", () => {
-    for (const t of ["No possession tonight", "Nights Without Possession", "kev-badge", "boss-sla", "EPSS ", "Owner team:", "SIMULATED raid"]) expect(js).toContain(t);
+    for (const t of ["No possession tonight", "Nights Without Possession", "kev-badge", "boss-sla", "EPSS ", "Owner team:", "SIMULATED raid", "SLA start unknown", "rejection-limb", "not in scan data"]) expect(js).toContain(t);
     expect(js).toContain("scene.rejection");
     expect(css).toMatch(/\.nights\s*\{[^}]*font-size:\s*4/);
   });

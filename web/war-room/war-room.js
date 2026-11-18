@@ -171,11 +171,12 @@ function drawBosses(scene) {
     const facts = mk("p", "boss-facts");
     facts.append(
       mk("span", "kev-badge", "KEV"),
-      mk("span", "", (b.cves === null ? "CVEs unknown" : b.cves + (b.cves === 1 ? " CVE" : " CVEs"))),
+      mk("span", "", (b.cves === null ? "CVE count not in scan data" : b.cves + (b.cves === 1 ? " CVE" : " CVEs"))),
       mk("span", "", "EPSS " + (b.epss === null ? "unknown" : b.epss.toFixed(2))),
-      mk("span", "", "Owner team: " + (b.team ?? "unassigned")),
+      mk("span", "", "Owner team: " + (b.team ?? "not in scan data")),
     );
-    const sla = mk("p", "boss-sla" + (!b.healed && b.slaRemainingMs <= 0 ? " overdue" : ""), b.healed ? "SLA met" : slaText(b.slaRemainingMs));
+    const unknownSla = !b.healed && b.slaRemainingMs === null;
+    const sla = mk("p", "boss-sla" + (!b.healed && !unknownSla && b.slaRemainingMs <= 0 ? " overdue" : ""), b.healed ? "SLA met" : unknownSla ? "SLA start unknown (no detection time)" : slaText(b.slaRemainingMs));
     li.append(row, bar, facts, sla);
     if (run.mode === "simulated") li.appendChild(mk("p", "muted boss-sim", "SIMULATED raid. The SLA clock starts with the replay."));
     el.bossList.appendChild(li);
@@ -222,7 +223,7 @@ async function showRecap(scene) {
 
 function render(now) {
   const visible = run.mode === "simulated" ? run.events.filter((e) => e.at <= now) : run.events;
-  const scene = sceneFrom(visible, run.limbs, now, { raidStart: run.t0, scanStart: run.scanStart });
+  const scene = sceneFrom(visible, run.limbs, now, { raidStart: run.t0, scanStart: run.scanStart, live: run.mode !== "simulated" });
   run.scene = scene;
   // New effects: thunder and flash once per heal, the rejection line while a limb stays red.
   for (const fx of scene.effects) {
@@ -233,7 +234,13 @@ function render(now) {
   }
   // Tied to its limb: gone when that limb's next event arrives or another limb heals. The feed keeps the history.
   const rej = scene.rejection;
-  el.rejection.textContent = rej ? rej.name + ": " + rej.line : "";
+  el.rejection.textContent = "";
+  if (rej) {
+    const who = document.createElement("span");
+    who.className = "rejection-limb";
+    who.textContent = rej.name;
+    el.rejection.append(who, document.createTextNode(" "), document.createTextNode(rej.line));
+  }
   if (rej) el.rejection.dataset.limb = rej.limb; else delete el.rejection.dataset.limb;
   drawPlate(scene, now);
   drawBosses(scene);

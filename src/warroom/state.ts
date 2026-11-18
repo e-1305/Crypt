@@ -42,6 +42,8 @@ export interface Boss {
   team: string | null;
   /** Ms left of the 48h SLA, counted from detection (or the raid start). 0 or less means overdue. null once healed. */
   slaRemainingMs: number | null;
+  /** Where the SLA clock starts: the limb's detection time, the replay start (simulated), or unknown (live, no detection time). */
+  slaStart: "detected" | "replay" | "unknown";
 }
 
 /** A rejection line is tied to the limb whose CI went red. */
@@ -130,7 +132,7 @@ function line(ev: WarEvent, name: string): string {
 }
 
 /** Builds the scene. Only Possessed and Rotting limbs take part. Events for other limbs are ignored. */
-export function sceneFrom(events: readonly unknown[] | WarState, limbs: readonly WarLimb[], now: number, opts: { raidStart?: number; scanStart?: number } = {}): Scene {
+export function sceneFrom(events: readonly unknown[] | WarState, limbs: readonly WarLimb[], now: number, opts: { raidStart?: number; scanStart?: number; live?: boolean } = {}): Scene {
   const log = Array.isArray(events) ? reduceAll(events).events : (events as WarState).events;
   const sick = limbs.filter((l) => l.state === "Possessed" || l.state === "Rotting");
   const byKey = new Map<string, { limb: WarLimb; view: SceneLimb; healedAt?: number }>();
@@ -173,16 +175,18 @@ export function sceneFrom(events: readonly unknown[] | WarState, limbs: readonly
     const o = l;
     const cves = Array.isArray(o.cves) ? o.cves.length : finite(o.cveCount) && o.cveCount >= 0 ? Math.floor(o.cveCount) : null;
     const team = typeof o.ownerTeam === "string" && clean(o.ownerTeam, 40).trim() !== "" ? clean(o.ownerTeam, 40).trim() : null;
+    // Live mode never starts the clock at page load: without a detection time the SLA start is unknown.
+    const slaStart: Boss["slaStart"] = finite(l.detectedAt) ? "detected" : opts.live === true ? "unknown" : "replay";
     const since = finite(l.detectedAt) ? l.detectedAt : start;
     return {
       key, name: clean(l.name, 40) || "unnamed", hp: healed ? 0 : bossHp(l.epss, l.exposure), healed, kev: true,
       epss: finite(l.epss) && l.epss >= 0 && l.epss <= 1 ? l.epss : null, cves, team,
-      slaRemainingMs: healed || !finite(now) ? null : SLA_KEV_MS - Math.max(0, now - since),
+      slaRemainingMs: healed || slaStart === "unknown" || !finite(now) ? null : SLA_KEV_MS - Math.max(0, now - since), slaStart,
     };
   });
-  // The rejection stays only while its limb is still red (no later event for it) and no limb was healed after it.
+  // The rejection stays only while its limb is still red (no later event for it) and no limb was healed at or after it (a same-time heal sorts after ci-red).
   const red = [...effects].reverse().find((e) => e.kind === "convulse" && byKey.get(e.limb)?.view.phase === "ci-red");
-  const healedAfter = red !== undefined && effects.some((e) => e.kind === "heal" && e.at > red.at);
+  const healedAfter = red !== undefined && effects.some((e) => e.kind === "heal" && e.at >= red.at);
   const rejection: Rejection | null = red && red.kind === "convulse" && !healedAfter
     ? { limb: red.limb, name: byKey.get(red.limb)?.view.name ?? red.limb, line: red.line, at: red.at }
     : null;

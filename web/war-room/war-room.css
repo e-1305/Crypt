@@ -86,3 +86,5 @@ label { display: block; color: var(--dim); }
   .plate .just-healed, .plate .convulsing, .flash.thunder { animation: none; }
   .bar > span, .rejection { transition: none; }
 }
+.rejection-limb { font-weight: 400; opacity: .85; }
+.rejection-limb::after { content: ":"; }
