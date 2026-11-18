@@ -19,7 +19,7 @@ case "$1" in
     if [ -n "\${STUB_BAD_JSON:-}" ]; then echo 'not json' > out/creature.json; else echo "$STUB_CREATURE" > out/creature.json; fi ;;
   autopsy) mkdir -p out; echo '<html></html>' > out/autopsy.html; echo "Autopsy report written" ;;
   raise) echo '{}' > out/limbs.json ;;
-  alerts) echo "[CRYPT] KEV: lodash 4.17.15" ;;
+  alerts) echo "[CRYPT] KEV: lodash 4.17.15"; echo "crypt graft LODASH --live --repo <owner/name>" ;;
   graft) mkdir -p out/prs; echo "$2: PR_OPENED" ;;
   *) exit 9 ;;
 esac
@@ -100,6 +100,7 @@ describe("action.sh alerts input", () => {
     expect(x.r.status).toBe(0);
     expect(x.calls).toContain("alerts --format issues|token=\n");
     expect(x.summary).toContain("[CRYPT] KEV: lodash 4.17.15");
+    expect(x.summary).toContain("--repo <owner/name>");
   });
   it("rejects other values with exit 2", () => {
     const x = run(["report"], { INPUT_ALERTS: "all" });

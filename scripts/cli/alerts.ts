@@ -1,5 +1,5 @@
 // crypt alerts --format issues: one GitHub issue per Possessed (KEV) limb. Dry-run (print only) unless --live.
-// Live: same token preflight as live graft, exact-title search before every create, at most 5 per run, never a merge.
+// Live: same token preflight as live graft, exact-title match against open issues (closed ones are not matched), at most 5 per run, never a merge.
 import { audit, defaultPaths, isSealed } from "../../src/common/agent.js";
 import { nodeIo, type Io } from "../../src/common/io.js";
 import { CliError, EXIT } from "../../src/cli/exit.js";
@@ -38,9 +38,9 @@ export async function alertsCommand(p: Parsed, deps: AlertsDeps = {}): Promise<n
   } catch {
     throw new CliError("out/creature.json is not readable. Run crypt raid <target> again.", EXIT.FAILURE);
   }
-  const issues = buildIssues(creature, repo);
-
+  
   if (!live) {
+    const issues = buildIssues(creature, repo);
     out(`Dry run: ${issues.length} issue${issues.length === 1 ? "" : "s"} would be opened (at most ${MAX_ISSUES}). Add --live --repo owner/name to open them.\n`);
     for (const i of issues) out(`\n${i.title}\n\n${i.body}\n`);
     return EXIT.OK;
@@ -61,21 +61,32 @@ export async function alertsCommand(p: Parsed, deps: AlertsDeps = {}): Promise<n
   await livePreflight({ repo: repo!, token, fetch: deps.fetch, audit: hook, warn });
   const call = makeCall({ token, fetch: deps.fetch, audit: hook });
 
+  // Every Possessed limb, not only the first 5: open titles are dropped first, then at most 5 new issues are created.
+  const issues = buildIssues(creature, repo, Infinity);
   let opened = 0;
   let kept = 0;
   try {
+    // List open issues (consistent, unlike the search index, which lags after a create) and compare exact titles.
+    const open = new Set<string>();
+    for (let page = 1; page <= 10; page++) {
+      const items = await call("GET", `/repos/${repo}/issues?state=open&per_page=100&page=${page}`);
+      const list: unknown[] = Array.isArray(items) ? items : [];
+      for (const x of list) {
+        const r = x as { title?: unknown; pull_request?: unknown };
+        if (typeof r.title === "string" && r.pull_request === undefined) open.add(r.title);
+      }
+      if (list.length < 100) break;
+    }
     for (const i of issues) {
-      if (opened >= MAX_ISSUES) break;
-      const q = encodeURIComponent(`repo:${repo} is:issue is:open in:title "${i.title}"`);
-      const found = await call("GET", `/search/issues?q=${q}&per_page=100`);
-      const items: unknown[] = Array.isArray(found?.items) ? found.items : [];
-      if (items.some((x) => (x as { title?: unknown })?.title === i.title)) {
+      if (open.has(i.title)) {
         kept++;
         audit(io, paths.auditPath, now, "ALERTS", i.limb, "NO_ACTION");
         out(`${i.title}: already open\n`);
         continue;
       }
+      if (opened >= MAX_ISSUES) break;
       const created = await call("POST", `/repos/${repo}/issues`, { title: i.title, body: i.body });
+      open.add(i.title);
       opened++;
       const url = typeof created?.html_url === "string" ? created.html_url : "-";
       audit(io, paths.auditPath, now, "ALERTS", i.limb, "API_CALL", url);

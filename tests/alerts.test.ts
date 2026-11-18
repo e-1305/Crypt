@@ -5,6 +5,7 @@ import fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";
 import { UsageError } from "../src/cli/exit.js";
 import { parseCli } from "../src/cli/parse.js";
+import { limbIds } from "../src/raise/generate.js";
 import { buildIssues, MAX_ISSUES } from "../src/alerts/issues.js";
 import { alertsCommand } from "../scripts/cli/alerts.js";
 import type { Fetcher } from "../scripts/github-client.js";
@@ -39,7 +40,7 @@ function work(creature: unknown): string {
   return d;
 }
 
-function fakeGithub(o: { open?: string[]; push?: boolean; failCreateAt?: number } = {}) {
+function fakeGithub(o: { open?: string[]; prs?: string[]; push?: boolean; failCreateAt?: number } = {}) {
   const calls: string[] = [];
   const created: { title: string; body: string }[] = [];
   const fetch: Fetcher = async (url, init) => {
@@ -49,7 +50,11 @@ function fakeGithub(o: { open?: string[]; push?: boolean; failCreateAt?: number 
     const ok = (b: unknown) => ({ ok: true, status: 200, json: async () => b });
     if (path === "/repos/o/r") return ok({ permissions: { push: o.push !== false } });
     if (path.startsWith("/user/repos")) return ok([{ full_name: "o/r", private: true }]);
-    if (path.startsWith("/search/issues")) return ok({ items: (o.open ?? []).map((title) => ({ title })) });
+    if (method === "GET" && path.startsWith("/repos/o/r/issues?")) {
+      const page = Number(/[?&]page=(\d+)/.exec(path)?.[1] ?? 1);
+      const all = [...(o.open ?? []).map((title) => ({ title })), ...(o.prs ?? []).map((title) => ({ title, pull_request: {} })), ...created];
+      return ok(all.slice((page - 1) * 100, page * 100));
+    }
     if (method === "POST" && path === "/repos/o/r/issues") {
       if (o.failCreateAt === created.length + 1) return { ok: false, status: 500, json: async () => ({}) };
       created.push(JSON.parse(init!.body!));
@@ -137,7 +142,7 @@ describe("crypt alerts", () => {
     const g = fakeGithub({ push: false });
     await expect(run(["--format", "issues", "--live", "--repo", "o/r"], work(creatureOf(2)), g.fetch)).rejects.toThrow(/cannot push/);
     expect(g.created).toEqual([]);
-    expect(g.calls.some((c) => c.startsWith("GET /search"))).toBe(false);
+    expect(g.calls.some((c) => c.startsWith("GET /repos/o/r/issues"))).toBe(false);
   });
   it("stops at the first error and exits nonzero", async () => {
     const g = fakeGithub({ failCreateAt: 2 });
@@ -153,6 +158,46 @@ describe("crypt alerts", () => {
     const r = await run(["--format", "issues", "--live", "--repo", "o/r"], d, g.fetch);
     expect(r.code).toBe(0);
     expect(g.calls).toEqual([]);
-    expect(existsSync(join(d, "crypt-audit.log"))).toBe(true);
+    expect(readFileSync(join(d, "crypt-audit.log"), "utf8")).toContain("REJECTED_SEALED");
+  });
+  it("skips open titles before the cap, so limbs 6 and up get issues", async () => {
+    const g = fakeGithub({ open: Array.from({ length: 5 }, (_, i) => `[CRYPT] KEV: pkg${i + 1} 1.0.${i + 1}`) });
+    await run(["--format", "issues", "--live", "--repo", "o/r"], work(creatureOf(8)), g.fetch);
+    expect(g.created.map((c) => c.title)).toEqual(["[CRYPT] KEV: pkg6 1.0.6", "[CRYPT] KEV: pkg7 1.0.7", "[CRYPT] KEV: pkg8 1.0.8"]);
+  });
+  it("a pull request with the same title does not count as an open issue", async () => {
+    const g = fakeGithub({ prs: ["[CRYPT] KEV: pkg1 1.0.1"] });
+    await run(["--format", "issues", "--live", "--repo", "o/r"], work(creatureOf(1)), g.fetch);
+    expect(g.created).toHaveLength(1);
+  });
+  it("a title with a quote is matched exactly", async () => {
+    const c = { limbs: [limb(1, "Possessed", { name: 'a"b', version: "1" })] };
+    const g = fakeGithub({ open: ['[CRYPT] KEV: a"b 1'] });
+    await run(["--format", "issues", "--live", "--repo", "o/r"], work(c), g.fetch);
+    expect(g.created).toEqual([]);
+  });
+});
+
+describe("graft id and mentions", () => {
+  const sp = (name: string, rank: number) => limb(rank, "Possessed", { name, version: "1", spawned: true });
+  it("uses the real limb IDs, including suffixes for collisions", () => {
+    const c = { limbs: [sp("@types/node", 1), sp("types-node", 2)] };
+    const ids = limbIds(["@types/node", "types-node"]);
+    const issues = buildIssues(c, "o/r");
+    expect(ids[0]).not.toBe(ids[1]);
+    expect(issues[0]!.body).toContain(`crypt graft ${ids[0]} --live`);
+    expect(issues[1]!.body).toContain(`crypt graft ${ids[1]} --live`);
+  });
+  it("matches limbIds for long, odd and empty names", () => {
+    const names = ["a".repeat(40), "123", 'x"y@z', "lodash"];
+    const c = { limbs: names.map((n, i) => sp(n, i + 1)) };
+    const ids = limbIds(names);
+    buildIssues(c, "o/r").forEach((i, k) => expect(i.body).toContain(`crypt graft ${ids[k]} --live`));
+  });
+  it("puts the package name in a code span so it cannot mention anyone", () => {
+    const c = { limbs: [limb(1, "Possessed", { name: "@scope/pkg", version: "1.0.0", owner: "unowned" })] };
+    const b = buildIssues(c)[0]!.body;
+    expect(b.split("\n")[0]).toMatch(/^`@scope\/pkg 1\.0\.0` is Possessed/);
+    expect(b.replace(/`[^`]*`/g, "")).not.toMatch(/@scope/);
   });
 });
