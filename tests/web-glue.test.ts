@@ -85,7 +85,7 @@ function fakeDom(search = "") {
 beforeAll(() => {
   tmp = mkdtempSync(join(tmpdir(), "crypt-glue-"));
   cpSync(join(ROOT, "web", "theatre"), join(tmp, "theatre"), { recursive: true });
-  for (const f of ["app.js", "raid.js", "heal.js", "onboarding.js", "copy.js", "live-exhume.js"]) cpSync(join(ROOT, "web", f), join(tmp, f));
+  for (const f of ["app.js", "raid.js", "heal.js", "onboarding.js", "copy.js", "live-exhume.js", "import.js"]) cpSync(join(ROOT, "web", f), join(tmp, f));
   writeFileSync(join(tmp, "package.json"), '{"type":"module"}');
   const r = spawnSync("npx", ["tsc", "-p", "tsconfig.web.json", "--outDir", join(tmp, "js")], { cwd: ROOT, encoding: "utf8" });
   if (r.status !== 0) throw new Error(r.stdout + r.stderr);

@@ -256,6 +256,57 @@ async function checkJudge(browser, vp) {
   await ctx.close();
 }
 
+// Import drop zone (issue #101): open the Bench on the plain page, check the zone and its privacy line, import the Trivy
+// fixture through the file input and check the ranked list, that no request carries the file, and that nothing overflows.
+const IMPORT_FIXTURE = join(root, "fixtures", "import", "trivy.json");
+const IMPORT_CONTROLS = ["#import-drop", "#import-file", "#import-format"];
+
+async function checkImport(browser, vp) {
+  const tag = `${vp.w}x${vp.h} import`;
+  const ctx = await browser.newContext({ viewport: { width: vp.w, height: vp.h }, hasTouch: vp.touch, isMobile: vp.touch });
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => fail(tag, `page error: ${e.message}`));
+  const sent = [];
+  page.on("request", (r) => sent.push({ url: r.url(), method: r.method(), body: r.postData() ?? "" }));
+  await page.goto(base + "?theatre=2d");
+  await page.waitForFunction(() => document.getElementById("plate")?.textContent.trim().length > 0 && !document.getElementById("cmd")?.disabled, null, { timeout: 30000 })
+    .catch(() => fail(tag, "plate or game did not load within 30s"));
+  mkdirSync(outDir, { recursive: true });
+  const closed = await page.evaluate(() => document.getElementById("import-drop")?.getClientRects().length > 0);
+  if (closed) fail(tag, "import drop zone is visible with the Bench closed");
+  await page.click("#bench-toggle");
+  const open = present(tag, await boxes(page, IMPORT_CONTROLS));
+  if (open.length !== IMPORT_CONTROLS.length) fail(tag, "import drop zone is not visible with the Bench open");
+  const bench = present(tag, await boxes(page, BENCH_CONTROLS));
+  for (const [a, b] of findOverlaps([...open, ...bench].filter((b) => b.name !== "#import-file"))) fail(tag, `controls overlap with the import zone: ${a} and ${b}`);
+  if (vp.w < 900) for (const b of open) if (b.height < TAP_MIN) fail(tag, `tap target ${b.name} is ${Math.round(b.height)}px tall, under ${TAP_MIN}`);
+  const privacy = (await page.textContent("#import-privacy")) ?? "";
+  if (!privacy.includes("Parsed in your browser. The file stays on your device and is not uploaded.")) fail(tag, "privacy sentence is missing");
+  await page.locator("#import-drop").scrollIntoViewIfNeeded();
+  await page.screenshot({ path: join(outDir, `import-zone-${vp.w}x${vp.h}.png`) });
+
+  const before = sent.length;
+  await page.setInputFiles("#import-file", IMPORT_FIXTURE);
+  await page.waitForSelector("#import-result:not([hidden]) .import-limbs li", { timeout: 15000 }).catch(() => fail(tag, "import result did not render"));
+  const rows = await page.$$eval("#import-result .import-limbs li", (l) => l.map((e) => e.textContent));
+  if (rows.length === 0) fail(tag, "import result has no ranked limbs");
+  if (!rows.some((t) => /lodash/.test(t))) fail(tag, "import result does not list lodash from the Trivy fixture");
+  if (rows.some((t) => /: Healthy/.test(t) && /Unknown/.test(t))) fail(tag, "an unknown limb is shown as Healthy");
+  const marker = readFileSync(IMPORT_FIXTURE, "utf8");
+  const after = sent.slice(before);
+  for (const r of after) {
+    if (r.method !== "GET" || r.body) fail(tag, `request with a body during import: ${r.method} ${r.url}`);
+    if (r.url.includes("CVE-2020-8203") || r.body.includes("CVE-2020-8203") || (r.body && marker.includes(r.body))) fail(tag, `request carries file content: ${r.url}`);
+    if (!r.url.startsWith(base)) fail(tag, `import made an outside request: ${r.url}`);
+  }
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  if (vp.w < 900 && overflow > 0) fail(tag, `horizontal overflow of ${overflow}px`);
+  await page.locator("#import-result").scrollIntoViewIfNeeded();
+  await page.screenshot({ path: join(outDir, `import-result-${vp.w}x${vp.h}.png`) });
+  console.log(`ok   [${tag}] rows=${rows.length} requests-during-import=${after.length}`);
+  await ctx.close();
+}
+
 let browser;
 try {
   browser = await chromium.launch(launchOptions());
@@ -263,6 +314,7 @@ try {
     await check(browser, vp, "");
     if (vp.w >= 900) await check(browser, vp, "?theatre=2d");
   }
+  for (const vp of VIEWPORTS) await checkImport(browser, vp);
   for (const vp of JUDGE_VIEWPORTS) await checkJudge(browser, vp);
 } finally {
   await browser?.close();
