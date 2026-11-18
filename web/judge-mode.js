@@ -202,6 +202,7 @@ function run(counts) {
     document.removeEventListener("click", onInput, true);
     if (cmd && !cmd.disabled && /^(EXAMINE|GRAFT) /.test(cmd.value)) cmd.value = "";
     stage.remove();
+    counter.remove();
     if (skipBtn) skipBtn.hidden = true;
     document.body.classList.remove("judge-running");
     plate?.classList.remove("judge-draw");
@@ -234,7 +235,11 @@ function run(counts) {
             plate.classList.add("judge-draw");
           }
           break;
-        case "counter": counter.textContent = a.text; counter.hidden = false; break;
+        case "counter":
+          counter.textContent = a.text; counter.hidden = false;
+          // When the plate is on screen (the 2D page, every phone). On the 3D bench the plate is a texture, so the badge stays in the overlay., the badge joins its flow so it cannot cover the title or pitch.
+          if (plate && plate.getClientRects().length > 0 && !String(document.documentElement.dataset.theatre || "").startsWith("3d")) { counter.classList.add("judge-counter-inline"); plate.before(counter); }
+          break;
         case "type": if (!cmd || cmd.disabled) return finish(); cmd.value = a.text; break;
         case "submit": if (form && cmd && !cmd.disabled) form.requestSubmit(); break;
         case "payload-slide":

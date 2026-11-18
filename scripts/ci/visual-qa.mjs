@@ -200,6 +200,62 @@ async function check(browser, vp, query) {
   await ctx.close();
 }
 
+// Judge mode (web/judge-mode.js): the 45-second autoplay. The t=0 checks above never see it, so load ?judge=1 under a fake
+// clock, run 30 s of virtual time and check the layout the viewer sees mid-demo: the caption bar, the findings badge, the
+// pitch strip and the onboarding card. Automated browsers only autoplay with ?judge=1.
+const JUDGE_AT_MS = 30000;
+const JUDGE_VIEWPORTS = [{ w: 1440, h: 900, touch: false, full: false }, { w: 390, h: 844, touch: true, full: false }];
+
+async function checkJudge(browser, vp) {
+  const tag = `${vp.w}x${vp.h} judge t=30s`;
+  const ctx = await browser.newContext({ viewport: { width: vp.w, height: vp.h }, hasTouch: vp.touch, isMobile: vp.touch });
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => fail(tag, `page error: ${e.message}`));
+  // install() alone lets time flow in real time. Pausing first makes only runFor() advance it, so 30 s is exactly 30 s.
+  await page.clock.install({ time: new Date("2030-01-01T00:00:00Z") });
+  await page.clock.pauseAt(new Date("2030-01-01T00:00:01Z"));
+  await page.goto(base + "?judge=1");
+  // Let the page boot on the fake clock in small steps, then play the demo up to 30 s.
+  const ready = () => page.evaluate(() => document.getElementById("plate")?.textContent.trim().length > 0 && !document.getElementById("cmd")?.disabled && !!document.getElementById("judge-stage"));
+    for (let i = 0; i < 120 && !(await ready()); i++) { await page.waitForTimeout(250); }
+  if (!(await ready())) fail(tag, "judge mode did not start or the game did not load");
+  // The demo's clock starts when judge mode starts. The paused clock has not moved since, so 30 s of runFor is t=30 s.
+  for (let t = 0; t < JUDGE_AT_MS; t += 500) { await page.clock.runFor(500); await page.waitForTimeout(30); }
+  await page.waitForTimeout(500);
+
+  const seen = await page.evaluate(() => {
+    const textBox = (e) => { const g = document.createRange(); g.selectNodeContents(e); return g.getBoundingClientRect(); };
+    const vis = (sel, text) => { const e = document.querySelector(sel); if (!e) return null; const cs = getComputedStyle(e); const r = text ? textBox(e) : e.getBoundingClientRect(); return cs.display === "none" || cs.visibility === "hidden" || r.width === 0 || r.height === 0 || e.closest("[hidden]") ? null : { x: r.x, y: r.y, width: r.width, height: r.height, text: (e.textContent || "").trim() }; };
+    const named = { "#judge-caption": vis("#judge-caption"), "#judge-counter": vis("#judge-counter"), "#judge-skip": vis("#judge-skip"), "#tutorial": vis("#tutorial"), "#theatre-caption": vis("#theatre-caption"), "h1": vis("header.top h1", true), ".subtitle": vis("header.top .subtitle", true), "#pitch": vis("#pitch", true) };
+    return { named, running: document.body.classList.contains("judge-running"), scrollW: document.documentElement.scrollWidth - document.documentElement.clientWidth };
+  });
+  const n = seen.named;
+  if (!seen.running) fail(tag, "judge mode is not running at 30 s");
+  if (!n["#judge-caption"]) fail(tag, "judge caption is not visible");
+  if (!n["#judge-counter"] || !/findings/.test(n["#judge-counter"].text)) fail(tag, "findings badge is not visible at 30 s");
+  if (!n["#judge-skip"]) fail(tag, "Skip demo button is not visible");
+  if (n["#tutorial"]) fail(tag, "onboarding card (#tutorial) is visible while judge mode runs");
+  if (n["#theatre-caption"]) fail(tag, "pitch strip (#theatre-caption) is visible behind the judge caption");
+  if (seen.scrollW > 0) fail(tag, `horizontal overflow of ${seen.scrollW}px`);
+  // On the 3D bench the page header sits behind the canvas and is not on screen, so only the 2D page checks it.
+  const is3d = await page.evaluate(() => (document.documentElement.dataset.theatre ?? "").startsWith("3d"));
+  const hiddenIn3d = new Set(["h1", ".subtitle", "#pitch"]);
+  const list = Object.entries(n).filter(([name, b]) => b && !(is3d && hiddenIn3d.has(name))).map(([name, b]) => ({ name, x: b.x, y: b.y, width: b.width, height: b.height }));
+  const fixed = (await fixedBoxes(page, vp.w, vp.h)).filter((b) => !list.some((l) => l.name === b.name));
+  const overlaps = findOverlaps([...list, ...fixed]);
+  for (const [a, b] of overlaps) fail(tag, `overlap while judge mode runs: ${a} and ${b}`);
+
+  mkdirSync(outDir, { recursive: true });
+  const file = join(outDir, `judge-${vp.w}x${vp.h}.png`);
+  await page.screenshot({ path: file });
+  if (process.env.VISUAL_QA_COPY_DOCS === "1") {
+    mkdirSync(imgDir, { recursive: true });
+    copyFileSync(file, join(imgDir, `judge-mode-${vp.w}x${vp.h}.png`));
+  }
+  console.log(`ok   [${tag}] checked=${list.map((b) => b.name).join(",")} fixed=${fixed.length}`);
+  await ctx.close();
+}
+
 let browser;
 try {
   browser = await chromium.launch(launchOptions());
@@ -207,6 +263,7 @@ try {
     await check(browser, vp, "");
     if (vp.w >= 900) await check(browser, vp, "?theatre=2d");
   }
+  for (const vp of JUDGE_VIEWPORTS) await checkJudge(browser, vp);
 } finally {
   await browser?.close();
   server.close();
