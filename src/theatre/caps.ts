@@ -32,3 +32,8 @@ export function isSlowDevice(deltas: readonly number[], threshold: number = SLOW
   const median = s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
   return median > threshold;
 }
+
+/** Automated browsers (navigator.webdriver, e.g. CI visual-qa on a software renderer) skip the guard. Real users keep it. */
+export function shouldRunGuard(webdriver: unknown): boolean {
+  return webdriver !== true;
+}

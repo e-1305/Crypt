@@ -7,7 +7,7 @@ import { makeDrawer } from "./drawer.js";
 import { makeBoard } from "./board.js";
 import { ensureFonts } from "./font.js";
 import { makeSurgeon } from "./surgeon.js";
-import { MAX_LIMBS, capLimbs, isSlowDevice, moreLabel, GUARD_FRAMES } from "../js/theatre/caps.js";
+import { MAX_LIMBS, capLimbs, isSlowDevice, moreLabel, shouldRunGuard, GUARD_FRAMES } from "../js/theatre/caps.js";
 import { TITLE_CARD_TEXT, dollyProgress, shouldShowTitleCard, titleCardVisible } from "../js/theatre/polish.js";
 
 export async function mountStage() {
@@ -223,7 +223,7 @@ export async function mountStage() {
   const t0 = performance.now();
   // Frame guard: time a few frames after the first (which pays for shader compile). A slow median drops to the plain 2D page.
   const deltas = [];
-  let lastNow = -1, guardDone = false;
+  let lastNow = -1, guardDone = !shouldRunGuard(navigator.webdriver);
   function frame(now) {
     if (stopped) return;
     raf = requestAnimationFrame(frame);

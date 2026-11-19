@@ -31,3 +31,12 @@ describe("isSlowDevice", () => {
     expect(isSlowDevice([])).toBe(false);
   });
 });
+
+describe("shouldRunGuard", () => {
+  it("skips the frame guard only for automated browsers", async () => {
+    const { shouldRunGuard } = await import("../src/theatre/caps.js");
+    expect(shouldRunGuard(true)).toBe(false);
+    expect(shouldRunGuard(false)).toBe(true);
+    expect(shouldRunGuard(undefined)).toBe(true);
+  });
+});
