@@ -156,9 +156,9 @@ export function parseCli(argv: readonly string[], env: Record<string, string | u
     if (!env.GITHUB_TOKEN) throw new UsageError(`${what} needs GITHUB_TOKEN in the environment. Create a fine-grained token limited to the target repository, then export GITHUB_TOKEN.`);
   };
   if (command === "alerts") {
-    if (flags.format !== "issues" && flags.format !== "ocsf") throw new UsageError("alerts needs --format issues or --format ocsf. Run: crypt alerts --format ocsf");
-    if (flags.format === "ocsf" && (flags.live !== undefined || flags.repo !== undefined)) throw new UsageError("--format ocsf only writes a local file. Remove --live and --repo.");
-    if (flags.format === "issues" && flags.out !== undefined) throw new UsageError("--out only applies to --format ocsf.");
+    if (flags.format !== "issues" && flags.format !== "ocsf" && flags.format !== "sarif") throw new UsageError("alerts needs --format issues, --format ocsf or --format sarif. Run: crypt alerts --format ocsf");
+    if ((flags.format === "ocsf" || flags.format === "sarif") && (flags.live !== undefined || flags.repo !== undefined)) throw new UsageError(`--format ${String(flags.format)} only writes a local file. Remove --live and --repo.`);
+    if (flags.format === "issues" && flags.out !== undefined) throw new UsageError("--out only applies to --format ocsf or --format sarif.");
     if (flags.live === true) {
       if (typeof flags.repo !== "string") throw new UsageError("--live needs --repo owner/name, the repository that receives the issues.");
       needsToken("--live");

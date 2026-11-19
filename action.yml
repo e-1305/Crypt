@@ -29,6 +29,10 @@ inputs:
     description: "none (default) or issues: report mode prints the GitHub issues crypt alerts --format issues would open, one per KEV limb (dry-run, no token)."
     required: false
     default: none
+  upload-sarif:
+    description: "true or false (default). With true, report mode writes SARIF 2.1.0 (crypt alerts --format sarif) and uploads it to GitHub Code Scanning. The job needs permissions: security-events: write."
+    required: false
+    default: "false"
 runs:
   using: composite
   steps:
@@ -49,6 +53,7 @@ runs:
         INPUT_TOKEN: ${{ inputs.token }}
         INPUT_PATH: ${{ inputs.path }}
         INPUT_ALERTS: ${{ inputs.alerts }}
+        INPUT_UPLOAD_SARIF: ${{ inputs.upload-sarif }}
       run: |
         ws="$(cd "$GITHUB_WORKSPACE" && pwd -P)"
         target="$(cd "$ws/$INPUT_PATH" 2>/dev/null && pwd -P)" || { echo "::error::path '$INPUT_PATH' not found in the workspace"; exit 2; }
@@ -59,6 +64,12 @@ runs:
           export GITHUB_TOKEN="$INPUT_TOKEN"
         fi
         bash "${{ github.action_path }}/scripts/ci/action.sh" "$INPUT_MODE" "$INPUT_LIMB" "$INPUT_SABOTAGE"
+    - name: Upload SARIF to Code Scanning
+      if: inputs.upload-sarif == 'true' && steps.crypt.outputs.sarif != ''
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ steps.crypt.outputs.sarif }}
+        category: crypt
     - name: Upload creature.json and the autopsy
       if: always() && steps.crypt.outputs.dir != ''
       uses: actions/upload-artifact@v4

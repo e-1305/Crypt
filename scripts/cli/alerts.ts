@@ -6,6 +6,7 @@ import { CliError, EXIT } from "../../src/cli/exit.js";
 import type { Parsed } from "../../src/cli/parse.js";
 import { buildIssues, MAX_ISSUES } from "../../src/alerts/issues.js";
 import { buildOcsf } from "../../src/alerts/ocsf.js";
+import { buildSarif } from "../../src/alerts/sarif.js";
 import { makeCall, type Fetcher } from "../github-client.js";
 import { apiAuditHook } from "../live-audit.js";
 import { livePreflight } from "../live-preflight.js";
@@ -38,6 +39,21 @@ export async function alertsCommand(p: Parsed, deps: AlertsDeps = {}): Promise<n
     creature = JSON.parse(io.readText(paths.creaturePath));
   } catch {
     throw new CliError("out/creature.json is not readable. Run crypt raid <target> again.", EXIT.FAILURE);
+  }
+
+  if (p.flags.format === "sarif") {
+    // Local file only, no network. Fail-safe: an invalid creature writes nothing.
+    const target = typeof p.flags.out === "string" ? p.flags.out : "out/alerts.sarif";
+    let log;
+    try {
+      log = buildSarif(creature, now());
+    } catch (e) {
+      throw new CliError(`alerts: ${e instanceof Error ? e.message : "invalid creature"}. Nothing was written.`, EXIT.FAILURE);
+    }
+    const n = log.runs[0]!.results.length;
+    io.writeText(target.startsWith("/") ? target : `${cwd}/${target}`, JSON.stringify(log, null, 2) + "\n");
+    out(`Wrote SARIF 2.1.0 with ${n} result${n === 1 ? "" : "s"} to ${target}.\n`);
+    return EXIT.OK;
   }
 
   if (p.flags.format === "ocsf") {

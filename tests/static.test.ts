@@ -36,8 +36,8 @@ describe("least privilege and economy of mechanism (rules 2, 4)", () => {
   it("src/ has no network client, GitHub or LLM import", () => {
     const banned = /node:https?|node:net|node:dgram|node:tls|\bfetch\s*\(|XMLHttpRequest|octokit|openai|anthropic|\bhttps?:\/\//i;
     // The live exhume modules receive an injected fetch and may name exactly two hosts: raw.githubusercontent.com and api.osv.dev.
-    const hosts = new Set(["src/web/live-exhume.ts", "src/exhume/osv-client.ts", "src/necromancer/package-advisories.ts", "src/render/card.ts", "src/report/template.ts"]);
-    const urlOk = /^https:\/\/(raw\.githubusercontent\.com|api\.osv\.dev|e-1305\.github\.io|www\.linkedin\.com)\b/;
+    const hosts = new Set(["src/web/live-exhume.ts", "src/exhume/osv-client.ts", "src/necromancer/package-advisories.ts", "src/render/card.ts", "src/report/template.ts", "src/alerts/sarif.ts"]);
+    const urlOk = /^https:\/\/(raw\.githubusercontent\.com|api\.osv\.dev|e-1305\.github\.io|www\.linkedin\.com|json\.schemastore\.org)\b/;
     for (const f of files) {
       const text = readFileSync(f, "utf8");
       if (!hosts.has(f)) {

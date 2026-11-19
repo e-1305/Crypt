@@ -2,6 +2,7 @@
 # Entry point of the composite action (action.yml): bash scripts/ci/action.sh <report|graft> [limb] [sabotage]
 #   report  exhume the checked-out repo, write the plate and the noise funnel to the step summary. Writes nothing to it.
 #   graft   opt-in. Needs GITHUB_TOKEN. Runs scripts/ci/live-raid.sh graft (existing preflight). Never merges.
+#   Env INPUT_UPLOAD_SARIF=true (report mode): after exhume, write out/alerts.sarif and expose it as the step output "sarif" (action.yml uploads it).
 #   Env INPUT_ALERTS=issues (report mode): after exhume, print the KEV issues crypt alerts would open (dry-run, no token).
 # Env: CRYPT_TARGET (repo to scan, default $GITHUB_WORKSPACE or .), CRYPT_OUT_DIR (all output, default a temp dir),
 #      CRYPT_CMD, CRYPT_PLATE_CMD and CRYPT_FEEDS_CMD (stubs for tests), GITHUB_STEP_SUMMARY, GITHUB_OUTPUT.
@@ -28,10 +29,12 @@ mode="$1"
 limb="${2:-LODASH}"
 sabotage="${3:-false}"
 alerts="${INPUT_ALERTS:-none}"
+upload_sarif="${INPUT_UPLOAD_SARIF:-false}"
 
 case "$mode" in report | graft) ;; *) usage "mode must be report or graft, got '${mode:0:20}'" ;; esac
 case "$limb" in LODASH | JQUERY) ;; *) usage "limb must be LODASH or JQUERY, got '${limb:0:20}'" ;; esac
 case "$alerts" in none | issues) ;; *) usage "alerts must be none or issues, got '${alerts:0:20}'" ;; esac
+case "$upload_sarif" in true | false) ;; *) usage "upload-sarif must be true or false, got '${upload_sarif:0:20}'" ;; esac
 case "$sabotage" in true | false) ;; *) usage "sabotage must be true or false, got '${sabotage:0:20}'" ;; esac
 if [ "$mode" = "report" ] && [ "$sabotage" = "true" ]; then usage "sabotage only goes with mode graft"; fi
 if [ "$mode" = "graft" ] && [ -z "${GITHUB_TOKEN:-}" ]; then
@@ -111,6 +114,14 @@ if [ "$alerts" = "issues" ]; then
   # shellcheck disable=SC2086
   alerts_out="$($CRYPT alerts --format issues 2>>"$log")" || fail "crypt alerts failed."
   printf '%s\n' "$alerts_out" >>"$log"
+fi
+
+if [ "$upload_sarif" = "true" ]; then
+  # Fail-safe: if the SARIF cannot be built, the step fails and no output is set, so nothing is uploaded.
+  # shellcheck disable=SC2086
+  { $CRYPT alerts --format sarif 2>&1 | tee -a "$log"; } || fail "crypt alerts --format sarif failed. Nothing was uploaded to Code Scanning."
+  [ -s out/alerts.sarif ] || fail "crypt alerts wrote no out/alerts.sarif. Nothing was uploaded to Code Scanning."
+  if [ -n "${GITHUB_OUTPUT:-}" ]; then echo "sarif=${OUT_DIR}/out/alerts.sarif" >>"$GITHUB_OUTPUT"; fi
 fi
 
 # shellcheck disable=SC2086

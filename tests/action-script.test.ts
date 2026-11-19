@@ -19,7 +19,12 @@ case "$1" in
     if [ -n "\${STUB_BAD_JSON:-}" ]; then echo 'not json' > out/creature.json; else echo "$STUB_CREATURE" > out/creature.json; fi ;;
   autopsy) mkdir -p out; echo '<html></html>' > out/autopsy.html; echo "Autopsy report written" ;;
   raise) echo '{}' > out/limbs.json ;;
-  alerts) echo "[CRYPT] KEV: lodash 4.17.15"; echo "crypt graft LODASH --live --repo <owner/name>" ;;
+  alerts)
+    if [ "$3" = "sarif" ]; then
+      if [ -n "\${STUB_SARIF_FAIL:-}" ]; then exit 4; fi
+      mkdir -p out; echo '{}' > out/alerts.sarif; echo "Wrote SARIF"; exit 0
+    fi
+    echo "[CRYPT] KEV: lodash 4.17.15"; echo "crypt graft LODASH --live --repo <owner/name>" ;;
   graft) mkdir -p out/prs; echo "$2: PR_OPENED" ;;
   *) exit 9 ;;
 esac
@@ -85,6 +90,31 @@ describe("action.sh input validation", () => {
     const x = run(["report"], { GITHUB_TOKEN: TOKEN });
     expect(x.r.status).toBe(0);
     expect(x.calls).not.toContain(TOKEN);
+  });
+});
+
+describe("action.sh upload-sarif input", () => {
+  it("defaults to false and does not run crypt alerts", () => {
+    const x = run(["report"]);
+    expect(x.calls).not.toContain("sarif");
+  });
+  it("true writes the SARIF and sets the sarif step output", () => {
+    const o = join(mkdtempSync(join(tmpdir(), "crypt-gho-")), "out.txt");
+    writeFileSync(o, "");
+    const x = run(["report"], { INPUT_UPLOAD_SARIF: "true", GITHUB_OUTPUT: o });
+    expect(x.r.status).toBe(0);
+    expect(x.calls).toContain("alerts --format sarif|token=\n");
+    expect(readFileSync(o, "utf8")).toMatch(/^sarif=.*\/out\/alerts\.sarif$/m);
+  });
+  it("fails and sets no sarif output when the SARIF cannot be built", () => {
+    const o = join(mkdtempSync(join(tmpdir(), "crypt-gho-")), "out.txt");
+    writeFileSync(o, "");
+    const x = run(["report"], { INPUT_UPLOAD_SARIF: "true", STUB_SARIF_FAIL: "1", GITHUB_OUTPUT: o });
+    expect(x.r.status).toBe(1);
+    expect(readFileSync(o, "utf8")).not.toContain("sarif=");
+  });
+  it("rejects a bad value", () => {
+    expect(run(["report"], { INPUT_UPLOAD_SARIF: "maybe" }).r.status).toBe(2);
   });
 });
 
