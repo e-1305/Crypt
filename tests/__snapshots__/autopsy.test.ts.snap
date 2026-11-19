@@ -48,6 +48,15 @@ h1,h2,.card .big{color:#0a4d0a}
 .hint,.no-print{display:none}
 .banner{color:#7a4a00;border-color:#7a4a00}
 .wm span{color:rgba(122,74,0,.14)}
+.spark{height:9mm;width:100%}
+.card.wide ul{columns:3;margin:.1rem 0}
+.card .detail{font-size:10px}
+footer{font-size:9px;margin-top:6px}
+footer ol{margin:.1rem 0}
+footer li{margin:0}
+.card.wide .detail{margin:.1rem 0}
+.grid{gap:4px;margin:6px 0}
+.card{padding:4px 8px}
 .spark .axis{stroke:#555}.spark .ln{stroke:#0a4d0a}.spark .dot{fill:#0a4d0a}
 footer{border-top-color:#555;color:#111}
 }
