@@ -1,5 +1,8 @@
 [![CI](https://github.com/e-1305/Crypt/actions/workflows/ci.yml/badge.svg)](https://github.com/e-1305/Crypt/actions/workflows/ci.yml) [![npm downloads](https://img.shields.io/npm/dw/@e-1305/crypt)](https://www.npmjs.com/package/@e-1305/crypt)
 
+
+![CRYPT in judge mode: the creature, a graft, the rehearsal CI, the plate](docs/img/crypt-demo.gif)
+
 # CRYPT
 ### Don't abandon your creature.
 
