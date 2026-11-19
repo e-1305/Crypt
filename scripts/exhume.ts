@@ -10,6 +10,7 @@ import { buildImportedCreature } from "../src/import/build.js";
 import { ImportError, isImportFormat } from "../src/import/index.js";
 import { nodeFs } from "./node-fs.js";
 import { osvLookup } from "./osv-client.js";
+import { readSourceFiles } from "./source-files.js";
 
 const USAGE =
   "usage: crypt exhume <path-or-github-url> [--out out/creature.json] [--feeds data/feeds] [--cache data/cache/osv] [--offline] [--name repo] [--from sarif|dependabot|trivy|grype|snyk]";
@@ -95,6 +96,8 @@ async function main(): Promise<void> {
   const creature = await buildCreature({
     repo,
     name,
+    // Local paths only: a GitHub URL target reads package-lock.json alone, so its signal is dev only or unknown.
+    ...(gh ? {} : { sources: () => readSourceFiles(resolve(a.target)) }),
     cacheFs: nodeFs(isAbsolute(a.cache) ? "/" : "."), // an absolute --cache must not be re-rooted under the cwd
     cacheDir: a.cache,
     kev,

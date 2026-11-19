@@ -67,6 +67,8 @@ export function buildImportedCreature(o: ImportOptions) {
       severity: l.severity,
       vendorSeverity: vendor.get(l.id) ?? null,
       vulns: l.vulns,
+      usage: "unknown" as const,
+      usageBasis: "imported scanner file, source not read",
     })),
   };
 }

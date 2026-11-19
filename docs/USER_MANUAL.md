@@ -102,6 +102,23 @@ Ranking uses KEV and EPSS data and is plain deterministic code. No AI model scor
 
 When a fix pull request has green CI, the limb is marked `awaiting-human-merge`. The plate keeps showing it as POSSESSED or ROTTING, because the limb is not healed yet. The raid score counts it (section 5). It becomes HEALED only after a person merges the pull request on GitHub and `crypt reraise` (or the web page, when it loads the updated creature) sees the merge. A red CI result changes nothing: the limb stays as it was.
 
+## Is it used?
+
+Every npm limb carries a static "is it used?" signal. It answers "is this package in our code at all?" so triage can start with the packages the code names.
+
+| Value | Meaning |
+|---|---|
+| `imported directly` | A `require`, `import`, `import()`, `export ... from` or `require.resolve` of the package name was found in the source files. |
+| `transitive only` | No import was found, and the root package does not declare it. It arrived through another dependency. |
+| `dev only` | The lockfile marks every installed copy as a dev dependency. No source is needed for this. |
+| `unknown` | Anything else: the source could not be read or held no source files, the package is declared but no import was found (a CLI tool, a config file, a dynamic require), the lockfile could not be parsed, or the limb is not npm. |
+
+Rules, in order: dev flag first, then "no source means unknown", then "imported", then "not declared means transitive only", else unknown. When a package has several installed copies, the plate and the web list show `imported directly` if any copy has it, else `transitive only`, else `dev only` if every copy is dev, else `unknown`.
+
+Where it shows: the CLI summary and plate, `creature.json` (`usage` and `usageBasis` on each limb), the `used` column of the CSV and JSON export, the paste result, and `unmapped.used` in OCSF (docs/SOC.md).
+
+Limits. It is a text scan, a hint and not proof. It cannot see dynamic requires, bundler aliases, or code run by tools. It reads `.js .mjs .cjs .jsx .ts .tsx .mts .cts` files, skips `node_modules`, `.git`, `dist`, `build`, `coverage` and `out`, follows no symlinks, and stops at 5000 files and 1 MB per file. The web version reads only `package-lock.json`, so it shows only `dev only` or `unknown`. A GitHub URL given to the CLI is read the same way. Scan a local clone to get the full signal. PyPI limbs are `unknown`.
+
 ## 4. Guarantees
 
 - CRYPT has no merge capability. A human merges every pull request on GitHub.

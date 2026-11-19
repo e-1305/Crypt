@@ -1,0 +1,13 @@
+{
+  "name": "census-a",
+  "version": "1.0.0",
+  "dependencies": {
+    "lodash": "4.17.15",
+    "@scope/util": "1.2.0",
+    "minimist": "1.2.0",
+    "debug": "4.3.0"
+  },
+  "devDependencies": {
+    "mocha": "9.0.0"
+  }
+}

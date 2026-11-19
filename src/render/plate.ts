@@ -2,6 +2,7 @@
 // Every data string is cleaned to printable ASCII. Owners are never shown: rot belongs to the limb.
 
 import { safeLogin } from "../common/creature-status.js";
+import { type UsageSignal, USAGE_LIMIT_LINE, combineUsage, usageOf } from "../exhume/usage.js";
 
 export type PlateState = "Possessed" | "Rotting" | "Healed" | "Healthy";
 
@@ -24,6 +25,7 @@ const RIGHT_LABEL_COL = 56;
 const LABEL_MAX = 24;
 const OVERFLOW_MAX = 8;
 const STITCH_MAX = 40;
+const USED_MAX = 12;
 
 const MARK: Record<PlateState, string> = { Possessed: "#", Rotting: "%", Healed: " ", Healthy: "." };
 
@@ -97,6 +99,7 @@ export function plateInput(creature: unknown): { repo?: string; team?: { scanSta
     limbs.push({
       ecosystem: l.ecosystem, name: l.name, version: l.version,
       state: l.state, rank: l.rank, spawned: l.spawned,
+      ...(typeof l.usage === "string" ? { usage: usageOf(l.usage) } : {}),
       // Public scan numbers for the raid score. Owners stay out.
       epss: typeof l.epss === "number" ? l.epss : null, kev: l.kev === true,
       // Pipeline records: neutral facts about the limb. healedBy is praise only (a cleaned login).
@@ -122,6 +125,9 @@ interface Item {
   version: string;
   state: PlateState;
   spawned: boolean;
+  usage: UsageSignal;
+  /** Signals of every copy, for collapseCopies. */
+  copies?: UsageSignal[];
 }
 
 function stateOf(l: Record<string, unknown>): PlateState {
@@ -148,6 +154,7 @@ function items(creature: unknown): Item[] {
         version: clean(l.version, 12) || "unknown",
         state,
         spawned: l.spawned === true,
+        usage: usageOf(l.usage),
       },
       rank,
       i,
@@ -169,10 +176,15 @@ function collapseCopies(list: Item[]): Item[] {
       continue;
     }
     seen.n++;
+    seen.item.copies = [...(seen.item.copies ?? [seen.item.usage]), it.usage];
     if (WORST[it.state] < WORST[seen.item.state]) seen.item.state = it.state;
     seen.item.spawned = seen.item.spawned || it.spawned;
   }
-  return [...byKey.values()].map(({ item, n }) => (n > 1 ? { ...item, version: `x${n}` } : item));
+  return [...byKey.values()].map(({ item, n }) => {
+    if (n === 1) return item;
+    const { copies, ...rest } = item;
+    return { ...rest, usage: combineUsage(copies ?? [item.usage]), version: `x${n}` };
+  });
 }
 
 function label(it: Item): string {
@@ -274,6 +286,11 @@ export function layoutPlate(creature: unknown, options: PlateOptions = {}): Plat
   const stitches = Array.from({ length: Math.min(stitched.length, STITCH_MAX) }, () => ".").join(" ");
   lines.push(plain(`STITCHES: ${stitches === "" ? "none" : stitches}${stitched.length > STITCH_MAX ? " ..." : ""}`));
   lines.push(plain("# POSSESSED   % ROTTING   (clean lines) HEALED   . HEALTHY"));
+  lines.push(plain(USAGE_LIMIT_LINE));
+  if (figureItems.length > 0) {
+    for (const it of figureItems.slice(0, USED_MAX)) lines.push(plain(`  ${it.name.length > 40 ? it.name.slice(0, 39) + "~" : it.name}: ${it.usage}`));
+    if (figureItems.length > USED_MAX) lines.push(plain(`  ... and ${figureItems.length - USED_MAX} more`));
+  }
   lines.push(plain(rule));
   const n = (s: PlateState) => all.filter((i) => i.state === s).length;
   lines.push(

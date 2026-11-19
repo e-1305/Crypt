@@ -115,7 +115,7 @@ npm run reraise                               # after a human landed PRs: marks 
 npm run necromancer:check                     # offline acceptance: GRAFT JQUERY gives 1 payload, SEAL CRYPT then GRAFT LODASH gives 0
 ```
 
-`exhume` reads `package-lock.json` (v2/v3) and `requirements.txt` (`==` pins only), asks OSV once per `package@version` (cached in `data/cache/osv/`), ranks with local KEV/EPSS files and prints totals (dependencies, findings, limbs that spawn, findings below the noise line). A limb whose status cannot be established is reported as unknown, never as clean. Schema: `.kiro/specs/exhume-and-rank/design.md`.
+`exhume` reads `package-lock.json` (v2/v3) and `requirements.txt` (`==` pins only), asks OSV once per `package@version` (cached in `data/cache/osv/`), ranks with local KEV/EPSS files and prints totals (dependencies, findings, limbs that spawn, findings below the noise line). A limb whose status cannot be established is reported as unknown, never as clean. Each npm limb also gets a static "is it used?" hint (`imported directly`, `transitive only`, `dev only`, `unknown`) from a text scan of your source plus the lockfile dev flag; see the [manual](docs/USER_MANUAL.md#is-it-used). Schema: `.kiro/specs/exhume-and-rank/design.md`.
 
 ## GitHub Action
 

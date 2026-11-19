@@ -46,7 +46,7 @@ describe("CSV export", () => {
     it(`${dir}: same package order as crypt exhume`, async () => {
       const c = await creature(dir);
       const rows = parseCsv(toCsv(c.limbs));
-      expect(rows[0]).toEqual(["rank", "package", "version", "state", "kev", "epss", "severity", "sla", "owner"]);
+      expect(rows[0]).toEqual(["rank", "package", "version", "state", "kev", "epss", "severity", "sla", "owner", "used"]);
       const body = rows.slice(1);
       expect(body.map((r) => r[1])).toEqual(c.limbs.map((l) => l.name));
       expect(body.map((r) => r[0])).toEqual(c.limbs.map((l) => String(l.rank)));

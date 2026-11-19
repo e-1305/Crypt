@@ -32,6 +32,9 @@ Fig. 1. Corpus ex dependentiis consutum.
 
 STITCHES: . . . . .
 # POSSESSED   % ROTTING   (clean lines) HEALED   . HEALTHY
+USED?: text scan of imports, a hint, not proof
+  jquery: unknown
+  lodash: unknown
 ================================================================================
 DEPENDENCIES 7  POSSESSED 1  ROTTING 4  HEALED 0  HEALTHY 2
 LIMBS THAT SPAWN 2 OF 5 FINDINGS, 3 BELOW THE NOISE LINE
@@ -71,6 +74,9 @@ Fig. 1. Corpus ex dependentiis consutum.
 
 STITCHES: . . . . .
 # POSSESSED   % ROTTING   (clean lines) HEALED   . HEALTHY
+USED?: text scan of imports, a hint, not proof
+  jquery: unknown
+  lodash: unknown
 ================================================================================
 DEPENDENCIES 7  POSSESSED 1  ROTTING 4  HEALED 0  HEALTHY 2
 LIMBS THAT SPAWN 2 OF 5 FINDINGS, 3 BELOW THE NOISE LINE

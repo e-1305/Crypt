@@ -24,7 +24,9 @@
           "CVE-2020-11023"
         ]
       }
-    ]
+    ],
+    "usage": "unknown",
+    "usageBasis": "imported scanner file, source not read"
   },
   {
     "rank": 2,
@@ -51,7 +53,9 @@
           "CVE-2020-8203"
         ]
       }
-    ]
+    ],
+    "usage": "unknown",
+    "usageBasis": "imported scanner file, source not read"
   },
   {
     "rank": 3,
@@ -78,7 +82,9 @@
           "CVE-2021-44906"
         ]
       }
-    ]
+    ],
+    "usage": "unknown",
+    "usageBasis": "imported scanner file, source not read"
   },
   {
     "rank": 4,
@@ -105,7 +111,9 @@
           "CVE-2020-14343"
         ]
       }
-    ]
+    ],
+    "usage": "unknown",
+    "usageBasis": "imported scanner file, source not read"
   },
   {
     "rank": 5,
@@ -130,7 +138,9 @@
         "id": "GHSA-aaaa-bbbb-cccc",
         "cves": []
       }
-    ]
+    ],
+    "usage": "unknown",
+    "usageBasis": "imported scanner file, source not read"
   },
   {
     "rank": 6,
@@ -150,6 +160,8 @@
     "epss": null,
     "severity": 0,
     "vendorSeverity": null,
-    "vulns": []
+    "vulns": [],
+    "usage": "unknown",
+    "usageBasis": "imported scanner file, source not read"
   }
 ]

@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- "Is it used?" signal per npm limb (`imported directly`, `transitive only`, `dev only`, `unknown`): a static text scan of imports plus the lockfile dev flag. Shown in the plate, summary, paste result, CSV/JSON export (`used` column) and OCSF (`unmapped.used`). Limits are written next to it. See the manual.
+
 ## 0.2.0
 
 - `crypt alerts --format issues`: one GitHub issue per KEV limb (dry run by default, `--live` to open).

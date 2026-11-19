@@ -4,6 +4,7 @@
 // Limbs and owners from CODEOWNERS only, no person is named. Failsafe: any error shows a message and no creature.
 import { liveExhume, LiveExhumeError, PROGRESS_STEPS, dryRunLabel, ownerLabel } from "./js/web/live-exhume.js";
 import { noiseFunnel, funnelText, funnelOwners, exorcisedRows, LOCKFILE_LIMIT_LINE } from "./js/web/noise-funnel.js";
+import { USAGE_LIMITS_TEXT } from "./js/exhume/usage.js";
 import { slaOf, toCsv, toJson } from "./js/web/report-export.js";
 import { parseFeedSnapshot } from "./js/web/feed-snapshot.js";
 import { mountCardPanel } from "./card/panel.js";
@@ -136,9 +137,14 @@ function renderResult(root, r, gallery, announce = () => {}) {
     const flags = [g.kev ? "KEV" : "", g.epss !== null && g.epss !== undefined ? "EPSS " + g.epss.toFixed(2) : ""].filter(Boolean).join(", ");
     const li = el("li", groupName(g) + ": " + stateText(g) + (flags ? " (" + flags + ")" : "") + ", " + g.kind + ", " + ownerText(g) + (g.spawned ? ", spawned" : "") + " ");
     li.appendChild(el("span", "SLA: " + slaOf(g), "paste-sla"));
+    li.appendChild(document.createTextNode(" "));
+    li.appendChild(el("span", "Used?: " + (g.usage || "unknown"), "paste-used"));
     ol.appendChild(li);
   });
   root.appendChild(ol);
+  const usedNote = el("p", USAGE_LIMITS_TEXT, "paste-used-limits muted");
+  usedNote.id = "paste-used-limits";
+  root.appendChild(usedNote);
   const exportRow = el("div", undefined, "paste-export-row");
   const slug = r.repo.replace("/", "-");
   const csvBtn = el("button", "Download CSV");

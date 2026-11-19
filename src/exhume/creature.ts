@@ -4,6 +4,7 @@ import type { EpssFeed, KevFeed } from "./feeds.js";
 import { parsePackageLock, parseRequirements } from "./lockfile.js";
 import { type OsvLookup, resolveOsv } from "./osv.js";
 import { countLimbs, rankLimbs } from "./rank.js";
+import { type SourceFile, classifyUsage, scanImports, usageForLimb, usageOf, USAGE_LIMIT_LINE } from "./usage.js";
 import { type ExhumeFs, type Limb, compareLimbs } from "./types.js";
 
 export const MANIFESTS = ["package-lock.json", "requirements.txt"] as const;
@@ -21,6 +22,21 @@ export interface ExhumeOptions {
   now?: number;
   /** Repository name written to creature.json as "repo". Omitted when not given. */
   name?: string;
+  /**
+   * Source files of the target for the "is it used?" scan. Null, empty or a throw means the source could not be read:
+   * every npm limb then gets "unknown" (or "dev only" from the lockfile). Absent: same.
+   */
+  sources?: () => SourceFile[] | null;
+}
+
+function readImports(o: ExhumeOptions): Set<string> | null {
+  try {
+    const files = o.sources?.();
+    if (!files || files.length === 0) return null;
+    return scanImports(files);
+  } catch {
+    return null;
+  }
 }
 
 /** No supported manifest was readable: the run says nothing about the repository. */
@@ -68,6 +84,7 @@ export async function buildCreature(o: ExhumeOptions) {
     epss: o.epss,
     ownerOfManifest,
   });
+  const usage = lock !== null ? classifyUsage(lock, readImports(o)) : null;
   return {
     schemaVersion: 1,
     ...(o.name ? { repo: o.name } : {}),
@@ -95,6 +112,8 @@ export async function buildCreature(o: ExhumeOptions) {
       epss: l.epss,
       severity: l.severity,
       vulns: l.vulns,
+      usage: usageForLimb(l, usage).signal,
+      usageBasis: usageForLimb(l, usage).basis,
     })),
   };
 }
@@ -115,7 +134,8 @@ export function summarize(c: Creature, top = 5): string {
   ];
   for (const l of c.limbs.slice(0, top)) {
     if (l.state === "Healthy") break;
-    lines.push(`  #${l.rank} ${l.state}${l.unknown ? " (unknown)" : ""} ${l.id} owner: ${ownerLabel(l.owner)}`);
+    lines.push(`  #${l.rank} ${l.state}${l.unknown ? " (unknown)" : ""} ${l.id} owner: ${ownerLabel(l.owner)} used: ${usageOf((l as { usage?: unknown }).usage)}`);
   }
+  lines.push(`  ${USAGE_LIMIT_LINE}`);
   return lines.join("\n");
 }

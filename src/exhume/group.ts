@@ -1,6 +1,7 @@
 // Presentation grouping: every installed copy of one package becomes one entry. Pure, deterministic, no I/O.
 // The creature keeps one limb per copy (ranking and the game need that); lists, plates and PRs show one per package.
 import type { State } from "./rank.js";
+import { type UsageSignal, combineUsage } from "./usage.js";
 
 export interface GroupableLimb {
   ecosystem: string;
@@ -14,6 +15,8 @@ export interface GroupableLimb {
   epss: number | null;
   owner: string;
   rank: number;
+  /** Absent in creatures made before the signal existed: read as unknown. */
+  usage?: UsageSignal;
 }
 
 export interface PackageGroup<L extends GroupableLimb = GroupableLimb> {
@@ -32,6 +35,8 @@ export interface PackageGroup<L extends GroupableLimb = GroupableLimb> {
   owner: string;
   /** Best (lowest) rank among the copies. */
   rank: number;
+  /** Same precedence as the plate: any copy imported directly, else transitive only, else dev only when all are, else unknown. */
+  usage: UsageSignal;
   /** The copies, in the order they were given. */
   members: L[];
 }
@@ -82,6 +87,7 @@ export function groupLimbs<L extends GroupableLimb>(limbs: L[]): PackageGroup<L>
       epss,
       owner: first.owner,
       rank: Math.min(...members.map((m) => m.rank)),
+      usage: combineUsage(members.map((m) => m.usage)),
       members,
     };
   });
