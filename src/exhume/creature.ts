@@ -1,3 +1,4 @@
+import { attachUsage, USAGE_LABEL } from "./usage.js";
 import { countsPhrase } from "../common/counts.js";
 import { CODEOWNERS_LOCATIONS, ownerLabel, ownerOf, parseCodeowners } from "./owners.js";
 import type { EpssFeed, KevFeed } from "./feeds.js";
@@ -21,6 +22,8 @@ export interface ExhumeOptions {
   now?: number;
   /** Repository name written to creature.json as "repo". Omitted when not given. */
   name?: string;
+  /** P3: source files (path to text) for the static import signal. Undefined: no usage field is written. Null: npm limbs get "unknown". */
+  sourceFiles?: ReadonlyMap<string, string> | null;
 }
 
 /** No supported manifest was readable: the run says nothing about the repository. */
@@ -68,6 +71,7 @@ export async function buildCreature(o: ExhumeOptions) {
     epss: o.epss,
     ownerOfManifest,
   });
+  const withUsage = o.sourceFiles === undefined ? ranked : attachUsage(ranked, o.sourceFiles, lock);
   return {
     schemaVersion: 1,
     ...(o.name ? { repo: o.name } : {}),
@@ -77,7 +81,7 @@ export async function buildCreature(o: ExhumeOptions) {
     },
     counts: countLimbs(ranked),
     manifests,
-    limbs: ranked.map((l) => ({
+    limbs: withUsage.map((l) => ({
       rank: l.rank,
       id: l.id,
       ecosystem: l.ecosystem,
@@ -95,6 +99,7 @@ export async function buildCreature(o: ExhumeOptions) {
       epss: l.epss,
       severity: l.severity,
       vulns: l.vulns,
+      ...(l.usage ? { usage: l.usage } : {}),
     })),
   };
 }
@@ -115,7 +120,7 @@ export function summarize(c: Creature, top = 5): string {
   ];
   for (const l of c.limbs.slice(0, top)) {
     if (l.state === "Healthy") break;
-    lines.push(`  #${l.rank} ${l.state}${l.unknown ? " (unknown)" : ""} ${l.id} owner: ${ownerLabel(l.owner)}`);
+    lines.push(`  #${l.rank} ${l.state}${l.unknown ? " (unknown)" : ""} ${l.id} owner: ${ownerLabel(l.owner)}${l.usage ? ` · ${USAGE_LABEL[l.usage]}` : ""}`);
   }
   return lines.join("\n");
 }

@@ -50,6 +50,10 @@ Where it goes:
 
 `alerts` makes no network call. If `out/creature.json` is missing or invalid it writes nothing and exits non-zero (fail-safe: no events is not the same as no findings).
 
+### Is the package used? (`unmapped.usage`, SARIF `properties.usage`)
+
+For npm limbs scanned from a local checkout, each event says whether the code imports the package directly (`direct`), only gets it through another package (`transitive`), only in development (`dev`), or `unknown` (no source read, for example a scan by GitHub URL). Static check of imports, not a proof that the vulnerable code runs.
+
 ### Sample event (SAMPLE DATA, the e-1305/crypt-demo repo)
 
 ```json

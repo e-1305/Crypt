@@ -9,6 +9,7 @@ import { creatureRepoName, packageJsonName } from "../src/exhume/name.js";
 import { buildImportedCreature } from "../src/import/build.js";
 import { ImportError, isImportFormat } from "../src/import/index.js";
 import { nodeFs } from "./node-fs.js";
+import { readSourceTree } from "./source-tree.js";
 import { osvLookup } from "./osv-client.js";
 
 const USAGE =
@@ -95,6 +96,8 @@ async function main(): Promise<void> {
   const creature = await buildCreature({
     repo,
     name,
+    // P3: the import scan reads local source files only; a GitHub URL scan has no source tree, so npm usage is "unknown".
+    sourceFiles: gh ? null : readSourceTree(resolve(a.target)),
     cacheFs: nodeFs(isAbsolute(a.cache) ? "/" : "."), // an absolute --cache must not be re-rooted under the cwd
     cacheDir: a.cache,
     kev,

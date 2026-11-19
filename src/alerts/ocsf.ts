@@ -30,7 +30,7 @@ export interface OcsfFinding {
   metadata: { version: string; product: { name: "CRYPT"; vendor_name: "e-1305"; version: string } };
   finding_info: { uid: string; title: string; desc: string; created_time: number; types: string[] };
   vulnerabilities: { cve?: { uid: string }; title: string; severity: string; is_exploit_available: boolean; affected_packages: { name: string; version: string; type: string }[] }[];
-  unmapped: { kev: boolean; epss: number | null; owner_team: string; sla: SlaClass; sla_deadline: string | null; advisory_ids: string[]; feeds_as_of: { kev: string | null; epss: string | null } };
+  unmapped: { kev: boolean; epss: number | null; owner_team: string; sla: SlaClass; sla_deadline: string | null; advisory_ids: string[]; usage: string; feeds_as_of: { kev: string | null; epss: string | null } };
 }
 
 const rec = (v: unknown): Record<string, unknown> => (typeof v === "object" && v !== null && !Array.isArray(v) ? (v as Record<string, unknown>) : {});
@@ -113,6 +113,7 @@ export function buildOcsf(creature: unknown, now: Date): OcsfFinding[] {
         sla,
         sla_deadline: sla === "48 hours" ? new Date(t + 48 * 3600 * 1000).toISOString() : null,
         advisory_ids: advisories,
+        usage: ["direct", "transitive", "dev"].includes(String(l.usage)) ? String(l.usage) : "unknown",
         feeds_as_of: feedsAsOf,
       },
     });
