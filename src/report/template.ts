@@ -15,6 +15,8 @@ export const FOOTNOTES = {
   sla: "SLA compliance: in-scope limbs are Possessed (48 hours) and EPSS of 0.1 or more (14-day sprint), counted from the team scan start, or from a limb's own found time when the creature records one. A limb counts when it was healed inside its window or is still open inside it. At risk means 75% of the window is used.",
   trend: "Trend: open limbs (possessed plus rotting) after each of the last raids, read from the history that crypt autopsy and crypt gazette keep in out/autopsy-history.json (one entry per day they run), plus any history in out/state.json.",
   noise: "Noise exorcised: findings below the noise line (counts.exorcised) divided by all findings (counts.findings).",
+  history:
+    "Run history: one line per limb per run in out/crypt-history.jsonl (time, limb, state, KEV, EPSS, owner team, deadline). Age runs from the first history line (not always detection) to now, or to the time of a Healed line. A deadline is the SLA window of the policy (48 hours for KEV, 14 days for EPSS of 0.1 or more) counted from the limb's found time when the creature has one, else from the first history line. Mean time to heal uses only Healed lines that carry their own time. Landing time is shown apart as time to land. A value the history does not hold reads unknown. Each line carries a source label: real or sample.",
 } as const;
 
 export const SAMPLE_BANNER = "SAMPLE DATA";
@@ -61,6 +63,15 @@ h1,h2,.card .big{color:#0a4d0a}
 .hint,.no-print{display:none}
 .banner{color:#7a4a00;border-color:#7a4a00}
 .wm span{color:rgba(122,74,0,.14)}
+.spark{height:9mm;width:100%}
+.card.wide ul{columns:3;margin:.1rem 0}
+.card .detail{font-size:10px}
+footer{font-size:9px;margin-top:6px}
+footer ol{margin:.1rem 0}
+footer li{margin:0}
+.card.wide .detail{margin:.1rem 0}
+.grid{gap:4px;margin:6px 0}
+.card{padding:4px 8px}
 .spark .axis{stroke:#555}.spark .ln{stroke:#0a4d0a}.spark .dot{fill:#0a4d0a}
 footer{border-top-color:#555;color:#111}
 }

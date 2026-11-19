@@ -43,6 +43,7 @@ Options:
                       autopsy: report file (default out/autopsy.html);
                       graveyard: data file (default out/graveyard.json)
   --last <N>          autopsy: raids shown in the trend (1 to 52, default 8)
+  --history <FILE>    autopsy: read this run history (JSONL, for example fixtures/history/crypt-demo-2026-11-18.jsonl) instead of out/crypt-history.jsonl
   --webhook-env <VAR> gazette: SLACK_WEBHOOK_URL or TEAMS_WEBHOOK_URL (the variable holds the URL; it is never printed)
   --send              gazette: post to the webhook (default: print the payload)
   --dry-run           gazette: print the payload only (the default)

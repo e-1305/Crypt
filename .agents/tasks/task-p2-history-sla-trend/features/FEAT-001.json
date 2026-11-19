@@ -1,0 +1,19 @@
+{
+  "id": "FEAT-001",
+  "type": "chore",
+  "description": "Environment setup and green baseline.",
+  "status": "completed",
+  "steps": [
+    "Run npm ci",
+    "Run npm run typecheck and npm test; record baseline in findings",
+    "Read .kiro/steering/*.md and docs/ROADMAP.md P2"
+  ],
+  "acceptance_criteria": [
+    "typecheck and npm test pass on the untouched branch"
+  ],
+  "verification": [
+    "npm run typecheck && npm test"
+  ],
+  "blocked_reason": null,
+  "findings": "npm ci ok. Baseline typecheck ok; npm test had 5 failures in tests/import.test.ts (missing .toolchain/Inform6). They pass after npm run build:site runs scripts/setup-tools.sh, so they are environmental, not code."
+}

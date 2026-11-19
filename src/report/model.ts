@@ -14,6 +14,8 @@ export const LANDED_AT = "mer" + "gedAt";
 export const DEFAULT_LAST = 8;
 export const MAX_LAST = 52;
 
+import type { HistoryAggregate } from "./limb-history.js";
+
 export interface HistoryPoint {
   at: number;
   possessed: number;
@@ -45,6 +47,8 @@ export interface AutopsyModel {
   trend: { points: HistoryPoint[]; enough: boolean; message: string };
   noise: { pct: number | null; exorcised: number | null; findings: number | null };
   praise: Praise[];
+  /** Per-limb run history (P2): open KEV over time, age, breaches, mean time to heal. Absent when no history was given. */
+  limbHistory?: HistoryAggregate;
 }
 
 export interface AutopsyInput {
@@ -52,6 +56,8 @@ export interface AutopsyInput {
   state: unknown;
   /** Raw history array. When absent, state.history is used. */
   history?: unknown;
+  /** Aggregated per-limb history from out/crypt-history.jsonl (see aggregate in limb-history.ts). */
+  limbHistory?: HistoryAggregate;
   /** Clock in ms since the epoch. */
   now: number;
   /** Raids shown in the trend (default 8). */
@@ -133,6 +139,7 @@ function emptyModel(now: number): AutopsyModel {
 export function buildAutopsy(input: AutopsyInput): AutopsyModel {
   const model = buildModel(input);
   if (input?.sample === true) model.sample = true;
+  if (input?.limbHistory !== undefined && typeof input.limbHistory === "object" && input.limbHistory !== null) model.limbHistory = input.limbHistory;
   return model;
 }
 

@@ -8,6 +8,7 @@ import { badgesFor } from "../js/warroom/badges.js";
 import { recapFor } from "../js/warroom/recap.js";
 import { rateLimitDecision } from "../js/warroom/github-events.js";
 import { pollCycle } from "../js/warroom/poll.js";
+import { aggregate, parseHistoryJsonl, durationText } from "../js/report/limb-history.js";
 import { drawCard, downloadCard } from "../theatre/card-draw.js";
 import { ensureFonts } from "../theatre/font.js";
 
@@ -21,6 +22,8 @@ const el = {
   banner: $("mode-banner"), plate: $("plate"), flash: $("flash"), rejection: $("rejection"), bossList: $("boss-list"),
   score: $("score-value"), clock: $("clock"), pollNote: $("poll-note"), combo: $("combo-value"), comboNote: $("combo-note"),
   feed: $("feed"), badges: $("badges"), status: $("status"), recap: $("recap"), recapCanvas: $("recap-canvas"),
+  histSource: $("hist-source"), histNote: $("hist-note"), histKev: $("hist-kev"), histAge: $("hist-age"), histBreach: $("hist-breach"),
+  histMean: $("hist-mean"), histMeanNote: $("hist-mean-note"),
   sound: $("sound-toggle"), repoInput: $("repo-input"), tokenInput: $("token-input"),
 };
 
@@ -45,6 +48,45 @@ const run = {
   quota: null,
   done: false,
 };
+
+const HISTORY_URL = "war-room/crypt-history-demo.jsonl";
+
+function fillList(list, items, empty) {
+  list.replaceChildren();
+  if (items.length === 0) { list.append(mk("li", "muted", empty)); return; }
+  for (const it of items) {
+    const li = mk("li", it.unknown ? "unknown" : "", it.text);
+    list.append(li);
+  }
+}
+
+// Run history panels. Every value that is not in the history reads "unknown". Each line carries its source label (real or sample).
+function drawHistory(lines, now) {
+  const a = aggregate(lines, now);
+  const day = (iso) => iso.slice(0, 10);
+  el.histSource.textContent = a.lineCount === 0 ? "unknown" : "Source: " + a.sources.join(" and ") + " (" + a.lineCount + " lines)";
+  el.histNote.textContent = a.lineCount === 0 ? "The run history could not be loaded. Run crypt autopsy after each raid to build it." : "";
+  fillList(el.histKev, a.runs.map((r) => ({ text: day(r.ts) + ": " + r.openKev + " open KEV of " + r.open + " open" })), "unknown: no dated run");
+  fillList(el.histAge, a.ageByLimb.map((l) => ({ text: l.limb + " " + l.state.toLowerCase() + ": " + durationText(l.hours) + (l.state !== "Landed" && l.landHours !== null ? " (to land " + durationText(l.landHours) + ")" : ""), unknown: l.hours === null })), "none open yet");
+  fillList(
+    el.histBreach,
+    a.deadlineBreaches.map((b) => ({ text: b.limb + " " + (b.kind === "open" ? "open past " : "healed after ") + day(b.deadline) })),
+    "none among " + a.limbsWithDeadline + " limbs with a known deadline",
+  );
+  el.histMean.textContent = durationText(a.meanTimeToHealHours);
+  el.histMean.classList.toggle("unknown", a.meanTimeToHealHours === null);
+  el.histMeanNote.textContent = a.healTimesKnown + " of " + a.healedLimbs + " healed limbs have a known heal time. A landing is not a heal. Mean time to land: " + durationText(a.meanTimeToLandHours) + " (" + a.landTimesKnown + " limbs). Age counts from the first history line, which is not always detection (in the crypt-demo seed it is the fix PR opening)." + (a.kevLines === 0 ? " This history holds no known KEV limb, so the KEV trend is flat for lack of data, not because none were open." : "");
+}
+
+async function loadHistory() {
+  try {
+    const res = await fetch(HISTORY_URL);
+    if (!res.ok) throw new Error("history " + res.status);
+    drawHistory(parseHistoryJsonl(await res.text()), Date.now());
+  } catch {
+    drawHistory([], Date.now());
+  }
+}
 
 function say(text) { el.status.textContent = text; }
 
@@ -380,6 +422,7 @@ async function boot() {
     return;
   }
   run.limbs = run.creature.limbs;
+  loadHistory();
   const wanted = new URLSearchParams(location.search).get("repo");
   if (wanted) {
     const repos = parseRepos(wanted);

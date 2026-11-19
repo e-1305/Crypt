@@ -1,0 +1,17 @@
+{
+  "task_id": "task-p2-history-sla-trend",
+  "task_description": "Implement roadmap P2 (issue #182): run history, ageing and SLA trend in War Room and CISO report",
+  "status": "completed",
+  "feature_order": [
+    "FEAT-001",
+    "FEAT-002"
+  ],
+  "blocked_reason": null,
+  "verification": {
+    "build": "pass",
+    "tests": "pass",
+    "test_quality": "pass",
+    "docker_build": "skipped",
+    "summary": "typecheck, 1172 tests, failsafe-guard, build:web/site pass; review v2 APPROVED"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "P2 run history, ageing and SLA trend (issue #182). One PR. Implements roadmap P2 exactly: one history line per limb per run (ts, limb id, state, kev, epss, owner team, deadline), appended to an Action artifact or a crypt-history branch, never the default branch. War Room and Autopsy/CISO page show open KEV limbs over time, age per limb, deadline breaches, mean time to heal. Unknown stays unknown (null/'unknown', never 0 or guessed).",
+  "status": "completed",
+  "steps": [
+    "New pure module src/report/limb-history.ts: HistoryLine type {ts, limb, state, kev, epss, ownerTeam, deadline} with parseHistoryLine (junk gives null; missing kev/epss/owner/deadline stay null, never defaulted), linesFromCreature(creature, now) (one line per limb; deadline from sla-policy: Possessed/KEV = ts+48h, EPSS>=0.1 = sprint window per src/report/model.ts constants, else null; ownerTeam from creature owner team only, blameless), JSONL serialize/parse, and aggregate(lines, now) returning: openKevOverTime (per run ts), ageByLimb (first-seen to now or to heal; null if unknown), deadlineBreaches (list, only where deadline known), meanTimeToHealHours (null when no heal), plus a 'source' label per line (real|sample).",
+    "Append logic in scripts/cli/history.ts (reuse Io): write out/crypt-history.jsonl on each autopsy/gazette run, dedupe same run ts+limb, fail-safe on write error (ignore). Existing autopsy-history.json behaviour stays unchanged.",
+    "Persistence: update action.yml and scripts/ci/action.sh so the artifact upload includes crypt-history.jsonl, and add an optional input history-branch (default none) that, when set, pushes crypt-history.jsonl ONLY to a branch literally named crypt-history, refusing if the branch name equals the repo default branch or is empty; fail-safe on any error. No merge calls. Add a test that the guard refuses the default branch name (property test over branch names).",
+    "Autopsy/CISO page: extend src/report/model.ts (new optional field model.sla trend section or model.history) and src/report/html.ts/template.ts to render: open KEV limbs over time (inline SVG or table matching existing trend rendering), age per limb, deadline breaches, mean time to heal; show 'unknown' where null. Copy states actions, no prohibitions, no em dashes. Update tests/__snapshots__ only as intended.",
+    "War Room: add the same four panels to web/war-room/war-room.js/.html/.css (fed from the history lines, relative URL only, check tests/site.test.ts absolute URL rule), with 'unknown' for nulls and a label 'real' vs 'sample' per source.",
+    "Demo seed: create a fixture (e.g. fixtures/history/crypt-demo-2026-11-18.jsonl) with ONLY the real events from docs/PROOF.md: PR #1 opened 2026-11-18T18:23:40Z (graft), merged 18:26:40Z (merge), reraise HEALED for lodash (use docs/PROOF.md timestamps; where PROOF.md gives no timestamp for the reraise, set ts to null/unknown and say so rather than inventing; do not invent jquery history beyond what PROOF.md states). Every line labelled source 'real' and the UI shows 'real' label. Anything synthetic must be labelled 'sample'.",
+    "Tests (tests/limb-history.test.ts): fast-check property test that aggregation counts are consistent: for any generated lines, sum of per-run states equals line count per run, openKev <= open limbs, breaches <= limbs with a deadline, healed count equals count of limbs whose last state is healed, mean time to heal null iff no heals, aggregate is order independent (shuffled input same result), junk lines never throw. Plus example test on the crypt-demo seed: lodash heal appears, mean time to heal computed from real timestamps, unknown stays null. Plus autopsy/war-room render tests asserting 'unknown' rendering and no person names (blameless).",
+    "Docs: update docs/ROADMAP.md P2 with status/how to run, docs/USER_MANUAL.md short section, CHANGELOG.md entry. Do not run kiro:stats/timeline."
+  ],
+  "acceptance_criteria": [
+    "npm run typecheck and npm test pass",
+    "History line has exactly the fields ts, limb id, state, kev, epss, owner team, deadline",
+    "No code path writes to the default branch; branch guard tested",
+    "Autopsy page and War Room show open KEV over time, age per limb, deadline breaches, mean time to heal; missing data renders 'unknown'",
+    "Seed contains only real 2026-11-18 events from docs/PROOF.md labelled real; the trend shows the lodash heal",
+    "Property test confirms aggregation counts consistent",
+    "scripts/ci/failsafe-guard.sh passes"
+  ],
+  "verification": [
+    "npm ci && npm run typecheck && npm test",
+    "bash scripts/ci/failsafe-guard.sh",
+    "npm run build:web && npm run build:site"
+  ],
+  "blocked_reason": null,
+  "findings": "Implemented. History line adds a source label (real|sample) next to the 7 required fields. States: Possessed|Rotting|Healthy|Landed|Healed. Real seed has 3 LODASH lines (PR opened 18:23:40Z Rotting, landed 18:26:40Z Landed, reraise Healed with ts null); no jquery line because PROOF.md gives it no time. Heal time = landing time (0.05h), stated in UI. EPSS, owner team, deadline are null in the seed. Autopsy snapshot updated (+3 lines, intended). Pure module src/report/limb-history.ts is also compiled for the web via tsconfig.web.json. Branch guard in scripts/ci/history-branch.sh (push uses plumbing and refspec refs/heads/crypt-history only), tested against TS guard. Full npm test 1169 passed, failsafe-guard ok, build:web and build:site ok."
+}

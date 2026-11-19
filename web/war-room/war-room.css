@@ -70,6 +70,7 @@ label { display: block; color: var(--dim); }
     "scene scene bosses feed"
     "score countdown combo feed"
     "badges badges controls controls"
+    "history history history history"
     "recap recap recap recap"; }
   #scene { grid-area: scene; }
   #bosses { grid-area: bosses; }
@@ -79,6 +80,7 @@ label { display: block; color: var(--dim); }
   #combo { grid-area: combo; }
   #badges-panel { grid-area: badges; }
   #controls { grid-area: controls; }
+  #history { grid-area: history; }
   #recap { grid-area: recap; }
 }
 @media (min-width: 1700px) { .plate { font-size: 13px; } .big { font-size: 3rem; } }
@@ -86,5 +88,9 @@ label { display: block; color: var(--dim); }
   .plate .just-healed, .plate .convulsing, .flash.thunder { animation: none; }
   .bar > span, .rejection { transition: none; }
 }
+h3 { margin: .6rem 0 .2rem; font-size: .9rem; color: var(--dim); letter-spacing: .1em; text-transform: uppercase; }
+.hist { margin: 0; padding-left: 1.2rem; }
+.hist li { margin-bottom: .2rem; overflow-wrap: anywhere; }
+.unknown { color: var(--warn); }
 .rejection-limb { font-weight: 400; opacity: .85; }
 .rejection-limb::after { content: ":"; }
