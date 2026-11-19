@@ -2,7 +2,11 @@
 
 ## Unreleased
 
-- Import scan for npm (P3a, `src/exhume/usage.ts`): a static, deterministic text scan that labels each locked package `direct`, `transitive`, `dev` or `unknown`. It is not a reachability claim. No UI or export yet (P3b).
+- `crypt init` (P4): one onboarding pull request with the workflow in report mode and, if missing, a CODEOWNERS draft with team placeholders.
+- Buyer page `/for-teams.html` and a design-partner issue template (P5).
+- The Action self-test uploads SARIF to this repository's Code Scanning.
+
+- Import scan for npm (P3a, `src/exhume/usage.ts`): a static, deterministic text scan that labels each locked package `direct`, `transitive`, `dev` or `unknown`. It is not a reachability claim. Wired into the CLI summary, creature.json, OCSF `unmapped.usage` and SARIF `properties.usage` by P3b (#200).
 - Run history, ageing and SLA trend (P2): `out/crypt-history.jsonl` with one line per limb per run, Action input `history-branch` (only `crypt-history`, never the default branch), and four panels on the autopsy page and in the War Room: open KEV limbs over time, age per limb, deadline breaches, mean time to heal. Unknown values read `unknown`. Seeded with the real crypt-demo events of 2026-11-18.
 
 ## 0.2.0
