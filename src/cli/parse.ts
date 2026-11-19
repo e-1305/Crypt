@@ -40,7 +40,7 @@ export const SPECS: Record<CommandName, Spec> = {
   raid: { positional: TARGET, flags: { offline: "bool", feeds: "value", cache: "value", live: "bool", timeout: "value" } },
   autopsy: { positional: [], flags: { out: "value", last: "value", sample: "bool" } },
   gazette: { positional: [], flags: { "webhook-env": "value", "dry-run": "bool", send: "bool", "war-room": "value", format: "value", sample: "bool" } },
-  alerts: { positional: [], flags: { format: "value", live: "bool", repo: "value", out: "value" } },
+  alerts: { positional: [], flags: { format: "value", live: "bool", repo: "value", out: "value", base: "value" } },
   graveyard: { positional: [], flags: { org: "value", "token-env": "value", out: "value", repos: "value", sample: "bool" } },
 };
 
@@ -158,6 +158,7 @@ export function parseCli(argv: readonly string[], env: Record<string, string | u
   if (command === "alerts") {
     if (flags.format !== "issues" && flags.format !== "ocsf" && flags.format !== "sarif") throw new UsageError("alerts needs --format issues, --format ocsf or --format sarif. Run: crypt alerts --format ocsf");
     if ((flags.format === "ocsf" || flags.format === "sarif") && (flags.live !== undefined || flags.repo !== undefined)) throw new UsageError(`--format ${String(flags.format)} only writes a local file. Remove --live and --repo.`);
+    if (flags.base !== undefined && flags.format !== "sarif") throw new UsageError("--base only applies to --format sarif.");
     if (flags.format === "issues" && flags.out !== undefined) throw new UsageError("--out only applies to --format ocsf or --format sarif.");
     if (flags.live === true) {
       if (typeof flags.repo !== "string") throw new UsageError("--live needs --repo owner/name, the repository that receives the issues.");

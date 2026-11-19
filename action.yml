@@ -65,7 +65,7 @@ runs:
         fi
         bash "${{ github.action_path }}/scripts/ci/action.sh" "$INPUT_MODE" "$INPUT_LIMB" "$INPUT_SABOTAGE"
     - name: Upload SARIF to Code Scanning
-      if: inputs.upload-sarif == 'true' && steps.crypt.outputs.sarif != ''
+      if: inputs.upload-sarif == 'true' && steps.crypt.outputs.sarif != '' && !(github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork)
       uses: github/codeql-action/upload-sarif@v3
       with:
         sarif_file: ${{ steps.crypt.outputs.sarif }}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { spawnSync } from "node:child_process";
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -105,6 +105,13 @@ describe("action.sh upload-sarif input", () => {
     expect(x.r.status).toBe(0);
     expect(x.calls).toContain("alerts --format sarif|token=\n");
     expect(readFileSync(o, "utf8")).toMatch(/^sarif=.*\/out\/alerts\.sarif$/m);
+  });
+  it("passes the scanned subdirectory as --base", () => {
+    const o = join(mkdtempSync(join(tmpdir(), "crypt-gho-")), "out.txt");
+    writeFileSync(o, "");
+    const x = run(["report"], { INPUT_UPLOAD_SARIF: "true", GITHUB_OUTPUT: o, GITHUB_WORKSPACE: realpathSync(tmpdir()) });
+    expect(x.r.status).toBe(0);
+    expect(x.calls).toMatch(/alerts --format sarif --base crypt-action-[^/ ]+\/repo\|/);
   });
   it("fails and sets no sarif output when the SARIF cannot be built", () => {
     const o = join(mkdtempSync(join(tmpdir(), "crypt-gho-")), "out.txt");

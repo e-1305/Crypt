@@ -1,4 +1,4 @@
-// Pure builder for `crypt alerts --format sarif`: a SARIF 2.1.0 log for GitHub Code Scanning. One result per spawned limb, one rule per advisory.
+// Pure builder for `crypt alerts --format sarif`: a SARIF 2.1.0 log for GitHub Code Scanning. One result per spawned limb, one rule per advisory id that a result references (the other ids of a limb are in properties.advisory_ids).
 // Deterministic: same creature and same `now` give the same bytes. Fail-safe: an invalid creature throws, nothing is written.
 // The $schema value is an identifier, not a request: this file makes no network call.
 // Blameless: the owner is a team handle from CODEOWNERS or "no owner". No person is ever named.
@@ -45,13 +45,24 @@ export function levelOf(kev: boolean, epss: number | null): SarifLevel {
   return sla === "48 hours" ? "error" : sla === "this sprint" ? "warning" : "note";
 }
 
-const manifestOf = (ecosystem: string): string => {
-  const e = ecosystem.toLowerCase();
-  if (e === "pypi") return "requirements.txt";
-  return "package-lock.json";
+/** Repo-relative POSIX directory of the scanned path ("" for the root). Rejects anything that could leave the repo. */
+export function cleanBase(base: string | undefined): string {
+  const b = (base ?? "").replace(/\\/g, "/").replace(/^(\.\/)+/, "").replace(/\/+$/, "");
+  if (b === "" || b === ".") return "";
+  if (b.startsWith("/") || !/^[A-Za-z0-9._@ \/-]+$/.test(b) || b.split("/").some((seg) => seg === ".." || seg === "" || seg === ".")) {
+    throw new Error("invalid --base: expected a relative directory inside the repository");
+  }
+  return b;
 };
 
-export function buildSarif(creature: unknown, now: Date): SarifLog {
+const manifestOf = (ecosystem: string, base: string): string => {
+  const file = ecosystem.toLowerCase() === "pypi" ? "requirements.txt" : "package-lock.json";
+  return base === "" ? file : `${base}/${file}`;
+};
+
+/** `base` is the scanned directory relative to the repository root (the Action `path` input), so results anchor to the real manifest. */
+export function buildSarif(creature: unknown, now: Date, base?: string): SarifLog {
+  const dir = cleanBase(base);
   const c = rec(creature);
   if (!Array.isArray(c.limbs)) throw new Error("creature.json has no limbs array");
   const t = now.getTime();
@@ -68,7 +79,8 @@ export function buildSarif(creature: unknown, now: Date): SarifLog {
     const vulns = (Array.isArray(l.vulns) ? l.vulns : []).map(rec);
     const advisories = [...new Set(vulns.map((v) => clean(v.id, 60)).filter(Boolean))].sort();
     pending.push({ limb: l, advisories });
-    for (const id of advisories) {
+    // Only the advisory a result uses becomes a rule; the limb's other ids stay in properties.advisory_ids.
+    for (const id of advisories.slice(0, 1)) {
       if (rules.has(id)) continue;
       const cves = [...new Set(vulns.filter((v) => clean(v.id, 60) === id).flatMap((v) => (Array.isArray(v.cves) ? v.cves : [])).map((x) => clean(x, 40)).filter((x) => /^CVE-\d{4}-\d+$/.test(x)))].sort();
       rules.set(id, {
@@ -101,7 +113,7 @@ export function buildSarif(creature: unknown, now: Date): SarifLog {
       ruleIndex: index.get(ruleId)!,
       level: levelOf(kev, epss),
       message: { text },
-      locations: [{ physicalLocation: { artifactLocation: { uri: manifestOf(ecosystem) }, region: { startLine: 1 } } }],
+      locations: [{ physicalLocation: { artifactLocation: { uri: manifestOf(ecosystem, dir) }, region: { startLine: 1 } } }],
       partialFingerprints: { "crypt/limb/v1": `crypt:${ecosystem}:${name}@${version}` },
       properties: {
         kev,

@@ -50,7 +50,7 @@ jobs:
           upload-sarif: true
 ```
 
-The result level follows the ranking: KEV is `error`, EPSS ≥ 0.1 is `warning`, the rest is `note`. Each result carries `kev`, `epss`, the owner team from CODEOWNERS and the SLA; never a person. If the SARIF cannot be built, the step fails and nothing is uploaded. Pull requests from forks get a read-only token, so the upload step fails there. Private repositories need GitHub Code Security (Advanced Security) for Code scanning. Details: [SOC.md](SOC.md).
+The result level follows the ranking: KEV is `error`, EPSS ≥ 0.1 is `warning`, the rest is `note`. Each result carries `kev`, `epss`, the owner team from CODEOWNERS and the SLA; never a person. If the SARIF cannot be built, the step fails and nothing is uploaded. Pull requests from forks get a read-only token, so the Action skips the upload there and the rest of the report still runs. With `path`, results point at `<path>/package-lock.json` (or `requirements.txt`). Private repositories need GitHub Code Security (Advanced Security) for Code scanning. Details: [SOC.md](SOC.md).
 
 ## Alerts
 

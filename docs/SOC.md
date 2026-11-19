@@ -99,14 +99,14 @@ npx @e-1305/crypt alerts --format sarif
 
 This writes `out/alerts.sarif` (SARIF 2.1.0; `--out <file>` picks another path). It reads only `out/creature.json`, makes no network call, and writes nothing if the creature is invalid (the command exits non-zero). Upload it with `github/codeql-action/upload-sarif`, or let the Action do it with `upload-sarif: true` ([INSTALL-ACTION.md](INSTALL-ACTION.md)). The findings then appear in the repository's **Security** tab, under Code scanning.
 
-One result per limb that spawned, most urgent first; one rule per advisory id.
+One result per limb that spawned, most urgent first. A rule is the advisory id a result uses (the first, sorted); the limb's other ids are listed in `properties.advisory_ids`.
 
 | SARIF field | What CRYPT puts there |
 |---|---|
-| `runs[].tool.driver.rules[]` | one rule per advisory id (GHSA, CVE or other OSV id) |
+| `runs[].tool.driver.rules[]` | one rule per advisory id used by a result (GHSA, CVE or other OSV id) |
 | `results[].ruleId` | the first advisory id of the limb (sorted) |
 | `results[].level` | `error` for KEV, `warning` for EPSS ≥ 0.1, else `note` |
-| `results[].locations[]` | the manifest (`package-lock.json`, `requirements.txt` for PyPI), line 1 |
+| `results[].locations[]` | the manifest (`package-lock.json`, `requirements.txt` for PyPI), line 1. With `--base <dir>` (the Action sets it from `path`) the URI is `<dir>/<manifest>` |
 | `results[].partialFingerprints` | `crypt/limb/v1`: `crypt:<ecosystem>:<package>@<version>`, stable across runs |
 | `results[].properties.kev`, `.epss` | KEV flag and FIRST EPSS score |
 | `results[].properties.sla`, `.sla_deadline` | `48 hours` for KEV (with the deadline), `this sprint` for EPSS ≥ 0.1, else `backlog` |

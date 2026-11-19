@@ -44,7 +44,7 @@ describe("buildSarif", () => {
 
   it("has one result per spawned limb and one rule per advisory", () => {
     expect(run.results).toHaveLength(3);
-    expect(run.tool.driver.rules.map((r) => r.id)).toEqual(["GHSA-A", "GHSA-A2", "GHSA-B"]);
+    expect(run.tool.driver.rules.map((r) => r.id)).toEqual(["GHSA-A", "GHSA-B"]);
     for (const r of run.results) expect(run.tool.driver.rules[r.ruleIndex]!.id).toBe(r.ruleId);
   });
 
@@ -118,6 +118,23 @@ describe("crypt alerts --format sarif", () => {
     expect(code).toBe(0);
     check(JSON.parse(readFileSync(join(d, "out", "alerts.sarif"), "utf8")));
     expect(out).toMatch(/3 results/);
+  });
+
+  it("anchors results to <base>/<manifest> with --base", async () => {
+    const d = work(creature);
+    await alertsCommand(parseCli(["alerts", "--format", "sarif", "--base", "services/web"]), { cwd: d, now: () => NOW, out: () => {} });
+    const l = JSON.parse(readFileSync(join(d, "out", "alerts.sarif"), "utf8")) as ReturnType<typeof buildSarif>;
+    for (const r of l.runs[0]!.results) expect(r.locations[0]!.physicalLocation.artifactLocation.uri).toBe("services/web/package-lock.json");
+  });
+
+  it("rejects a base that leaves the repository and writes nothing", async () => {
+    const d = work(creature);
+    await expect(alertsCommand(parseCli(["alerts", "--format", "sarif", "--base", "../x"]), { cwd: d, now: () => NOW, out: () => {} })).rejects.toThrow(/Nothing was written/);
+    expect(existsSync(join(d, "out", "alerts.sarif"))).toBe(false);
+  });
+
+  it("--base only goes with --format sarif", () => {
+    expect(() => parseCli(["alerts", "--format", "ocsf", "--base", "a"])).toThrow(UsageError);
   });
 
   it("honors --out", async () => {

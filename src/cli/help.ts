@@ -38,6 +38,7 @@ Options:
   --feeds <dir>       raid, exhume: directory with kev.json and epss.csv
   --from <format>     exhume: <target> is a scanner file: sarif, dependabot, trivy, grype or snyk (no OSV call)
   --cache <dir>       raid, exhume: directory for cached OSV answers
+  --base <dir>        alerts --format sarif: scanned directory relative to the repo root (default: root)
   --out <path>        exhume: creature file (default out/creature.json); raise: output directory;
                       autopsy: report file (default out/autopsy.html);
                       graveyard: data file (default out/graveyard.json)

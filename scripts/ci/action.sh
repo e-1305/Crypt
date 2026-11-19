@@ -119,7 +119,15 @@ fi
 if [ "$upload_sarif" = "true" ]; then
   # Fail-safe: if the SARIF cannot be built, the step fails and no output is set, so nothing is uploaded.
   # shellcheck disable=SC2086
-  { $CRYPT alerts --format sarif 2>&1 | tee -a "$log"; } || fail "crypt alerts --format sarif failed. Nothing was uploaded to Code Scanning."
+  # The scan root may be a subdirectory (path input): anchor results to the manifest's real repo-relative path.
+  sarif_base=""
+  if [ -n "${GITHUB_WORKSPACE:-}" ]; then
+    ws="$(cd "$GITHUB_WORKSPACE" && pwd -P)"
+    case "$(cd "$TARGET" && pwd -P)/" in "$ws/"*) sarif_base="$(cd "$TARGET" && pwd -P)"; sarif_base="${sarif_base#"$ws"}"; sarif_base="${sarif_base#/}" ;; esac
+  fi
+  sarif_args=()
+  if [ -n "$sarif_base" ]; then sarif_args=(--base "$sarif_base"); fi
+  { $CRYPT alerts --format sarif ${sarif_args[@]+"${sarif_args[@]}"} 2>&1 | tee -a "$log"; } || fail "crypt alerts --format sarif failed. Nothing was uploaded to Code Scanning."
   [ -s out/alerts.sarif ] || fail "crypt alerts wrote no out/alerts.sarif. Nothing was uploaded to Code Scanning."
   if [ -n "${GITHUB_OUTPUT:-}" ]; then echo "sarif=${OUT_DIR}/out/alerts.sarif" >>"$GITHUB_OUTPUT"; fi
 fi

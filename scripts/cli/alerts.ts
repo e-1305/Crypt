@@ -46,7 +46,7 @@ export async function alertsCommand(p: Parsed, deps: AlertsDeps = {}): Promise<n
     const target = typeof p.flags.out === "string" ? p.flags.out : "out/alerts.sarif";
     let log;
     try {
-      log = buildSarif(creature, now());
+      log = buildSarif(creature, now(), typeof p.flags.base === "string" ? p.flags.base : undefined);
     } catch (e) {
       throw new CliError(`alerts: ${e instanceof Error ? e.message : "invalid creature"}. Nothing was written.`, EXIT.FAILURE);
     }
