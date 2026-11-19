@@ -213,6 +213,7 @@ export function initPaste({ announce, gallery = [], fetchFn = (...a) => fetch(..
     }
     // The 3D bench has no room for results: continue on the plain page, which runs the same code.
     if (document.body.classList.contains("theatre")) {
+      document.dispatchEvent(new CustomEvent("crypt:jar", { detail: { repo: ref.owner + "/" + ref.repo } }));
       navigate("?theatre=2d&repo=" + encodeURIComponent(ref.owner + "/" + ref.repo));
       return;
     }
