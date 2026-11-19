@@ -1,6 +1,7 @@
 name: action-selftest
 
-# Runs this repository's own action in report mode against e-1305/crypt-demo. Read only: no token, no writes.
+# Runs this repository's own action in report mode against e-1305/crypt-demo.
+# Top level stays read only. Only the selftest job also gets security-events: write, to upload SARIF to Code Scanning.
 on:
   workflow_dispatch:
 
@@ -11,6 +12,9 @@ jobs:
   selftest:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -23,3 +27,9 @@ jobs:
         with:
           mode: report
           path: target
+      - name: Self-test with SARIF upload to Code Scanning
+        uses: ./crypt
+        with:
+          mode: report
+          path: target
+          upload-sarif: "true"
