@@ -40,6 +40,7 @@ npx @e-1305/crypt alerts --format ocsf
 | `severity_id` | from the advisory severity; `0 Unknown` when there is none (never guessed) |
 | `unmapped.kev`, `unmapped.epss` | KEV flag and FIRST EPSS score |
 | `unmapped.sla`, `unmapped.sla_deadline` | `48 hours` for KEV (with the deadline), `this sprint` for EPSS ≥ 0.1, else `backlog` |
+| `unmapped.feeds_as_of` | `{ kev, epss }`: the KEV and EPSS feed dates from `creature.json` (`feeds.kev.date`, `feeds.epss.date`). `null` for a feed that was missing. Compare with `time` to see how old the ranking is. |
 | `unmapped.owner_team` | the team from `CODEOWNERS`, or `no owner`. Never a person. |
 
 Where it goes:
@@ -62,7 +63,7 @@ Where it goes:
   "severity": "Medium",
   "status": "New",
   "time": 1795003200000,
-  "metadata": { "version": "1.1.0", "product": { "name": "CRYPT", "vendor_name": "e-1305", "version": "0.1.0" } },
+  "metadata": { "version": "1.1.0", "product": { "name": "CRYPT", "vendor_name": "e-1305", "version": "0.2.0" } },
   "finding_info": {
     "uid": "crypt:npm:jquery@3.4.1",
     "title": "Actively exploited (CISA KEV) dependency: jquery 3.4.1",
@@ -72,7 +73,8 @@ Where it goes:
     { "cve": { "uid": "CVE-2020-11023" }, "is_exploit_available": true, "severity": "Medium",
       "affected_packages": [{ "name": "jquery", "version": "3.4.1", "type": "npm" }] }
   ],
-  "unmapped": { "kev": true, "epss": 0.85, "sla": "48 hours", "sla_deadline": "2026-11-20T12:00:00.000Z", "owner_team": "no owner" }
+  "unmapped": { "kev": true, "epss": 0.85, "sla": "48 hours", "sla_deadline": "2026-11-20T12:00:00.000Z", "owner_team": "no owner",
+    "feeds_as_of": { "kev": "2026-11-18T19:17:41.0354Z", "epss": "2026-11-18T12:00:28Z" } }
 }
 ```
 

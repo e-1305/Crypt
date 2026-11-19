@@ -7,6 +7,8 @@ import { teamOwners } from "./issues.js";
 export const OCSF_VERSION = "1.1.0";
 export const VULNERABILITY_FINDING = 2002;
 export const FINDINGS_CATEGORY = 2;
+// Keep equal to package.json "version" (tests/alerts-ocsf.test.ts checks it).
+export const PRODUCT_VERSION = "0.2.0";
 const ACTIVITY_CREATE = 1;
 const STATUS_NEW = 1;
 
@@ -28,7 +30,7 @@ export interface OcsfFinding {
   metadata: { version: string; product: { name: "CRYPT"; vendor_name: "e-1305"; version: string } };
   finding_info: { uid: string; title: string; desc: string; created_time: number; types: string[] };
   vulnerabilities: { cve?: { uid: string }; title: string; severity: string; is_exploit_available: boolean; affected_packages: { name: string; version: string; type: string }[] }[];
-  unmapped: { kev: boolean; epss: number | null; owner_team: string; sla: SlaClass; sla_deadline: string | null; advisory_ids: string[] };
+  unmapped: { kev: boolean; epss: number | null; owner_team: string; sla: SlaClass; sla_deadline: string | null; advisory_ids: string[]; feeds_as_of: { kev: string | null; epss: string | null } };
 }
 
 const rec = (v: unknown): Record<string, unknown> => (typeof v === "object" && v !== null && !Array.isArray(v) ? (v as Record<string, unknown>) : {});
@@ -54,7 +56,11 @@ export function buildOcsf(creature: unknown, now: Date): OcsfFinding[] {
   if (!Array.isArray(c.limbs)) throw new Error("creature.json has no limbs array");
   const t = now.getTime();
   if (!Number.isFinite(t)) throw new Error("invalid time");
-  const product = { name: "CRYPT" as const, vendor_name: "e-1305" as const, version: "0.1.0" };
+  const product = { name: "CRYPT" as const, vendor_name: "e-1305" as const, version: PRODUCT_VERSION };
+  // "As of": the KEV and EPSS feed dates recorded in creature.json, so a reader knows how old the ranking is. null when a feed was missing.
+  const feeds = rec(c.feeds);
+  const feedDate = (k: string): string | null => clean(rec(feeds[k]).date, 40) || null;
+  const feedsAsOf = { kev: feedDate("kev"), epss: feedDate("epss") };
   const out: OcsfFinding[] = [];
   const limbs = (c.limbs as unknown[]).map(rec).filter((l) => l.spawned === true && clean(l.name, 100) !== "");
   limbs.sort((a, b) => (Number(a.rank) || 0) - (Number(b.rank) || 0) || clean(a.name, 100).localeCompare(clean(b.name, 100)));
@@ -107,6 +113,7 @@ export function buildOcsf(creature: unknown, now: Date): OcsfFinding[] {
         sla,
         sla_deadline: sla === "48 hours" ? new Date(t + 48 * 3600 * 1000).toISOString() : null,
         advisory_ids: advisories,
+        feeds_as_of: feedsAsOf,
       },
     });
   }

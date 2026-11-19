@@ -15,6 +15,7 @@ afterEach(() => {
 });
 
 const creature = {
+  feeds: { kev: { status: "ok", date: "2026-11-18T19:17:41.0354Z" }, epss: { status: "ok", date: "2026-11-18T12:00:28Z" } },
   limbs: [
     { rank: 2, name: "lodash", version: "4.17.15", ecosystem: "npm", owner: "@acme/web", state: "Rotting", spawned: true, kev: false, epss: 0.12, vendorSeverity: "HIGH", vulns: [{ id: "GHSA-B", cves: ["CVE-2020-8203"] }] },
     { rank: 1, name: "jquery", version: "3.4.1", ecosystem: "npm", owner: "@alice", state: "Possessed", spawned: true, kev: true, epss: 0.85, vendorSeverity: "MEDIUM", vulns: [{ id: "GHSA-A", cves: ["CVE-2020-11023", "CVE-2020-11022"] }] },
@@ -44,6 +45,18 @@ describe("buildOcsf", () => {
     expect(jq!.unmapped).toMatchObject({ kev: true, epss: 0.85, sla: "48 hours", sla_deadline: "2026-11-20T12:00:00.000Z" });
     expect(lo!.unmapped).toMatchObject({ kev: false, sla: "this sprint", sla_deadline: null, owner_team: "@acme/web" });
     expect(lo!.severity_id).toBe(4);
+  });
+
+  it("records the KEV and EPSS feed dates as unmapped.feeds_as_of, null when a feed is missing", () => {
+    for (const e of events) expect(e.unmapped.feeds_as_of).toEqual({ kev: "2026-11-18T19:17:41.0354Z", epss: "2026-11-18T12:00:28Z" });
+    const missing = { feeds: { kev: { status: "missing", date: null }, epss: { status: "ok", date: "2026-11-18T12:00:28Z" } }, limbs: creature.limbs };
+    expect(buildOcsf(missing, NOW)[0]!.unmapped.feeds_as_of).toEqual({ kev: null, epss: "2026-11-18T12:00:28Z" });
+    expect(buildOcsf({ limbs: creature.limbs }, NOW)[0]!.unmapped.feeds_as_of).toEqual({ kev: null, epss: null });
+  });
+
+  it("reports the package.json version as the product version", () => {
+    const pkg = JSON.parse(readFileSync(join(import.meta.dirname, "..", "package.json"), "utf8")) as { version: string };
+    expect(events[0]!.metadata.product.version).toBe(pkg.version);
   });
 
   it("never names a person: an individual @user owner is not printed", () => {
