@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { ROI_DEFAULTS } from "../src/web/roi.js";
 import fc from "fast-check";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
@@ -268,6 +269,12 @@ describe.skipIf(!haveToolchain)("build:site output", () => {
       expect(teams).toContain("ESTIMATE");
       expect(teams).toContain("HYPOTHESIS");
       expect(teams).not.toContain("\u2014");
+      // HTML input defaults match ROI_DEFAULTS.
+      const inVal = (id: string): number => Number(new RegExp(`id="${id}"[^>]*value="([^"]+)"`).exec(teams)![1]);
+      expect(inVal("roi-repos")).toBe(ROI_DEFAULTS.repos);
+      expect(inVal("roi-findings")).toBe(ROI_DEFAULTS.findingsPerRepo);
+      expect(inVal("roi-noise")).toBeCloseTo(ROI_DEFAULTS.noiseShare * 100, 6);
+      expect(inVal("roi-minutes")).toBe(ROI_DEFAULTS.triageMinutes);
       for (const id of ["problem", "process", "pilot", "roi", "pricing", "security", "partner"]) expect(teams).toContain(`id="${id}"`);
       for (const step of ["Detect", "Triage", "Assign", "Fix", "Verify", "Approve", "Heal", "Report"]) expect(teams).toContain(`<b>${step}</b>`);
       for (const m of teams.matchAll(/\b(?:href|src)="([^"]+)"/g)) {

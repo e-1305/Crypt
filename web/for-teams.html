@@ -20,7 +20,7 @@
     <p>Security teams drown in dependency findings that nobody owns. In our census of 20 popular open-source projects (lockfiles only, not a random sample):</p>
     <ul class="ft-facts">
       <li><b>248</b> findings across 11,244 dependencies.</li>
-      <li><b>95.2%</b> of those findings were noise (not actively exploited, low chance of exploitation), so 3 monsters remained.</li>
+      <li><b>95.2%</b> of those findings were noise (not actively exploited, low chance of exploitation), so 3 monsters were spawned. Another 9 findings are unresolved and stay in the report as findings, not as clean.</li>
       <li><b>84.7%</b> of dependencies had no CODEOWNERS owner, and 16 of 20 repositories have no CODEOWNERS file at all.</li>
     </ul>
     <p class="ft-source">Source: <a id="src-census" href="https://github.com/e-1305/Crypt/blob/main/docs/census/RESULTS.md" target="_blank" rel="noopener" aria-label="Census results, opens in a new tab">docs/census/RESULTS.md</a>, scan date 2026-11-17. Aggregates only, no project is named. Reproduce with <code>npm run census</code>.</p>
@@ -43,12 +43,12 @@
 
   <section id="pilot" aria-labelledby="h-pilot">
     <h2 id="h-pilot">A two-week read-only pilot</h2>
-    <p>One organization, two weeks. CRYPT starts read-only: it reads, it ranks, it writes reports. It writes nothing to your repositories until you say so.</p>
+    <p>One repository at a time, two weeks. CRYPT starts read-only: it reads, it ranks, it writes reports. It writes nothing to your repositories until you say so.</p>
     <ol class="ft-steps">
-      <li><b>Days 1 to 2.</b> Run the Graveyard over the organization with a read-only token. You get one view of every repository, with the noise line applied.</li>
+      <li><b>Days 1 to 2.</b> Run the Graveyard on the repositories you chose, one at a time, without a write token. You get one view of each with the noise line applied. A live run uses a fine-grained token for one repository, and CRYPT opens at most 5 pull requests per raid.</li>
       <li><b>Days 3 to 5.</b> Walk through the War Room and the CISO report on your own data. Decide which repositories get fix pull requests.</li>
       <li><b>Week 2.</b> Enable the GitHub Action on the repositories you chose. CRYPT opens one pull request per fix. Your team reviews and merges.</li>
-      <li><b>End of week 2.</b> You decide: stop, or continue. Remove the token and nothing remains running.</li>
+      <li><b>End of week 2.</b> You decide: stop, or continue. Revoke the token and remove the workflow file from each repository. Nothing remains running.</li>
     </ol>
     <p class="ft-source">Source: <a href="https://github.com/e-1305/Crypt/blob/main/docs/ROADMAP.md#5-product-work-before-the-freeze-in-this-order" target="_blank" rel="noopener" aria-label="Roadmap P5, opens in a new tab">docs/ROADMAP.md, P5</a> and <a href="https://github.com/e-1305/Crypt/blob/main/docs/SECURITY-REVIEW.md#token-scopes" target="_blank" rel="noopener" aria-label="Token scopes, opens in a new tab">token scopes</a>. No customer has completed this pilot yet.</p>
   </section>
@@ -68,7 +68,7 @@
       <input id="roi-minutes" type="number" min="0" step="1" value="15" inputmode="numeric">
     </form>
     <p id="roi-result" class="ft-result" role="status" aria-live="polite">ESTIMATE: 200 findings, 190 filtered as noise, about 48 hours saved per month.</p>
-    <p class="ft-source">Defaults: 20 repositories, 10 findings per repo (median before filtering) and 95.2% noise are from the <a href="https://github.com/e-1305/Crypt/blob/main/docs/census/RESULTS.md#numbers" target="_blank" rel="noopener" aria-label="Census numbers, opens in a new tab">census</a>. The census median is per scan, and we use it as a per-month figure here, which is an assumption. 15 triage minutes per finding is our assumption, not measured. Replace it with your own.</p>
+    <p class="ft-source">Defaults: 20 repositories, 10 findings per repo (median before filtering) and 95.2% noise are from the <a href="https://github.com/e-1305/Crypt/blob/main/docs/census/RESULTS.md#numbers" target="_blank" rel="noopener" aria-label="Census numbers, opens in a new tab">census</a>. The census median is per scan, and we use it as a per-month figure here, which is an assumption. 15 triage minutes per finding is our assumption, not measured, and it counts every filtered finding as a full triage slot saved, which is an upper bound. Replace it with your own.</p>
   </section>
 
   <section id="pricing" aria-labelledby="h-pricing">
