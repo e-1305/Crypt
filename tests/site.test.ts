@@ -280,8 +280,15 @@ describe.skipIf(!haveToolchain)("build:site output", () => {
       for (const m of teams.matchAll(/\b(?:href|src)="([^"]+)"/g)) {
         const u = m[1]!;
         const blob = /^https:\/\/github\.com\/e-1305\/Crypt\/blob\/main\/([^#]+)/.exec(u);
-        if (blob) expect(existsSync(join(ROOT, blob[1]!)), u).toBe(true);
-        else if (u === "https://github.com/e-1305/Crypt/issues/new?template=design-partner.yml") expect(existsSync(join(ROOT, ".github", "ISSUE_TEMPLATE", "design-partner.yml"))).toBe(true);
+        if (blob) {
+          expect(existsSync(join(ROOT, blob[1]!)), u).toBe(true);
+          const frag = u.split("#")[1];
+          if (frag) {
+            const slugs = readFileSync(join(ROOT, blob[1]!), "utf8").split("\n").filter((l) => /^#{1,6} /.test(l))
+              .map((l) => l.replace(/^#+ /, "").trim().toLowerCase().replace(/[^\p{L}\p{N} _-]/gu, "").replace(/ /g, "-"));
+            expect(slugs, u).toContain(frag);
+          }
+        } else if (u === "https://github.com/e-1305/Crypt/issues/new?template=design-partner.yml") expect(existsSync(join(ROOT, ".github", "ISSUE_TEMPLATE", "design-partner.yml"))).toBe(true);
         else if (u.startsWith("#")) expect(teams).toContain(`id="${u.slice(1)}"`);
         else expect(existsSync(join(a, u.split("#")[0] || ".")), u).toBe(true);
       }

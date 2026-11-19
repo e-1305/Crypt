@@ -45,10 +45,10 @@
     <h2 id="h-pilot">A two-week read-only pilot</h2>
     <p>One repository at a time, two weeks. CRYPT starts read-only: it reads, it ranks, it writes reports. It writes nothing to your repositories until you say so.</p>
     <ol class="ft-steps">
-      <li><b>Days 1 to 2.</b> Run the Graveyard on the repositories you chose, one at a time, without a write token. You get one view of each with the noise line applied. A live run uses a fine-grained token for one repository, and CRYPT opens at most 5 pull requests per raid.</li>
+      <li><b>Days 1 to 2.</b> Run <code>crypt graveyard --org &lt;your-org&gt; --repos &lt;owner/repo&gt; --token-env &lt;VAR&gt;</code> on the repositories you chose, with a read-only token. It writes a local file for the Graveyard page with the noise line applied, and nothing leaves your machine.</li>
       <li><b>Days 3 to 5.</b> Walk through the War Room and the CISO report on your own data. Decide which repositories get fix pull requests.</li>
-      <li><b>Week 2.</b> Enable the GitHub Action on the repositories you chose. CRYPT opens one pull request per fix. Your team reviews and merges.</li>
-      <li><b>End of week 2.</b> You decide: stop, or continue. Revoke the token and remove the workflow file from each repository. Nothing remains running.</li>
+      <li><b>Week 2.</b> Enable the GitHub Action in its default report mode, which is read-only. For fix pull requests, run a live raid with a fine-grained token for one repository; CRYPT opens at most 5 pull requests per raid. Your team reviews and merges. Automatic pull requests from the Action on your own repositories are planned, not shipped.</li>
+      <li><b>End of week 2.</b> You decide: stop, or continue. Revoke the tokens and remove the workflow file from each repository. Nothing remains running.</li>
     </ol>
     <p class="ft-source">Source: <a href="https://github.com/e-1305/Crypt/blob/main/docs/ROADMAP.md#5-product-work-before-the-freeze-in-this-order" target="_blank" rel="noopener" aria-label="Roadmap P5, opens in a new tab">docs/ROADMAP.md, P5</a> and <a href="https://github.com/e-1305/Crypt/blob/main/docs/SECURITY-REVIEW.md#token-scopes" target="_blank" rel="noopener" aria-label="Token scopes, opens in a new tab">token scopes</a>. No customer has completed this pilot yet.</p>
   </section>
