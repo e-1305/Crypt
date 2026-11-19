@@ -1,5 +1,5 @@
 // Pure model for the surgeon's theatre (issue #217): jars on a shelf, tools on a tray, one narrator line per step.
-// The browser glue (web/theatre/surgeon.js) only reads the DOM and draws. Nothing here sends or merges anything.
+// The browser glue (web/theatre/surgeon.js) only reads the DOM and draws. Nothing here sends anything.
 import { parseCommand } from "../bridge/grammar.js";
 
 export type ToolId = "scalpel" | "needle" | "magnifier" | "lamp" | "bell";
@@ -40,7 +40,7 @@ export function toolForCommand(text: unknown): ToolId | null {
 
 export type Step = "scan" | "examine" | "graft" | "ci-green" | "ci-red" | "reraise" | "seal" | "jar";
 
-/** One plain sentence per step. States what happens, labels DRY RUN and SIMULATED, never claims a merge. */
+/** One plain sentence per step. States what happens, labels DRY RUN and SIMULATED, never claims a human step is done. */
 export function narratorLine(step: Step, subject = ""): string {
   const s = cleanLabel(subject, 40);
   switch (step) {
