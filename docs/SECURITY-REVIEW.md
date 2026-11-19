@@ -1,6 +1,6 @@
 # CRYPT security review for vendor assessment
 
-This page is for a CISO or a vendor-risk reviewer. Each statement below was checked against the code at the file named beside it. CRYPT is an open-source command line tool, not a hosted service, so most vendor questionnaire items about hosting, staff access and data centres do not apply. Where something is not offered, the last section says so.
+This page is for a CISO or a vendor-risk reviewer. Each statement below was checked against the code at the file named beside it. CRYPT is an open-source command line tool, not a hosted service, so most vendor questionnaire items about hosting, staff access and data centres do not apply. Where something is not offered, the last section says so. To report a vulnerability in CRYPT itself, see the contact in [SECURITY.md](../SECURITY.md).
 
 ## Data handled
 
@@ -73,5 +73,6 @@ Outcomes include `PR_OPENED`, `DRYRUN_WRITTEN`, `REJECTED_SEALED`, `RAID_LIMIT`,
 - **Multi-tenancy.** The tool runs per user and per working directory. There is no shared tenant model.
 - **Retention SLA.** Files stay where you wrote them until you delete them. No retention period is promised or enforced.
 - **Support contract.** There is no paid support, uptime commitment or response-time SLA. Issues go to the public repository.
+- **A named security contact.** There is no security team and no person to call. Report a vulnerability in CRYPT through GitHub private vulnerability reporting, as described in [SECURITY.md](../SECURITY.md). Replies are best effort from a single maintainer.
 - **Independent audit.** No third-party penetration test or compliance certification (SOC 2, ISO 27001) exists for CRYPT.
 - **Reachability analysis.** A finding means the locked version has a known advisory, not that the vulnerable code runs (see [SOC.md](SOC.md)).

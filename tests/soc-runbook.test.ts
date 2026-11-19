@@ -74,12 +74,31 @@ describe("docs/SOC.md commands", () => {
   });
 });
 
+describe("docs/SOC.md sample event", () => {
+  it("shows the current version and the feeds_as_of field", () => {
+    const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")) as { version: string };
+    expect(SOC).toContain(`"version": "${pkg.version}" } },`);
+    expect(SOC).toContain("feeds_as_of");
+  });
+  it("alerts output carries unmapped.feeds_as_of from creature.json", () => {
+    const events = JSON.parse(readFileSync(join(dir, "out", "alerts.ocsf.json"), "utf8")) as Record<string, any>[];
+    const creature = JSON.parse(readFileSync(join(dir, "out", "creature.json"), "utf8"));
+    for (const e of events) expect(e.unmapped.feeds_as_of).toEqual({ kev: creature.feeds.kev.date, epss: creature.feeds.epss.date });
+  });
+});
+
 describe("docs/SECURITY-REVIEW.md", () => {
   const doc = readFileSync(join(ROOT, "docs", "SECURITY-REVIEW.md"), "utf8");
   it("covers every review topic and says what is not offered", () => {
     for (const h of ["## Data handled", "## Data stored", "## Network calls", "## Token scopes", "## No merge capability", "## SEAL kill switch", "## Audit log format", "## Supply chain", "## Not offered"]) expect(doc).toContain(h);
     for (const w of ["api.osv.dev", "epss.empiricalsecurity.com", "www.cisa.gov", "--live", "--provenance", "SSO", "Multi-tenancy", "Retention SLA", "Support contract"]) expect(doc).toContain(w);
     expect(doc).not.toContain(String.fromCharCode(0x2014));
+  });
+  it("lists a contact: SECURITY.md exists and the review page links it", () => {
+    expect(doc).toContain("(../SECURITY.md)");
+    const sec = readFileSync(join(ROOT, "SECURITY.md"), "utf8");
+    for (const w of ["private vulnerability reporting", "e-1305/Crypt", "best effort", "0.2.x"]) expect(sec).toContain(w);
+    expect(sec).not.toContain(String.fromCharCode(0x2014));
   });
   it("names files that exist", () => {
     for (const m of doc.matchAll(/`((?:src|scripts|\.github)\/[A-Za-z0-9_./-]+\.(?:ts|sh|yml))`/g)) expect(existsSync(join(ROOT, m[1]!)), m[1]).toBe(true);
@@ -90,5 +109,17 @@ describe("docs/SECURITY-REVIEW.md", () => {
     const { buildAutopsy } = await import("../src/report/model.js");
     const { SAMPLE_INPUT } = await import("../src/report/sample.js");
     expect(renderAutopsyHtml(buildAutopsy(SAMPLE_INPUT))).toContain("docs/SECURITY-REVIEW.md");
+  });
+});
+
+describe("docs wording and census example", () => {
+  it("PROOF and the landing page no longer say the token was opened", () => {
+    for (const f of ["docs/PROOF.md", "web/index.html"]) expect(readFileSync(join(ROOT, f), "utf8")).not.toContain("opened the token");
+  });
+  it("census RESULTS has the worked noise example without naming a project", () => {
+    const r = readFileSync(join(ROOT, "docs", "census", "RESULTS.md"), "utf8");
+    expect(r).toContain("## Worked example: one finding below the noise line");
+    expect(r).toContain("not in the KEV feed");
+    expect(r).toContain("What would make it spawn");
   });
 });

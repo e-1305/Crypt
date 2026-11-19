@@ -22,6 +22,27 @@ Aggregates only. No project is named next to a finding. Per-repo data stays in a
 | Median findings per repo, before exorcism | 10 |
 | Median findings per repo, after exorcism (spawned) | 0 |
 
+## Worked example: one finding below the noise line
+
+One real finding from a census scan, with no project named. A rerun on 2026-11-18 (KEV feed 2026-11-18T19:17:41.0354Z, EPSS feed 2026-11-18T12:00:28Z) found a locked `lodash` 4.17.21 in the census data with advisory GHSA-r5fr-rjxr-66jc (CVE-2026-4800).
+
+| Question | Answer |
+|---|---|
+| Is it a known vulnerability? | Yes. OSV lists the advisory against that locked version, with a CVSS score of 7.5. |
+| What is its EPSS? | 0.0287 in the EPSS feed of 2026-11-18 (about a 3% chance of exploitation in the next 30 days). |
+| Is it in CISA KEV? | No. CVE-2026-4800 is not in the KEV feed of 2026-11-18. |
+| What state does it get? | Rotting, not Possessed. |
+| Does it spawn? | No. It is exorcised as noise and stays in the report as a finding. |
+
+Why it is below the noise line: the rule in `.kiro/steering/sla-policy.md` spawns only Possessed limbs (in KEV) and Rotting limbs with EPSS >= 0.1. This limb is not in KEV, and 0.0287 is under 0.1 by a factor of about 3.5. Its SLA class is `backlog`. A high CVSS score does not change that, because the filter ranks by exploitation likelihood, not by severity alone.
+
+What would make it spawn, either of these on a later feed:
+
+- CVE-2026-4800 appears in the CISA KEV catalogue. The limb becomes Possessed, spawns at once and gets the 48-hour SLA.
+- Its EPSS rises to 0.1 or more. The limb spawns with the `this sprint` SLA.
+
+Both are re-checked on every run, so the finding is not hidden: it moves up when the feeds say so. It also stays a lockfile-level finding. It does not show that the vulnerable code runs.
+
 ## Method
 
 - Each repository was read at a pinned commit SHA (list: [repos.md](repos.md)). Only the root manifests and CODEOWNERS files were downloaded as text. No code was run and nothing was installed.
