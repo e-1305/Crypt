@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 import { readFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { numRuns } from "./runs.js";
 import { buildCreature } from "../src/exhume/creature.js";
 import { buildOcsf } from "../src/alerts/ocsf.js";
@@ -241,5 +244,26 @@ describe("wording", () => {
     const section = manual.slice(manual.indexOf("## Is it used?"));
     expect(section.length).toBeGreaterThan(100);
     expect(section.split(/\n## /)[0]).not.toMatch(/reachab/i);
+  });
+});
+
+describe("partial reads and comments", () => {
+  const mk = (files: Record<string, string>): string => {
+    const d = mkdtempSync(join(tmpdir(), "usage-"));
+    for (const [n, t] of Object.entries(files)) writeFileSync(join(d, n), t);
+    return d;
+  };
+  it("file cap hit gives null (unknown), under the cap gives files", () => {
+    const d = mk({ "a.js": "1", "b.js": "2", "c.js": "3" });
+    expect(readSourceFiles(d, 3)?.length).toBe(3);
+    expect(readSourceFiles(d, 2)).toBeNull();
+  });
+  it("oversized file or unscanned source format gives null", () => {
+    expect(readSourceFiles(mk({ "a.js": "x".repeat(1024 * 1024 + 1) }))).toBeNull();
+    expect(readSourceFiles(mk({ "a.js": "1", "b.vue": "<script>import 'x'</script>" }))).toBeNull();
+  });
+  it("commented-out imports are not counted", () => {
+    const text = `// require("a")\n/* import "b"\n import c from "c" */\nconst u = "http://x"; require("d") // tail\nimport e from "e";`;
+    expect([...scanImports([{ path: "x.js", text }])].sort()).toEqual(["d", "e"]);
   });
 });

@@ -22,7 +22,7 @@ export const USAGE_LIMIT_LINE = "USED?: text scan of imports, a hint, not proof"
 
 /** Longer limit note for the paste result and the manual. */
 export const USAGE_LIMITS_TEXT =
-  "Static text scan only. Looks for require/import of the package name in source files and the lockfile dev flag. It cannot see dynamic requires, bundler aliases, or code run by tools. The web version cannot read your source, so it shows only dev only or unknown.";
+  "Static text scan only. Looks for require/import of the package name in source files (comments are ignored) and the lockfile dev flag. Build output folders (dist, build, out) are not scanned. A partial read of the source (file cap, oversized file, .vue/.svelte/.astro files) gives unknown. It cannot see dynamic requires, bundler aliases, or code run by tools. The web version cannot read your source, so it shows only dev only or unknown.";
 
 export const isUsageSignal = (v: unknown): v is UsageSignal => typeof v === "string" && (USAGE_SIGNALS as readonly string[]).includes(v);
 
@@ -49,13 +49,17 @@ export function packageOfSpecifier(spec: string): string | null {
   return parts[0]!;
 }
 
+/** Drops block comments and line comments (a // not preceded by a colon or quote, so URLs in strings survive). */
+export const stripComments = (text: string): string => text.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:"'\x60\\])\/\/.*$/gm, "$1");
+
 export function scanImports(files: readonly SourceFile[]): Set<string> {
   const found = new Set<string>();
   for (const f of files) {
     if (typeof f?.text !== "string") continue;
+    const text = stripComments(f.text);
     for (const re of PATTERNS) {
       re.lastIndex = 0;
-      for (let m = re.exec(f.text); m !== null; m = re.exec(f.text)) {
+      for (let m = re.exec(text); m !== null; m = re.exec(text)) {
         const pkg = packageOfSpecifier(m[2]!);
         if (pkg) found.add(pkg);
       }
