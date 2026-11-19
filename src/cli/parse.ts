@@ -3,7 +3,7 @@ import { UsageError } from "./exit.js";
 import { IMPORT_FORMATS, isImportFormat } from "../import/types.js";
 import { GITHUB_BASE, looksRemote, parseGithubUrl } from "./url.js";
 
-export const COMMANDS = ["exhume", "raise", "play", "graft", "inquisit", "reraise", "seal", "unseal", "raid", "autopsy", "gazette", "graveyard", "alerts"] as const;
+export const COMMANDS = ["exhume", "raise", "play", "graft", "inquisit", "reraise", "seal", "unseal", "raid", "autopsy", "gazette", "graveyard", "alerts", "init"] as const;
 export type CommandName = (typeof COMMANDS)[number];
 export type Command = CommandName | "help" | "version";
 
@@ -40,6 +40,7 @@ export const SPECS: Record<CommandName, Spec> = {
   raid: { positional: TARGET, flags: { offline: "bool", feeds: "value", cache: "value", live: "bool", timeout: "value" } },
   autopsy: { positional: [], flags: { out: "value", last: "value", sample: "bool" } },
   gazette: { positional: [], flags: { "webhook-env": "value", "dry-run": "bool", send: "bool", "war-room": "value", format: "value", sample: "bool" } },
+  init: { positional: [], flags: { live: "bool", repo: "value" } },
   alerts: { positional: [], flags: { format: "value", live: "bool", repo: "value", out: "value", base: "value" } },
   graveyard: { positional: [], flags: { org: "value", "token-env": "value", out: "value", repos: "value", sample: "bool" } },
 };
@@ -155,6 +156,12 @@ export function parseCli(argv: readonly string[], env: Record<string, string | u
   const needsToken = (what: string) => {
     if (!env.GITHUB_TOKEN) throw new UsageError(`${what} needs GITHUB_TOKEN in the environment. Create a fine-grained token limited to the target repository, then export GITHUB_TOKEN.`);
   };
+  if (command === "init") {
+    if (flags.live === true) {
+      if (typeof flags.repo !== "string") throw new UsageError("--live needs --repo owner/name, the repository that receives the onboarding pull request.");
+      needsToken("--live");
+    }
+  }
   if (command === "alerts") {
     if (flags.format !== "issues" && flags.format !== "ocsf" && flags.format !== "sarif") throw new UsageError("alerts needs --format issues, --format ocsf or --format sarif. Run: crypt alerts --format ocsf");
     if ((flags.format === "ocsf" || flags.format === "sarif") && (flags.live !== undefined || flags.repo !== undefined)) throw new UsageError(`--format ${String(flags.format)} only writes a local file. Remove --live and --repo.`);

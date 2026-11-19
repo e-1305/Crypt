@@ -15,6 +15,7 @@ import { fixtureAdvisories, osvAdvisories } from "../osv-advisory.js";
 import { preflightedClients, resolveRepo } from "./live.js";
 import { readRaidContext } from "./context.js";
 import { alertsCommand } from "./alerts.js";
+import { initCommand } from "./init.js";
 import { autopsyCommand } from "./autopsy.js";
 import { gazetteCommand } from "./gazette.js";
 import { graveyardCommand } from "./graveyard.js";
@@ -93,6 +94,8 @@ async function run(argv: string[]): Promise<number> {
       return autopsyCommand(p);
     case "alerts":
       return alertsCommand(p);
+    case "init":
+      return initCommand(p);
     case "gazette":
       return gazetteCommand(p);
     case "graveyard":
