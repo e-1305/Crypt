@@ -6,5 +6,12 @@
     "FEAT-001",
     "FEAT-002"
   ],
-  "blocked_reason": null
+  "blocked_reason": null,
+  "verification": {
+    "build": "pass",
+    "tests": "pass",
+    "test_quality": "pass",
+    "docker_build": "skipped",
+    "summary": "typecheck, 1172 tests, failsafe-guard, build:web/site pass; review v2 APPROVED"
+  }
 }
