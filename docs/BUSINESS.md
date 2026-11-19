@@ -31,7 +31,7 @@ What we could verify:
 | Graveyard (org scan, read-only, `crypt graveyard --org`) | Built. Sample page at [graveyard](https://e-1305.github.io/Crypt/graveyard/graveyard.html). |
 | War Room (big-screen raid view) | Built, simulated data only. See [war-room](https://e-1305.github.io/Crypt/war-room.html). |
 | CISO report (`crypt autopsy`) | Built. Sample at [autopsy](https://e-1305.github.io/Crypt/autopsy.html). |
-| OCSF export (SIEM format) | **Not built.** No code or doc in this repository mentions it. It is a plan. |
+| OCSF export (SIEM format, `crypt alerts --format ocsf`) | Built. OCSF 1.1 Vulnerability Findings (class 2002), see [SOC.md](SOC.md). Not yet confirmed loading in a customer SIEM. |
 
 ## 3. Pricing: HYPOTHESIS
 
@@ -57,7 +57,7 @@ Public competitor pricing, read on 2026-11-18. We record only what each page sho
 - The trust model is enforced in code and CI: agents hold a PR-only token, no code path merges, a human lands every fix. See [Safety guarantees](../README.md#safety-guarantees) and [failsafe.md](../.kiro/steering/failsafe.md).
 - An ownership graph across an organization (CODEOWNERS to limb to fix), which grows with each org scanned.
 - The playable report is an adoption hook: the report is a story file anyone can open.
-- OCSF integration, once built (see section 2: not built today).
+- OCSF export for SIEMs (see [SOC.md](SOC.md)).
 
 **Not hard to copy:** the ranking rule itself (KEV and EPSS threshold) and the data. OSV, CISA KEV and FIRST EPSS are public.
 
@@ -72,7 +72,7 @@ Real values from `npm run traction`, run on 2026-11-18. They are tiny, and shown
 | GitHub forks (e-1305/Crypt) | 0 | [api.github.com](https://api.github.com/repos/e-1305/Crypt) |
 | Public repos using the Action | not discoverable (GitHub code search needs a token) | GitHub code search |
 
-"Not published" means the registry answers that the package does not exist. It is not a count of zero. Customers: none. Revenue: none.
+"Not published" means the registry answers that the package does not exist. "Downloads not indexed yet" means the registry lists versions of the package but api.npmjs.org answers 404 for downloads, which happens before the first counts appear. Neither is a count of zero. Customers: none. Revenue: none.
 
 ## 6. Next 90 days, if it continues
 
@@ -80,4 +80,4 @@ Real values from `npm run traction`, run on 2026-11-18. They are tiny, and shown
 |---|---|
 | Publish `@e-1305/crypt` to npm | The npm API returns a download count instead of "not found". The README npm downloads badge already exists. Until the package is published it shows an error or zero, not a real count. |
 | Five outside repositories run the Action | `npm run traction` with a token reports at least 5 distinct repositories outside the e-1305 org. |
-| Build OCSF export and test it with one security team | One team confirms in writing that the export loads in their SIEM, and we log it in [PLAYTEST_LOG.md](PLAYTEST_LOG.md). |
+| Test the OCSF export with one security team | One team confirms in writing that the export loads in their SIEM, and we log it in [PLAYTEST_LOG.md](PLAYTEST_LOG.md). |
