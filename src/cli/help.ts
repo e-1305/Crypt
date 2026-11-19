@@ -24,6 +24,7 @@ Commands:
   gazette             Print the weekly digest as Slack or Teams JSON. Posts only with --send.
   alerts              --format issues: one GitHub issue per Possessed (KEV) limb (prints unless --live).
                       --format ocsf: write OCSF Vulnerability Findings to out/alerts.ocsf.json (SIEM ingest).
+                      --format sarif: write SARIF 2.1.0 to out/alerts.sarif (GitHub Code Scanning).
   graveyard           Scan an organisation (read-only) and write out/graveyard.json for the Graveyard page. Needs --org and --token-env.
   seal                Stop every agent action. Writes .crypt-seal.
   unseal              Lift the seal.
@@ -37,6 +38,7 @@ Options:
   --feeds <dir>       raid, exhume: directory with kev.json and epss.csv
   --from <format>     exhume: <target> is a scanner file: sarif, dependabot, trivy, grype or snyk (no OSV call)
   --cache <dir>       raid, exhume: directory for cached OSV answers
+  --base <dir>        alerts --format sarif: scanned directory relative to the repo root (default: root)
   --out <path>        exhume: creature file (default out/creature.json); raise: output directory;
                       autopsy: report file (default out/autopsy.html);
                       graveyard: data file (default out/graveyard.json)
@@ -45,7 +47,7 @@ Options:
   --send              gazette: post to the webhook (default: print the payload)
   --dry-run           gazette: print the payload only (the default)
   --war-room <url>    gazette: https link for the "Open the War Room" button
-  --format <kind>     gazette: slack or teams (default: from --webhook-env, else slack); alerts: issues or ocsf
+  --format <kind>     gazette: slack or teams (default: from --webhook-env, else slack); alerts: issues, ocsf or sarif
   --live, --repo      alerts: open the issues (at most 5, none twice) in owner/name. Needs GITHUB_TOKEN
   --org <org>         graveyard: organisation login to scan (the file stays on this machine)
   --token-env <VAR>   graveyard: NAME of the variable that holds a read-only GitHub token (it is never printed or written)

@@ -46,7 +46,7 @@ Each command dispatches AI agents built with [Kiro](https://kiro.dev) that open 
 
 **Already have a scanner report?** Import SARIF, Dependabot, Trivy, Grype or Snyk output: [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md).
 
-**For a SOC:** `crypt alerts --format ocsf` writes OCSF Vulnerability Finding events for Amazon Security Lake, Splunk or Sentinel, and `crypt alerts --format issues` opens one ticket per actively exploited dependency: [docs/SOC.md](docs/SOC.md).
+**For a SOC:** `crypt alerts --format ocsf` writes OCSF Vulnerability Finding events for Amazon Security Lake, Splunk or Sentinel, `crypt alerts --format sarif` feeds GitHub Code Scanning (Action input `upload-sarif`), and `crypt alerts --format issues` opens one ticket per actively exploited dependency: [docs/SOC.md](docs/SOC.md).
 
 **For a vendor review:** what data CRYPT handles and stores, every network call, token scopes, the SEAL kill switch and what is not offered: [docs/SECURITY-REVIEW.md](docs/SECURITY-REVIEW.md).
 

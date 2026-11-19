@@ -30,6 +30,27 @@ Any error or unknown state fails the step with a FAILED summary, never a green "
 | `limb` | `LODASH` | `LODASH` or `JQUERY`, `graft` only |
 | `sabotage` | `false` | Demo only, `graft` only |
 | `alerts` | `none` | `none` or `issues`. With `issues`, report mode adds the dry-run output of `crypt alerts --format issues` to the job summary |
+| `upload-sarif` | `false` | `true` or `false`. With `true`, report mode writes SARIF 2.1.0 (`crypt alerts --format sarif`) and uploads it with `github/codeql-action/upload-sarif`, so the findings show in the Security tab |
+
+## Code Scanning (SARIF)
+
+The upload needs `security-events: write`. Give the job only these permissions:
+
+```yaml
+permissions:
+  contents: read
+  security-events: write
+jobs:
+  crypt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: e-1305/Crypt@main
+        with:
+          upload-sarif: true
+```
+
+The result level follows the ranking: KEV is `error`, EPSS ≥ 0.1 is `warning`, the rest is `note`. Each result carries `kev`, `epss`, the owner team from CODEOWNERS and the SLA; never a person. If the SARIF cannot be built, the step fails and nothing is uploaded. Pull requests from forks get a read-only token, so the Action skips the upload there and the rest of the report still runs. With `path`, results point at `<path>/package-lock.json` (or `requirements.txt`). Private repositories need GitHub Code Security (Advanced Security) for Code scanning. Details: [SOC.md](SOC.md).
 
 ## Alerts
 
