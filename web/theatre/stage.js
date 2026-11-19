@@ -6,6 +6,7 @@ import { makeWall } from "./wall.js";
 import { makeDrawer } from "./drawer.js";
 import { makeBoard } from "./board.js";
 import { ensureFonts } from "./font.js";
+import { makeSurgeon } from "./surgeon.js";
 import { TITLE_CARD_TEXT, dollyProgress, shouldShowTitleCard, titleCardVisible } from "../js/theatre/polish.js";
 
 export async function mountStage() {
@@ -144,10 +145,11 @@ export async function mountStage() {
     else focusCmd();
   };
 
-  // Props for the bench.
-  const jar = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.7, 16), new THREE.MeshStandardMaterial({ color: 0x4a7a4a, transparent: true, opacity: 0.55, roughness: 0.1 }));
-  jar.position.set(-0.9, 0.82, 0.7);
-  scene.add(jar);
+  // The surgeon's theatre (#217): jars, table, tool tray, narrator. Any error leaves the plain bench as it was.
+  let surgeon = null;
+  try {
+    surgeon = makeSurgeon(THREE, scene, { reduced: window.matchMedia("(prefers-reduced-motion: reduce)").matches });
+  } catch { surgeon = null; }
 
   // Resize, parallax, focus routing.
   const mouse = { x: 0, y: 0 };
@@ -234,6 +236,7 @@ export async function mountStage() {
     if (screen.update(now)) screenTex.needsUpdate = true;
     if (wallPlate.update()) plateTex.needsUpdate = true;
     if (board.update()) boardTex.needsUpdate = true;
+    try { surgeon?.update(); } catch { /* the bench keeps running */ }
     const pulled = document.documentElement.dataset.raid === "running";
     leverArm.rotation.z += ((pulled ? -0.7 : 0.7) - leverArm.rotation.z) * 0.15;
     renderer.render(scene, camera);
@@ -258,6 +261,7 @@ export async function mountStage() {
     wallPlate.dispose();
     drawer.dispose();
     board.dispose();
+    surgeon?.dispose();
     scene.traverse((o) => { o.geometry?.dispose?.(); });
     renderer.dispose();
     canvas.remove();
