@@ -7,6 +7,7 @@ import { makeDrawer } from "./drawer.js";
 import { makeBoard } from "./board.js";
 import { ensureFonts } from "./font.js";
 import { makeSurgeon } from "./surgeon.js";
+import { MAX_LIMBS, capLimbs, isSlowDevice, moreLabel, GUARD_FRAMES } from "../js/theatre/caps.js";
 import { TITLE_CARD_TEXT, dollyProgress, shouldShowTitleCard, titleCardVisible } from "../js/theatre/polish.js";
 
 export async function mountStage() {
@@ -97,7 +98,9 @@ export async function mountStage() {
   scene.add(new THREE.AmbientLight(0x1a1a22, 0.9));
 
   // The plate on the wall.
-  const wallPlate = makeWall(plateEl, summaryEl);
+  // At most MAX_LIMBS limbs reach the 3D plate; the rest become one "N more" line. The DOM #plate stays complete.
+  const plateView = makeCappedPlate(plateEl);
+  const wallPlate = makeWall(plateView.el, summaryEl);
   const plateTex = new THREE.CanvasTexture(wallPlate.canvas);
   plateTex.colorSpace = THREE.SRGBColorSpace;
   plateTex.anisotropy = 4;
@@ -218,10 +221,20 @@ export async function mountStage() {
 
   let raf = 0, stopped = false;
   const t0 = performance.now();
+  // Frame guard: time a few frames after the first (which pays for shader compile). A slow median drops to the plain 2D page.
+  const deltas = [];
+  let lastNow = -1, guardDone = false;
   function frame(now) {
     if (stopped) return;
     raf = requestAnimationFrame(frame);
-    if (document.hidden) return;
+    if (!guardDone) {
+      if (lastNow >= 0) deltas.push(now - lastNow);
+      lastNow = now;
+      if (deltas.length >= GUARD_FRAMES + 1) {
+        guardDone = true;
+        try { if (isSlowDevice(deltas.slice(1))) { destroy("2d:slow"); return; } } catch { /* keep the bench */ }
+      }
+    }
     const t = (now - t0) / 1000;
     const d = dollyProgress(dollyAt < 0 ? 0 : now - dollyAt, reduced && dollyAt >= 0);
     camera.position.set(camBase.x + mouse.x * 0.35 + (1.7 - camBase.x) * 0.6 * d, camBase.y - mouse.y * 0.2 - 0.3 * d, camBase.z * (1 - 0.5 * d));
@@ -244,11 +257,21 @@ export async function mountStage() {
   }
   let frames = 0;
   raf = requestAnimationFrame(frame);
+  // Hidden tab: stop the loop entirely. Visible again: restart it and re-measure from a clean slate.
+  const onVisibility = () => {
+    if (stopped) return;
+    if (document.hidden) { cancelAnimationFrame(raf); raf = 0; return; }
+    if (raf === 0) { deltas.length = 0; lastNow = -1; raf = requestAnimationFrame(frame); }
+  };
+  document.addEventListener("visibilitychange", onVisibility);
+  if (document.hidden) onVisibility();
   // No initial focus: the skip link must be the first Tab stop. Typing still reaches the prompt (keydown handler above).
 
-  function destroy() {
+  function destroy(mode = "2d:high-contrast") {
     stopped = true;
     cancelAnimationFrame(raf);
+    document.removeEventListener("visibilitychange", onVisibility);
+    plateView.dispose();
     hcWatch.disconnect();
     clearInterval(cardTimer);
     skipCard();
@@ -268,10 +291,33 @@ export async function mountStage() {
     document.getElementById("theatre-plain")?.remove();
     document.getElementById("theatre-manual")?.remove();
     document.body.classList.remove("theatre");
-    document.documentElement.dataset.theatre = "2d:high-contrast";
+    document.documentElement.dataset.theatre = mode;
   }
   document.documentElement.dataset.theatreReady = "1";
   return { destroy, frameCount: () => frames };
+}
+
+// A detached copy of #plate with limbs past MAX_LIMBS dropped and an "N more" line added. Rebuilt on DOM changes.
+function makeCappedPlate(plateEl) {
+  const el = document.createElement("div");
+  const rebuild = () => {
+    try {
+      const nodes = [...plateEl.childNodes];
+      const names = [...new Set(nodes.map((n) => (n.nodeType === 1 ? n.dataset.limb : undefined)).filter((v) => typeof v === "string"))];
+      const { shown, more } = capLimbs(names, MAX_LIMBS);
+      const keep = new Set(shown);
+      el.replaceChildren(...nodes
+        .filter((n) => n.nodeType !== 1 || typeof n.dataset.limb !== "string" || keep.has(n.dataset.limb))
+        .map((n) => n.cloneNode(true)));
+      if (more > 0) el.append("\n" + moreLabel(more) + " limbs\n");
+    } catch {
+      el.replaceChildren(...[...plateEl.childNodes].map((n) => n.cloneNode(true)));
+    }
+  };
+  const obs = new MutationObserver(rebuild);
+  obs.observe(plateEl, { childList: true, subtree: true, characterData: true, attributes: true });
+  rebuild();
+  return { el, dispose: () => obs.disconnect() };
 }
 
 function addPlainLink() {
