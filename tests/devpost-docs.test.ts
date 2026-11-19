@@ -18,6 +18,12 @@ function kiroPaths(md: string): string[] {
 }
 
 describe("Devpost front door", () => {
+  it("DEVPOST.md has no TODO and marks the video as VIDEO_URL_PENDING", () => {
+    const md = read("docs/DEVPOST.md");
+    expect(md).not.toMatch(/TODO/);
+    expect(md).toContain("VIDEO_URL_PENDING");
+  });
+
   it("PITCH.md is 180 to 220 words", () => {
     const words = read("docs/PITCH.md").split(/\s+/).filter(Boolean).length;
     expect(words).toBeGreaterThanOrEqual(180);

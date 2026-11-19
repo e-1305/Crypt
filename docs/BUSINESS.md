@@ -67,7 +67,7 @@ Real values from `npm run traction`, run on 2026-11-18. They are tiny, and shown
 
 | Measure | Value | Source |
 |---|---|---|
-| npm downloads, last week (@e-1305/crypt) | not published | [api.npmjs.org](https://api.npmjs.org/downloads/point/last-week/@e-1305/crypt) |
+| npm downloads, last week (@e-1305/crypt) | 177 (window 2026-11-12 to 2026-11-18; API count only, mirrors, bots and the author's own installs are not separated, so not evidence of 177 users) | [api.npmjs.org](https://api.npmjs.org/downloads/point/last-week/@e-1305/crypt) |
 | GitHub stars (e-1305/Crypt) | 0 | [api.github.com](https://api.github.com/repos/e-1305/Crypt) |
 | GitHub forks (e-1305/Crypt) | 0 | [api.github.com](https://api.github.com/repos/e-1305/Crypt) |
 | Public repos using the Action | not discoverable (GitHub code search needs a token) | GitHub code search |

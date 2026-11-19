@@ -52,6 +52,14 @@ Each command dispatches AI agents built with [Kiro](https://kiro.dev) that open 
 
 **Versus Dependabot:** a reproducible side-by-side on a real repository, with where Dependabot is better and where CRYPT differs: [docs/VS-DEPENDABOT.md](docs/VS-DEPENDABOT.md).
 
+**Since the census (npm 0.2.0):**
+- History: `out/crypt-history.jsonl` (Action input `history-branch: crypt-history`) feeds four panels on the autopsy page and War Room: open KEV limbs over time, age per limb, deadline breaches and mean time to heal (MTTH). Unknown values read `unknown`. See "Run history and SLA trend" in [docs/USER_MANUAL.md](docs/USER_MANUAL.md).
+- Import signal: each locked npm package is labelled direct, transitive, dev or unknown, in the plate summary, `creature.json`, OCSF `unmapped.usage` and SARIF `properties.usage`. Limit: static text scan of source files for require, import and dynamic import of a package name. It does not run code, follow variables, or say whether a vulnerable function is called. A regex literal containing a quote or comment marker can hide imports, which then read as transitive or dev. Workspace members are not listed.
+- SARIF to Code Scanning (`upload-sarif`) is not yet verified on a real repository.
+- `npx @e-1305/crypt init` opens one onboarding PR (dry run; `--live --repo owner/name` with `GITHUB_TOKEN`): Action in report mode plus a CODEOWNERS draft with team placeholders. See [docs/INSTALL-ACTION.md](docs/INSTALL-ACTION.md). Time to first green run on a fresh fork is not measured yet.
+- Buyer page: [web/for-teams.html](web/for-teams.html), a two-week read-only pilot. Nothing was tested with a buyer. No customers, no design partners, no revenue.
+- npm downloads: 177 in the week 2026-11-12 to 2026-11-18 ([api.npmjs.org](https://api.npmjs.org/downloads/point/last-week/@e-1305/crypt)). An API count only: mirrors, bots and the author's own installs are not separated, so it is not evidence of 177 users.
+
 ## Live demo
 
 **[e-1305.github.io/Crypt](https://e-1305.github.io/Crypt/)**: the first vulnerability report you can play. The page opens on a demo creature built offline from `fixtures/crypt-demo`, a snapshot of [e-1305/crypt-demo](https://github.com/e-1305/crypt-demo) at commit `bd82e8e` (owner @e-1305), with its plate and a playable story. A gallery lists 20 public projects, each with its own creature. "Download the playable report" saves the loaded `.z8`, which any Z-machine interpreter (Frotz, Lectrote, Parchment) opens.
@@ -209,9 +217,12 @@ Third-party data, tools and code are listed in [`docs/ATTRIBUTION.md`](docs/ATTR
 ## Transcript bridge spike
 
 ```
-npm install
+npm ci
+npm run setup   # builds Inform 6 compiler 6.45, library 6.12.2 and dfrotz 2.44 into git-ignored .toolchain/; needs git, make, a C compiler and network; idempotent
 npm run spike   # builds tools into .toolchain/ on first run, compiles the game, plays a scripted session, checks the result
 npm test        # vitest + fast-check
 ```
+
+Run `npm run setup` before `npm test`. Tests such as `tests/import.test.ts` run `scripts/raise.ts`, which calls the toolchain, and fail with ENOENT when it is missing. CI does the same: it caches `.toolchain` and runs `bash scripts/setup-tools.sh` before `npx vitest run`. If you set `CRYPT_TOOLCHAIN_DIR` for setup, set it for the tests too.
 
 See `.kiro/specs/transcript-bridge-spike/` for the spec.

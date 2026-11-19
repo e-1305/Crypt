@@ -42,6 +42,18 @@ The limits matter as much as the numbers. The scan reads lockfiles only. A findi
 
 ![The raid view at 1440 by 900 pixels](img/visual-qa-1440x900.png)
 
+## What shipped after the census
+
+CRYPT 0.2.0 is on npm as `@e-1305/crypt`. Five changes since the census:
+
+- SARIF 2.1.0 for GitHub Code Scanning (`crypt alerts --format sarif`, Action input `upload-sarif`). Not yet verified with a real Security tab alert.
+- Run history: open KEV limbs over time, age per limb, deadline breaches and mean time to heal. Unknown values read `unknown`.
+- A static import signal for npm: direct, transitive, dev or unknown. It is a text scan of source files for require and import. It does not run code or say whether a vulnerable function is called, so it is not reachability.
+- `crypt init` opens one onboarding PR with the Action in report mode and a CODEOWNERS draft with team placeholders. Time to first green run is not measured yet.
+- A buyer page for a two-week read-only pilot. Nothing was tested with a buyer, and there are no customers, design partners or revenue.
+
+The npm API shows 177 downloads for 2026-11-12 to 2026-11-18 ([source](https://api.npmjs.org/downloads/point/last-week/@e-1305/crypt)). That is a raw count. Mirrors, bots and my own installs are not separated, so it does not mean 177 users.
+
 ## What broke, and how it got fixed
 
 **The bridge read the player's own typing.** The first version of the bridge watched the game transcript for lines starting with `> `, treating them as commands. The problem is that a driver script, or a player, can write those lines too. The watcher could act on input that the game never accepted. Issue #3 tracked it. Bridge v2 reverses the direction: the game prints a `[[CRYPT ...]]` marker only when an action has been accepted, and the watcher triggers on markers alone. The spec in `.kiro/specs/bridge-v2/` came first. It also helped the web player, where the event log is fed only by the parser of game output, so typed text cannot fake a marker.

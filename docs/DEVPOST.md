@@ -6,7 +6,7 @@ Tagline (111 chars, limit 200): CRYPT finds security holes that matter in your c
 - Repo: https://github.com/e-1305/Crypt
 - Live site: https://e-1305.github.io/Crypt/
 - Demo repo: https://github.com/e-1305/crypt-demo
-- Video: TODO add URL after upload (shot list in [DEMO.md](DEMO.md), pitch in [PITCH.md](PITCH.md))
+- Video: VIDEO_URL_PENDING (placeholder until upload; shot list in [DEMO.md](DEMO.md), pitch in [PITCH.md](PITCH.md))
 
 ## Who uses it and who pays
 Users: vulnerability management / VOC teams, AppSec, OSS maintainers. Opinion: the buyer is the security org that owns remediation SLAs. CRYPT is free today and no market size is claimed. The wedge, from the [census](census/RESULTS.md): 84.7% of limbs have no CODEOWNERS owner, and 95.2% of findings were filtered as noise. Hard to copy (opinion): the human-in-the-loop trust model enforced in code and CI, deterministic ranking, and the playable report. Details and sources: [WHO-PAYS.md](WHO-PAYS.md). Market, pricing hypothesis and real traction (none yet): [BUSINESS.md](BUSINESS.md).
@@ -19,7 +19,7 @@ Users: vulnerability management / VOC teams, AppSec, OSS maintainers. Opinion: t
 Every app is a Frankenstein of strangers' code. Scanners print a list that nobody reads. We wanted the list to be something you play, with a safety story a security team can accept.
 
 ## What it does
-CRYPT turns a lockfile into a creature: one limb per dependency, rotting if vulnerable, possessed if CISA KEV lists it. You play a Z-machine text adventure and type `GRAFT JQUERY`. CRYPT writes the fix as a pull request. By default that is a dry run: a payload file, nothing sent. `SEAL CRYPT` blocks every graft. A person lands every pull request.
+CRYPT turns a lockfile into a creature: one limb per dependency, rotting if vulnerable, possessed if CISA KEV lists it. You play a Z-machine text adventure and type `GRAFT JQUERY`. CRYPT writes the fix as a pull request. By default that is a dry run: a payload file, nothing sent. `SEAL CRYPT` blocks every graft. A person lands every pull request. Since the census (npm 0.2.0): `crypt alerts --format sarif` and Action input `upload-sarif` send KEV errors and EPSS warnings to GitHub Code Scanning (not yet verified on a real repository); run history shows open KEV limbs, age, deadline breaches and mean time to heal (MTTH), with unknown values read `unknown`; `crypt init` opens one onboarding PR (Action in report mode plus a CODEOWNERS draft with team placeholders); a static import scan labels each npm package direct, transitive, dev or unknown ([USER_MANUAL.md](USER_MANUAL.md)).
 
 The page is a rehearsal and sends nothing. Only the CLI (`crypt raid <url> --live`) can open a real pull request on [crypt-demo](https://github.com/e-1305/crypt-demo), and a human lands it before `crypt reraise` shows HEALED.
 
@@ -35,6 +35,8 @@ Specs first. Counts: <!-- stats:start -->31 specs in `.kiro/specs/`, 6 steering 
 
 ## Accomplishments
 - Census ([docs/census/RESULTS.md](census/RESULTS.md), scan 2026-11-17, rerun with `npm run census`): across 20 popular open-source projects, the filter cut 248 findings to 3 monsters. 95.2% were exorcised as noise, 0 were possessed, 84.7% of 11,244 limbs have no CODEOWNERS owner. Limits: lockfile only, no reachability, 20 popular projects, not a random sample.
+- Import signal limit: static text scan of source files for require, import and dynamic import of a package name. It does not run code, follow variables, or say whether a vulnerable function is called, and workspace members are not listed.
+- npm: 177 downloads in the week 2026-11-12 to 2026-11-18 ([api.npmjs.org](https://api.npmjs.org/downloads/point/last-week/@e-1305/crypt)). An API count only: mirrors, bots and the author's own installs are not separated, so it is not evidence of 177 users. No customers, no design partners, no revenue.
 - Tests: <!-- stats:start -->31 specs in `.kiro/specs/`, 6 steering files, 7 hooks, 3 custom agents and 1229 tests (passed plus skipped, `npx vitest run`; counted by `npm run kiro:stats`)<!-- stats:end -->.
 
 ## What we learned
@@ -42,6 +44,7 @@ Putting safety rules in steering files and tests made them cheap to keep. A judg
 
 ## What is next
 - Re-check on real hardware: GPU frame rate, sound, Lighthouse.
+- Measure time to first green run on a fresh fork after `crypt init` (not measured yet) and test the [buyer page](../web/for-teams.html) with a real security team (nothing tested with a buyer yet).
 - Beyond Tier 1: only npm and pip lockfiles are supported today.
 
 ## Category
