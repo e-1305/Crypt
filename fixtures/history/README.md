@@ -9,4 +9,5 @@
 | 3 | The reraise read lodash HEALED | null: PROOF.md gives no time, so none is recorded |
 
 Fields left null are unknown, not zero: EPSS, owner team and deadline are not in PROOF.md. jquery is Possessed in PROOF.md but has no time there, so it has no line.
-The heal time used for "mean time to heal" is the landing time of line 2.
+Mean time to heal is unknown for this seed: line 3 has no time, and the landing time of line 2 is not a heal time. It shows as a separate "time to land" figure (3 minutes).
+Age counts from line 1, the fix PR opening, not from detection. The seed holds no KEV limb, so its KEV trend is flat for lack of data.

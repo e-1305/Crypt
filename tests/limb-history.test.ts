@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import {
   aggregate,
@@ -191,9 +192,12 @@ describe("crypt-demo seed of 2026-11-18 (docs/PROOF.md)", () => {
 
   it("shows the lodash heal, with the mean time from the real times and everything else unknown", () => {
     expect(a.healedLimbs).toBe(1);
-    expect(a.meanTimeToHealHours).toBe(0.05);
-    expect(a.healTimesKnown).toBe(1);
-    expect(a.ageByLimb).toEqual([{ limb: "LODASH", state: "Healed", hours: 0.05 }]);
+    expect(a.meanTimeToHealHours).toBeNull();
+    expect(a.healTimesKnown).toBe(0);
+    expect(a.meanTimeToLandHours).toBe(0.05);
+    expect(a.landTimesKnown).toBe(1);
+    expect(a.kevLines).toBe(0);
+    expect(a.ageByLimb).toEqual([{ limb: "LODASH", state: "Healed", hours: null, landHours: 0.05 }]);
     expect(a.deadlineBreaches).toEqual([]);
     expect(a.limbsWithDeadline).toBe(0);
     expect(a.undated).toBe(1);
@@ -206,7 +210,10 @@ describe("crypt-demo seed of 2026-11-18 (docs/PROOF.md)", () => {
     const b = aggregate(lines.filter((l) => l.state !== "Landed"), T0);
     expect(b.healedLimbs).toBe(1);
     expect(b.meanTimeToHealHours).toBeNull();
+    expect(b.meanTimeToLandHours).toBeNull();
     expect(b.ageByLimb[0]!.hours).toBeNull();
+    const c = aggregate([...lines.slice(0, 2), { ...lines[2]!, ts: "2026-11-18T19:23:40.000Z" }], T0);
+    expect(c.meanTimeToHealHours).toBe(1);
   });
 });
 
@@ -241,6 +248,69 @@ describe("breaches and age", () => {
   it("leaves age unknown when the first sighting has no time", () => {
     const a = aggregate([mk("A", "Rotting", null, null)], T0);
     expect(a.ageByLimb[0]!.hours).toBeNull();
+  });
+});
+
+describe("one run, one point", () => {
+  const creature = { limbs: [{ id: "LODASH", state: "Rotting", kev: true, foundAt: "2026-11-01T00:00:00Z" }] };
+  it("treats autopsy and gazette readings seconds apart as one run", () => {
+    const a = linesFromCreature(creature, T0);
+    const b = linesFromCreature(creature, T0 + 20_000);
+    expect(appendLines(a, b)).toHaveLength(1);
+    expect(appendLines(a, linesFromCreature(creature, T0 + 10 * 60_000))).toHaveLength(2);
+  });
+  it("starts the deadline at the found time when the creature has one", () => {
+    const t = Date.parse("2026-11-10T00:00:00Z");
+    expect(linesFromCreature(creature, t)[0]!.deadline).toBe("2026-11-03T00:00:00.000Z");
+    expect(linesFromCreature({ limbs: [{ id: "X", state: "Rotting", kev: true }] }, t)[0]!.deadline).toBe("2026-11-12T00:00:00.000Z");
+  });
+});
+
+describe("history branch push and pull", () => {
+  const script = join(ROOT, "scripts", "ci", "history-branch.sh");
+  const sh = (args: string[], cwd?: string) => spawnSync("bash", [script, ...args], { encoding: "utf8", cwd });
+  const git = (cwd: string, ...a: string[]) => spawnSync("git", a, { cwd, encoding: "utf8" });
+  const clone = (remote: string, root: string, name: string): string => {
+    const d = join(root, name);
+    expect(spawnSync("git", ["clone", "--quiet", remote, d], { encoding: "utf8" }).status).toBe(0);
+    return d;
+  };
+
+  it("pushes to crypt-history only, pulls it back, and leaves main untouched", () => {
+    const root = mkdtempSync(join(tmpdir(), "crypt-hb-"));
+    const remote = join(root, "remote.git");
+    spawnSync("git", ["init", "--quiet", "--bare", "-b", "main", remote]);
+    const seed = clone(remote, root, "seed");
+    git(seed, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "--allow-empty", "-m", "init", "--quiet");
+    git(seed, "push", "--quiet", "origin", "HEAD:refs/heads/main");
+    const a = clone(remote, root, "a");
+    const fileA = join(a, "out", "crypt-history.jsonl");
+    mkdirSync(join(a, "out"));
+    writeFileSync(fileA, "line-one\n");
+    expect(sh(["pull", "crypt-history", "main", fileA, a]).status).toBe(0);
+    expect(existsSync(fileA)).toBe(true); // no branch yet: the file is left as it is
+    expect(sh(["push", "crypt-history", "main", fileA, a]).status).toBe(0);
+    expect(git(remote, "show", "crypt-history:crypt-history.jsonl").stdout).toBe("line-one\n");
+    expect(git(remote, "rev-parse", "main").stdout).toBe(git(seed, "rev-parse", "HEAD").stdout);
+
+    const b = clone(remote, root, "b");
+    const fileB = join(b, "out", "crypt-history.jsonl");
+    expect(sh(["pull", "crypt-history", "main", fileB, b]).status).toBe(0);
+    expect(readFileSync(fileB, "utf8")).toBe("line-one\n");
+    writeFileSync(fileB, "line-one\nline-two\n");
+    expect(sh(["push", "crypt-history", "main", fileB, b]).status).toBe(0);
+    expect(git(remote, "rev-list", "--count", "crypt-history").stdout.trim()).toBe("2");
+
+    // a stale clone (pulled before b pushed) is rejected as non-fast-forward: warning, exit 0, remote unchanged
+    writeFileSync(fileA, "stale\n");
+    const r = sh(["push", "crypt-history", "main", fileA, a]);
+    expect(r.status).toBe(0);
+    expect(r.stderr).toContain("push failed");
+    expect(git(remote, "show", "crypt-history:crypt-history.jsonl").stdout).toBe("line-one\nline-two\n");
+
+    // the default branch name is refused and nothing is pushed
+    expect(sh(["push", "main", "main", fileA, a]).stderr).toContain("refused");
+    rmSync(root, { recursive: true, force: true });
   });
 });
 
@@ -292,7 +362,8 @@ describe("pages", () => {
     expect(html).toContain("Deadline breaches");
     expect(html).toContain("Mean time to heal");
     expect(html).toContain("Source: real");
-    expect(html).toContain("LODASH healed: 3 minutes");
+    expect(html).toContain("LODASH healed: <span class=\"n-a\">unknown</span> (to land 3 minutes)");
+    expect(html).toContain("holds no known KEV limb");
   });
 
   it("renders unknown when there is no history or no time", () => {

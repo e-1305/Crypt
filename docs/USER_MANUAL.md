@@ -216,7 +216,7 @@ While a raid runs, "Possession spread" shows how far the possession has spread, 
 
 ### Run history and SLA trend
 
-Each `crypt autopsy` and `crypt gazette` run appends one line per limb to `out/crypt-history.jsonl`: time, limb, state, KEV, EPSS, owner team and deadline, with a `source` label (`real` or `sample`). A rerun with the same time adds nothing twice. The autopsy page and the War Room show open KEV limbs over time, the age of each limb, deadline breaches and the mean time to heal. A value the file does not hold reads `unknown`.
+Each `crypt autopsy` and `crypt gazette` run appends one line per limb to `out/crypt-history.jsonl`: time, limb, state, KEV, EPSS, owner team and deadline, with a `source` label (`real` or `sample`). Lines of one limb less than five minutes apart count as one run, so `autopsy` and `gazette` in one job add one point. A deadline counts from the limb's found time when the creature has one, else from the first history line. The autopsy page and the War Room show open KEV limbs over time, the age of each limb, deadline breaches and the mean time to heal (only from Healed lines that carry their own time; landing time is shown apart). A value the file does not hold reads `unknown`.
 
 In the GitHub Action the file is in the artifact. To keep it between runs, set `history-branch: crypt-history` and give the job `contents: write`. Only a branch named `crypt-history` that is not the default branch is accepted. To read another file, run `crypt autopsy --history <file>`. The War Room shows the real crypt-demo events of 2026-11-18 from `fixtures/history/crypt-demo-2026-11-18.jsonl`.
 

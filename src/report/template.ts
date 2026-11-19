@@ -16,7 +16,7 @@ export const FOOTNOTES = {
   trend: "Trend: open limbs (possessed plus rotting) after each of the last raids, read from the history that crypt autopsy and crypt gazette keep in out/autopsy-history.json (one entry per day they run), plus any history in out/state.json.",
   noise: "Noise exorcised: findings below the noise line (counts.exorcised) divided by all findings (counts.findings).",
   history:
-    "Run history: one line per limb per run in out/crypt-history.jsonl (time, limb, state, KEV, EPSS, owner team, deadline). Age runs from the first sighting to now, or to the landing time of the fix. A deadline is the SLA window of the policy (48 hours for KEV, 14 days for EPSS of 0.1 or more) counted from the first sighting. Mean time to heal averages first sighting to landing time over healed limbs. A value the history does not hold reads unknown. Each line carries a source label: real or sample.",
+    "Run history: one line per limb per run in out/crypt-history.jsonl (time, limb, state, KEV, EPSS, owner team, deadline). Age runs from the first history line (not always detection) to now, or to the time of a Healed line. A deadline is the SLA window of the policy (48 hours for KEV, 14 days for EPSS of 0.1 or more) counted from the limb's found time when the creature has one, else from the first history line. Mean time to heal uses only Healed lines that carry their own time. Landing time is shown apart as time to land. A value the history does not hold reads unknown. Each line carries a source label: real or sample.",
 } as const;
 
 export const SAMPLE_BANNER = "SAMPLE DATA";

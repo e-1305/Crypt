@@ -82,7 +82,7 @@ export function renderLimbHistoryHtml(a: HistoryAggregate | undefined): string {
   const ages =
     a.ageByLimb.length === 0
       ? `<p class="detail">Age per limb: none open yet</p>`
-      : `<ul>${a.ageByLimb.map((l) => `<li>${esc(l.limb)} ${esc(l.state.toLowerCase())}: ${l.hours === null ? UNKNOWN : esc(durationText(l.hours))}</li>`).join("")}</ul>`;
+      : `<ul>${a.ageByLimb.map((l) => `<li>${esc(l.limb)} ${esc(l.state.toLowerCase())}: ${l.hours === null ? UNKNOWN : esc(durationText(l.hours))}${l.state === "Landed" || l.landHours === null ? "" : ` (to land ${esc(durationText(l.landHours))})`}</li>`).join("")}</ul>`;
   const breaches =
     a.deadlineBreaches.length === 0
       ? `<p class="detail">Deadline breaches: none among ${esc(a.limbsWithDeadline)} limbs with a known deadline</p>`
@@ -97,7 +97,9 @@ ${kev}
 <h2>Age per limb</h2>
 ${ages}
 ${breaches}
-<p class="detail">Mean time to heal: <span class="big">${mean}</span> (${esc(a.healTimesKnown)} of ${esc(a.healedLimbs)} healed limbs have a known time)</p></section>`;
+<p class="detail">Mean time to heal: <span class="big">${mean}</span> (${esc(a.healTimesKnown)} of ${esc(a.healedLimbs)} healed limbs have a known heal time)</p>
+<p class="detail">Mean time to land (fix landed, not healed): ${esc(durationText(a.meanTimeToLandHours))} (${esc(a.landTimesKnown)} limbs)</p>
+<p class="detail">Age counts from the first history line, which is not always detection (in the crypt-demo seed it is the fix PR opening).${a.kevLines === 0 ? " This history holds no known KEV limb, so the KEV trend is flat for lack of data, not because none were open." : ""}</p></section>`;
 }
 
 export function renderAutopsyHtml(m: AutopsyModel): string {

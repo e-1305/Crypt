@@ -110,15 +110,22 @@ export function linesFromCreature(creature: unknown, now: number, source: Histor
       .map((p) => Date.parse(p.deadline!))
       .sort((a, b) => a - b)[0];
     const open = state === "Possessed" || state === "Rotting";
-    const deadline = !open || window === null ? null : new Date(known ?? now + window).toISOString();
+    // Start of the window: the earliest recorded deadline, else the creature's own found time when it has one, else this run.
+    const foundAt = typeof l.foundAt === "string" || typeof l.foundAt === "number" ? isoOrNull(typeof l.foundAt === "number" ? (Number.isFinite(l.foundAt) && l.foundAt >= 0 && l.foundAt <= MAX_MS ? new Date(l.foundAt).toISOString() : null) : l.foundAt) : null;
+    const start = foundAt !== null && Date.parse(foundAt) <= now ? Date.parse(foundAt) : now;
+    const deadline = !open || window === null ? null : new Date(known ?? start + window).toISOString();
     out.push({ ts, limb: l.id, state, kev, epss, ownerTeam: teamOf(l.owner), deadline, source });
   }
   return out;
 }
 
-/** Existing plus new lines. A line with the same run ts and limb is replaced, so a rerun in one run adds nothing. */
+/** Lines of one limb closer than this belong to one run (autopsy and gazette in one job read the clock separately). */
+export const RUN_WINDOW_MS = 5 * 60 * 1000;
+
+/** Existing plus new lines. A line of the same limb within RUN_WINDOW_MS of a new line is replaced, so one run adds one point. */
 export function appendLines(existing: readonly HistoryLine[], added: readonly HistoryLine[]): HistoryLine[] {
-  const same = (a: HistoryLine, b: HistoryLine): boolean => a.ts !== null && a.ts === b.ts && a.limb === b.limb;
+  const same = (a: HistoryLine, b: HistoryLine): boolean =>
+    a.ts !== null && b.ts !== null && a.limb === b.limb && Math.abs(Date.parse(a.ts) - Date.parse(b.ts)) < RUN_WINDOW_MS;
   return [...existing.filter((e) => !added.some((a) => same(e, a))), ...added];
 }
 
@@ -142,8 +149,10 @@ export interface RunPoint {
 export interface LimbAge {
   limb: string;
   state: HistoryState;
-  /** Hours from the first sighting to now (open) or to the heal time. Null when a needed time is unknown. */
+  /** Hours from the first history line to now (open) or to the Healed line's own time. Null when a needed time is unknown. */
   hours: number | null;
+  /** Hours from the first history line to the Landed (landing) line. Null when unknown. Not a heal time. */
+  landHours: number | null;
 }
 
 export interface Breach {
@@ -166,10 +175,15 @@ export interface HistoryAggregate {
   /** Limbs whose last line is Possessed or Rotting. */
   openLimbs: number;
   limbsWithDeadline: number;
-  /** Mean of first sighting to heal over healed limbs with both times known. Null when there is none. */
+  /** Mean of first line to the Healed line's own time. A Healed line with no time gives no heal time, the landing time is not used. */
   meanTimeToHealHours: number | null;
   /** How many healed limbs the mean uses. */
   healTimesKnown: number;
+  /** Mean of first line to the Landed (landing) line, over limbs with both times known. Null when there is none. */
+  meanTimeToLandHours: number | null;
+  landTimesKnown: number;
+  /** Lines whose kev is true. Zero means the history holds no known KEV limb. */
+  kevLines: number;
   sources: HistorySource[];
 }
 
@@ -224,6 +238,7 @@ export function aggregate(raw: readonly unknown[], now: number): HistoryAggregat
   let openLimbs = 0;
   let limbsWithDeadline = 0;
   const healHours: number[] = [];
+  const landHoursAll: number[] = [];
   for (const [limb, ls] of [...byLimb.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1))) {
     const last = ls[ls.length - 1]!;
     if (last.state === "Healed") healedLimbs++;
@@ -235,13 +250,18 @@ export function aggregate(raw: readonly unknown[], now: number): HistoryAggregat
     if (!everOpen) continue;
     const seen = ls.map((l) => ms(l.ts)).filter((t): t is number => t !== null);
     const first = seen.length === 0 ? null : Math.min(...seen);
-    const fixTimes = ls.filter((l) => (l.state === "Landed" || l.state === "Healed") && l.ts !== null).map((l) => ms(l.ts)!);
+    const stateTimes = (st: HistoryState): number[] => ls.filter((l) => l.state === st && l.ts !== null).map((l) => ms(l.ts)!);
+    const fixTimes = [...stateTimes("Landed"), ...stateTimes("Healed")];
     const fixedAt = fixTimes.length === 0 ? null : Math.min(...fixTimes);
     const fixed = last.state === "Landed" || last.state === "Healed";
-    const end = fixed ? fixedAt : clock;
-    const hours = first !== null && end !== null && end >= first ? round2((end - first) / HOUR_MS) : null;
-    ageByLimb.push({ limb, state: last.state, hours });
+    const healTimes = stateTimes("Healed");
+    const landTimes = stateTimes("Landed");
+    const since = (end: number | null): number | null => (first !== null && end !== null && end >= first ? round2((end - first) / HOUR_MS) : null);
+    const hours = last.state === "Healed" ? since(healTimes.length === 0 ? null : Math.min(...healTimes)) : fixed ? since(fixedAt) : since(clock);
+    const landHours = since(landTimes.length === 0 ? null : Math.min(...landTimes));
+    ageByLimb.push({ limb, state: last.state, hours, landHours });
     if (last.state === "Healed" && hours !== null) healHours.push(hours);
+    if (landHours !== null) landHoursAll.push(landHours);
     if (deadline !== null) {
       const iso = new Date(deadline).toISOString();
       if (isOpen(last.state) && clock !== null && clock > deadline) deadlineBreaches.push({ limb, deadline: iso, kind: "open" });
@@ -259,6 +279,9 @@ export function aggregate(raw: readonly unknown[], now: number): HistoryAggregat
     limbsWithDeadline,
     meanTimeToHealHours: healHours.length === 0 ? null : round2(healHours.reduce((s, h) => s + h, 0) / healHours.length),
     healTimesKnown: healHours.length,
+    meanTimeToLandHours: landHoursAll.length === 0 ? null : round2(landHoursAll.reduce((x, h) => x + h, 0) / landHoursAll.length),
+    landTimesKnown: landHoursAll.length,
+    kevLines: lines.filter((l) => l.kev === true).length,
     sources: (["real", "sample"] as const).filter((s) => lines.some((l) => l.source === s)),
   };
 }
