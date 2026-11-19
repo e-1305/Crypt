@@ -11,11 +11,11 @@ Every step below happened on GitHub. Each link opens the real page. The rehearsa
 
 ## SARIF in GitHub Code Scanning
 
-Status: **not verified**. No run URL and no alert fields are recorded here, because none could be read back yet.
+Status: **verified on 2026-11-19.**
 
-- The `selftest` job in `.github/workflows/action-selftest.yml` now has a second step that runs the Action with `upload-sarif: "true"` against e-1305/crypt-demo. The job has `security-events: write`; the top-level permissions stay `contents: read`.
-- The workflow is `workflow_dispatch` only, and the change was prepared in an environment that could not dispatch it. A read of `GET /repos/e-1305/Crypt/code-scanning/alerts` there returned HTTP 403 (`Github returned a client error`), so no alert could be read.
-- Still to record after a dispatched run on the merged workflow, dated: the run URL, and for each alert the rule id, severity, tool name and `created_at` from the REST API. If the upload is refused (for example Code Scanning is not enabled for the repository), that refusal is to be recorded here instead.
+- Run: [action-selftest 44589460861](https://github.com/e-1305/Crypt/actions/runs/44589460861) (green), the `selftest` job running the Action with `upload-sarif: "true"` against e-1305/crypt-demo. The job has `security-events: write`; top-level permissions stay `contents: read`.
+- Result, read in the repository's Security tab (Code scanning, branch main) by the repository owner: alert **#1**, "Known advisory GHSA-gxr4-xjj5-5px2 (CVE-2020-11022) in a locked dependency", level **Error**, tool **CRYPT**, location `target/package-lock.json:1` (`target/` is where the self-test checks out crypt-demo).
+- The REST read (`GET /repos/e-1305/Crypt/code-scanning/alerts`) returns 403 for the automation token used here, so the fields above come from the Security tab, not from the API.
 
 ## Notes
 
