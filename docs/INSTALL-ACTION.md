@@ -71,7 +71,7 @@ The result level follows the ranking: KEV is `error`, EPSS ≥ 0.1 is `warning`,
 
 ## Self-test
 
-The `action-selftest` workflow in this repository runs the action against `e-1305/crypt-demo` on manual dispatch.
+The `action-selftest` workflow in this repository runs the action against `e-1305/crypt-demo` on manual dispatch. A second job in that workflow also runs it with `upload-sarif: true` (the only job with `security-events: write`).
 
 ## Set it up in one pull request: `crypt init`
 
