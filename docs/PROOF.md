@@ -9,6 +9,14 @@ Every step below happened on GitHub. Each link opens the real page. The rehearsa
 5. **Re-raised: HEALED.** After the merge the live raid ran again and lodash read HEALED: [reraise run](https://github.com/e-1305/Crypt/actions/runs/44373819785).
 6. **Counter-proof.** [PR #2](https://github.com/e-1305/crypt-demo/pull/2), `[DEMO SABOTAGE]` jquery 3.4.1 to 3.5.0, was opened at 18:55:22Z. Its `test` check [failed](https://github.com/e-1305/crypt-demo/actions/runs/44374944193/job/135051477584), the Inquisitor reported `GRAFT_REJECTED` ([run](https://github.com/e-1305/Crypt/actions/runs/44375794960)), and the PR was closed unmerged at 19:01:18Z.
 
+## SARIF in GitHub Code Scanning
+
+Status: **not verified**. No run URL and no alert fields are recorded here, because none could be read back yet.
+
+- The `selftest` job in `.github/workflows/action-selftest.yml` now has a second step that runs the Action with `upload-sarif: "true"` against e-1305/crypt-demo. The job has `security-events: write`; the top-level permissions stay `contents: read`.
+- The workflow is `workflow_dispatch` only, and the change was prepared in an environment that could not dispatch it. A read of `GET /repos/e-1305/Crypt/code-scanning/alerts` there returned HTTP 403 (`Github returned a client error`), so no alert could be read.
+- Still to record after a dispatched run on the merged workflow, dated: the run URL, and for each alert the rule id, severity, tool name and `created_at` from the REST API. If the upload is refused (for example Code Scanning is not enabled for the repository), that refusal is to be recorded here instead.
+
 ## Notes
 
 - What this proof does and does not show: one demo repo, a lockfile-level finding (the package version is vulnerable), not reachability of the vulnerable code.
