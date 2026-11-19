@@ -252,11 +252,31 @@ describe.skipIf(!haveToolchain)("build:site output", () => {
       const landing = readFileSync(join(a, "index.html"), "utf8");
       const nav = /<nav[^>]*id="views-nav"[\s\S]*?<\/nav>/.exec(landing)?.[0] ?? "";
       const hrefs = [...nav.matchAll(/href="([^"]+)"/g)].map((m) => m[1]!);
-      expect(hrefs).toEqual(["./", "war-room.html", "graveyard/graveyard.html", "autopsy.html"]);
+      expect(hrefs).toEqual(["./", "war-room.html", "graveyard/graveyard.html", "autopsy.html", "for-teams.html"]);
       for (const h of hrefs) {
         expect(h).not.toMatch(/^[a-z]+:|^\/\//i);
         const target = join(a, h.endsWith("/") ? `${h}index.html` : h);
         expect(existsSync(target), h).toBe(true);
+      }
+      expect(/id="hero-teams"[^>]*href="for-teams\.html"|href="for-teams\.html"[^>]*id="hero-teams"/.test(landing)).toBe(true);
+      expect(/<section id="hero"[\s\S]*?href="for-teams\.html"[\s\S]*?<\/section>/.test(landing)).toBe(true);
+      // The buyer page (P5): built, labelled, and every link resolves (site files in the build, docs links to repo files).
+      const teams = readFileSync(join(a, "for-teams.html"), "utf8");
+      expect(existsSync(join(a, "for-teams.css"))).toBe(true);
+      expect(existsSync(join(a, "for-teams.js"))).toBe(true);
+      expect(existsSync(join(a, "js", "web", "roi.js"))).toBe(true);
+      expect(teams).toContain("ESTIMATE");
+      expect(teams).toContain("HYPOTHESIS");
+      expect(teams).not.toContain("\u2014");
+      for (const id of ["problem", "process", "pilot", "roi", "pricing", "security", "partner"]) expect(teams).toContain(`id="${id}"`);
+      for (const step of ["Detect", "Triage", "Assign", "Fix", "Verify", "Approve", "Heal", "Report"]) expect(teams).toContain(`<b>${step}</b>`);
+      for (const m of teams.matchAll(/\b(?:href|src)="([^"]+)"/g)) {
+        const u = m[1]!;
+        const blob = /^https:\/\/github\.com\/e-1305\/Crypt\/blob\/main\/([^#]+)/.exec(u);
+        if (blob) expect(existsSync(join(ROOT, blob[1]!)), u).toBe(true);
+        else if (u === "https://github.com/e-1305/Crypt/issues/new?template=design-partner.yml") expect(existsSync(join(ROOT, ".github", "ISSUE_TEMPLATE", "design-partner.yml"))).toBe(true);
+        else if (u.startsWith("#")) expect(teams).toContain(`id="${u.slice(1)}"`);
+        else expect(existsSync(join(a, u.split("#")[0] || ".")), u).toBe(true);
       }
       expect(existsSync(join(a, "graveyard", "index.html"))).toBe(true);
       expect(existsSync(join(a, "graveyard", "census.json"))).toBe(true);
