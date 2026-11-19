@@ -1,0 +1,24 @@
+/* /for-teams.html. Palette and fonts come from style.css. */
+.ft main { max-width: 56rem; padding: .5rem 1rem 2rem; overflow-wrap: anywhere; }
+.ft-top { padding: .5rem 1rem 0; display: flex; flex-wrap: wrap; align-items: center; gap: 0 1.25rem; }
+.ft-top h1 { font-size: 1.25rem; margin: 0; }
+.ft-sub { margin: 0; }
+.ft a { color: var(--fg); }
+.ft section { border-top: 1px solid var(--dim); padding: .5rem 0 .75rem; }
+.ft h2 { font-size: 1.1rem; margin: .5rem 0; }
+.ft-tag { display: inline-block; border: 1px solid var(--fg); padding: 0 .5rem; font-size: .9rem; }
+.ft-source { color: var(--dim); font-size: .9rem; }
+.ft-source a { color: var(--fg); }
+.ft-flow { list-style: none; margin: .5rem 0; padding: 0; display: flex; flex-wrap: wrap; gap: .5rem; counter-reset: s; }
+.ft-flow li { counter-increment: s; border: 1px solid var(--dim); padding: .35rem .6rem; flex: 1 1 8rem; display: flex; flex-direction: column; }
+.ft-flow li::before { content: counter(s) "."; color: var(--dim); }
+.ft-flow span { color: var(--dim); font-size: .875rem; }
+.ft-formula { border: 1px solid var(--dim); padding: .5rem; font-weight: 700; }
+.ft-form { display: grid; grid-template-columns: minmax(0, 1fr) 8rem; gap: .5rem .75rem; align-items: center; max-width: 36rem; }
+.ft-form input { font: inherit; color: var(--fg); background: #0a140a; border: 1px solid var(--dim); padding: .25rem .5rem; min-height: 44px; width: 100%; box-sizing: border-box; }
+.ft-result { font-weight: 700; border: 1px solid var(--fg); padding: .5rem; }
+.ft-cta { display: inline-flex; align-items: center; min-height: 44px; padding: .25rem .9rem; border: 1px solid var(--fg); text-decoration: none; }
+.ft-cta:hover { background: var(--fg); color: #000; }
+.ft li { margin: .25rem 0; }
+@media (max-width: 480px) { .ft-form { grid-template-columns: 1fr; } }
+.ft-sub a { display: inline-flex; align-items: center; min-height: 44px; }

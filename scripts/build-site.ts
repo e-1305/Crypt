@@ -107,7 +107,7 @@ export async function buildSite(outDir: string): Promise<void> {
     mkdirSync(join(outDir, "game"), { recursive: true });
     // Every top-level script of the page (app.js, theatre.js, raid.js, ...) plus the page and its style.
     const scripts = readdirSync(WEB).filter((f) => f.endsWith(".js"));
-    for (const f of ["index.html", "style.css", ...scripts]) cpSync(join(WEB, f), join(outDir, f));
+    for (const f of ["index.html", "for-teams.html", "for-teams.css", "style.css", ...scripts]) cpSync(join(WEB, f), join(outDir, f));
     cpSync(join(WEB, "vendor"), join(outDir, "vendor"), { recursive: true });
     cpSync(join(WEB, "js"), join(outDir, "js"), { recursive: true });
     cpSync(join(WEB, "theatre"), join(outDir, "theatre"), { recursive: true });
