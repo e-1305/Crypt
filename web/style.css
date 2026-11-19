@@ -449,6 +449,8 @@ body.record .hero, body.judge-running .hero, body.theatre.drawer-open .hero { di
 body.theatre .hero { position: fixed; left: 50%; bottom: 5.5rem; transform: translateX(-50%); z-index: 5; margin: 0; width: min(52rem, calc(100vw - 24rem)); background: rgba(0, 0, 0, .88); font-size: .85rem; }
 body.theatre .hero-cta { min-height: 32px; padding: .1rem .75rem; }
 body.theatre .hero-actions { margin: .3rem 0 .2rem; }
+/* Short windows (1280x720 after judge mode): keep the problem line and the buttons, so the hero leaves the bench terminal in view. */
+@media (min-width: 1101px) and (max-height: 760px) { body.theatre .hero #hero-what, body.theatre .hero #hero-proof, body.theatre .hero .hero-steps { display: none; } }
 body.hc .hero-cta { border-color: #fff; }
 @media (max-width: 899px) {
   .hero { padding: .3rem .5rem; font-size: .9rem; }
