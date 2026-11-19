@@ -9,7 +9,7 @@ import { buildSlackPayload } from "../../src/gazette/slack.js";
 import { buildTeamsPayload } from "../../src/gazette/teams.js";
 import { sendGazette, type FetchLike } from "../../src/gazette/send.js";
 import { SAMPLE_INPUT } from "../../src/report/sample.js";
-import { loadHistory, recordSnapshot } from "./history.js";
+import { loadHistory, recordLimbHistory, recordSnapshot } from "./history.js";
 import { SEAL_NOTICE } from "./session.js";
 
 function readJson(io: Io, path: string): unknown {
@@ -52,6 +52,7 @@ export async function gazetteCommand(p: Parsed, deps: GazetteDeps = {}): Promise
     const state = readJson(io, paths.statePath) ?? {};
     digest = buildDigest({ creature, state, history: loadHistory(io, paths.creaturePath, state), now: now(), warRoomUrl });
     recordSnapshot(io, paths.creaturePath, creature, now());
+    recordLimbHistory(io, paths.creaturePath, creature, now());
   }
   const payload = format === "teams" ? buildTeamsPayload(digest) : buildSlackPayload(digest);
 

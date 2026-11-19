@@ -38,7 +38,7 @@ export const SPECS: Record<CommandName, Spec> = {
   seal: { positional: [], flags: {} },
   unseal: { positional: [], flags: {} },
   raid: { positional: TARGET, flags: { offline: "bool", feeds: "value", cache: "value", live: "bool", timeout: "value" } },
-  autopsy: { positional: [], flags: { out: "value", last: "value", sample: "bool" } },
+  autopsy: { positional: [], flags: { out: "value", last: "value", sample: "bool", history: "value" } },
   gazette: { positional: [], flags: { "webhook-env": "value", "dry-run": "bool", send: "bool", "war-room": "value", format: "value", sample: "bool" } },
   alerts: { positional: [], flags: { format: "value", live: "bool", repo: "value", out: "value" } },
   graveyard: { positional: [], flags: { org: "value", "token-env": "value", out: "value", repos: "value", sample: "bool" } },

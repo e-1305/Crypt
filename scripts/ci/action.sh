@@ -28,10 +28,14 @@ mode="$1"
 limb="${2:-LODASH}"
 sabotage="${3:-false}"
 alerts="${INPUT_ALERTS:-none}"
+history_branch="${INPUT_HISTORY_BRANCH:-}"
 
 case "$mode" in report | graft) ;; *) usage "mode must be report or graft, got '${mode:0:20}'" ;; esac
 case "$limb" in LODASH | JQUERY) ;; *) usage "limb must be LODASH or JQUERY, got '${limb:0:20}'" ;; esac
 case "$alerts" in none | issues) ;; *) usage "alerts must be none or issues, got '${alerts:0:20}'" ;; esac
+if [ -n "$history_branch" ] && ! bash "$ROOT/scripts/ci/history-branch.sh" check "$history_branch" "${DEFAULT_BRANCH:-}"; then
+  usage "history-branch must be empty or crypt-history, and must not be the default branch"
+fi
 case "$sabotage" in true | false) ;; *) usage "sabotage must be true or false, got '${sabotage:0:20}'" ;; esac
 if [ "$mode" = "report" ] && [ "$sabotage" = "true" ]; then usage "sabotage only goes with mode graft"; fi
 if [ "$mode" = "graft" ] && [ -z "${GITHUB_TOKEN:-}" ]; then
@@ -115,8 +119,15 @@ fi
 
 # shellcheck disable=SC2086
 plate="$($PLATE out/creature.json 2>>"$log")" || fail "plate rendering failed."
+# Optional history on the crypt-history branch: pull before the autopsy appends this run, push after. Never the default branch.
+if [ -n "$history_branch" ]; then
+  bash "$ROOT/scripts/ci/history-branch.sh" pull "$history_branch" "${DEFAULT_BRANCH:-}" out/crypt-history.jsonl "$TARGET" || true
+fi
 # shellcheck disable=SC2086
 $CRYPT autopsy 2>&1 | tee -a "$log" || fail "crypt autopsy failed."
+if [ -n "$history_branch" ]; then
+  bash "$ROOT/scripts/ci/history-branch.sh" push "$history_branch" "${DEFAULT_BRANCH:-}" out/crypt-history.jsonl "$TARGET" || true
+fi
 [ -s out/autopsy.html ] || fail "crypt autopsy wrote no out/autopsy.html."
 
 {
@@ -141,7 +152,7 @@ $CRYPT autopsy 2>&1 | tee -a "$log" || fail "crypt autopsy failed."
     echo '```'
   fi
   echo
-  echo "creature.json and autopsy.html are in the workflow artifact. Report mode never writes to the repository."
+  echo "creature.json, autopsy.html and crypt-history.jsonl are in the workflow artifact. Report mode never writes to the default branch."
 } >>"$SUMMARY"
 
 if [ "$unresolved" -gt 0 ] || [ "$unknown" -gt 0 ]; then

@@ -29,6 +29,10 @@ inputs:
     description: "none (default) or issues: report mode prints the GitHub issues crypt alerts --format issues would open, one per KEV limb (dry-run, no token)."
     required: false
     default: none
+  history-branch:
+    description: "Optional. Set to crypt-history to keep crypt-history.jsonl on that branch between runs (needs contents: write). Any other name, or the default branch, is refused. Default: none, the file is only in the artifact."
+    required: false
+    default: ""
 runs:
   using: composite
   steps:
@@ -49,6 +53,8 @@ runs:
         INPUT_TOKEN: ${{ inputs.token }}
         INPUT_PATH: ${{ inputs.path }}
         INPUT_ALERTS: ${{ inputs.alerts }}
+        INPUT_HISTORY_BRANCH: ${{ inputs.history-branch }}
+        DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
       run: |
         ws="$(cd "$GITHUB_WORKSPACE" && pwd -P)"
         target="$(cd "$ws/$INPUT_PATH" 2>/dev/null && pwd -P)" || { echo "::error::path '$INPUT_PATH' not found in the workspace"; exit 2; }
@@ -67,4 +73,5 @@ runs:
         path: |
           ${{ steps.crypt.outputs.dir }}/creature.json
           ${{ steps.crypt.outputs.dir }}/autopsy.html
+          ${{ steps.crypt.outputs.dir }}/crypt-history.jsonl
         if-no-files-found: warn

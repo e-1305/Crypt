@@ -30,6 +30,7 @@ Any error or unknown state fails the step with a FAILED summary, never a green "
 | `limb` | `LODASH` | `LODASH` or `JQUERY`, `graft` only |
 | `sabotage` | `false` | Demo only, `graft` only |
 | `alerts` | `none` | `none` or `issues`. With `issues`, report mode adds the dry-run output of `crypt alerts --format issues` to the job summary |
+| `history-branch` | none | Set to `crypt-history` to keep `crypt-history.jsonl` on that branch between runs (job needs `contents: write`). Any other name or the default branch is refused. The file is always in the artifact |
 
 ## Alerts
 

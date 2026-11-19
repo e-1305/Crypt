@@ -1,5 +1,6 @@
 // Autopsy page: one self-contained printable HTML string. Every value is escaped. No script, no external request (one link to the vendor security review).
 import type { AutopsyModel, HistoryPoint, LimbRef } from "./model.js";
+import { durationText, type HistoryAggregate } from "./limb-history.js";
 import { FOOTNOTES, PDF_HINT, SAMPLE_BANNER, SAMPLE_NOTE, SECURITY_REVIEW_PATH, SECURITY_REVIEW_URL, STYLE } from "./template.js";
 
 export function esc(v: unknown): string {
@@ -42,6 +43,61 @@ export function sparkline(points: readonly HistoryPoint[]): string {
     pts.map((p) => `<circle class="dot" cx="${p.split(",")[0]}" cy="${p.split(",")[1]}" r="3"/>`).join("") +
     `</svg>`
   );
+}
+
+const UNKNOWN = `<span class="n-a">unknown</span>`;
+
+/** Open KEV limbs per run as a small SVG line. Needs at least one dated run. */
+export function kevSparkline(runs: HistoryAggregate["runs"]): string {
+  const vals = runs.map((r) => r.openKev);
+  const w = 300;
+  const h = 70;
+  const pad = 8;
+  const max = Math.max(1, ...vals);
+  const x = (i: number) => pad + (i * (w - 2 * pad)) / Math.max(1, vals.length - 1);
+  const y = (v: number) => h - pad - (v * (h - 2 * pad)) / max;
+  const pts = vals.map((v, i) => [Math.round(x(i) * 10) / 10, Math.round(y(v) * 10) / 10] as const);
+  const alt = `Open KEV limbs after each of ${vals.length} runs: ${vals.join(", ")}.`;
+  return (
+    `<svg class="spark" viewBox="0 0 ${w} ${h}" role="img" aria-labelledby="kev-t kev-d">` +
+    `<title id="kev-t">Open KEV limbs over time</title><desc id="kev-d">${esc(alt)}</desc>` +
+    `<line class="axis" x1="${pad}" y1="${h - pad}" x2="${w - pad}" y2="${h - pad}"/>` +
+    `<polyline class="ln" points="${pts.map((p) => p.join(",")).join(" ")}"/>` +
+    pts.map((p) => `<circle class="dot" cx="${p[0]}" cy="${p[1]}" r="3"/>`).join("") +
+    `</svg>`
+  );
+}
+
+/** The run history section: open KEV over time, age per limb, deadline breaches, mean time to heal. Null data reads "unknown". */
+export function renderLimbHistoryHtml(a: HistoryAggregate | undefined): string {
+  if (a === undefined || a.lineCount === 0) {
+    return `<section class="card wide" aria-labelledby="h-hist"><h2 id="h-hist">Run history<sup>7</sup></h2>
+<span class="big n-a">unknown</span><p class="detail">Run crypt autopsy after each raid to build the history in out/crypt-history.jsonl.</p></section>`;
+  }
+  const label = a.sources.length === 0 ? "unknown" : a.sources.join(" and ");
+  const kev =
+    a.runs.length === 0
+      ? `<p class="detail">Open KEV limbs over time: ${UNKNOWN} (no run time recorded)</p>`
+      : `${kevSparkline(a.runs)}<p class="detail">Open KEV limbs over time, ${esc(a.runs.length)} runs: ${esc(a.runs.map((r) => `${day(Date.parse(r.ts))} ${r.openKev}`).join(", "))}</p>`;
+  const ages =
+    a.ageByLimb.length === 0
+      ? `<p class="detail">Age per limb: none open yet</p>`
+      : `<ul>${a.ageByLimb.map((l) => `<li>${esc(l.limb)} ${esc(l.state.toLowerCase())}: ${l.hours === null ? UNKNOWN : esc(durationText(l.hours))}</li>`).join("")}</ul>`;
+  const breaches =
+    a.deadlineBreaches.length === 0
+      ? `<p class="detail">Deadline breaches: none among ${esc(a.limbsWithDeadline)} limbs with a known deadline</p>`
+      : `<p class="detail">Deadline breaches: ${a.deadlineBreaches.map((b) => `${esc(b.limb)} (${b.kind === "open" ? "open past" : "healed after"} ${esc(day(Date.parse(b.deadline)))})`).join(", ")}</p>`;
+  const mean =
+    a.meanTimeToHealHours === null
+      ? UNKNOWN
+      : `${esc(durationText(a.meanTimeToHealHours))}`;
+  return `<section class="card wide" aria-labelledby="h-hist"><h2 id="h-hist">Run history<sup>7</sup></h2>
+<p class="detail">Source: ${esc(label)}. ${esc(a.lineCount)} lines.</p>
+${kev}
+<h2>Age per limb</h2>
+${ages}
+${breaches}
+<p class="detail">Mean time to heal: <span class="big">${mean}</span> (${esc(a.healTimesKnown)} of ${esc(a.healedLimbs)} healed limbs have a known time)</p></section>`;
 }
 
 export function renderAutopsyHtml(m: AutopsyModel): string {
@@ -96,6 +152,7 @@ ${m.sample ? `<p class="banner" role="note">${esc(SAMPLE_BANNER)}<span>${esc(SAM
 ${praise}</section>
 <section class="card wide" aria-labelledby="h-trend"><h2 id="h-trend">Trend<sup>5</sup></h2>
 ${trendBody}</section>
+${renderLimbHistoryHtml(m.limbHistory)}
 <section class="card wide" aria-labelledby="h-act"><h2 id="h-act">Limbs to act on</h2>
 <p class="detail">Breached: ${limbList(sla.breached)}</p>
 <p class="detail">At risk (75% of the window used): ${limbList(sla.atRisk)}</p></section>
@@ -110,6 +167,7 @@ ${trendBody}</section>
 <li>${esc(FOOTNOTES.sla)}</li>
 <li>${esc(FOOTNOTES.trend)}</li>
 <li>${esc(FOOTNOTES.noise)}</li>
+<li>${esc(FOOTNOTES.history)}</li>
 </ol>
 <p class="detail">Vendor security review: <a href="${SECURITY_REVIEW_URL}">${SECURITY_REVIEW_PATH}</a></p>
 </footer>

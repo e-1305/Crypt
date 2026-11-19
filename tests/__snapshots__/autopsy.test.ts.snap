@@ -83,6 +83,8 @@ footer{border-top-color:#555;color:#111}
 <ul><li>JQUERY (jquery) healed by @e-1305</li><li>MINIMIST (minimist) healed by @e-1305</li></ul></section>
 <section class="card wide" aria-labelledby="h-trend"><h2 id="h-trend">Trend<sup>5</sup></h2>
 <svg class="spark" viewBox="0 0 300 70" role="img" aria-labelledby="spark-t spark-d"><title id="spark-t">Open limbs trend</title><desc id="spark-d">Open limbs after each of the last 6 raids: 7, 7, 6, 5, 4, 4.</desc><line class="axis" x1="8" y1="62" x2="292" y2="62"/><polyline class="ln" points="8,8 64.8,8 121.6,15.7 178.4,23.4 235.2,31.1 292,31.1"/><circle class="dot" cx="8" cy="8" r="3"/><circle class="dot" cx="64.8" cy="8" r="3"/><circle class="dot" cx="121.6" cy="15.7" r="3"/><circle class="dot" cx="178.4" cy="23.4" r="3"/><circle class="dot" cx="235.2" cy="31.1" r="3"/><circle class="dot" cx="292" cy="31.1" r="3"/></svg><p class="detail">Open limbs, 2025-10-29 to 2025-11-03: 7, 7, 6, 5, 4, 4</p></section>
+<section class="card wide" aria-labelledby="h-hist"><h2 id="h-hist">Run history<sup>7</sup></h2>
+<span class="big n-a">unknown</span><p class="detail">Run crypt autopsy after each raid to build the history in out/crypt-history.jsonl.</p></section>
 <section class="card wide" aria-labelledby="h-act"><h2 id="h-act">Limbs to act on</h2>
 <p class="detail">Breached: none</p>
 <p class="detail">At risk (75% of the window used): HANDLEBARS (handlebars)</p></section>
@@ -97,6 +99,7 @@ footer{border-top-color:#555;color:#111}
 <li>SLA compliance: in-scope limbs are Possessed (48 hours) and EPSS of 0.1 or more (14-day sprint), counted from the team scan start, or from a limb&#39;s own found time when the creature records one. A limb counts when it was healed inside its window or is still open inside it. At risk means 75% of the window is used.</li>
 <li>Trend: open limbs (possessed plus rotting) after each of the last raids, read from the history that crypt autopsy and crypt gazette keep in out/autopsy-history.json (one entry per day they run), plus any history in out/state.json.</li>
 <li>Noise exorcised: findings below the noise line (counts.exorcised) divided by all findings (counts.findings).</li>
+<li>Run history: one line per limb per run in out/crypt-history.jsonl (time, limb, state, KEV, EPSS, owner team, deadline). Age runs from the first sighting to now, or to the landing time of the fix. A deadline is the SLA window of the policy (48 hours for KEV, 14 days for EPSS of 0.1 or more) counted from the first sighting. Mean time to heal averages first sighting to landing time over healed limbs. A value the history does not hold reads unknown. Each line carries a source label: real or sample.</li>
 </ol>
 <p class="detail">Vendor security review: <a href="https://github.com/e-1305/Crypt/blob/main/docs/SECURITY-REVIEW.md">docs/SECURITY-REVIEW.md</a></p>
 </footer>

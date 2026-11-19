@@ -1,5 +1,6 @@
 // Deterministic sample input for tests and visual QA: a crypt-demo-like creature with a fixed clock.
 import type { AutopsyInput } from "./model.js";
+import { aggregate, linesFromCreature, type HistoryAggregate } from "./limb-history.js";
 
 const H = 3_600_000;
 export const SAMPLE_SCAN_START = Date.UTC(2025, 10, 3, 9, 0, 0);
@@ -53,4 +54,10 @@ export const SAMPLE_INPUT: AutopsyInput = buildSample(SAMPLE_SCAN_START);
 /** Sample dated relative to the given clock (default today), so a generated page never looks stale. */
 export function sampleInput(now: number = Date.now()): AutopsyInput {
   return buildSample(now - 40 * H);
+}
+
+/** Two made-up runs (24 hours apart) of the sample creature, every line labelled sample. */
+export function sampleLimbHistory(input: AutopsyInput): HistoryAggregate {
+  const lines = [...linesFromCreature(input.creature, input.now - 24 * H, "sample"), ...linesFromCreature(input.creature, input.now, "sample")];
+  return aggregate(lines, input.now);
 }

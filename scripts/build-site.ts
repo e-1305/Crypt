@@ -14,7 +14,7 @@ import { galleryIndex, previewPayload, type GalleryIndexEntry, type GallerySnaps
 import { renderManual } from "../src/site/manual.js";
 import { renderAutopsyHtml } from "../src/report/html.js";
 import { buildAutopsy } from "../src/report/model.js";
-import { SAMPLE_INPUT } from "../src/report/sample.js";
+import { SAMPLE_INPUT, sampleLimbHistory } from "../src/report/sample.js";
 import { fromSnapshot, serializeGraveyard } from "../src/graveyard/model.js";
 import { parseEpss, parseKev } from "../src/exhume/feeds.js";
 import { serializeFeedSnapshot, SNAPSHOT_MIN_EPSS } from "../src/web/feed-snapshot.js";
@@ -116,6 +116,8 @@ export async function buildSite(outDir: string): Promise<void> {
     // War Room (Epic D4): the page is served as war-room.html, its css and js sit in war-room/ beside it. All URLs are relative.
     cpSync(join(WEB, "war-room", "war-room.html"), join(outDir, "war-room.html"));
     cpSync(join(WEB, "war-room"), join(outDir, "war-room"), { recursive: true, filter: (src) => !src.endsWith(".html") });
+    // Real crypt-demo history of 2026-11-18 (docs/PROOF.md), read by the War Room history panel.
+    cpSync(join(ROOT, "fixtures", "history", "crypt-demo-2026-11-18.jsonl"), join(outDir, "war-room", "crypt-history-demo.jsonl"));
     writeFileSync(join(outDir, ".nojekyll"), "");
     writeFileSync(join(outDir, "feeds.json"), feedSnapshotText());
     cpSync(join(WEB, "manual.css"), join(outDir, "manual.css"));
@@ -158,7 +160,7 @@ export async function buildSite(outDir: string): Promise<void> {
     // graveyard/ alone serves the same page, so the directory URL does not 404 on Pages.
     cpSync(join(WEB, "graveyard", "graveyard.html"), join(outDir, "graveyard", "index.html"));
     // The CISO report sample: `crypt autopsy --sample` on the fixed sample clock (deterministic), labelled SAMPLE DATA by the page itself.
-    writeFileSync(join(outDir, "autopsy.html"), renderAutopsyHtml(buildAutopsy(SAMPLE_INPUT)));
+    writeFileSync(join(outDir, "autopsy.html"), renderAutopsyHtml(buildAutopsy({ ...SAMPLE_INPUT, limbHistory: sampleLimbHistory(SAMPLE_INPUT) })));
     const records = readdirSync(snapDir)
       .filter((n) => n.endsWith(".json"))
       .sort()

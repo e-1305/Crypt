@@ -214,6 +214,12 @@ Typing `SEAL CRYPT` shows a badge, "SEALED: no graft will run.", on the 2D page 
 
 While a raid runs, "Possession spread" shows how far the possession has spread, from 0 to 100 percent, as a text line and a progress bar. It rises with the clock and climbs faster while KEV limbs stay open. Healing a KEV limb lowers it again. Warnings appear at 10, 5 and 1 minutes left, in text, and the 10 and 5 minute warnings are announced, and the last minute is announced by the raid timer. Pressure is display only: it does not change the team risk removed, the rank or the grade. It never pulses, and it looks the same with reduced motion, high-contrast reader mode and the 2D page.
 
+### Run history and SLA trend
+
+Each `crypt autopsy` and `crypt gazette` run appends one line per limb to `out/crypt-history.jsonl`: time, limb, state, KEV, EPSS, owner team and deadline, with a `source` label (`real` or `sample`). A rerun with the same time adds nothing twice. The autopsy page and the War Room show open KEV limbs over time, the age of each limb, deadline breaches and the mean time to heal. A value the file does not hold reads `unknown`.
+
+In the GitHub Action the file is in the artifact. To keep it between runs, set `history-branch: crypt-history` and give the job `contents: write`. Only a branch named `crypt-history` that is not the default branch is accepted. To read another file, run `crypt autopsy --history <file>`. The War Room shows the real crypt-demo events of 2026-11-18 from `fixtures/history/crypt-demo-2026-11-18.jsonl`.
+
 ## 6. Accessibility
 
 The text game is the core, so screen readers work with the same text the game prints. The transcript is a live log region, every command has a labelled input, state is told by glyph and word, and events are announced through a polite status region. Reduced motion turns off all animation. The Lighthouse score is 100 on the default 2D page. Full measurements are in [ACCESSIBILITY.md](ACCESSIBILITY.md).

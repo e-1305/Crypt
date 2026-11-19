@@ -6,8 +6,9 @@ import { CliError, EXIT } from "../../src/cli/exit.js";
 import type { Parsed } from "../../src/cli/parse.js";
 import { buildAutopsy, DEFAULT_LAST, type AutopsyInput } from "../../src/report/model.js";
 import { renderAutopsyHtml } from "../../src/report/html.js";
-import { sampleInput } from "../../src/report/sample.js";
-import { loadHistory, recordSnapshot } from "./history.js";
+import { sampleInput, sampleLimbHistory } from "../../src/report/sample.js";
+import { aggregate } from "../../src/report/limb-history.js";
+import { limbHistoryPath, loadHistory, loadLimbHistory, recordLimbHistory, recordSnapshot } from "./history.js";
 import { PDF_HINT } from "../../src/report/template.js";
 
 function readJson(io: Io, path: string): unknown {
@@ -24,15 +25,19 @@ export function autopsyCommand(p: Parsed, cwd: string = process.cwd(), io: Io = 
   const last = typeof p.flags.last === "string" ? Number(p.flags.last) : DEFAULT_LAST;
   let input: AutopsyInput;
   if (p.flags.sample === true) {
-    input = { ...sampleInput(now()), last };
+    const sample = sampleInput(now());
+    input = { ...sample, last, limbHistory: sampleLimbHistory(sample) };
   } else {
     const creature = readJson(io, paths.creaturePath);
     if (creature === undefined) {
       throw new CliError("no readable out/creature.json. Run crypt raid <target> first.", EXIT.FAILURE);
     }
     const state = readJson(io, paths.statePath) ?? {};
-    input = { creature, state, now: now(), last, history: loadHistory(io, paths.creaturePath, state) };
     recordSnapshot(io, paths.creaturePath, creature, now());
+    const seed = typeof p.flags.history === "string" ? resolve(cwd, p.flags.history) : undefined;
+    if (seed === undefined) recordLimbHistory(io, paths.creaturePath, creature, now());
+    const lines = loadLimbHistory(io, seed ?? limbHistoryPath(paths.creaturePath));
+    input = { creature, state, now: now(), last, history: loadHistory(io, paths.creaturePath, state), limbHistory: aggregate(lines, now()) };
   }
   io.writeText(out, renderAutopsyHtml(buildAutopsy(input)));
   console.log(`Autopsy report written to ${out}`);
