@@ -22,6 +22,8 @@ Commands:
   reraise             After a human landed pull requests: mark those limbs healed and recompile.
   autopsy             Write out/autopsy.html: a one-page report for a CISO (print it to PDF from a browser).
   gazette             Print the weekly digest as Slack or Teams JSON. Posts only with --send.
+  init                Onboarding: one pull request adding the CRYPT workflow (report mode) and, if missing,
+                      a CODEOWNERS draft with team placeholders. Prints the plan unless --live --repo owner/name.
   alerts              --format issues: one GitHub issue per Possessed (KEV) limb (prints unless --live).
                       --format ocsf: write OCSF Vulnerability Findings to out/alerts.ocsf.json (SIEM ingest).
                       --format sarif: write SARIF 2.1.0 to out/alerts.sarif (GitHub Code Scanning).

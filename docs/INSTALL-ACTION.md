@@ -72,3 +72,12 @@ The result level follows the ranking: KEV is `error`, EPSS ≥ 0.1 is `warning`,
 ## Self-test
 
 The `action-selftest` workflow in this repository runs the action against `e-1305/crypt-demo` on manual dispatch.
+
+## Set it up in one pull request: `crypt init`
+
+```bash
+npx @e-1305/crypt init                                   # dry run: prints what it would add
+GITHUB_TOKEN=... npx @e-1305/crypt init --live --repo owner/name
+```
+
+Opens **one** pull request that adds `.github/workflows/crypt.yml` (report mode, `contents: read`) and, only if the repository has no CODEOWNERS file, a `.github/CODEOWNERS` draft with the placeholder `@your-org/your-team` for each manifest path. It never names a person, never reads git history, uses the same token preflight as a live graft, refuses to run twice, and never lands the change: a person reviews and merges it.
