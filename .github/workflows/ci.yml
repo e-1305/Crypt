@@ -61,6 +61,8 @@ jobs:
           path: .toolchain
           key: toolchain-${{ runner.os }}-${{ hashFiles('scripts/setup-tools.sh') }}
       - run: npm run build:site
+      - name: Resource budgets (first-load JS, lazy three.js, fonts)
+        run: node scripts/ci/budget.mjs
       - run: npx playwright-core install --with-deps chromium
       - name: Screenshots and layout checks at 390x844, 1280x800, 1440x900, 1920x1080
         run: npm run test:visual
