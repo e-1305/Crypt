@@ -13,7 +13,7 @@ export interface PackageUsage {
 }
 
 export const USAGE_LIMITS =
-  "Static text scan of source files for require, import and dynamic import of a package name. It does not run code, follow variables, or say whether a vulnerable function is called.";
+  "Static text scan of source files for require, import and dynamic import of a package name. It does not run code, follow variables, or say whether a vulnerable function is called. A regex literal containing a quote or comment marker can hide imports, which then read as transitive or dev. Workspace members are not listed.";
 
 const NM = "node_modules/";
 const SOURCE_EXT = /\.(?:[cm]?[jt]s|[jt]sx)$/;
@@ -44,8 +44,30 @@ export function isScannedSource(path: string): boolean {
   return dirs.length === 0 || dirs.some((d) => SOURCE_DIRS.has(d));
 }
 
+/** Remove comments, leaving string and template literals intact so "src/*" does not open a comment. */
 function stripComments(text: string): string {
-  return text.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:\\'"`])\/\/[^\n]*/g, "$1");
+  let out = "";
+  let i = 0;
+  while (i < text.length) {
+    const c = text[i]!;
+    const n = text[i + 1];
+    if (c === "/" && n === "*") {
+      const end = text.indexOf("*/", i + 2);
+      i = end < 0 ? text.length : end + 2;
+      out += " ";
+    } else if (c === "/" && n === "/") {
+      while (i < text.length && text[i] !== "\n") i++;
+    } else if (c === '"' || c === "'" || c === "`") {
+      let j = i + 1;
+      while (j < text.length && text[j] !== c && (c === "`" || text[j] !== "\n")) j += text[j] === "\\" ? 2 : 1;
+      out += text.slice(i, j + 1);
+      i = j + 1;
+    } else {
+      out += c;
+      i++;
+    }
+  }
+  return out;
 }
 
 /** Package name for an import specifier, or null for relative, absolute, node: and # imports. */
@@ -103,7 +125,9 @@ export function classifyUsage(files: ReadonlyMap<string, string> | null, lockTex
   for (const [path, raw] of Object.entries(doc.packages)) {
     if (path === "" || !isObj(raw) || raw.link === true) continue;
     const idx = path.lastIndexOf(NM);
-    const derived = idx >= 0 ? path.slice(idx + NM.length) : "";
+    // Entries outside node_modules are workspace members (first-party), not dependencies.
+    if (idx < 0) continue;
+    const derived = path.slice(idx + NM.length);
     const name = typeof raw.name === "string" && raw.name !== "" ? raw.name : derived;
     if (name === "") continue;
     const dev = raw.dev === true;

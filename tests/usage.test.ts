@@ -24,7 +24,7 @@ describe("usage scan", () => {
     const d = "tests/fixtures/usage/";
     const files = new Map([
       ["src/index.js", readFileSync(d + "src/index.js", "utf8")],
-      ["dist/bundle.js", readFileSync(d + "dist/bundle.js", "utf8")],
+      ["dist/bundle.js", 'import "jquery";'],
     ]);
     const got = Object.fromEntries(classifyUsage(files, readFileSync(d + "package-lock.json", "utf8")).map((p) => [p.name, p.usage]));
     expect(got).toEqual({
@@ -147,6 +147,31 @@ describe("usage scan", () => {
     expect(isScannedSource("src/a.test.ts")).toBe(false);
     expect(isScannedSource("src/a.d.ts")).toBe(false);
     expect(isScannedSource("src/a.md")).toBe(false);
+  });
+
+  it("is not fooled by comment markers inside strings", () => {
+    expect([...importedPackages('const g = "lib/*";\nimport "alpha";\n/* c */')]).toEqual(["alpha"]);
+    expect([...importedPackages('const u = "x // y"; require("beta")')]).toEqual(["beta"]);
+    expect([...importedPackages('// import "gamma"\n/* require("delta") */')]).toEqual([]);
+  });
+
+  it("handles lock edge cases", () => {
+    const lock = JSON.stringify({
+      lockfileVersion: 3,
+      packages: {
+        "": { name: "root" },
+        "packages/foo": { name: "foo", version: "1.0.0" },
+        "node_modules/foo": { resolved: "packages/foo", link: true },
+        "node_modules/a": { version: "1.0.0", dev: true },
+        "node_modules/a/node_modules/b": { version: "1.0.0", dev: true },
+        "node_modules/c": { version: "1.0.0", dev: true },
+        "node_modules/x/node_modules/c": { version: "2.0.0" },
+        "node_modules/x": { version: "1.0.0" },
+        "node_modules/alias": { name: "real", version: "1.0.0" },
+      },
+    });
+    const got = Object.fromEntries(classifyUsage(new Map([["src/a.js", "export {}"]]), lock).map((p) => [p.name, p.usage]));
+    expect(got).toEqual({ a: "dev", b: "dev", c: "transitive", real: "transitive", x: "transitive" });
   });
 
   it("rejects bad lockfiles", () => {
