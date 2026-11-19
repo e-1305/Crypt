@@ -1,4 +1,5 @@
 import { SPAWN_EPSS } from "../exhume/rank.js";
+import { usageOf } from "../exhume/usage-label.js";
 import { UNOWNED } from "../exhume/owners.js";
 // The ranked list as CSV or JSON, built in the browser from the same ranking the CLI uses (creature.limbs, rank order).
 // SLA text follows .kiro/steering/sla-policy.md. Owners come from CODEOWNERS only; no commit author is ever read.
@@ -12,6 +13,7 @@ export interface ExportLimb {
   kev: boolean;
   epss: number | null;
   severity: number;
+  usage?: string;
   owner?: string | null;
 }
 
@@ -23,11 +25,12 @@ export interface ExportRow {
   kev: boolean;
   epss: number | null;
   severity: number;
+  usage: string;
   sla: string;
   owner: string;
 }
 
-export const CSV_COLUMNS = ["rank", "package", "version", "state", "kev", "epss", "severity", "sla", "owner"] as const;
+export const CSV_COLUMNS = ["rank", "package", "version", "state", "kev", "epss", "severity", "usage", "sla", "owner"] as const;
 
 /** Possessed: 48 hours. Rotting with EPSS >= 0.1: this sprint. Everything else: backlog. */
 export function slaOf(l: { state: string; epss: number | null }): string {
@@ -49,6 +52,7 @@ export function exportRows(limbs: readonly ExportLimb[]): ExportRow[] {
     kev: l.kev,
     epss: l.epss,
     severity: l.severity,
+    usage: usageOf(l.usage),
     sla: slaOf(l),
     owner: ownerOrNone(l.owner),
   }));

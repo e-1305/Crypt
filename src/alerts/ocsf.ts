@@ -2,6 +2,8 @@
 // Schema: OCSF 1.1.0, class Vulnerability Finding (schema.ocsf.io). See docs/SOC.md.
 // Deterministic: same creature and same `now` give the same bytes. Fail-safe: an invalid creature throws, nothing is written.
 // Blameless: the owner is a team handle from CODEOWNERS or "unowned". No person is ever named.
+import { usageOf } from "../exhume/usage-label.js";
+import type { Usage } from "../exhume/usage.js";
 import { teamOwners } from "./issues.js";
 
 export const OCSF_VERSION = "1.1.0";
@@ -30,7 +32,7 @@ export interface OcsfFinding {
   metadata: { version: string; product: { name: "CRYPT"; vendor_name: "e-1305"; version: string } };
   finding_info: { uid: string; title: string; desc: string; created_time: number; types: string[] };
   vulnerabilities: { cve?: { uid: string }; title: string; severity: string; is_exploit_available: boolean; affected_packages: { name: string; version: string; type: string }[] }[];
-  unmapped: { kev: boolean; epss: number | null; owner_team: string; sla: SlaClass; sla_deadline: string | null; advisory_ids: string[]; feeds_as_of: { kev: string | null; epss: string | null } };
+  unmapped: { usage: Usage; kev: boolean; epss: number | null; owner_team: string; sla: SlaClass; sla_deadline: string | null; advisory_ids: string[]; feeds_as_of: { kev: string | null; epss: string | null } };
 }
 
 const rec = (v: unknown): Record<string, unknown> => (typeof v === "object" && v !== null && !Array.isArray(v) ? (v as Record<string, unknown>) : {});
@@ -107,6 +109,7 @@ export function buildOcsf(creature: unknown, now: Date): OcsfFinding[] {
       },
       vulnerabilities: entries,
       unmapped: {
+        usage: usageOf(l.usage),
         kev,
         epss,
         owner_team: teamOwners(l.owner),

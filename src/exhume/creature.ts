@@ -4,6 +4,7 @@ import type { EpssFeed, KevFeed } from "./feeds.js";
 import { parsePackageLock, parseRequirements } from "./lockfile.js";
 import { type OsvLookup, resolveOsv } from "./osv.js";
 import { countLimbs, rankLimbs } from "./rank.js";
+import { type Usage, classifyUsage } from "./usage.js";
 import { type ExhumeFs, type Limb, compareLimbs } from "./types.js";
 
 export const MANIFESTS = ["package-lock.json", "requirements.txt"] as const;
@@ -21,6 +22,20 @@ export interface ExhumeOptions {
   now?: number;
   /** Repository name written to creature.json as "repo". Omitted when not given. */
   name?: string;
+  /** Source files (repo-relative path to text) for the static import scan. Null or absent: usage reads unknown. */
+  sources?: ReadonlyMap<string, string> | null;
+}
+
+/** Usage per npm package name. Any failure degrades to an empty map, so every limb reads unknown. */
+function usageByName(lock: string | null, sources: ReadonlyMap<string, string> | null | undefined): Map<string, Usage> {
+  const out = new Map<string, Usage>();
+  if (lock === null) return out;
+  try {
+    for (const u of classifyUsage(sources ?? null, lock)) out.set(u.name, u.usage);
+  } catch {
+    // failsafe: no usage signal rather than a failed exhume
+  }
+  return out;
 }
 
 /** No supported manifest was readable: the run says nothing about the repository. */
@@ -68,6 +83,7 @@ export async function buildCreature(o: ExhumeOptions) {
     epss: o.epss,
     ownerOfManifest,
   });
+  const usage = usageByName(lock, o.sources);
   return {
     schemaVersion: 1,
     ...(o.name ? { repo: o.name } : {}),
@@ -84,6 +100,7 @@ export async function buildCreature(o: ExhumeOptions) {
       name: l.name,
       version: l.version,
       direct: l.direct,
+      usage: (l.ecosystem === "npm" ? usage.get(l.name) : undefined) ?? ("unknown" as Usage),
       manifest: l.manifest,
       owner: l.owner,
       state: l.state,
@@ -101,11 +118,14 @@ export async function buildCreature(o: ExhumeOptions) {
 
 export type Creature = Awaited<ReturnType<typeof buildCreature>>;
 
-export function serializeCreature(c: Creature): string {
+/** Imported creatures (SARIF, Trivy and so on) carry no usage field. */
+export type CreatureLike = Omit<Creature, "limbs"> & { limbs: Omit<Creature["limbs"][number], "usage">[] };
+
+export function serializeCreature(c: CreatureLike): string {
   return JSON.stringify(c, null, 2) + "\n";
 }
 
-export function summarize(c: Creature, top = 5): string {
+export function summarize(c: CreatureLike, top = 5): string {
   const n = c.counts;
   const lines = [
     `CRYPT exhume: ${countsPhrase({ dependencies: n.limbs, findings: n.findings, spawned: n.spawned, noise: n.exorcised, unresolved: n.unresolved })}`,

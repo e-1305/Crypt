@@ -2,6 +2,7 @@
 // Pure apart from the injected fetch: no node:, no clock (except opts.now), no git history. npm only (package-lock.json).
 // Fail-safe: any problem throws LiveExhumeError and returns no creature, so nothing is ever shown as Healthy by mistake.
 import { buildCreature, type Creature } from "../exhume/creature.js";
+import { collectSources } from "../exhume/usage-sources.js";
 import { LockfileError } from "../exhume/lockfile.js";
 import { osvLookup } from "../exhume/osv-client.js";
 import { groupLimbs, type PackageGroup } from "../exhume/group.js";
@@ -321,6 +322,14 @@ export async function liveExhume(input: string, opts: LiveExhumeOptions): Promis
     }
   }
 
+  // Static import scan: raw.githubusercontent.com only, bounded. Any failure leaves usage unknown.
+  let sources: Map<string, string> | null = null;
+  try {
+    sources = await collectSources((p) => rawFile(f, owner, repo, usedRef, p));
+  } catch {
+    sources = null;
+  }
+
   const innerLookup = opts.osv ?? osvLookup(f);
   const lookup: OsvLookup = async (limbs) => {
     progress("Asking OSV");
@@ -339,6 +348,7 @@ export async function liveExhume(input: string, opts: LiveExhumeOptions): Promis
       lookup,
       now: opts.now,
       name,
+      sources,
     });
   } catch (e) {
     if (e instanceof LockfileError) {

@@ -5,6 +5,7 @@
 import { liveExhume, LiveExhumeError, PROGRESS_STEPS, dryRunLabel, ownerLabel } from "./js/web/live-exhume.js";
 import { noiseFunnel, funnelText, funnelOwners, exorcisedRows, LOCKFILE_LIMIT_LINE } from "./js/web/noise-funnel.js";
 import { slaOf, toCsv, toJson } from "./js/web/report-export.js";
+import { usageLabel, groupUsage, USAGE_FOOTNOTE } from "./js/exhume/usage-label.js";
 import { parseFeedSnapshot } from "./js/web/feed-snapshot.js";
 import { mountCardPanel } from "./card/panel.js";
 import { parseRepoUrl, repoFromQuery, repoSlug } from "./js/web/repo-url.js";
@@ -134,11 +135,12 @@ function renderResult(root, r, gallery, announce = () => {}) {
   const ol = el("ol", undefined, "paste-limbs");
   r.groups.slice(0, MAX_LIMB_ROWS).forEach((g) => {
     const flags = [g.kev ? "KEV" : "", g.epss !== null && g.epss !== undefined ? "EPSS " + g.epss.toFixed(2) : ""].filter(Boolean).join(", ");
-    const li = el("li", groupName(g) + ": " + stateText(g) + (flags ? " (" + flags + ")" : "") + ", " + g.kind + ", " + ownerText(g) + (g.spawned ? ", spawned" : "") + " ");
+    const li = el("li", groupName(g) + ": " + stateText(g) + (flags ? " (" + flags + ")" : "") + ", " + g.kind + ", " + ownerText(g) + (g.spawned ? ", spawned" : "") + ", " + usageLabel(groupUsage(g.members)) + " ");
     li.appendChild(el("span", "SLA: " + slaOf(g), "paste-sla"));
     ol.appendChild(li);
   });
   root.appendChild(ol);
+  root.appendChild(el("p", USAGE_FOOTNOTE, "muted paste-usage-note"));
   const exportRow = el("div", undefined, "paste-export-row");
   const slug = r.repo.replace("/", "-");
   const csvBtn = el("button", "Download CSV");

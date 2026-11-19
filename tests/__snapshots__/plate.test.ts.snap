@@ -30,6 +30,11 @@ Fig. 1. Corpus ex dependentiis consutum.
                                    _|..|..|_
                                   (___)  (___)
 
+USAGE, next to each limb:
+  jquery: unknown
+  lodash: unknown
+Static check of imports, not a proof that the vulnerable code runs.
+
 STITCHES: . . . . .
 # POSSESSED   % ROTTING   (clean lines) HEALED   . HEALTHY
 ================================================================================
@@ -68,6 +73,11 @@ Fig. 1. Corpus ex dependentiis consutum.
                                     |..|..|
                                    _|..|..|_
                                   (___)  (___)
+
+USAGE, next to each limb:
+  jquery: unknown
+  lodash: unknown
+Static check of imports, not a proof that the vulnerable code runs.
 
 STITCHES: . . . . .
 # POSSESSED   % ROTTING   (clean lines) HEALED   . HEALTHY

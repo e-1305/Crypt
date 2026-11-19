@@ -38,6 +38,7 @@ npx @e-1305/crypt alerts --format ocsf
 | `vulnerabilities[].is_exploit_available` | `true` when the CVE is in CISA KEV |
 | `vulnerabilities[].affected_packages` | package name, locked version, ecosystem |
 | `severity_id` | from the advisory severity; `0 Unknown` when there is none (never guessed) |
+| `unmapped.usage` | static import check for npm: `direct` (imported in the source), `transitive` (only through another package), `dev` (dev dependency only) or `unknown` (no readable source, or not npm). A text scan of `require`, `import` and dynamic `import`, not a proof that the vulnerable code runs. |
 | `unmapped.kev`, `unmapped.epss` | KEV flag and FIRST EPSS score |
 | `unmapped.sla`, `unmapped.sla_deadline` | `48 hours` for KEV (with the deadline), `this sprint` for EPSS ≥ 0.1, else `backlog` |
 | `unmapped.feeds_as_of` | `{ kev, epss }`: the KEV and EPSS feed dates from `creature.json` (`feeds.kev.date`, `feeds.epss.date`). `null` for a feed that was missing. Compare with `time` to see how old the ranking is. |
@@ -73,7 +74,7 @@ Where it goes:
     { "cve": { "uid": "CVE-2020-11023" }, "is_exploit_available": true, "severity": "Medium",
       "affected_packages": [{ "name": "jquery", "version": "3.4.1", "type": "npm" }] }
   ],
-  "unmapped": { "kev": true, "epss": 0.85, "sla": "48 hours", "sla_deadline": "2026-11-20T12:00:00.000Z", "owner_team": "no owner",
+  "unmapped": { "usage": "direct", "kev": true, "epss": 0.85, "sla": "48 hours", "sla_deadline": "2026-11-20T12:00:00.000Z", "owner_team": "no owner",
     "feeds_as_of": { "kev": "2026-11-18T19:17:41.0354Z", "epss": "2026-11-18T12:00:28Z" } }
 }
 ```
@@ -108,6 +109,7 @@ One result per limb that spawned, most urgent first. A rule is the advisory id a
 | `results[].level` | `error` for KEV, `warning` for EPSS ≥ 0.1, else `note` |
 | `results[].locations[]` | the manifest (`package-lock.json`, `requirements.txt` for PyPI), line 1. With `--base <dir>` (the Action sets it from `path`) the URI is `<dir>/<manifest>` |
 | `results[].partialFingerprints` | `crypt/limb/v1`: `crypt:<ecosystem>:<package>@<version>`, stable across runs |
+| `results[].properties.usage` | `direct`, `transitive`, `dev` or `unknown`: the same static import check as `unmapped.usage` in OCSF. Not a proof that the vulnerable code runs. |
 | `results[].properties.kev`, `.epss` | KEV flag and FIRST EPSS score |
 | `results[].properties.sla`, `.sla_deadline` | `48 hours` for KEV (with the deadline), `this sprint` for EPSS ≥ 0.1, else `backlog` |
 | `results[].properties.owner_team` | the team from `CODEOWNERS`, or `no owner yet`. Never a person. |

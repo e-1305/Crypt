@@ -46,7 +46,7 @@ describe("CSV export", () => {
     it(`${dir}: same package order as crypt exhume`, async () => {
       const c = await creature(dir);
       const rows = parseCsv(toCsv(c.limbs));
-      expect(rows[0]).toEqual(["rank", "package", "version", "state", "kev", "epss", "severity", "sla", "owner"]);
+      expect(rows[0]).toEqual(["rank", "package", "version", "state", "kev", "epss", "severity", "usage", "sla", "owner"]);
       const body = rows.slice(1);
       expect(body.map((r) => r[1])).toEqual(c.limbs.map((l) => l.name));
       expect(body.map((r) => r[0])).toEqual(c.limbs.map((l) => String(l.rank)));
@@ -56,7 +56,7 @@ describe("CSV export", () => {
 
   it("uses the owner from CODEOWNERS or 'no owner'", async () => {
     const c = await creature("fixtures/vulnerable-npm");
-    expect([...new Set(parseCsv(toCsv(c.limbs)).slice(1).map((r) => r[8]))]).toEqual(["@crypt-fixture/supply-chain"]);
+    expect([...new Set(parseCsv(toCsv(c.limbs)).slice(1).map((r) => r[9]))]).toEqual(["@crypt-fixture/supply-chain"]);
     expect(exportRows([L({ owner: "unowned" }), L({ owner: null }), L({ owner: undefined })]).map((r) => r.owner)).toEqual(["no owner", "no owner", "no owner"]);
   });
 
@@ -82,6 +82,15 @@ describe("SLA per sla-policy.md", () => {
     expect(slaOf({ state: "Rotting", epss: 0.09999 })).toBe("backlog");
     expect(slaOf({ state: "Rotting", epss: null })).toBe("backlog");
     expect(slaOf({ state: "Healthy", epss: 0.9 })).toBe("backlog");
+  });
+});
+
+describe("usage column", () => {
+  it("is in CSV and JSON rows, unknown when absent", () => {
+    const rows = exportRows([L({ usage: "direct" }), L({ usage: "dev" }), L({}), L({ usage: "reachable" })]);
+    expect(rows.map((r) => r.usage)).toEqual(["direct", "dev", "unknown", "unknown"]);
+    const csv = parseCsv(toCsv([L({ usage: "transitive" })]));
+    expect(csv[1]![csv[0]!.indexOf("usage")]).toBe("transitive");
   });
 });
 

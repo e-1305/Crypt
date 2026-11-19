@@ -17,7 +17,7 @@ afterEach(() => {
 const creature = {
   feeds: { kev: { status: "ok", date: "2026-11-18T19:17:41.0354Z" }, epss: { status: "ok", date: "2026-11-18T12:00:28Z" } },
   limbs: [
-    { rank: 2, name: "lodash", version: "4.17.15", ecosystem: "npm", owner: "@acme/web", state: "Rotting", spawned: true, kev: false, epss: 0.12, vendorSeverity: "HIGH", vulns: [{ id: "GHSA-B", cves: ["CVE-2020-8203"] }] },
+    { rank: 2, name: "lodash", version: "4.17.15", usage: "transitive", ecosystem: "npm", owner: "@acme/web", state: "Rotting", spawned: true, kev: false, epss: 0.12, vendorSeverity: "HIGH", vulns: [{ id: "GHSA-B", cves: ["CVE-2020-8203"] }] },
     { rank: 1, name: "jquery", version: "3.4.1", ecosystem: "npm", owner: "@alice", state: "Possessed", spawned: true, kev: true, epss: 0.85, vendorSeverity: "MEDIUM", vulns: [{ id: "GHSA-A", cves: ["CVE-2020-11023", "CVE-2020-11022"] }] },
     { rank: 3, name: "minimist", version: "0.0.8", ecosystem: "npm", owner: "unowned", state: "Rotting", spawned: false, kev: false, epss: 0.01, vulns: [] },
   ],
@@ -45,6 +45,14 @@ describe("buildOcsf", () => {
     expect(jq!.unmapped).toMatchObject({ kev: true, epss: 0.85, sla: "48 hours", sla_deadline: "2026-11-20T12:00:00.000Z" });
     expect(lo!.unmapped).toMatchObject({ kev: false, sla: "this sprint", sla_deadline: null, owner_team: "@acme/web" });
     expect(lo!.severity_id).toBe(4);
+  });
+
+  it("carries unmapped.usage, unknown when absent or not a known value", () => {
+    const [jq, lo] = events;
+    expect(lo!.unmapped.usage).toBe("transitive");
+    expect(jq!.unmapped.usage).toBe("unknown");
+    const odd = { limbs: [{ rank: 1, name: "x", version: "1", ecosystem: "npm", spawned: true, usage: "reachable" }] };
+    expect(buildOcsf(odd, NOW)[0]!.unmapped.usage).toBe("unknown");
   });
 
   it("records the KEV and EPSS feed dates as unmapped.feeds_as_of, null when a feed is missing", () => {

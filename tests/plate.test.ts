@@ -136,11 +136,36 @@ describe("plate renderer", () => {
   });
 });
 
+describe("usage signal", () => {
+  const withUsage = {
+    limbs: [
+      { ...limb(1, "jquery", "3.4.1", "Possessed", true), usage: "direct" },
+      { ...limb(2, "lodash", "4.17.15", "Rotting", true), usage: "transitive" },
+      { ...limb(3, "minimist", "0.0.8", "Rotting", true), usage: "dev" },
+      limb(4, "ms", "2.1.3", "Rotting", true),
+    ],
+  };
+
+  it("lists a label for each limb and the footnote under it", () => {
+    const text = renderPlate(withUsage, { repo: "r" });
+    expect(text).toContain("jquery: imported directly");
+    expect(text).toContain("lodash: only through another package");
+    expect(text).toContain("minimist: dev only");
+    expect(text).toContain("ms: unknown");
+    expect(text.indexOf("Static check of imports, not a proof that the vulnerable code runs.")).toBeGreaterThan(text.indexOf("USAGE"));
+    expect(text).not.toMatch(/reachable/i);
+  });
+
+  it("shows no usage block when no limb is drawn", () => {
+    expect(renderPlate({ limbs: [] })).not.toContain("Static check");
+  });
+});
+
 describe("plateInput", () => {
   it("drops owners and unknown fields", async () => {
     const { plateInput } = await import("../src/render/plate.js");
     const out = plateInput({ repo: "r", secret: 1, limbs: [{ ...FIXTURE.limbs[0], owner: "@x/y" }] });
     expect(JSON.stringify(out)).not.toContain("@x/y");
-    expect(Object.keys(out.limbs[0]).sort()).toEqual(["ecosystem", "epss", "kev", "name", "rank", "spawned", "state", "version"]);
+    expect(Object.keys(out.limbs[0]).sort()).toEqual(["ecosystem", "epss", "kev", "name", "rank", "spawned", "state", "usage", "version"]);
   });
 });

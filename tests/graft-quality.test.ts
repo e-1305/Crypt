@@ -257,7 +257,8 @@ describe("3, 4. the NodeGoat-like fixture in the browser pipeline", () => {
 
   it("the plate and its screen reader summary show one entry per package", async () => {
     const live = await run();
-    expect(live.plate.match(/lodash/g)?.length).toBe(1);
+    // One figure entry plus one line in the usage list.
+    expect(live.plate.split("USAGE")[0]!.match(/lodash/g)?.length).toBe(1);
     expect(live.plate).toContain("lodash x2");
     expect(plateSummary(live.creature).filter((s) => s.startsWith("lodash")).length).toBe(1);
   });

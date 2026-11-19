@@ -2,6 +2,8 @@
 // Deterministic: same creature and same `now` give the same bytes. Fail-safe: an invalid creature throws, nothing is written.
 // The $schema value is an identifier, not a request: this file makes no network call.
 // Blameless: the owner is a team handle from CODEOWNERS or "no owner". No person is ever named.
+import { usageOf } from "../exhume/usage-label.js";
+import type { Usage } from "../exhume/usage.js";
 import { teamOwners } from "./issues.js";
 import { PRODUCT_VERSION, slaClass, type SlaClass } from "./ocsf.js";
 
@@ -23,7 +25,7 @@ export interface SarifResult {
   message: { text: string };
   locations: { physicalLocation: { artifactLocation: { uri: string }; region: { startLine: number } } }[];
   partialFingerprints: { "crypt/limb/v1": string };
-  properties: { kev: boolean; epss: number | null; owner_team: string; sla: SlaClass; sla_deadline: string | null; advisory_ids: string[] };
+  properties: { usage: Usage; kev: boolean; epss: number | null; owner_team: string; sla: SlaClass; sla_deadline: string | null; advisory_ids: string[] };
 }
 
 export interface SarifLog {
@@ -116,6 +118,7 @@ export function buildSarif(creature: unknown, now: Date, base?: string): SarifLo
       locations: [{ physicalLocation: { artifactLocation: { uri: manifestOf(ecosystem, dir) }, region: { startLine: 1 } } }],
       partialFingerprints: { "crypt/limb/v1": `crypt:${ecosystem}:${name}@${version}` },
       properties: {
+        usage: usageOf(l.usage),
         kev,
         epss,
         owner_team: teamOwners(l.owner),

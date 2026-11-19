@@ -5,6 +5,7 @@ import { parseEpss, parseKev } from "../src/exhume/feeds.js";
 import { LockfileError } from "../src/exhume/lockfile.js";
 import { CODEOWNERS_LOCATIONS } from "../src/exhume/owners.js";
 import type { ExhumeFs } from "../src/exhume/types.js";
+import { collectSources } from "../src/exhume/usage-sources.js";
 import { creatureRepoName, packageJsonName } from "../src/exhume/name.js";
 import { buildImportedCreature } from "../src/import/build.js";
 import { ImportError, isImportFormat } from "../src/import/index.js";
@@ -54,6 +55,16 @@ async function githubRepo(owner: string, repo: string): Promise<Pick<ExhumeFs, "
   return { read: (p) => files.get(p) ?? null };
 }
 
+/** One raw file for the usage scan. Null on any failure: usage then reads unknown. */
+async function githubSource(owner: string, repo: string, path: string): Promise<string | null> {
+  try {
+    const res = await fetch(`https://raw.githubusercontent.com/${owner}/${repo}/HEAD/${path}`, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+    return res.ok ? await res.text() : null;
+  } catch {
+    return null;
+  }
+}
+
 function warnIfStale(name: string, date: string | undefined): void {
   if (!date) return;
   const days = (Date.now() - Date.parse(date)) / 86_400_000;
@@ -92,9 +103,12 @@ async function main(): Promise<void> {
   const epss = epssText === null ? null : parseEpss(epssText);
   // The name comes from the scanned target (or --name when the CLI scans a temporary clone), never from the cwd.
   const name = a.name || creatureRepoName(a.target, () => packageJsonName(gh ? null : nodeFs(a.target).read("package.json")), resolve(a.target));
+  // Static import scan. Both a local folder and a GitHub URL use the same bounded crawl as the paste flow; a failure leaves usage unknown.
+  const sources = await collectSources(gh ? (p) => githubSource(gh[1]!, gh[2]!, p) : (p) => repo.read(p)).catch(() => null);
   const creature = await buildCreature({
     repo,
     name,
+    sources,
     cacheFs: nodeFs(isAbsolute(a.cache) ? "/" : "."), // an absolute --cache must not be re-rooted under the cwd
     cacheDir: a.cache,
     kev,

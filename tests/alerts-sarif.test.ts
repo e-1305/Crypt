@@ -25,7 +25,7 @@ const check = (log: unknown): void => {
 const creature = {
   feeds: { kev: { status: "ok", date: "2026-11-18T19:17:41.0354Z" }, epss: { status: "ok", date: "2026-11-18T12:00:28Z" } },
   limbs: [
-    { rank: 2, name: "lodash", version: "4.17.15", ecosystem: "npm", owner: "@acme/web", spawned: true, kev: false, epss: 0.12, vulns: [{ id: "GHSA-B", cves: ["CVE-2020-8203"] }] },
+    { rank: 2, name: "lodash", version: "4.17.15", usage: "dev", ecosystem: "npm", owner: "@acme/web", spawned: true, kev: false, epss: 0.12, vulns: [{ id: "GHSA-B", cves: ["CVE-2020-8203"] }] },
     { rank: 1, name: "jquery", version: "3.4.1", ecosystem: "npm", owner: "@alice", spawned: true, kev: true, epss: 0.85, vulns: [{ id: "GHSA-A", cves: ["CVE-2020-11023"] }, { id: "GHSA-A2", cves: [] }] },
     { rank: 3, name: "minimist", version: "0.0.8", ecosystem: "npm", owner: "@acme/web", spawned: true, kev: false, epss: 0.01, vulns: [{ id: "GHSA-B", cves: [] }] },
     { rank: 4, name: "ms", version: "2.1.3", ecosystem: "npm", owner: "unowned", spawned: false, kev: false, epss: 0.01, vulns: [{ id: "GHSA-Z" }] },
@@ -61,6 +61,8 @@ describe("buildSarif", () => {
     expect(j.partialFingerprints["crypt/limb/v1"]).toBe("crypt:npm:jquery@3.4.1");
     expect(j.properties).toMatchObject({ kev: true, epss: 0.85, owner_team: "no owner yet", sla: "48 hours", sla_deadline: "2026-11-20T12:00:00.000Z" });
     expect(run.results[1]!.properties).toMatchObject({ kev: false, owner_team: "@acme/web", sla: "this sprint", sla_deadline: null });
+    expect(run.results[1]!.properties.usage).toBe("dev");
+    expect(j.properties.usage).toBe("unknown");
   });
 
   it("never names a person", () => {

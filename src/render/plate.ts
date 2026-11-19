@@ -2,6 +2,7 @@
 // Every data string is cleaned to printable ASCII. Owners are never shown: rot belongs to the limb.
 
 import { safeLogin } from "../common/creature-status.js";
+import { USAGE_FOOTNOTE, usageLabel, usageOf } from "../exhume/usage-label.js";
 
 export type PlateState = "Possessed" | "Rotting" | "Healed" | "Healthy";
 
@@ -24,6 +25,7 @@ const RIGHT_LABEL_COL = 56;
 const LABEL_MAX = 24;
 const OVERFLOW_MAX = 8;
 const STITCH_MAX = 40;
+const USAGE_MAX = 16;
 
 const MARK: Record<PlateState, string> = { Possessed: "#", Rotting: "%", Healed: " ", Healthy: "." };
 
@@ -98,6 +100,7 @@ export function plateInput(creature: unknown): { repo?: string; team?: { scanSta
       ecosystem: l.ecosystem, name: l.name, version: l.version,
       state: l.state, rank: l.rank, spawned: l.spawned,
       // Public scan numbers for the raid score. Owners stay out.
+      usage: usageOf(l.usage),
       epss: typeof l.epss === "number" ? l.epss : null, kev: l.kev === true,
       // Pipeline records: neutral facts about the limb. healedBy is praise only (a cleaned login).
       ...(l.status === "awaiting-human-merge" ? { status: "awaiting-human-merge" } : {}),
@@ -122,6 +125,7 @@ interface Item {
   version: string;
   state: PlateState;
   spawned: boolean;
+  usage: string;
 }
 
 function stateOf(l: Record<string, unknown>): PlateState {
@@ -148,6 +152,7 @@ function items(creature: unknown): Item[] {
         version: clean(l.version, 12) || "unknown",
         state,
         spawned: l.spawned === true,
+        usage: usageOf(l.usage),
       },
       rank,
       i,
@@ -267,6 +272,17 @@ export function layoutPlate(creature: unknown, options: PlateOptions = {}): Plat
       });
     }
     if (overflow.length > OVERFLOW_MAX) lines.push(plain(`  ... and ${overflow.length - OVERFLOW_MAX} more`));
+    lines.push(plain(""));
+  }
+
+  if (figureItems.length > 0) {
+    lines.push(plain("USAGE, next to each limb:"));
+    for (const it of figureItems.slice(0, USAGE_MAX)) {
+      const name = it.name.length > 36 ? it.name.slice(0, 35) + "~" : it.name;
+      lines.push({ segments: [{ text: `  ${name}: ` }, { text: usageLabel(it.usage), state: it.state, limb: it.key }] });
+    }
+    if (figureItems.length > USAGE_MAX) lines.push(plain(`  ... and ${figureItems.length - USAGE_MAX} more`));
+    lines.push(plain(USAGE_FOOTNOTE));
     lines.push(plain(""));
   }
 
