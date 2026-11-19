@@ -15,10 +15,10 @@ Generated 2026-11-19 (UTC).
 | Hook runs recorded in a real Kiro session | 1 | lines of `docs/evidence/hook-runs.jsonl` whose trigger is not `manual` |
 | of which Kiro CLI in GitHub Actions (source kiro-cli-ci) | 0 | real Kiro lines of `docs/evidence/hook-runs.jsonl` with `"source":"kiro-cli-ci"` |
 | Steering files | 6 | `.kiro/steering/*.md` |
-| Custom agents | 2 | `.kiro/agents/*.json` (Oracle has no file) |
+| Custom agents | 3 | `.kiro/agents/*.json` (Oracle has no file) |
 | Property test call sites | 328 in 43 files | `fc.assert`, `fc.property`, `fc.asyncProperty`, `test.prop` in `tests/*.test.ts` |
-| Tests | 1127 passed, 15 skipped | `npx vitest run --reporter=json` (numPassedTests, numPendingTests) |
-| Test files | 75 | `npx vitest run --reporter=json` (testResults) |
+| Tests | 1149 passed, 15 skipped | `npx vitest run --reporter=json` (numPassedTests, numPendingTests) |
+| Test files | 76 | `npx vitest run --reporter=json` (testResults) |
 | PRs | 66 | unique `#N` in landing-commit subjects of `git log` (`pull request #N` or `PR #N`); `(#N)` suffixes are issues and are not counted; `gh` is not used |
 <!-- kiro-stats:end -->
 

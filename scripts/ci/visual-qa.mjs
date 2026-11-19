@@ -268,6 +268,40 @@ async function checkJudge(browser, vp) {
   await ctx.close();
 }
 
+// Judge mode end state (issue #179): after the demo finishes, the hero and the pitch strip come back. Run the fake clock past the
+// 60 s mark at 1280x720 and check the fixed elements and the hero's buttons do not overlap each other or the bench controls.
+const JUDGE_END_MS = 62000;
+
+async function checkJudgeEnd(browser, vp) {
+  const tag = `${vp.w}x${vp.h} judge end`;
+  const ctx = await browser.newContext({ viewport: { width: vp.w, height: vp.h }, hasTouch: vp.touch, isMobile: vp.touch });
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => fail(tag, `page error: ${e.message}`));
+  await page.clock.install({ time: new Date("2030-01-01T00:00:00Z") });
+  await page.clock.pauseAt(new Date("2030-01-01T00:00:01Z"));
+  await page.goto(base + "?judge=1");
+  const ready = () => page.evaluate(() => document.getElementById("plate")?.textContent.trim().length > 0 && !document.getElementById("cmd")?.disabled && !!document.getElementById("judge-stage"));
+  for (let i = 0; i < 120 && !(await ready()); i++) { await page.waitForTimeout(250); }
+  if (!(await ready())) fail(tag, "judge mode did not start or the game did not load");
+  for (let t = 0; t < JUDGE_END_MS; t += 500) { await page.clock.runFor(500); await page.waitForTimeout(20); }
+  await page.waitForTimeout(500);
+  const running = await page.evaluate(() => document.body.classList.contains("judge-running"));
+  if (running) fail(tag, "judge mode is still running after 62 s");
+  const fixed = await fixedBoxes(page, vp.w, vp.h);
+  const hero = (await boxes(page, ["#hero", "#hero-watch", "#hero-play", "#hero-scan"])).filter((b) => b.width > 0);
+  const named = fixed.filter((f) => !hero.some((h) => h.name === f.name));
+  for (const [a, b] of findOverlaps([...named, ...hero.filter((h) => h.name === "#hero")])) fail(tag, `fixed elements overlap after judge mode: ${a} and ${b}`);
+  const heroBox = hero.find((h) => h.name === "#hero");
+  if (heroBox && heroBox.height > vp.h * 0.2) fail(tag, `the hero is ${Math.round(heroBox.height)}px tall over the bench, over 20% of the ${vp.h}px viewport`);
+  const caption = fixed.find((f) => f.name === CAPTION);
+  const plain = fixed.find((f) => f.name === "#theatre-plain");
+  if (caption && plain && findOverlaps([caption, plain]).length) fail(tag, "pitch strip covers the Plain page link");
+  mkdirSync(outDir, { recursive: true });
+  await page.screenshot({ path: join(outDir, `judge-end-${vp.w}x${vp.h}.png`) });
+  console.log(`ok   [${tag}] fixed=${fixed.map((f) => f.name).join(",")}`);
+  await ctx.close();
+}
+
 // Share card (D3): paste a repo (network mocked: lockfile from a fixture, OSV answers with a hit for lodash) and check the card
 // panel on the paste result and the raid end screen: no control overlaps, 44 px tap targets on mobile, a real 1200x627 canvas.
 const CARD_PASTE = ["#card-creature-repo", "#card-creature-download", "#card-creature-copy", "#card-creature-linkedin"];
@@ -830,6 +864,7 @@ try {
   for (const vp of VIEWPORTS) await checkHero(browser, vp);
   for (const vp of VIEWPORTS) await checkImport(browser, vp);
   for (const vp of JUDGE_VIEWPORTS) await checkJudge(browser, vp);
+  await checkJudgeEnd(browser, { w: 1280, h: 720, touch: false, full: false });
   for (const vp of VIEWPORTS) await checkCard(browser, vp);
   for (const vp of VIEWPORTS) await checkScanError(browser, vp);
   if (process.env.VISUAL_QA_COPY_DOCS === "1") await captureCards(browser);
