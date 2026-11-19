@@ -21,7 +21,7 @@ const imgDir = join(root, "docs", "img");
 const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".woff2": "font/woff2", ".txt": "text/plain" };
 
 // The first screen: one primary button, the CRT input and the page links. The Bench drawer controls are checked with the drawer open.
-const CONTROLS = ["#paste-url", "#paste-go", "#paste-example", "#bench-toggle", "#hc-toggle", "#cmd", "#try-chip", "#download", "#manual-link", "#views-play", "#views-war-room", "#landing-graveyard", "#views-autopsy"];
+const CONTROLS = ["#paste-url", "#paste-go", "#paste-example", "#bench-toggle", "#hc-toggle", "#cmd", "#try-chip", "#download", "#manual-link", "#views-play", "#views-war-room", "#landing-graveyard", "#views-autopsy", "#views-for-teams"];
 const BENCH_CONTROLS = ["#sim-green", "#sim-red", "#raid-start", "#sound-toggle", "#record-toggle", "#view-3d", "#install-copy", "#lookup", "#kiro-link", "#graveyard-link"];
 // Fixed-position elements checked on the 3D bench. The caption is pointer-events:none, so it is listed by name.
 const CAPTION = "#theatre-caption";
@@ -854,6 +854,46 @@ async function checkHero(browser, vp) {
   await ctx.close();
 }
 
+// The buyer page (P5): four viewports, no horizontal scroll, no overlapping blocks, 44px targets, labels present, ROI recomputes offline.
+const TEAMS_VIEWPORTS = [
+  { w: 390, h: 844, touch: true },
+  { w: 768, h: 1024, touch: true },
+  { w: 1280, h: 800, touch: false },
+  { w: 1440, h: 900, touch: false },
+];
+const TEAMS_BLOCKS = ["#problem", "#process", "#pilot", "#roi", "#pricing", "#security", "#partner"];
+const TEAMS_TARGETS = ["#ft-back", "#design-partner", "#link-business", "#link-security", "#roi-repos", "#roi-findings", "#roi-noise", "#roi-minutes"];
+
+async function checkForTeams(browser, vp) {
+  const tag = `${vp.w}x${vp.h} for-teams`;
+  const ctx = await browser.newContext({ viewport: { width: vp.w, height: vp.h }, hasTouch: vp.touch, isMobile: vp.touch });
+  const page = await ctx.newPage();
+  const origin = new URL(base).origin;
+  const outside = [];
+  page.on("request", (r) => { if (!r.url().startsWith(origin) && !r.url().startsWith("data:") && !r.url().startsWith("blob:")) outside.push(r.url()); });
+  page.on("pageerror", (e) => fail(tag, `page error: ${e.message}`));
+  await page.goto(`${base}for-teams.html`);
+  await page.waitForSelector("#roi-result", { timeout: 15000 });
+  await page.waitForTimeout(200);
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  if (overflow > 0) fail(tag, `horizontal overflow of ${overflow}px`);
+  const blocks = present(tag, await boxes(page, TEAMS_BLOCKS));
+  for (const [a, b] of findOverlaps(blocks)) fail(tag, `${a} overlaps ${b}`);
+  const targets = present(tag, await boxes(page, TEAMS_TARGETS));
+  for (const [a, b] of findOverlaps(targets)) fail(tag, `${a} overlaps ${b}`);
+  if (vp.w < 900) for (const b of targets) if (b.height < TAP_MIN && b.name !== "#link-business" && b.name !== "#link-security") fail(tag, `tap target ${b.name} is ${Math.round(b.height)}px tall, under ${TAP_MIN}`);
+  const text = await page.evaluate(() => document.body.innerText);
+  for (const word of ["ESTIMATE", "HYPOTHESIS", "Become a design partner"]) if (!text.includes(word)) fail(tag, `the page does not show "${word}"`);
+  await page.fill("#roi-minutes", "30");
+  const result = await page.textContent("#roi-result");
+  if (!/^ESTIMATE: 200 findings, 190 filtered as noise, about 95 hours/.test(result || "")) fail(tag, `ROI did not recompute from the inputs: ${result}`);
+  if (outside.length) fail(tag, `requests outside the site: ${outside.join(", ")}`);
+  mkdirSync(outDir, { recursive: true });
+  await page.screenshot({ path: join(outDir, `for-teams-${vp.w}x${vp.h}.png`), fullPage: true });
+  console.log(`ok   [${tag}] blocks=${blocks.length} targets=${targets.length}`);
+  await ctx.close();
+}
+
 let browser;
 try {
   browser = await chromium.launch(launchOptions());
@@ -870,6 +910,7 @@ try {
   if (process.env.VISUAL_QA_COPY_DOCS === "1") await captureCards(browser);
   for (const vp of WAR_VIEWPORTS) await checkWarRoom(browser, vp);
   for (const vp of VIEWPORTS) await checkGraveyard(browser, vp);
+  for (const vp of TEAMS_VIEWPORTS) await checkForTeams(browser, vp);
   mkdirSync(outDir, { recursive: true });
   const autopsyFile = join(outDir, "autopsy.html");
   const gen = spawnSync(process.execPath, [join(root, "bin", "crypt.mjs"), "autopsy", "--sample", "--out", autopsyFile], { cwd: root, encoding: "utf8" });

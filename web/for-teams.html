@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CRYPT for teams: a two-week read-only pilot</title>
+<meta name="description" content="Who CRYPT is for and how to start: the problem with census numbers, the process, a two-week read-only pilot, an ROI estimate you can edit, and a pricing hypothesis.">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="for-teams.css">
+</head>
+<body class="ft">
+<a class="skip" href="#main">Skip to the page</a>
+<header class="ft-top">
+  <h1>CRYPT for teams</h1>
+  <p class="ft-sub"><a id="ft-back" href="./">Back to the crypt</a></p>
+</header>
+<main id="main">
+  <section id="problem" aria-labelledby="h-problem">
+    <h2 id="h-problem">The problem</h2>
+    <p>Security teams drown in dependency findings that nobody owns. In our census of 20 popular open-source projects (lockfiles only, not a random sample):</p>
+    <ul class="ft-facts">
+      <li><b>248</b> findings across 11,244 dependencies.</li>
+      <li><b>95.2%</b> of those findings were noise (not actively exploited, low chance of exploitation), so 3 monsters were spawned. Another 9 findings are unresolved and stay in the report as findings, not as clean.</li>
+      <li><b>84.7%</b> of dependencies had no CODEOWNERS owner, and 16 of 20 repositories have no CODEOWNERS file at all.</li>
+    </ul>
+    <p class="ft-source">Source: <a id="src-census" href="https://github.com/e-1305/Crypt/blob/main/docs/census/RESULTS.md" target="_blank" rel="noopener" aria-label="Census results, opens in a new tab">docs/census/RESULTS.md</a>, scan date 2026-11-17. Aggregates only, no project is named. Reproduce with <code>npm run census</code>.</p>
+  </section>
+
+  <section id="process" aria-labelledby="h-process">
+    <h2 id="h-process">The process</h2>
+    <ol class="ft-flow" aria-label="Remediation process, eight steps">
+      <li><b>Detect</b><span>OSV, CISA KEV, EPSS</span></li>
+      <li><b>Triage</b><span>noise line</span></li>
+      <li><b>Assign</b><span>CODEOWNERS</span></li>
+      <li><b>Fix</b><span>one PR</span></li>
+      <li><b>Verify</b><span>CI and inquisitor</span></li>
+      <li><b>Approve</b><span>a human merges</span></li>
+      <li><b>Heal</b><span>reraise the plate</span></li>
+      <li><b>Report</b><span>CISO page, OCSF, SLA</span></li>
+    </ol>
+    <p class="ft-source">Source: <a href="https://github.com/e-1305/Crypt/blob/main/docs/ROADMAP.md#3-the-process-crypt-runs-and-where-each-feature-sits" target="_blank" rel="noopener" aria-label="Process in the roadmap, opens in a new tab">docs/ROADMAP.md, section 3</a>. CRYPT opens the pull request and a human merges it.</p>
+  </section>
+
+  <section id="pilot" aria-labelledby="h-pilot">
+    <h2 id="h-pilot">A two-week read-only pilot</h2>
+    <p>One repository at a time, two weeks. CRYPT starts read-only: it reads, it ranks, it writes reports. It writes nothing to your repositories until you say so.</p>
+    <ol class="ft-steps">
+      <li><b>Days 1 to 2.</b> Run <code>crypt graveyard --org &lt;your-org&gt; --repos &lt;owner/repo&gt; --token-env &lt;VAR&gt;</code> on the repositories you chose, with a read-only token. It writes a local file for the Graveyard page with the noise line applied, and nothing leaves your machine.</li>
+      <li><b>Days 3 to 5.</b> Walk through the War Room and the CISO report on your own data. Decide which repositories get fix pull requests.</li>
+      <li><b>Week 2.</b> Enable the GitHub Action in its default report mode, which is read-only. For fix pull requests, run a live raid with a fine-grained token for one repository; CRYPT opens at most 5 pull requests per raid. Your team reviews and merges. Automatic pull requests from the Action on your own repositories are planned, not shipped.</li>
+      <li><b>End of week 2.</b> You decide: stop, or continue. Revoke the tokens and remove the workflow file from each repository. Nothing remains running.</li>
+    </ol>
+    <p class="ft-source">Source: <a href="https://github.com/e-1305/Crypt/blob/main/docs/ROADMAP.md#5-product-work-before-the-freeze-in-this-order" target="_blank" rel="noopener" aria-label="Roadmap P5, opens in a new tab">docs/ROADMAP.md, P5</a> and <a href="https://github.com/e-1305/Crypt/blob/main/docs/SECURITY-REVIEW.md#token-scopes" target="_blank" rel="noopener" aria-label="Token scopes, opens in a new tab">token scopes</a>. No customer has completed this pilot yet.</p>
+  </section>
+
+  <section id="roi" aria-labelledby="h-roi">
+    <h2 id="h-roi">Time saved <span class="ft-tag" id="roi-label">ESTIMATE</span></h2>
+    <p id="roi-formula" class="ft-formula">hours saved per month = repos &times; findings per repo per month &times; noise share &times; triage minutes &divide; 60</p>
+    <p>An estimate, not a measurement. Change the inputs to match your team. Everything is computed in your browser and nothing is sent.</p>
+    <form id="roi-form" class="ft-form" autocomplete="off" onsubmit="return false">
+      <label for="roi-repos">Repositories</label>
+      <input id="roi-repos" type="number" min="0" step="1" value="20" inputmode="numeric">
+      <label for="roi-findings">Findings per repo per month</label>
+      <input id="roi-findings" type="number" min="0" step="1" value="10" inputmode="numeric">
+      <label for="roi-noise">Noise share (%)</label>
+      <input id="roi-noise" type="number" min="0" max="100" step="0.1" value="95.2" inputmode="decimal">
+      <label for="roi-minutes">Triage minutes per finding</label>
+      <input id="roi-minutes" type="number" min="0" step="1" value="15" inputmode="numeric">
+    </form>
+    <p id="roi-result" class="ft-result" role="status" aria-live="polite">ESTIMATE: 200 findings, 190 filtered as noise, about 48 hours saved per month.</p>
+    <p class="ft-source">Defaults: 20 repositories, 10 findings per repo (median before filtering) and 95.2% noise are from the <a href="https://github.com/e-1305/Crypt/blob/main/docs/census/RESULTS.md#numbers" target="_blank" rel="noopener" aria-label="Census numbers, opens in a new tab">census</a>. The census median is per scan, and we use it as a per-month figure here, which is an assumption. 15 triage minutes per finding is our assumption, not measured, and it counts every filtered finding as a full triage slot saved, which is an upper bound. Replace it with your own.</p>
+  </section>
+
+  <section id="pricing" aria-labelledby="h-pricing">
+    <h2 id="h-pricing">Pricing <span class="ft-tag" id="pricing-label">HYPOTHESIS</span></h2>
+    <p>No customers, no revenue and no price exist today. Nothing below has been tested with a buyer.</p>
+    <ul>
+      <li>Free: public repositories, the CLI and the Action.</li>
+      <li>Per-organization tier (HYPOTHESIS): private repositories and the org views.</li>
+      <li>Enterprise (HYPOTHESIS): SSO, audit retention, SIEM export.</li>
+    </ul>
+    <p class="ft-source">Source and competitor pricing: <a id="link-business" href="https://github.com/e-1305/Crypt/blob/main/docs/BUSINESS.md#3-pricing-hypothesis" target="_blank" rel="noopener" aria-label="Business notes, opens in a new tab">docs/BUSINESS.md</a>.</p>
+  </section>
+
+  <section id="security" aria-labelledby="h-security">
+    <h2 id="h-security">Security review</h2>
+    <p>What data CRYPT reads, stores and sends, which token scopes it needs, and what it does not offer: <a id="link-security" href="https://github.com/e-1305/Crypt/blob/main/docs/SECURITY-REVIEW.md" target="_blank" rel="noopener" aria-label="Security review for vendor assessment, opens in a new tab">docs/SECURITY-REVIEW.md</a>.</p>
+  </section>
+
+  <section id="partner" aria-labelledby="h-partner">
+    <h2 id="h-partner">Start</h2>
+    <p><a id="design-partner" class="ft-cta" href="https://github.com/e-1305/Crypt/issues/new?template=design-partner.yml" target="_blank" rel="noopener" aria-label="Become a design partner, opens a GitHub issue form in a new tab">Become a design partner</a></p>
+    <p class="ft-source">The issue is public. Share your role, team size and tool names only.</p>
+  </section>
+</main>
+<script type="module" src="for-teams.js"></script>
+</body>
+</html>

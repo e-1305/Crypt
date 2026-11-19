@@ -1,0 +1,55 @@
+name: Become a design partner
+description: Try CRYPT on one organization for two weeks, read-only first.
+title: "Design partner: <role>, <team size>"
+labels: ["design-partner"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you. A design-partner pilot is one organization, two weeks, read-only first. A human merges every pull request.
+        See [the pilot plan](https://e-1305.github.io/Crypt/for-teams.html#pilot).
+
+        **This issue is public. Share only your role, team size and tool names. Keep company secrets, employer names, customer data, tokens and private repository names out of it.**
+  - type: dropdown
+    id: role
+    attributes:
+      label: Your role
+      options:
+        - Vulnerability management (VOC) lead
+        - AppSec engineer or lead
+        - CISO or security manager
+        - Engineering manager
+        - SOC analyst
+        - Open-source maintainer
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: team-size
+    attributes:
+      label: Team size (people who would see the findings)
+      options:
+        - 1 to 5
+        - 6 to 20
+        - 21 to 100
+        - More than 100
+    validations:
+      required: true
+  - type: textarea
+    id: scanners
+    attributes:
+      label: Scanners and tools you use today
+      description: Product names only, for example Dependabot, Snyk, a SIEM. No configuration, no findings.
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: What would make the pilot useful? (optional)
+  - type: checkboxes
+    id: no-secrets
+    attributes:
+      label: Confirmation
+      options:
+        - label: This issue contains no company secrets, no employer data and no private repository names.
+          required: true
