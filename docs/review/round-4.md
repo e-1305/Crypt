@@ -104,6 +104,8 @@ All ten are below 10. Each item is tagged **product** (code or docs shippable be
 - **signal.** One line in `docs/evidence/hook-runs.jsonl` from one of the repository's own 7 hooks, fired in a desktop IDE or CLI session (or by `kiro-hooks.yml` with `KIRO_API_KEY`). A second line of the cloud hook adds little.
 - **signal.** A session transcript that shows steering files loading by themselves.
 
+**Grade 10 when:** the video is linked from the Devpost page with no "TODO" left, `docs/evidence/hook-runs.jsonl` has a line from one of the repository's own 7 hooks, and a judge checking each claim against the repository finds nothing that has to be taken on trust. This is the reviewer's estimate; this review lists 9 as the realistic ceiling before the freeze.
+
 ### 2. CISO at a large bank (8)
 
 - **product.** Add a named contact (an address or a security policy file) to `docs/SECURITY-REVIEW.md`, and a `SECURITY.md` at the repository root for vulnerability reports. This is the gap a vendor reviewer sees first.
@@ -113,7 +115,7 @@ All ten are below 10. Each item is tagged **product** (code or docs shippable be
 
 ### 3. SOC L1 analyst (7)
 
-- **product.** Publish 0.2.0 (fix 1).
+- **product.** Publish 0.2.0 (fix 2).
 - **product.** Update the sample event in `docs/SOC.md` to the product version that prints (the sample says "0.1.0") and, if the first run still prints `severity_id` 0, show that output as well. I did not re-run the sample: not checked.
 - **signal.** One security team loads `alerts.ocsf.json` into Security Lake, Splunk or Sentinel and writes down the result.
 - **signal.** A SOC practitioner's quote that KEV dependency findings belong in their queue. Only a practitioner can say that. Cap without both: 8.
@@ -129,6 +131,8 @@ All ten are below 10. Each item is tagged **product** (code or docs shippable be
 - **product.** Run the comparison on a second public repository that the project does not own, with date and commit, in `docs/VS-DEPENDABOT.md`. `npm run compare:dependabot` takes fixture paths, so a second fixture is a small change. Say "not compared" for anything not run.
 - **product.** Record one actual Dependabot run (a screenshot or link of the PRs it opened) on `e-1305/crypt-demo` so the Dependabot column is observed, not derived. This needs Dependabot enabled on that repo, which the owner does.
 - **signal.** One maintainer outside the e-1305 account runs the Action or `npx` and posts the result (an issue, a star, a PR).
+
+**Grade 10 when:** the comparison page shows a recorded Dependabot run, covers at least one repository the project does not own, and a maintainer outside the e-1305 account has run the Action or `npx` and posted the result.
 
 ### 6. AppSec engineer (7)
 
@@ -147,6 +151,8 @@ All ten are below 10. Each item is tagged **product** (code or docs shippable be
 - **product.** Record the real distance of the game input at 390x844 and set the limit in `scripts/ci/visual-qa.mjs` just above it so the layout cannot drift.
 - **signal.** The 20 to 30 second clip, and a few real people playing it. The `docs/PLAYTEST_LOG.md` scores come from the authors' own personas.
 
+**Grade 10 when:** the GIF and clip exist, the game input fits at 390x844 with a test holding it there, and people outside the authors have played it and the log shows their scores.
+
 ### 9. VC or acquirer (6)
 
 - **product.** Keep every table row true. After 0.2.0, re-run `npm run traction` and paste the real output into `docs/BUSINESS.md` section 5.
@@ -158,92 +164,94 @@ All ten are below 10. Each item is tagged **product** (code or docs shippable be
 - **product.** Keep the Devpost page, README and site on the same first sentence. They matched in round 3. After the Pages redeploy, re-check the live page.
 - **signal.** The 30 second clip to repost. Nothing else is in the way.
 
+**Grade 10 when:** the 30 second clip exists to repost and the live page, README and Devpost page open with the same first sentence.
+
 ## Top 10 fixes
 
-Ranking = estimated grade gain across personas divided by effort. Gain is the reviewer's estimate in grade points summed over the personas listed (an opinion, not a measurement). Effort: 1 = under 2 hours, 2 = half a day, 3 = a day or more. Fixes marked "human" need a person with an account, a recording tool or a real user. All respect the steering files and the 2026-11-27 freeze. None adds a Tier 2 or 3 feature.
+Ranking = estimated grade gain divided by effort, highest first. Gain is the number of personas the fix can raise by one point, counted only where that persona's own ceiling in the section above allows it (the reviewer's estimate, not a measurement). Each fix is counted on its own, so two fixes can name the same persona. Ties go to lower effort, then to the order in which the fixes were first listed. Effort: 1 = under 2 hours, 2 = half a day, 3 = a day or more. Fixes marked "human" need a person with an account, a recording tool or a real user. All respect the steering files and the 2026-11-27 freeze. None adds a Tier 2 or 3 feature.
 
-| Rank | Fix | Est. gain / effort |
-|---|---|---|
-| 1 | Run the Release workflow for 0.2.0 and redeploy Pages (human) | 2.0 / 1 |
-| 2 | Record the video and a GIF, fill the Devpost link (human) | 3.5 / 2 |
-| 3 | Fix the PROOF sentence wording and add a named contact and `SECURITY.md` | 1.5 / 1 |
-| 4 | Observed Dependabot run plus a second, outside repo in the comparison (human) | 1.5 / 2 |
-| 5 | Action job summary screenshot and digest snippet from a real run (human) | 1.5 / 2 |
-| 6 | A hook line from one of the repository's own hooks (human) | 1.5 / 2 |
-| 7 | Noise worked example in `docs/census/RESULTS.md` | 0.5 / 1 |
-| 8 | One outside security team loads the OCSF file and writes the result (human) | 2.5 / 3 |
-| 9 | Fresh sample and version in `docs/SOC.md`, "as of" dates in the export | 1.0 / 1 |
-| 10 | One outside maintainer or team runs the Action or `npx` (human) | 2.0 / 3 |
+| Rank | Fix | Est. gain / effort | Ratio |
+|---|---|---|---|
+| 1 | Record the video and a GIF, fill the Devpost link (human) | 3 / 2 | 1.50 |
+| 2 | Run the Release workflow for 0.2.0 and redeploy Pages (human) | 1 / 1 | 1.00 |
+| 3 | Fix the PROOF sentence wording and add a named contact and `SECURITY.md` | 1 / 1 | 1.00 |
+| 4 | Noise worked example in `docs/census/RESULTS.md` | 1 / 1 | 1.00 |
+| 5 | One outside maintainer or team runs the Action or `npx` (human) | 2 / 3 | 0.67 |
+| 6 | Observed Dependabot run plus a second, outside repo in the comparison (human) | 1 / 2 | 0.50 |
+| 7 | Action job summary screenshot and digest snippet from a real run (human) | 1 / 2 | 0.50 |
+| 8 | A hook line from one of the repository's own hooks (human) | 1 / 2 | 0.50 |
+| 9 | One outside security team loads the OCSF file and writes the result (human) | 1 / 3 | 0.33 |
+| 10 | Fresh sample and version in `docs/SOC.md`, "as of" dates in the export | 0 / 1 | 0.00 |
 
-### 1. Run the Release workflow for 0.2.0 and redeploy Pages (human)
-
-- **What to change.** The owner runs the Release workflow (`.github/workflows/release.yml`, see `docs/RELEASE.md`), then triggers `pages.yml` so the landing page carries the same-account sentence.
-- **Files.** None to edit. `package.json` is already 0.2.0.
-- **Lifts.** SOC (7 to 8), CISO, VC, Quality and Design.
-- **Acceptance check.** `npm view @e-1305/crypt version` prints 0.2.0. In an empty folder `npx @e-1305/crypt@latest --help` lists `alerts`. `curl` of the live landing page contains "The same account". `npm audit signatures` reports a provenance statement.
-
-### 2. Record the video and a GIF, fill the Devpost link (human)
+### 1. Record the video and a GIF, fill the Devpost link (human)
 
 - **What to change.** The 3:00 video from `docs/VIDEO.md` and a 20 to 30 second GIF (graft, red CI rejection, SEAL CRYPT), with the simulated labels in frame. Link PR #1 and PR #2 in the description.
 - **Files.** `docs/DEVPOST.md` (line 9), `README.md` (top), `docs/VIDEO.md`, `assets/video/`.
-- **Lifts.** Judge, voter, recruiter, VC, engineering manager.
+- **Lifts.** Judge, voter, recruiter.
 - **Acceptance check.** `docs/DEVPOST.md` contains no "TODO" and a test asserts it. The README shows the GIF above the fold on GitHub (screenshot).
+
+### 2. Run the Release workflow for 0.2.0 and redeploy Pages (human)
+
+- **What to change.** The owner runs the Release workflow (`.github/workflows/release.yml`, see `docs/RELEASE.md`), then triggers `pages.yml` so the landing page carries the same-account sentence.
+- **Files.** None to edit. `package.json` is already 0.2.0.
+- **Lifts.** SOC (7 to 8, as the section "What changes once 0.2.0 is published" says). CISO and VC stay at 8 and 6 there, so they are not counted.
+- **Acceptance check.** `npm view @e-1305/crypt version` prints 0.2.0. In an empty folder `npx @e-1305/crypt@latest --help` lists `alerts`. `curl` of the live landing page contains "The same account". `npm audit signatures` reports a provenance statement.
 
 ### 3. Fix the PROOF sentence wording and add a named contact and `SECURITY.md`
 
 - **What to change.** In `docs/PROOF.md` line 8 and `web/index.html` line 199, replace "opened the token and merged PR #1" with "the account whose token opened PR #1 also merged it". Add a contact line to `docs/SECURITY-REVIEW.md` and a root `SECURITY.md` for vulnerability reports.
 - **Files.** `docs/PROOF.md`, `web/index.html`, `docs/SECURITY-REVIEW.md`, `SECURITY.md` (new), `README.md` (link).
-- **Lifts.** CISO, judge, AppSec.
+- **Lifts.** Judge (the wording error is what a careful judge finds first). The CISO contact protects the 8 and does not raise it.
 - **Acceptance check.** `grep -rn "opened the token" docs web README.md` returns nothing. `docs/SECURITY-REVIEW.md` has a contact. A test checks that `SECURITY.md` exists. The blameless copy check passes.
 
-### 4. Observed Dependabot run plus a second, outside repo in the comparison (human)
-
-- **What to change.** Enable Dependabot security updates on `e-1305/crypt-demo`, record the PRs it opens (links, date). Add one public repository the project does not own to `docs/VS-DEPENDABOT.md` with its commit. Mark what was not run as "not compared".
-- **Files.** `docs/VS-DEPENDABOT.md`, `fixtures/` (new snapshot), `scripts/compare-dependabot.ts` (paths only), `tests/compare-dependabot.test.ts`.
-- **Lifts.** Maintainer, VOC lead, AppSec.
-- **Acceptance check.** The page links real Dependabot PRs. `npm run compare:dependabot -- --check` exits 0 for both repositories. Every number traces to a command or link.
-
-### 5. Action job summary screenshot and digest snippet from a real run (human)
-
-- **What to change.** Run the Action in a scratch repo, add the job summary screenshot and elapsed time, and add a Slack or Teams workflow step that uses `crypt gazette --send`. Label anything not run "untested".
-- **Files.** `docs/INSTALL-ACTION.md`, `docs/INTEGRATIONS.md`, `README.md` (link).
-- **Lifts.** Engineering manager, maintainer, VOC lead, SOC.
-- **Acceptance check.** A test parses the YAML in the doc. A link to the real run and a screenshot of its summary exist.
-
-### 6. A hook line from one of the repository's own hooks (human)
-
-- **What to change.** Open the repository as the workspace root in the Kiro IDE or CLI, or run `kiro-hooks.yml` with `KIRO_API_KEY`. Commit only unedited wrapper output. If nothing fires, keep "configured, not demonstrated" for those hooks.
-- **Files.** `docs/evidence/hook-runs.jsonl`, `docs/KIRO.md`. Per `tech.md`, do not run `kiro:stats --write` in the PR. The `stats` workflow regenerates the numbers on `main`.
-- **Lifts.** Judge (Implementation of Kiro).
-- **Acceptance check.** After the `stats` workflow runs, "Hook runs recorded in a real Kiro session" is at least 2, with a line whose `hook` is one of the 7 repository hooks.
-
-### 7. Noise worked example in `docs/census/RESULTS.md`
+### 4. Noise worked example in `docs/census/RESULTS.md`
 
 - **What to change.** Copy a few exorcised rows with their reasons from the page into the census results, and link the headline noise number to them.
 - **Files.** `docs/census/RESULTS.md`, `docs/BUSINESS.md`.
-- **Lifts.** AppSec, VC, maintainer.
+- **Lifts.** AppSec.
 - **Acceptance check.** Each row's package, version, EPSS and reason can be reproduced with a documented command.
 
-### 8. One outside security team loads the OCSF file and writes the result (human)
-
-- **What to change.** Offer `alerts.ocsf.json` and `docs/SOC.md` to one SOC or detection-engineering team (Security Lake, Splunk or Sentinel). Record their written result, pass or fail with the error, in `docs/PLAYTEST_LOG.md`. Fix what fails.
-- **Files.** `docs/PLAYTEST_LOG.md`, `docs/SOC.md`, `docs/BUSINESS.md` (the "Not yet confirmed loading in a customer SIEM" row).
-- **Lifts.** SOC, VC, CISO.
-- **Acceptance check.** A dated entry with the team's own words (with their permission) and the SIEM named. Until then the docs say "not tested in a real SIEM", which they do today.
-
-### 9. Fresh sample and version in `docs/SOC.md`, "as of" dates in the export
-
-- **What to change.** Regenerate the sample event from one documented run with feeds, so product version and `severity_id` match what prints. Add the feed dates to the CSV and JSON export if missing (not checked this round).
-- **Files.** `docs/SOC.md`, `src/web/report-export.ts`, `tests/soc-runbook.test.ts`.
-- **Lifts.** SOC, VOC lead.
-- **Acceptance check.** A test compares the sample's field names and values with the output of the documented run. The export contains the feed dates.
-
-### 10. One outside maintainer or team runs the Action or `npx` (human)
+### 5. One outside maintainer or team runs the Action or `npx` (human)
 
 - **What to change.** Ask one maintainer outside the e-1305 account to run it and post the result. Record the link in `docs/PLAYTEST_LOG.md`.
 - **Files.** `docs/PLAYTEST_LOG.md`, `docs/BUSINESS.md` section 5.
-- **Lifts.** Maintainer, VC, engineering manager.
+- **Lifts.** Maintainer, VC.
 - **Acceptance check.** A public link to the result. `npm run traction` shows a non-zero value for downloads, stars or Action users, from an account that is not e-1305.
+
+### 6. Observed Dependabot run plus a second, outside repo in the comparison (human)
+
+- **What to change.** Enable Dependabot security updates on `e-1305/crypt-demo`, record the PRs it opens (links, date). Add one public repository the project does not own to `docs/VS-DEPENDABOT.md` with its commit. Mark what was not run as "not compared".
+- **Files.** `docs/VS-DEPENDABOT.md`, `fixtures/` (new snapshot), `scripts/compare-dependabot.ts` (paths only), `tests/compare-dependabot.test.ts`.
+- **Lifts.** Maintainer.
+- **Acceptance check.** The page links real Dependabot PRs. `npm run compare:dependabot -- --check` exits 0 for both repositories. Every number traces to a command or link.
+
+### 7. Action job summary screenshot and digest snippet from a real run (human)
+
+- **What to change.** Run the Action in a scratch repo, add the job summary screenshot and elapsed time, and add a Slack or Teams workflow step that uses `crypt gazette --send`. Label anything not run "untested".
+- **Files.** `docs/INSTALL-ACTION.md`, `docs/INTEGRATIONS.md`, `README.md` (link).
+- **Lifts.** Engineering manager.
+- **Acceptance check.** A test parses the YAML in the doc. A link to the real run and a screenshot of its summary exist.
+
+### 8. A hook line from one of the repository's own hooks (human)
+
+- **What to change.** Open the repository as the workspace root in the Kiro IDE or CLI, or run `kiro-hooks.yml` with `KIRO_API_KEY`. Commit only unedited wrapper output. If nothing fires, keep "configured, not demonstrated" for those hooks.
+- **Files.** `docs/evidence/hook-runs.jsonl`, `docs/KIRO.md`. Per `tech.md`, do not run `kiro:stats --write` in the PR. The `stats` workflow regenerates the numbers on `main`.
+- **Lifts.** Judge.
+- **Acceptance check.** After the `stats` workflow runs, "Hook runs recorded in a real Kiro session" is at least 2, with a line whose `hook` is one of the 7 repository hooks.
+
+### 9. One outside security team loads the OCSF file and writes the result (human)
+
+- **What to change.** Offer `alerts.ocsf.json` and `docs/SOC.md` to one SOC or detection-engineering team (Security Lake, Splunk or Sentinel). Record their written result, pass or fail with the error, in `docs/PLAYTEST_LOG.md`. Fix what fails.
+- **Files.** `docs/PLAYTEST_LOG.md`, `docs/SOC.md`, `docs/BUSINESS.md` (the "Not yet confirmed loading in a customer SIEM" row).
+- **Lifts.** SOC.
+- **Acceptance check.** A dated entry with the team's own words (with their permission) and the SIEM named. Until then the docs say "not tested in a real SIEM", which they do today.
+
+### 10. Fresh sample and version in `docs/SOC.md`, "as of" dates in the export
+
+- **What to change.** Regenerate the sample event from one documented run with feeds, so product version and `severity_id` match what prints. Add the feed dates to the CSV and JSON export if missing (not checked this round).
+- **Files.** `docs/SOC.md`, `src/web/report-export.ts`, `tests/soc-runbook.test.ts`.
+- **Lifts.** None. It protects the SOC and VOC ceilings of 8 and does not raise a grade.
+- **Acceptance check.** A test compares the sample's field names and values with the output of the documented run. The export contains the feed dates.
 
 ## Not fixable by docs or small code, and why
 
