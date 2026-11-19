@@ -215,3 +215,7 @@ npm test        # vitest + fast-check
 ```
 
 See `.kiro/specs/transcript-bridge-spike/` for the spec.
+
+## New contributor setup
+
+`npm ci && npm run setup` installs dependencies and builds the Inform 6 and dfrotz toolchain once (needs git, make and a C compiler). Without it, tests that compile the game (for example `tests/import.test.ts`) fail with `ENOENT`. CI runs the same script (`scripts/setup-tools.sh`) before the tests and caches the result.
