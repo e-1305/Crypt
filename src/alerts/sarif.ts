@@ -23,7 +23,7 @@ export interface SarifResult {
   message: { text: string };
   locations: { physicalLocation: { artifactLocation: { uri: string }; region: { startLine: number } } }[];
   partialFingerprints: { "crypt/limb/v1": string };
-  properties: { kev: boolean; epss: number | null; owner_team: string; sla: SlaClass; sla_deadline: string | null; advisory_ids: string[] };
+  properties: { kev: boolean; epss: number | null; owner_team: string; sla: SlaClass; sla_deadline: string | null; advisory_ids: string[]; usage: string };
 }
 
 export interface SarifLog {
@@ -122,6 +122,7 @@ export function buildSarif(creature: unknown, now: Date, base?: string): SarifLo
         sla,
         sla_deadline: sla === "48 hours" ? new Date(t + 48 * 3600 * 1000).toISOString() : null,
         advisory_ids: advisories,
+        usage: ["direct", "transitive", "dev"].includes(String(l.usage)) ? String(l.usage) : "unknown",
       },
     });
   }

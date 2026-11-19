@@ -155,3 +155,24 @@ export function classifyUsage(files: ReadonlyMap<string, string> | null, lockTex
       return { name, usage };
     });
 }
+
+export const USAGE_LABEL: Record<Usage, string> = {
+  direct: "imported directly",
+  transitive: "only through another package",
+  dev: "dev only",
+  unknown: "usage unknown",
+};
+export const USAGE_NOTE = "Static check of imports, not a proof that the vulnerable code runs.";
+
+/** Attach the usage signal to npm limbs. Fail-safe: any error leaves every npm limb "unknown"; other ecosystems are untouched. */
+export function attachUsage<L extends { ecosystem: string; name: string; usage?: Usage }>(limbs: L[], files: ReadonlyMap<string, string> | null, lockText: string | null): L[] {
+  let map = new Map<string, Usage>();
+  if (lockText !== null) {
+    try {
+      map = new Map(classifyUsage(files, lockText).map((u) => [u.name, u.usage]));
+    } catch {
+      map = new Map();
+    }
+  }
+  return limbs.map((l) => (l.ecosystem === "npm" ? { ...l, usage: map.get(l.name) ?? "unknown" } : l));
+}

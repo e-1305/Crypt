@@ -29,6 +29,8 @@ export interface RankedLimb extends Limb {
   epss: number | null;
   severity: number;
   vulns: { id: string; cves: string[] }[];
+  /** P3: static import signal (npm only). Absent when not computed. Never 'reachable'. */
+  usage?: "direct" | "transitive" | "dev" | "unknown";
 }
 
 export interface RankInput {
