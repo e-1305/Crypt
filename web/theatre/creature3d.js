@@ -1,7 +1,7 @@
 // 3D-b: the "Creature 3D" view. Renders src/theatre/creature3d-layout.ts with three.js instanced meshes (one per shape).
 // Lazy: this file loads with the page but three.js is requested only when the toggle is first used (#233).
 // Fail safe: no WebGL, or any error, keeps the plain 2D plate. Reduced motion draws one still frame.
-import { layoutCreature, STATE_COLOR, STATE_SHAPE } from "../js/theatre/creature3d-layout.js";
+import { layoutCreature, layoutBounds, anchorOf, BODY, STATE_COLOR, STATE_SHAPE } from "../js/theatre/creature3d-layout.js";
 import { MAX_LIMBS, GUARD_FRAMES, capLimbs, isSlowDevice, moreLabel, shouldRunGuard } from "../js/theatre/caps.js";
 
 const STATES = ["Possessed", "Rotting", "Healed", "Healthy", "Unknown"];
@@ -74,13 +74,33 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
   canvas.style.cssText = "display:block;width:100%;height:100%";
   const holder = document.createElement("div");
   holder.id = "creature3d-stage";
-  holder.append(canvas);
+  const labelLayer = document.createElement("div");
+  labelLayer.id = "creature3d-labels";
+  labelLayer.style.cssText = "position:absolute;inset:0;pointer-events:none;overflow:hidden";
+  labelLayer.setAttribute("aria-hidden", "true");
+  holder.style.position = "relative";
+  holder.append(canvas, labelLayer);
   panel.prepend(holder);
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 50);
   camera.position.set(0, 2, 8.5);
   camera.lookAt(0, 1.7, 0);
+  let bounds = layoutBounds([]);
+  // Auto-frame (3D-c): back the camera off along z so the layout box fills about 70% of the canvas, whichever side is tighter.
+  const FILL = 0.7;
+  const frameCamera = () => {
+    const b = bounds;
+    const tanV = Math.tan((camera.fov * Math.PI) / 360);
+    const tanH = tanV * camera.aspect;
+    const depth = (b.maxZ - b.minZ) / 2;
+    const dist = Math.max(b.height / 2 / (FILL * tanV), b.width / 2 / (FILL * tanH)) + depth;
+    camera.position.set(b.center.x, b.center.y, b.center.z + dist);
+    camera.near = 0.1;
+    camera.far = dist + b.radius * 4 + 10;
+    camera.lookAt(b.center.x, b.center.y, b.center.z);
+    camera.updateProjectionMatrix();
+  };
   scene.add(new THREE.AmbientLight(0xffffff, 1.1));
   const sun = new THREE.DirectionalLight(0xffffff, 2);
   sun.position.set(3, 6, 6);
@@ -97,15 +117,61 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
   let meshes = [];
   const body = new THREE.Group();
   scene.add(body);
+  // Simple body: head sphere, torso capsule, thin bones from each limb to its anchor. Labels for Possessed and Rotting only.
+  const bodyMat = new THREE.MeshStandardMaterial({ color: 0x3a3426, roughness: 0.9 });
+  const boneMat = new THREE.LineBasicMaterial({ color: 0x6b6246 });
+  const headGeo = new THREE.SphereGeometry(BODY.head.r, 20, 14);
+  const torsoGeo = THREE.CapsuleGeometry
+    ? new THREE.CapsuleGeometry(BODY.torso.r, BODY.torso.half * 2 - BODY.torso.r * 2 + 0.4, 4, 12)
+    : new THREE.CylinderGeometry(BODY.torso.r, BODY.torso.r, BODY.torso.half * 2 + 0.4, 12);
+  const head = new THREE.Mesh(headGeo, bodyMat);
+  head.position.set(0, BODY.head.y, 0);
+  const torso = new THREE.Mesh(torsoGeo, bodyMat);
+  torso.position.set(0, BODY.torso.y, 0);
+  body.add(head, torso);
+  let bones = null;
+  let labels = []; // { el, pos: Vector3 }
+  const placeLabels = () => {
+    const w = holder.clientWidth || 300, h = holder.clientHeight || 260;
+    body.updateMatrixWorld(true);
+    for (const { el, pos } of labels) {
+      const p = pos.clone().applyMatrix4(body.matrixWorld).project(camera);
+      el.style.left = `${((p.x + 1) / 2) * w + 10}px`;
+      el.style.top = `${((1 - p.y) / 2) * h - 7}px`;
+    }
+  };
 
   const clear = () => {
     for (const m of meshes) { body.remove(m); m.dispose?.(); }
     meshes = [];
+    if (bones) { body.remove(bones); bones.geometry.dispose(); bones = null; }
+    labelLayer.textContent = "";
+    labels = [];
   };
   const build = () => {
     clear();
     const all = layoutCreature(globalThis.__cryptCreature);
     const { shown, more } = capLimbs(all, MAX_LIMBS);
+    bounds = layoutBounds(shown);
+    frameCamera();
+    const pts = [];
+    for (const l of shown) {
+      const a = anchorOf(l);
+      pts.push(new THREE.Vector3(a.x, a.y, a.z), new THREE.Vector3(l.x, l.y, l.z));
+      if (l.state === "Possessed" || l.state === "Rotting") {
+        const el = document.createElement("span");
+        el.className = "creature3d-label";
+        const name = l.label.split(" · ")[0].replace(/ \S*$/, "");
+        el.textContent = name.length > 18 ? name.slice(0, 17) + "…" : name;
+        el.style.cssText = `position:absolute;font:11px monospace;white-space:nowrap;color:${l.color};text-shadow:0 0 3px #000`;
+        labelLayer.append(el);
+        labels.push({ el, pos: new THREE.Vector3(l.x, l.y, l.z) });
+      }
+    }
+    if (pts.length) {
+      bones = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), boneMat);
+      body.add(bones);
+    }
     const dummy = new THREE.Object3D();
     const color = new THREE.Color();
     for (const shape of Object.keys(geos)) {
@@ -137,12 +203,12 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
     canvas.setAttribute("aria-label", `Creature 3D view: ${shown.length} limbs shown. ` + STATES.map((s) => `${counts[s]} ${s}`).join(", ") + (more > 0 ? `, ${moreLabel(more)}` : "") + ".");
     draw();
   };
-  const draw = () => renderer.render(scene, camera);
+  const draw = () => { renderer.render(scene, camera); placeLabels(); };
   const resize = () => {
     const w = holder.clientWidth || 300, h = holder.clientHeight || 260;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
-    camera.updateProjectionMatrix();
+    frameCamera();
     draw();
   };
 
@@ -186,6 +252,7 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
       clear();
       Object.values(geos).forEach((g) => g.dispose());
       mat.dispose();
+      bodyMat.dispose(); boneMat.dispose(); headGeo.dispose(); torsoGeo.dispose();
       renderer.dispose();
       holder.remove();
       legendEl.textContent = "";

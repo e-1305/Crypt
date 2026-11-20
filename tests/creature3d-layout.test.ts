@@ -1,6 +1,6 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { layoutCreature, STATE_COLOR, STATE_SHAPE, stateOf } from "../src/theatre/creature3d-layout.js";
+import { anchorOf, layoutBounds, layoutCreature, STATE_COLOR, STATE_SHAPE, stateOf } from "../src/theatre/creature3d-layout.js";
 
 const limb = (name: string, rank: number, state: string, extra: Record<string, unknown> = {}) => ({ id: `npm:${name}@1.0.0`, name, version: "1.0.0", rank, state, ...extra });
 
@@ -41,5 +41,29 @@ describe("3D creature layout", () => {
       ),
       { numRuns: 60 },
     );
+  });
+});
+
+describe("3D creature framing bounds", () => {
+  const demo = { limbs: Array.from({ length: 30 }, (_, i) => limb(`pkg${i}`, i + 1, i % 3 === 0 ? "Possessed" : i % 3 === 1 ? "Rotting" : "Healthy")) };
+  it("has a non-degenerate box for the demo creature and for an empty one", () => {
+    for (const c of [demo, { limbs: [] }]) {
+      const b = layoutBounds(layoutCreature(c));
+      expect(b.width).toBeGreaterThan(0);
+      expect(b.height).toBeGreaterThan(0);
+      expect(b.radius).toBeGreaterThan(0);
+    }
+  });
+  it("holds every limb and its bone anchor inside the box", () => {
+    const limbs = layoutCreature(demo);
+    const b = layoutBounds(limbs);
+    for (const l of [...limbs, ...limbs.map(anchorOf)]) {
+      expect(l.x).toBeGreaterThanOrEqual(b.minX);
+      expect(l.x).toBeLessThanOrEqual(b.maxX);
+      expect(l.y).toBeGreaterThanOrEqual(b.minY);
+      expect(l.y).toBeLessThanOrEqual(b.maxY);
+      expect(l.z).toBeGreaterThanOrEqual(b.minZ);
+      expect(l.z).toBeLessThanOrEqual(b.maxZ);
+    }
   });
 });

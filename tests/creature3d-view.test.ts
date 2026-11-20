@@ -21,3 +21,13 @@ describe("Creature 3D view wiring", () => {
     expect(src).toMatch(/if \(!reduced\) raf = requestAnimationFrame/);
   });
 });
+
+describe("3D-c framing and body source guards", () => {
+  it("frames the camera from the layout bounds on build and resize, draws body and bones, labels only Possessed and Rotting", () => {
+    expect(src).toContain("layoutBounds(");
+    expect(src.match(/frameCamera\(\)/g)!.length).toBeGreaterThanOrEqual(2);
+    expect(src).toContain("SphereGeometry(BODY.head.r");
+    expect(src).toContain("LineSegments");
+    expect(src).toMatch(/l\.state === "Possessed" \|\| l\.state === "Rotting"/);
+  });
+});
