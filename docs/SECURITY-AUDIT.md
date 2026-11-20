@@ -54,57 +54,59 @@ Items 4, 7, 9, 10, 11 and 15 mix passing and failing checks; each is counted onc
 
 ## Fix items
 
+Status: FIX-1 to FIX-11 and FIX-13 are FIXED in the pull requests named in each heading. FIX-12 is done by the pull request that adds `docs/THREAT-MODEL.md`, the SECURITY.md scope lines and `tests/web-xss-guard.test.ts`. The findings and the Summary table above describe the state at the time of the audit.
+
 Each item touches 2 or 3 files and can be filed as its own issue. Order by severity: FIX-11, FIX-2 to FIX-5, FIX-6 to FIX-9, FIX-13, then the Low items. Fixes must keep `.kiro/steering/failsafe.md` intact: on a cap or timeout the answer is "stop and draw nothing", never "treat as clean".
 
-### FIX-1: Validate `--repo owner/name` (item 4, Low)
+### FIX-1: Validate `--repo owner/name` (item 4, Low) (FIXED in #246)
 
 Files: `scripts/github-client.ts` (`:114`), `scripts/live-preflight.ts` (`:16`), `tests/github-client.test.ts`.
 Reuse one pattern that rejects dots-only segments and a leading `-` (the rules already in `src/cli/url.ts:17-18`). Test `../x`, `x/..`, `./x`, `-a/b` are refused and `a/b.c` still works.
 
-### FIX-2: CSP meta for the game page (item 5, Medium)
+### FIX-2: CSP meta for the game page (item 5, Medium) (FIXED in #252)
 
 Files: `web/index.html`, `tests/csp.test.ts` (new).
 Add `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-eval'; style-src 'self'; font-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' https://raw.githubusercontent.com https://api.osv.dev; base-uri 'none'; form-action 'none'">`. `'unsafe-eval'` is required only because `web/vendor/zvm.min.js:2` uses `new Function` for its JIT. Record that reason in a comment in the test, and note in the issue that an interpreter without `new Function` would let the policy drop it. The test reads each page and asserts the meta tag exists, has no `unsafe-inline` in `script-src`, and that the page has no inline `<script>` body or `on*=` attribute. Check the page in a browser (`npm run test:visual`) for CSP console errors, including the `blob:` download and the 3D theatre.
 
-### FIX-3: CSP meta for the War Room page (item 5, Medium)
+### FIX-3: CSP meta for the War Room page (item 5, Medium) (FIXED in #252)
 
 Files: `web/war-room/war-room.html`, `tests/csp.test.ts`.
 Policy without `unsafe-eval` (the page does not load ZVM): `default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self' https://api.github.com; base-uri 'none'; form-action 'none'`. Narrowing `connect-src` to one host limits where a pasted token can be sent if any script bug appears.
 
-### FIX-4: CSP meta for the For-teams and Graveyard pages, remove the inline handler (item 5, Medium)
+### FIX-4: CSP meta for the For-teams and Graveyard pages, remove the inline handler (item 5, Medium) (FIXED in #264)
 
 Files: `web/for-teams.html` (remove `onsubmit="return false"` at `:60`), `web/for-teams.js` (add a `submit` listener that calls `preventDefault()`), `web/graveyard/graveyard.html` (CSP with `connect-src 'self' https://raw.githubusercontent.com https://api.osv.dev`, since `web/graveyard/graveyard.js:559` runs a live exhume). Extend `tests/csp.test.ts` for the three pages (it is the same new test as FIX-2, so land FIX-2 first, or add the test file here and let FIX-2 extend it).
 
-### FIX-5: CSP for generated pages (item 5, Medium)
+### FIX-5: CSP for generated pages (item 5, Medium) (FIXED in #264)
 
 Files: `src/report/html.ts` (add `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:">` near `:127`), `src/site/manual.ts`, `tests/autopsy.test.ts`.
 The autopsy page claims "No script, no external request" (`src/report/html.ts:1`); the policy makes the browser enforce that claim. Update the snapshot with the project's test command, not by hand.
 
-### FIX-6: Pin actions in `ci.yml` (item 7, Medium)
+### FIX-6: Pin actions in `ci.yml` (item 7, Medium) (FIXED in #258)
 
 Files: `.github/workflows/ci.yml` (13 references), `tests/workflow-pins.test.ts` (new).
 Replace each `@vN` with the full commit SHA of that release, keeping the tag as a trailing comment (`uses: actions/checkout@<sha> # v4.x.y`). Take the SHA from the action's own repository, not a fork. Add `persist-credentials: false` to each `actions/checkout` step that does not push. The test fails if any `uses:` in `.github/workflows/*.yml` or `action.yml` lacks a 40 hex SHA (local `./` actions excepted).
 
-### FIX-7: Pin actions and narrow write permissions in the release, stats and kiro-hooks workflows (item 7, Medium)
+### FIX-7: Pin actions and narrow write permissions in the release, stats and kiro-hooks workflows (item 7, Medium) (FIXED in #268)
 
 Files: `.github/workflows/release.yml` (3 refs, the `id-token: write` job), `.github/workflows/stats.yml` (2 refs; move `contents: write` from `:10-11` to the job), `.github/workflows/kiro-hooks.yml` (3 refs; move `contents: write` and `pull-requests: write` from `:10-12` to the job).
 Default the workflow to `contents: read` and grant write only on the job. Stats must still run only on `main` and must not run `kiro:stats --write` in a PR (`.kiro/steering/tech.md`).
 
-### FIX-8: Pin actions in the pages, live-raid and action-selftest workflows (item 7, Medium)
+### FIX-8: Pin actions in the pages, live-raid and action-selftest workflows (item 7, Medium) (FIXED in #267)
 
 Files: `.github/workflows/pages.yml` (6 refs), `.github/workflows/live-raid.yml` (6 refs), `.github/workflows/action-selftest.yml` (4 refs).
 Same method as FIX-6. Keep the `workflow_run` gate at `pages.yml:25` exactly as it is.
 
-### FIX-9: Pin the composite action and add Dependabot for actions (item 7, Medium)
+### FIX-9: Pin the composite action and add Dependabot for actions (item 7, Medium) (FIXED in #267)
 
 Files: `action.yml` (`:43,75,81`), `.github/dependabot.yml` (new, `package-ecosystem: github-actions`, weekly, plus `npm`), `docs/INSTALL-ACTION.md` (note that consumers can pin `e-1305/Crypt` by SHA).
 Dependabot keeps the pinned SHAs current, which is the usual cost of pinning (<https://docs.github.com/en/actions/reference/security/secure-use>).
 
-### FIX-10: Add a timeout to the feed download (item 9, Low)
+### FIX-10: Add a timeout to the feed download (item 9, Low) (FIXED in #246)
 
 Files: `scripts/feeds-update.ts` (`:10`, add `signal: AbortSignal.timeout(30_000)` and a clear error), `tests/static.test.ts` (assert every `fetch(` in `scripts/*.ts` passes a `signal`, with an allow list for the existing wrappers).
 
-### FIX-11: Bound CODEOWNERS matching (item 10, High)
+### FIX-11: Bound CODEOWNERS matching (item 10, High) (FIXED in #256)
 
 Files: `src/exhume/owners.ts`, `tests/owners-redos.test.ts` (new), optionally `src/exhume/creature.ts` (note when rules were dropped).
 Two safe options, pick one: (a) replace the generated regex with a small iterative glob matcher (linear time, no backtracking), or (b) keep regexes, collapse runs of `*` before building (`***` to `*`, `**/**/` to `**/`), and drop a rule when the pattern is longer than 200 characters or has more than 8 wildcards, or the file has more than 5,000 rules. A dropped rule leaves the manifest `unowned`, which is the fail-safe result. The test feeds `"*".repeat(40) + "z"` and `"*a".repeat(30) + "z"` and requires a result in under 100 ms, and a property test (fast-check) that the new matcher agrees with the old one on ordinary patterns.
@@ -113,7 +115,7 @@ Two safe options, pick one: (a) replace the generated regex with a small iterati
 
 Files: `docs/THREAT-MODEL.md` (new: assets, trust boundaries for the paste flow, clone flow, War Room token, Action token, and the hostile-input cases from this audit), `SECURITY.md` (link it and name the paste flow and War Room in scope), `tests/web-xss-guard.test.ts` (new: no `insertAdjacentHTML`, `document.write` or `eval` in `web/**` outside `web/vendor/`, and `innerHTML` only at the two known constant sites `web/app.js:219` and `web/theatre/drawer.js:17`).
 
-### FIX-13: Cap lockfile and CODEOWNERS size and limb count (item 11, Medium)
+### FIX-13: Cap lockfile and CODEOWNERS size and limb count (item 11, Medium) (FIXED in #263)
 
 Files: `src/web/live-exhume.ts` (reject in `rawFile` at `:150` when `Content-Length` or `text.length` exceeds the cap, with a typed error that says nothing was drawn), `src/exhume/lockfile.ts` (throw `LockfileError` above a byte cap and above a package count, applied at `:14` and in the loop at `:29`), `tests/live-exhume.test.ts`.
 Suggested caps: 20 MB of text, 20,000 packages, 256 KB for CODEOWNERS. Report the cap in the message, as `src/web/import-glue.ts:56` does. Optional follow-up for the clone path: a size check in `scripts/cli/target.ts` before parsing the lockfile.
