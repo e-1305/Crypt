@@ -1,6 +1,6 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { anchorOf, layoutBounds, layoutCreature, STATE_COLOR, STATE_SHAPE, stateOf } from "../src/theatre/creature3d-layout.js";
+import { anchorOf, BODY, labelBoxes, layoutBounds, layoutCreature, STATE_COLOR, STATE_SHAPE, stateOf } from "../src/theatre/creature3d-layout.js";
 
 const limb = (name: string, rank: number, state: string, extra: Record<string, unknown> = {}) => ({ id: `npm:${name}@1.0.0`, name, version: "1.0.0", rank, state, ...extra });
 
@@ -65,5 +65,36 @@ describe("3D creature framing bounds", () => {
       expect(l.z).toBeGreaterThanOrEqual(b.minZ);
       expect(l.z).toBeLessThanOrEqual(b.maxZ);
     }
+  });
+});
+
+describe("3D creature body distribution (7-limb demo)", () => {
+  const states = ["Possessed", "Rotting", "Rotting", "Healthy", "Rotting", "Healthy", "Healthy"];
+  const demo = { limbs: states.map((s, i) => limb(`demo-package-${i}`, i + 1, s)) };
+  const limbs = layoutCreature(demo);
+
+  it("keeps every pair of limbs apart", () => {
+    for (let i = 0; i < limbs.length; i++)
+      for (let j = i + 1; j < limbs.length; j++) expect(Math.hypot(limbs[i]!.x - limbs[j]!.x, limbs[i]!.y - limbs[j]!.y, limbs[i]!.z - limbs[j]!.z)).toBeGreaterThanOrEqual(0.45);
+  });
+  it("spreads limbs left and right of the torso, and below it", () => {
+    expect(limbs.some((l) => l.x < 0)).toBe(true);
+    expect(limbs.some((l) => l.x > 0)).toBe(true);
+    expect(limbs.some((l) => l.y < BODY.torso.y)).toBe(true);
+    expect(limbs.some((l) => l.region === "head" && l.y > BODY.head.y)).toBe(true);
+    expect(limbs.filter((l) => l.x < 0).length).toBe(limbs.filter((l) => l.x > 0).length);
+  });
+  it("makes Possessed the largest limb", () => {
+    const p = limbs.find((l) => l.state === "Possessed")!;
+    for (const l of limbs) if (l !== p) expect(p.scale).toBeGreaterThan(l.scale);
+  });
+  it("shows labels for Possessed and Rotting only, with no overlapping boxes at 1280x720", () => {
+    const boxes = labelBoxes(limbs, 1280, 720);
+    expect(boxes.length).toBe(4);
+    for (let i = 0; i < boxes.length; i++)
+      for (let j = i + 1; j < boxes.length; j++) {
+        const a = boxes[i]!, b = boxes[j]!;
+        expect(a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom).toBe(false);
+      }
   });
 });
