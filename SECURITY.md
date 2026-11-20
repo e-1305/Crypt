@@ -19,4 +19,4 @@ CRYPT is maintained by one person in their spare time. Replies and fixes are bes
 
 ## Scope
 
-This policy covers the CRYPT code in this repository: the CLI, the GitHub Action and the static demo site. For what CRYPT reads, stores and sends, see [docs/SECURITY-REVIEW.md](docs/SECURITY-REVIEW.md). A vulnerability in a dependency that CRYPT reports on belongs to that project.
+This policy covers the CRYPT code in this repository: the CLI, the GitHub Action, the static demo site, the paste-your-repo flow (the browser fetches a public repo's lockfile and CODEOWNERS) and the War Room, including its optional GitHub token field. For the assets, trust boundaries and hostile-input cases, see [docs/THREAT-MODEL.md](docs/THREAT-MODEL.md). For what CRYPT reads, stores and sends, see [docs/SECURITY-REVIEW.md](docs/SECURITY-REVIEW.md). A vulnerability in a dependency that CRYPT reports on belongs to that project.
