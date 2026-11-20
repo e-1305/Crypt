@@ -1,6 +1,6 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { anchorOf, layoutBounds, layoutCreature, STATE_COLOR, STATE_SHAPE, stateOf } from "../src/theatre/creature3d-layout.js";
+import { anchorOf, isLabelled, labelText, labelWidth, layoutBounds, layoutCreature, placeLabelBoxes, projectPoint, sideOf, STATE_COLOR, STATE_SHAPE, stateOf } from "../src/theatre/creature3d-layout.js";
 
 const limb = (name: string, rank: number, state: string, extra: Record<string, unknown> = {}) => ({ id: `npm:${name}@1.0.0`, name, version: "1.0.0", rank, state, ...extra });
 
@@ -67,3 +67,48 @@ describe("3D creature framing bounds", () => {
     }
   });
 });
+
+describe("3D creature body layout (#281)", () => {
+  const states = ["Possessed", "Rotting", "Rotting", "Healthy", "Healthy", "Rotting", "Healthy"];
+  const demo7 = { limbs: states.map((s, i) => limb(`demo-pkg-${i}`, i + 1, s)) };
+  const limbs = layoutCreature(demo7);
+
+  it("keeps every pair of limbs apart", () => {
+    for (let i = 0; i < limbs.length; i++)
+      for (let j = i + 1; j < limbs.length; j++) {
+        const a = limbs[i]!, b = limbs[j]!;
+        expect(Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z)).toBeGreaterThanOrEqual(0.7);
+      }
+  });
+  it("spreads limbs left and right of the body and below the torso", () => {
+    expect(limbs.some((l) => l.x < 0)).toBe(true);
+    expect(limbs.some((l) => l.x > 0)).toBe(true);
+    expect(limbs.some((l) => l.y < BODY_TORSO_BOTTOM)).toBe(true);
+    expect(limbs.some((l) => l.region === "head")).toBe(true);
+  });
+  it("keeps limbs apart for larger creatures too (property)", () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 1, max: 120 }), (n) => {
+        const out = layoutCreature({ limbs: Array.from({ length: n }, (_, i) => limb(`p${i}`, i + 1, "Rotting")) });
+        for (let i = 0; i < out.length; i++)
+          for (let j = i + 1; j < out.length; j++) if (Math.hypot(out[i]!.x - out[j]!.x, out[i]!.y - out[j]!.y) < 0.7) return false;
+        return true;
+      }),
+      { numRuns: 30 },
+    );
+  });
+  it("labels only Possessed and Rotting limbs, and their boxes do not intersect at 1280x720", () => {
+    const labelled = limbs.filter(isLabelled);
+    expect(labelled.length).toBe(4);
+    const b = layoutBounds(limbs);
+    const anchors = labelled.map((l) => ({ ...projectPoint(l, b, 1280, 720), side: sideOf(l) }));
+    const boxes = placeLabelBoxes(anchors, labelled.map((l) => labelWidth(labelText(l))));
+    for (let i = 0; i < boxes.length; i++)
+      for (let j = i + 1; j < boxes.length; j++) {
+        const p = boxes[i]!, q = boxes[j]!;
+        const hit = p.left < q.left + q.width && q.left < p.left + p.width && p.top < q.top + q.height && q.top < p.top + p.height;
+        expect(hit).toBe(false);
+      }
+  });
+});
+const BODY_TORSO_BOTTOM = 1.2;

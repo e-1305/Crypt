@@ -1,7 +1,7 @@
 // 3D-b: the "Creature 3D" view. Renders src/theatre/creature3d-layout.ts with three.js instanced meshes (one per shape).
 // Lazy: this file loads with the page but three.js is requested only when the toggle is first used (#233).
 // Fail safe: no WebGL, or any error, keeps the plain 2D plate. Reduced motion draws one still frame.
-import { layoutCreature, layoutBounds, anchorOf, BODY, STATE_COLOR, STATE_SHAPE } from "../js/theatre/creature3d-layout.js";
+import { layoutCreature, layoutBounds, anchorOf, frameDistance, labelText, labelWidth, isLabelled, placeLabelBoxes, sideOf, POSSESSED_SCALE, BODY, STATE_COLOR, STATE_SHAPE } from "../js/theatre/creature3d-layout.js";
 import { MAX_LIMBS, GUARD_FRAMES, capLimbs, isSlowDevice, moreLabel, shouldRunGuard } from "../js/theatre/caps.js";
 
 const STATES = ["Possessed", "Rotting", "Healed", "Healthy", "Unknown"];
@@ -91,10 +91,7 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
   const FILL = 0.7;
   const frameCamera = () => {
     const b = bounds;
-    const tanV = Math.tan((camera.fov * Math.PI) / 360);
-    const tanH = tanV * camera.aspect;
-    const depth = (b.maxZ - b.minZ) / 2;
-    const dist = Math.max(b.height / 2 / (FILL * tanV), b.width / 2 / (FILL * tanH)) + depth;
+    const dist = frameDistance(b, camera.aspect, camera.fov, FILL);
     camera.position.set(b.center.x, b.center.y, b.center.z + dist);
     camera.near = 0.1;
     camera.far = dist + b.radius * 4 + 10;
@@ -130,20 +127,27 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
   torso.position.set(0, BODY.torso.y, 0);
   body.add(head, torso);
   let bones = null;
+  let pulsing = []; // Possessed instances, rescaled each frame (not under reduced motion)
   let labels = []; // { el, pos: Vector3 }
   const placeLabels = () => {
     const w = holder.clientWidth || 300, h = holder.clientHeight || 260;
     body.updateMatrixWorld(true);
-    for (const { el, pos } of labels) {
+    const anchors = labels.map(({ pos, side }) => {
       const p = pos.clone().applyMatrix4(body.matrixWorld).project(camera);
-      el.style.left = `${((p.x + 1) / 2) * w + 10}px`;
-      el.style.top = `${((1 - p.y) / 2) * h - 7}px`;
-    }
+      return { x: ((p.x + 1) / 2) * w, y: ((1 - p.y) / 2) * h, side };
+    });
+    // Outward from the body, then pushed apart in screen space so no two labels overlap.
+    const boxes = placeLabelBoxes(anchors, labels.map((l) => l.width));
+    labels.forEach(({ el }, i) => {
+      el.style.left = `${boxes[i].left}px`;
+      el.style.top = `${boxes[i].top}px`;
+    });
   };
 
   const clear = () => {
     for (const m of meshes) { body.remove(m); m.dispose?.(); }
     meshes = [];
+    pulsing = [];
     if (bones) { body.remove(bones); bones.geometry.dispose(); bones = null; }
     labelLayer.textContent = "";
     labels = [];
@@ -158,14 +162,14 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
     for (const l of shown) {
       const a = anchorOf(l);
       pts.push(new THREE.Vector3(a.x, a.y, a.z), new THREE.Vector3(l.x, l.y, l.z));
-      if (l.state === "Possessed" || l.state === "Rotting") {
+      if (isLabelled(l)) {
         const el = document.createElement("span");
         el.className = "creature3d-label";
-        const name = l.label.split(" · ")[0].replace(/ \S*$/, "");
-        el.textContent = name.length > 18 ? name.slice(0, 17) + "…" : name;
+        const name = labelText(l);
+        el.textContent = name;
         el.style.cssText = `position:absolute;font:11px monospace;white-space:nowrap;color:${l.color};text-shadow:0 0 3px #000`;
         labelLayer.append(el);
-        labels.push({ el, pos: new THREE.Vector3(l.x, l.y, l.z) });
+        labels.push({ el, pos: new THREE.Vector3(l.x, l.y, l.z), side: sideOf(l), width: labelWidth(name) });
       }
     }
     if (pts.length) {
@@ -180,6 +184,7 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
       const mesh = new THREE.InstancedMesh(geos[shape], mat, group.length);
       group.forEach((l, i) => {
         dummy.position.set(l.x, l.y, l.z);
+        dummy.scale.setScalar(l.state === "Possessed" ? POSSESSED_SCALE : 1); // the possessed limb is the largest
         dummy.updateMatrix();
         mesh.setMatrixAt(i, dummy.matrix);
         mesh.setColorAt(i, color.set(l.color));
@@ -188,6 +193,7 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
       body.add(mesh);
       meshes.push(mesh);
+      group.forEach((l, i) => { if (l.state === "Possessed") pulsing.push({ mesh, i, l }); });
     }
     const counts = Object.fromEntries(STATES.map((s) => [s, shown.filter((l) => l.state === s).length]));
     legendEl.textContent = "";
@@ -212,6 +218,7 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
     draw();
   };
 
+  const pulseDummy = new THREE.Object3D();
   let raf = 0, stopped = false, last = -1, spin = 0;
   const deltas = [];
   let guard = !reduced && shouldRunGuard(navigator.webdriver);
@@ -227,6 +234,14 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
     }
     last = now;
     spin += 0.004;
+    const k = POSSESSED_SCALE * (1 + 0.12 * Math.sin(now / 260));
+    for (const { mesh, i, l } of pulsing) {
+      pulseDummy.position.set(l.x, l.y, l.z);
+      pulseDummy.scale.setScalar(k);
+      pulseDummy.updateMatrix();
+      mesh.setMatrixAt(i, pulseDummy.matrix);
+      mesh.instanceMatrix.needsUpdate = true;
+    }
     body.rotation.y = Math.sin(spin) * 0.5;
     draw();
   };

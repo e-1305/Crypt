@@ -28,6 +28,6 @@ describe("3D-c framing and body source guards", () => {
     expect(src.match(/frameCamera\(\)/g)!.length).toBeGreaterThanOrEqual(2);
     expect(src).toContain("SphereGeometry(BODY.head.r");
     expect(src).toContain("LineSegments");
-    expect(src).toMatch(/l\.state === "Possessed" \|\| l\.state === "Rotting"/);
+    expect(src).toContain("isLabelled(l)");
   });
 });
