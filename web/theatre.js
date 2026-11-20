@@ -44,6 +44,9 @@ if (decision.mode === "3d") {
     });
 }
 
+// Creature 3D view toggle (3D-b). This file has no three.js import; three loads on the first click.
+import("./theatre/creature3d.js").then((m) => m.initCreature3d()).catch(() => { /* the 2D plate stays */ });
+
 // Recording mode (B5.3): hides UI chrome for screen capture, keeps the CRT and the plate.
 // Works on the 3D bench and the 2D page. Reversible: Escape, or the visually hidden button (keyboard focus shows it).
 const recordBtn = document.getElementById("record-toggle");

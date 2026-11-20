@@ -485,3 +485,11 @@ body.theatre.drawer-open .top { position: absolute; width: 1px; height: 1px; mar
 .hud-level { font-weight: bold; }
 .hud-bar { height: .5rem; border: 1px solid var(--dim); box-sizing: border-box; }
 .hud-fill { height: 100%; width: 0; background: var(--fg); }
+
+/* Creature 3D view (3D-b) */
+/* The toggle lives in the Bench drawer, so the first screens keep their height. */
+#creature3d-toggle { min-height: 44px; }
+#creature3d-stage { width: 100%; height: 320px; border: 1px solid var(--dim); }
+#creature3d-legend { display: flex; flex-wrap: wrap; gap: .25rem .9rem; margin: .4rem 0 0; }
+.creature3d-key i { display: inline-block; width: .8em; height: .8em; margin-right: .35em; border-radius: 2px; }
+@media (max-width: 600px) { #creature3d-stage { height: 240px; } }

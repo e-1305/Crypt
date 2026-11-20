@@ -894,6 +894,59 @@ async function checkForTeams(browser, vp) {
   await ctx.close();
 }
 
+// 3D-b: the Creature 3D toggle opens an instanced-mesh view with a legend, does not overlap the page, and closes back to the 2D plate.
+// Skips (with a note, no pass claimed) only when this browser has no WebGL: then the toggle must be absent and the plate must stay.
+const CREATURE3D_VIEWPORTS = [{ w: 1440, h: 900, touch: false }, { w: 390, h: 844, touch: true }];
+async function checkCreature3d(browser, vp) {
+  const tag = `creature3d ${vp.w}x${vp.h}`;
+  const ctx = await browser.newContext({ viewport: { width: vp.w, height: vp.h }, hasTouch: vp.touch, isMobile: vp.touch, reducedMotion: "reduce" });
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => fail(tag, `page error: ${e.message}`));
+  await page.goto(base + "?theatre=2d");
+  await page.waitForFunction(() => document.getElementById("plate")?.textContent.trim().length > 0, null, { timeout: 30000 }).catch(() => fail(tag, "plate did not load"));
+  await page.waitForTimeout(500);
+  const toggle = await page.$("#creature3d-toggle");
+  if (!toggle) {
+    const plateShown = await page.evaluate(() => !document.getElementById("plate")?.hidden);
+    if (!plateShown) fail(tag, "no Creature 3D toggle and the 2D plate is hidden");
+    console.log(`note [${tag}] no WebGL here: toggle absent, 2D plate kept`);
+    await ctx.close();
+    return;
+  }
+  const threeBefore = await page.evaluate(() => performance.getEntriesByType("resource").some((r) => r.name.includes("three.module")));
+  if (threeBefore) fail(tag, "three.js was requested before the Creature 3D toggle was used");
+  await page.click("#bench-toggle");
+  await toggle.scrollIntoViewIfNeeded();
+  await toggle.click();
+  await page.click("#bench-toggle"); // close the Bench again; the view stays open
+  await page.waitForSelector("#creature3d-canvas", { timeout: 15000 }).catch(() => fail(tag, "Creature 3D canvas did not mount"));
+  const state = await page.evaluate(() => ({
+    mode: document.documentElement.dataset.creature3d,
+    plateHidden: document.getElementById("plate")?.hidden === true,
+    legend: document.getElementById("creature3d-legend")?.textContent ?? "",
+    label: document.getElementById("creature3d-canvas")?.getAttribute("aria-label") ?? "",
+    overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    painted: (() => { const c = document.getElementById("creature3d-canvas"); return !!c && c.width > 0 && c.height > 0; })(),
+  }));
+  if (state.mode !== "static") fail(tag, `expected a static view under prefers-reduced-motion, got "${state.mode}"`);
+  if (!state.plateHidden) fail(tag, "2D plate still visible in the Creature 3D view");
+  if (!/Possessed:/.test(state.legend) || !/Unknown:/.test(state.legend)) fail(tag, `legend is incomplete: ${state.legend}`);
+  if (!/limbs shown/.test(state.label)) fail(tag, `canvas has no text alternative: ${state.label}`);
+  if (!state.painted) fail(tag, "canvas has no size");
+  if (state.overflow > 0) fail(tag, `horizontal overflow of ${state.overflow}px`);
+  const [stage, toggleBox] = await boxes(page, ["#creature3d-stage", "#creature3d-toggle"]);
+  if (stage && toggleBox) for (const [a, b] of findOverlaps([stage, toggleBox])) fail(tag, `${a} and ${b} overlap`);
+  if (toggleBox && vp.w < 900 && toggleBox.height < TAP_MIN) fail(tag, `toggle is ${Math.round(toggleBox.height)}px tall, under ${TAP_MIN}`);
+  mkdirSync(outDir, { recursive: true });
+  await page.screenshot({ path: join(outDir, `creature3d-${vp.w}x${vp.h}.png`) });
+  await page.click("#bench-toggle");
+  await page.click("#creature3d-toggle");
+  const back = await page.evaluate(() => document.getElementById("plate")?.hidden === false && !document.getElementById("creature3d-canvas"));
+  if (!back) fail(tag, "toggling off did not restore the 2D plate");
+  console.log(`ok   [${tag}] legend and static view`);
+  await ctx.close();
+}
+
 let browser;
 try {
   browser = await chromium.launch(launchOptions());
@@ -910,6 +963,7 @@ try {
   if (process.env.VISUAL_QA_COPY_DOCS === "1") await captureCards(browser);
   for (const vp of WAR_VIEWPORTS) await checkWarRoom(browser, vp);
   for (const vp of VIEWPORTS) await checkGraveyard(browser, vp);
+  for (const vp of CREATURE3D_VIEWPORTS) await checkCreature3d(browser, vp);
   for (const vp of TEAMS_VIEWPORTS) await checkForTeams(browser, vp);
   mkdirSync(outDir, { recursive: true });
   const autopsyFile = join(outDir, "autopsy.html");
