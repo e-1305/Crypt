@@ -5,7 +5,8 @@
 import { startPlayer } from "./js/web/player.js";
 import { createSealGate, refusalMessage } from "./js/web/seal.js";
 import { markHealed, markRed } from "./js/web/healed.js";
-import { layoutPlate, plateSummary, creatureName } from "./js/render/plate.js";
+import { recordHeals, hudModel } from "./js/web/progress-hud.js";
+import { layoutPlate, plateSummary, creatureName, limbKey } from "./js/render/plate.js";
 import { parseRepoUrl, repoSlug } from "./js/web/repo-url.js";
 import { initRaid } from "./raid.js";
 import { initHeal } from "./heal.js";
@@ -206,6 +207,35 @@ function onResult(result) {
   onboarding.note(allowed);
 }
 
+// Team XP HUD inside the Bench body (in flow, never fixed, so it cannot cover a control). Stored per browser, try/catch.
+const hud = (() => {
+  if (!benchBody) return null;
+  try {
+  const el = document.createElement("div");
+  el.id = "progress-hud";
+  el.className = "progress-hud";
+  el.setAttribute("role", "group");
+  el.setAttribute("aria-label", "Team level, this browser");
+  el.innerHTML = '<p class="hud-line"><span class="hud-level"></span> <span class="hud-title"></span></p><div class="hud-bar" aria-hidden="true"><div class="hud-fill"></div></div><p class="hud-note muted"></p>';
+  benchBody.insertBefore(el, benchBody.firstChild);
+  return el;
+  } catch { return null; } // the HUD is optional: the page works without it
+})();
+function drawHud(healed) {
+  if (!hud) return;
+  let storage = null;
+  try { storage = window.localStorage; } catch { /* blocked */ }
+  const m = hudModel(recordHeals(storage, healed));
+  try {
+  hud.querySelector(".hud-level").textContent = "Level " + m.level;
+  hud.querySelector(".hud-title").textContent = m.title;
+  hud.querySelector(".hud-fill").style.width = m.percent + "%";
+  hud.querySelector(".hud-note").textContent = m.xp + " XP, " + m.label;
+  hud.title = m.text;
+  } catch { /* the HUD is optional */ }
+}
+drawHud([]);
+
 let lastCreature = null;
 const heal = initHeal({
   addLine,
@@ -254,6 +284,7 @@ async function loadPlate() {
     const fresh = markHealed(creature.limbs, scopedStore());
     const red = markRed(creature.limbs, scopedStore());
     drawPlate(creature, fresh);
+    drawHud(creature.limbs.filter((l) => l.healed === true && l && typeof l.name === "string").map((l) => ({ key: limbKey(l.ecosystem, l.name), kev: l.kev === true })));
     const name = creatureName(creature.repo || "demo");
     creatureNameEl.textContent = name + (creatureId === "demo" ? " (the demo creature)" : " (" + creature.repo + ")");
     downloadName = "crypt-" + name.toLowerCase() + ".z8";

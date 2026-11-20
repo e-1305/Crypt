@@ -478,3 +478,10 @@ body.theatre.drawer-open .top { position: absolute; width: 1px; height: 1px; mar
 .paste-exorcised-list { overflow-wrap: anywhere; }
 .paste-exorcised a { display: inline-block; min-height: 44px; line-height: 44px; }
 .paste-exorcised a { color: inherit; text-decoration: underline; }
+
+/* Team XP HUD (web/app.js, src/web/progress-hud.ts): in flow inside the Bench body, never fixed. */
+.progress-hud { margin: .5rem 0; padding: .25rem .5rem; border: 1px solid var(--dim); box-sizing: border-box; max-width: 100%; }
+.progress-hud p { margin: .15rem 0; }
+.hud-level { font-weight: bold; }
+.hud-bar { height: .5rem; border: 1px solid var(--dim); box-sizing: border-box; }
+.hud-fill { height: 100%; width: 0; background: var(--fg); }
