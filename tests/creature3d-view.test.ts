@@ -26,8 +26,12 @@ describe("3D-c framing and body source guards", () => {
   it("frames the camera from the layout bounds on build and resize, draws body and bones, labels only Possessed and Rotting", () => {
     expect(src).toContain("layoutBounds(");
     expect(src.match(/frameCamera\(\)/g)!.length).toBeGreaterThanOrEqual(2);
-    expect(src).toContain("SphereGeometry(BODY.head.r");
-    expect(src).toContain("LineSegments");
+    // Flesh pass: a skull sized from BODY.head, a lathe torso, and every limb a tube from its anchor.
+    expect(src).toMatch(/SphereGeometry\(hr, /);
+    expect(src).toMatch(/hr = BODY\.head\.r/);
+    expect(src).toContain("LatheGeometry(");
+    expect(src).toContain("TubeGeometry(");
+    expect(src).toContain("anchorOf(l)");
     expect(src).toMatch(/l\.state === "Possessed" \|\| l\.state === "Rotting"/);
   });
 });

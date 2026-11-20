@@ -101,10 +101,15 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
     camera.lookAt(b.center.x, b.center.y, b.center.z);
     camera.updateProjectionMatrix();
   };
-  scene.add(new THREE.AmbientLight(0xffffff, 1.1));
-  const sun = new THREE.DirectionalLight(0xffffff, 2);
+  // Lab lighting: a warm key lamp, a cold green rim from behind, a dim sky/ground fill, and fog for depth.
+  scene.fog = new THREE.Fog(0x050403, 9, 26);
+  scene.add(new THREE.HemisphereLight(0x9fb08a, 0x140e06, 0.9));
+  const sun = new THREE.DirectionalLight(0xffe2b0, 2.4);
   sun.position.set(3, 6, 6);
   scene.add(sun);
+  const rim = new THREE.DirectionalLight(0x33ff88, 1.6);
+  rim.position.set(-4, 3, -6);
+  scene.add(rim);
 
   const geos = {
     spike: new THREE.ConeGeometry(0.16, 0.5, 6),
@@ -117,18 +122,53 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
   let meshes = [];
   const body = new THREE.Group();
   scene.add(body);
-  // Simple body: head sphere, torso capsule, thin bones from each limb to its anchor. Labels for Possessed and Rotting only.
-  const bodyMat = new THREE.MeshStandardMaterial({ color: 0x3a3426, roughness: 0.9 });
-  const boneMat = new THREE.LineBasicMaterial({ color: 0x6b6246 });
-  const headGeo = new THREE.SphereGeometry(BODY.head.r, 20, 14);
-  const torsoGeo = THREE.CapsuleGeometry
-    ? new THREE.CapsuleGeometry(BODY.torso.r, BODY.torso.half * 2 - BODY.torso.r * 2 + 0.4, 4, 12)
-    : new THREE.CylinderGeometry(BODY.torso.r, BODY.torso.r, BODY.torso.half * 2 + 0.4, 12);
-  const head = new THREE.Mesh(headGeo, bodyMat);
-  head.position.set(0, BODY.head.y, 0);
+  // Body (flesh pass): a stitched, sculpted torso (lathe), neck with bolts, a skull with a brow and glowing eyes.
+  // Limbs are flesh tubes from the shoulder or hip to the package token, tinted by state. Labels for Possessed and Rotting only.
+  const SKIN = 0x7d8a64;
+  const bodyMat = new THREE.MeshStandardMaterial({ color: SKIN, roughness: 0.78, metalness: 0.02 });
+  const boneMat = new THREE.MeshStandardMaterial({ color: SKIN, roughness: 0.8 });
+  const stitchMat = new THREE.LineBasicMaterial({ color: 0x1a120a });
+  const boltMat = new THREE.MeshStandardMaterial({ color: 0x8a8f96, roughness: 0.35, metalness: 0.85 });
+  const eyeMat = new THREE.MeshBasicMaterial({ color: 0xffb000 });
+  const ty = BODY.torso.y, th = BODY.torso.half, hr = BODY.head.r, hy = BODY.head.y;
+  const profile = [[0, ty - th - 0.25], [0.3, ty - th - 0.2], [0.36, ty - th], [0.31, ty - 0.25], [0.4, ty + 0.1], [0.5, ty + th - 0.05], [0.47, ty + th + 0.18], [0.24, ty + th + 0.32], [0.11, ty + th + 0.36], [0, ty + th + 0.36]]
+    .map(([x, y]) => new THREE.Vector2(x, y));
+  const torsoGeo = new THREE.LatheGeometry(profile, 28);
   const torso = new THREE.Mesh(torsoGeo, bodyMat);
-  torso.position.set(0, BODY.torso.y, 0);
-  body.add(head, torso);
+  torso.scale.set(1, 1, 0.72); // flatter front to back, like a chest
+  const neckGeo = new THREE.CylinderGeometry(0.11, 0.13, hy - hr - (ty + th + 0.3) + 0.12, 12);
+  const neck = new THREE.Mesh(neckGeo, bodyMat);
+  neck.position.set(0, (hy - hr + ty + th + 0.3) / 2, 0);
+  const headGeo = new THREE.SphereGeometry(hr, 24, 18);
+  const head = new THREE.Mesh(headGeo, bodyMat);
+  head.position.set(0, hy, 0);
+  head.scale.set(0.9, 1.08, 0.92);
+  const browGeo = new THREE.BoxGeometry(hr * 1.6, hr * 0.22, hr * 0.5);
+  const brow = new THREE.Mesh(browGeo, bodyMat);
+  brow.position.set(0, hy + hr * 0.28, hr * 0.62);
+  const flatGeo = new THREE.CylinderGeometry(hr * 0.86, hr * 0.9, hr * 0.32, 20);
+  const flatTop = new THREE.Mesh(flatGeo, bodyMat); // the flat-topped skull of the classic monster
+  flatTop.position.set(0, hy + hr * 0.8, 0);
+  const eyeGeo = new THREE.SphereGeometry(hr * 0.11, 10, 8);
+  const eyes = [-1, 1].map((sx) => { const e = new THREE.Mesh(eyeGeo, eyeMat); e.position.set(sx * hr * 0.33, hy + hr * 0.08, hr * 0.84); return e; });
+  const boltGeo = new THREE.CylinderGeometry(0.035, 0.035, 0.42, 10);
+  boltGeo.rotateZ(Math.PI / 2);
+  const bolt = new THREE.Mesh(boltGeo, boltMat);
+  bolt.position.copy(neck.position);
+  // Stitches: a seam down the chest and one across the belly, short cross-stitches on each.
+  const seams = [];
+  const seam = (a, b, n) => { for (let i = 0; i <= n; i++) { const t = i / n; const p = a.clone().lerp(b, t); seams.push(p.clone().add(new THREE.Vector3(-0.05, 0.03, 0)), p.clone().add(new THREE.Vector3(0.05, -0.03, 0))); } seams.push(a, b); };
+  seam(new THREE.Vector3(0, ty + th + 0.1, 0.36), new THREE.Vector3(0, ty - 0.2, 0.3), 7);
+  seam(new THREE.Vector3(-0.27, ty - 0.12, 0.25), new THREE.Vector3(0.27, ty - 0.12, 0.25), 5);
+  const stitchGeo = new THREE.BufferGeometry().setFromPoints(seams);
+  const stitches = new THREE.LineSegments(stitchGeo, stitchMat);
+  const shadowGeo = new THREE.CircleGeometry(1.4, 32);
+  const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.45, depthWrite: false });
+  const shadow = new THREE.Mesh(shadowGeo, shadowMat);
+  shadow.rotation.x = -Math.PI / 2;
+  shadow.position.y = -0.4;
+  body.add(torso, neck, head, brow, flatTop, ...eyes, bolt, stitches, shadow);
+  const boneGeos = [];
   let bones = null;
   let labels = []; // { el, pos: Vector3 }
   // Heal burst: a limb that turns Healed (real or SIMULATED) flashes green, a light pulses and "HEALED" floats up.
@@ -187,7 +227,8 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
   const clear = () => {
     for (const m of meshes) { body.remove(m); m.dispose?.(); }
     meshes = [];
-    if (bones) { body.remove(bones); bones.geometry.dispose(); bones = null; }
+    if (bones) { body.remove(bones); bones.children.forEach((m) => m.material.dispose()); bones = null; }
+    boneGeos.splice(0).forEach((g) => g.dispose());
     labelLayer.textContent = "";
     labels = [];
   };
@@ -200,10 +241,19 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
     for (const l of all) prevState.set(l.id, l.state);
     bounds = layoutBounds(shown);
     frameCamera();
-    const pts = [];
+    bones = new THREE.Group();
+    const tint = new THREE.Color();
     for (const l of shown) {
       const a = anchorOf(l);
-      pts.push(new THREE.Vector3(a.x, a.y, a.z), new THREE.Vector3(l.x, l.y, l.z));
+      const from = new THREE.Vector3(a.x, a.y, a.z), to = new THREE.Vector3(l.x, l.y, l.z);
+      // A gently bent limb: the elbow or knee sags outward and down, so limbs hang instead of poking out straight.
+      const mid = from.clone().lerp(to, 0.5).add(new THREE.Vector3((to.x - from.x) * 0.08, -0.18, 0.06));
+      const geo = new THREE.TubeGeometry(new THREE.QuadraticBezierCurve3(from, mid, to), 10, l.region === "arms" || l.region === "legs" ? 0.075 : 0.05, 7, false);
+      boneGeos.push(geo);
+      const m = new THREE.Mesh(geo, boneMat.clone());
+      m.material.color.set(SKIN).lerp(tint.set(l.color), l.state === "Healthy" ? 0.1 : 0.35);
+      if (l.state === "Possessed") { m.material.emissive = new THREE.Color(0x5a1000); m.userData.pulse = true; }
+      bones.add(m);
       if (l.state === "Possessed" || l.state === "Rotting") {
         const el = document.createElement("span");
         el.className = "creature3d-label";
@@ -214,10 +264,9 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
         labels.push({ el, pos: new THREE.Vector3(l.x, l.y, l.z) });
       }
     }
-    if (pts.length) {
-      bones = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), boneMat);
-      body.add(bones);
-    }
+    body.add(bones);
+    // Eyes: amber while something is possessed, green once nothing is.
+    eyeMat.color.set(shown.some((l) => l.state === "Possessed") ? 0xff5a1a : 0x33ff66);
     const dummy = new THREE.Object3D();
     const color = new THREE.Color();
     for (const shape of Object.keys(geos)) {
@@ -275,6 +324,9 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
     last = now;
     spin += 0.004;
     body.rotation.y = Math.sin(spin) * 0.5;
+    // Breathing, and a slow throb on possessed limbs.
+    torso.scale.set(1 + Math.sin(spin * 6) * 0.012, 1 + Math.sin(spin * 6) * 0.018, 0.72);
+    if (bones) for (const m of bones.children) if (m.userData.pulse) m.material.emissiveIntensity = 0.6 + 0.6 * Math.sin(spin * 20);
     draw();
     stepBursts(now);
   };
@@ -301,7 +353,8 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
       bursts.forEach(endBurst); bursts = []; burstGeo.dispose();
       Object.values(geos).forEach((g) => g.dispose());
       mat.dispose();
-      bodyMat.dispose(); boneMat.dispose(); headGeo.dispose(); torsoGeo.dispose();
+      bodyMat.dispose(); boneMat.dispose(); stitchMat.dispose(); boltMat.dispose(); eyeMat.dispose(); shadowMat.dispose();
+      [headGeo, torsoGeo, neckGeo, browGeo, flatGeo, eyeGeo, boltGeo, stitchGeo, shadowGeo].forEach((g) => g.dispose());
       renderer.dispose();
       holder.remove();
       legendEl.textContent = "";
