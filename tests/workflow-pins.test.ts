@@ -11,12 +11,7 @@ const WORKFLOWS = join(ROOT, ".github", "workflows");
 // FIX-6 pinned ci.yml and FIX-7 pinned release, stats and kiro-hooks. These files still carry unpinned references and are
 // fixed by follow-up changes. Remove an entry when its file is pinned (the last test
 // below fails if you forget). Never add ci.yml here.
-const KNOWN_UNPINNED = new Set([
-  ".github/workflows/action-selftest.yml",
-  ".github/workflows/live-raid.yml",
-  ".github/workflows/pages.yml",
-  "action.yml",
-]);
+const KNOWN_UNPINNED = new Set<string>([]);
 
 const SHA = /^[0-9a-f]{40}$/;
 
@@ -57,6 +52,34 @@ describe("workflow action pins (FIX-6)", () => {
   it("keeps the known-unpinned list honest", () => {
     const stale = [...KNOWN_UNPINNED].filter((f) => unpinned(f).length === 0);
     expect(stale).toEqual([]);
+  });
+
+  it.each([
+    ".github/workflows/pages.yml",
+    ".github/workflows/live-raid.yml",
+    ".github/workflows/action-selftest.yml",
+    "action.yml",
+  ])("pins every uses: in %s with a version comment (FIX-8/9)", (rel) => {
+    expect(unpinned(rel)).toEqual([]);
+    const lines = readFileSync(join(ROOT, rel), "utf8").split("\n")
+      .filter((l) => /uses:\s*\S+@[0-9a-f]{40}/.test(l));
+    expect(lines.length).toBeGreaterThan(0);
+    for (const l of lines) expect(l).toMatch(/@[0-9a-f]{40} # v\d/);
+  });
+
+  it("keeps the workflow_run gate in pages.yml", () => {
+    const text = readFileSync(join(WORKFLOWS, "pages.yml"), "utf8");
+    expect(text).toContain(
+      "if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')",
+    );
+  });
+
+  it("configures Dependabot for github-actions and npm, weekly", () => {
+    const text = readFileSync(join(ROOT, ".github", "dependabot.yml"), "utf8");
+    for (const eco of ["github-actions", "npm"]) {
+      const block = new RegExp(`package-ecosystem: ${eco}\\n(?:.*\\n)*?\\s+interval: weekly`);
+      expect(text).toMatch(block);
+    }
   });
 
   it("sets persist-credentials: false on every checkout in ci.yml", () => {

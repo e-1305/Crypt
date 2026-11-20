@@ -41,21 +41,21 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 20
           cache: npm
       - run: npm ci
       - name: Cache toolchain
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: .toolchain
           key: toolchain-${{ runner.os }}-${{ hashFiles('scripts/setup-tools.sh') }}
       - run: npm run setup
       # Run state (out/ and the audit log) lets inquisit and reraise find the pull request that graft opened.
       - name: Restore run state
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: |
             out
@@ -78,7 +78,7 @@ jobs:
           bash scripts/ci/live-raid.sh "$MODE" "$LIMB" "$SABOTAGE"
       - name: Save run state
         if: always()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: |
             out
@@ -86,7 +86,7 @@ jobs:
           key: live-raid-state-${{ github.run_id }}
       - name: Upload the plate and the creature
         if: inputs.mode == 'reraise'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: live-raid-reraise
           path: |

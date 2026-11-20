@@ -155,7 +155,7 @@ describe("action wiring", () => {
   it("has the upload-sarif input and the codeql upload step", () => {
     expect(y).toMatch(/\n  upload-sarif:\n[\s\S]*?default: "false"\n/);
     expect(y).toContain("INPUT_UPLOAD_SARIF: ${{ inputs.upload-sarif }}");
-    expect(y).toContain("uses: github/codeql-action/upload-sarif@v3");
+    expect(y).toContain("uses: github/codeql-action/upload-sarif@9418214df1f2c4b8128c770156c409013b07d6b9 # v3.39.3");
     expect(y).toContain("inputs.upload-sarif == 'true'");
   });
 });
