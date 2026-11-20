@@ -34,12 +34,40 @@ export const STATE_SHAPE: Record<LayoutState, Shape> = {
   Unknown: "cone",
 };
 
-const REGIONS: { region: LayoutLimb["region"]; cap: number; y: number; radius: number }[] = [
-  { region: "head", cap: 6, y: 3.2, radius: 0.6 },
-  { region: "torso", cap: 40, y: 1.8, radius: 1.0 },
-  { region: "arms", cap: 80, y: 1.9, radius: 2.1 },
-  { region: "legs", cap: Infinity, y: 0.2, radius: 0.8 },
-];
+/**
+ * How many limbs go to head, arms and legs (the torso takes the rest). The most urgent limb crowns the head; then
+ * arms get ~40% and legs ~30% of the others, so even a small creature has limbs on both sides and below the body.
+ */
+export function regionCounts(n: number): [number, number, number] {
+  if (n <= 0) return [0, 0, 0];
+  const head = 1;
+  const r = n - head;
+  const arms = Math.min(r, Math.max(r >= 2 ? 2 : r, Math.ceil(r * 0.4)));
+  const legs = Math.min(r - arms, Math.max(r - arms >= 2 ? 2 : r - arms, Math.ceil((r - arms) * 0.5)));
+  return [head, arms, legs];
+}
+
+const GOLDEN = Math.PI * (3 - Math.sqrt(5));
+/** Position of the k-th of n limbs in a region. Deterministic; spacing grows with n so limbs never stack. */
+function placeLimb(region: LayoutLimb["region"], k: number, n: number): { x: number; y: number; z: number } {
+  if (region === "head") return { x: 0, y: 3.85, z: 0 };
+  if (region === "arms") {
+    // Alternate left/right; each side fans out along the arm and up/down a little.
+    const side = k % 2 === 0 ? -1 : 1;
+    const j = Math.floor(k / 2);
+    const perSide = Math.ceil(n / 2);
+    const step = Math.max(0.55, 2.4 / Math.max(1, perSide));
+    return { x: side * (1.3 + j * step * 0.6), y: 2.2 - (j % 3) * 0.45, z: 0.25 * Math.sin(j) };
+  }
+  if (region === "legs") {
+    const side = k % 2 === 0 ? -1 : 1;
+    const j = Math.floor(k / 2);
+    return { x: side * (0.5 + 0.35 * (j % 3)), y: 0.4 - j * 0.55, z: 0.2 * Math.cos(j) };
+  }
+  // Torso: a spiral around the torso capsule.
+  const a = k * GOLDEN;
+  return { x: 0.85 * Math.cos(a), y: 2.3 - (n <= 1 ? 0.5 : (k / (n - 1)) * 1.0), z: 0.85 * Math.sin(a) };
+}
 
 const rec = (v: unknown): Record<string, unknown> => (typeof v === "object" && v !== null && !Array.isArray(v) ? (v as Record<string, unknown>) : {});
 const text = (v: unknown, max: number) => (typeof v === "string" ? v.replace(/[^\x20-\x7e]/g, "").slice(0, max) : "");
@@ -64,26 +92,15 @@ export function layoutCreature(creature: unknown): LayoutLimb[] {
     .sort((a, b) => a.rank - b.rank || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 
   const out: LayoutLimb[] = [];
+  const [nHead, nArms, nLegs] = regionCounts(rows.length);
+  const nTorso = rows.length - nHead - nArms - nLegs;
+  const plan: [LayoutLimb["region"], number][] = [["head", nHead], ["arms", nArms], ["legs", nLegs], ["torso", nTorso]];
   let i = 0;
-  let start = 0;
-  for (const reg of REGIONS) {
-    const end = Math.min(rows.length, start + reg.cap);
-    const n = end - start;
+  for (const [region, n] of plan) {
     for (let k = 0; k < n; k++, i++) {
       const { l, id } = rows[i]!;
       const state = stateOf(l);
-      // Spread a region's limbs on a ring; arms alternate left and right, legs alternate and step down.
-      const angle = n === 1 ? 0 : (2 * Math.PI * k) / n;
-      let x = reg.radius * Math.cos(angle);
-      let z = reg.radius * Math.sin(angle);
-      let y = reg.y;
-      if (reg.region === "arms") {
-        x = (k % 2 === 0 ? -1 : 1) * (reg.radius + 0.05 * Math.floor(k / 2));
-        z = 0.3 * Math.sin(angle);
-      } else if (reg.region === "legs") {
-        x = (k % 2 === 0 ? -0.45 : 0.45) + 0.12 * Math.cos(angle);
-        y = reg.y - 0.02 * Math.floor(k / 2);
-      }
+      const p = placeLimb(region, k, n);
       const version = text(l.version, 40);
       out.push({
         id,
@@ -91,14 +108,12 @@ export function layoutCreature(creature: unknown): LayoutLimb[] {
         state,
         color: STATE_COLOR[state],
         shape: STATE_SHAPE[state],
-        x: round(x),
-        y: round(y),
-        z: round(z),
-        region: reg.region,
+        x: round(p.x),
+        y: round(p.y),
+        z: round(p.z),
+        region,
       });
     }
-    start = end;
-    if (start >= rows.length) break;
   }
   return out;
 }

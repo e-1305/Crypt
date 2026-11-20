@@ -67,3 +67,31 @@ describe("3D creature framing bounds", () => {
     }
   });
 });
+
+describe("3D-d: limbs spread around the body", async () => {
+  const { layoutCreature: lay, regionCounts } = await import("../src/theatre/creature3d-layout.js");
+  const demo = { limbs: Array.from({ length: 7 }, (_, i) => ({ id: "l" + i, name: "pkg" + i, rank: i + 1, state: i === 0 ? "Possessed" : i < 5 ? "Rotting" : "Healthy" })) };
+  const out = lay(demo);
+  it("puts limbs left, right and below the torso for a 7-limb creature", () => {
+    expect(out.some((l) => l.x < -0.5)).toBe(true);
+    expect(out.some((l) => l.x > 0.5)).toBe(true);
+    expect(out.some((l) => l.y < 1.0)).toBe(true);
+    expect(out.filter((l) => l.region === "head")).toHaveLength(1);
+    expect(out[0]!.region).toBe("head");
+  });
+  it("keeps every pair of limbs at least 0.4 apart (up to 60 limbs)", () => {
+    for (const n of [2, 7, 20, 60]) {
+      const ls = lay({ limbs: Array.from({ length: n }, (_, i) => ({ id: "x" + i, name: "p" + i, rank: i, state: "Rotting" })) });
+      for (let a = 0; a < ls.length; a++) for (let b = a + 1; b < ls.length; b++) {
+        const d = Math.hypot(ls[a]!.x - ls[b]!.x, ls[a]!.y - ls[b]!.y, ls[a]!.z - ls[b]!.z);
+        expect(d, `n=${n} ${a}-${b}`).toBeGreaterThanOrEqual(0.4);
+      }
+    }
+  });
+  it("splits counts sanely", () => {
+    expect(regionCounts(0)).toEqual([0, 0, 0]);
+    expect(regionCounts(1)).toEqual([1, 0, 0]);
+    expect(regionCounts(7)).toEqual([1, 3, 2]);
+    for (let n = 1; n < 300; n++) { const [h, a, l] = regionCounts(n); expect(h + a + l).toBeLessThanOrEqual(n); }
+  });
+});
