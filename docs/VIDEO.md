@@ -5,8 +5,8 @@ Storyboard for the Devpost video. It follows [DEMO.md](DEMO.md) beat for beat, w
 ## Rules
 
 - Total length 3:00 or less. The shots below add up to exactly 3:00.
-- Narration is spoken by the human who made the project. No AI voice.
-- Audio: original or CC0 music only. No copyrighted tracks. Silence is fine.
+- Narration: the v2 cut uses a synthetic voice (Kokoro-82M TTS, Apache-2.0), chosen by the author and disclosed on the end card and in the Devpost text. A human take may replace it.
+- Audio: original or CC0 only. The v2 cut uses a generated low drone and a generated chime (ffmpeg noise and sine sources). No copyrighted tracks.
 - Whenever a graft is on screen, the dry-run label ("Dry run. Nothing was sent.") or "[SIMULATED CI]" is in frame.
 - CRYPT has no merge call. The one merge is a person clicking **Merge pull request**.
 - Say a cloud hook fired in a real Kiro Web session: trigger `Stop`, 2026-11-18T21:15:44Z, recorded in [docs/evidence/hook-runs.jsonl](evidence/hook-runs.jsonl). Do not say the repository's own hooks (`.kiro/hooks`) fired in a Kiro session. They were not observed. Their run on screen is a by-hand run of the same script ([DEMO.md](DEMO.md)).
@@ -67,3 +67,24 @@ To rebuild the site and view the same screens: `npm ci && npm run build:site && 
 Already recorded and public: shot 2 (crypt-demo PR #1, CI green, merged by the repository owner), shot 4 (live-raid runs 44369138370 graft and 44399933498 reraise with `HEALED 1`) and shot 5 (crypt-demo PR #2 with CI red, run 44375794960 with `GRAFT_REJECTED`). Capture them from the PR and Actions pages, so no token is needed.
 
 Still to record: shot 4 (the offline terminal part), shot 6 (audit log), shot 7 (SOC outputs, run from a clone with `npm run build:site` for the page views) and shot 8. Shot 6 needs no token. A new live take needs one: follow "Create the token" and "Reset between takes" in [DEMO.md](DEMO.md). If a live take fails, use the fallbacks in the DEMO.md shot list.
+
+
+## v2 cut (1:34), 2026-11-20
+
+Shots: cold open on the census numbers; judge mode on the 3D bench (zoomed on the plate and the CRT); the 3D creature healing under SIMULATED CI; the real PR #1 merged by a person and the next raid reporting HEALED (runs 44369138370, 44399933498); the real sabotage PR #2 rejected (run 44375794960); SEAL CRYPT; census plus two gallery creatures and the Graveyard; War Room (SIMULATED raid), SOC outputs, Autopsy; the `.kiro/` tree with the cloud hook line; end card with QR code to the live page.
+
+| Beat | Narration |
+|---|---|
+| open | Eleven thousand dependencies. Two hundred and forty-eight known vulnerabilities. Three that can really hurt you. Which ones? |
+| intro | This is CRYPT. It turns your dependencies into a creature. Every sick package is a limb. |
+| exhume | Across real projects, ninety-five percent of findings are noise. Only real threats grow a limb. |
+| examine | I examine the worst one. jQuery, three point four point one. Actively exploited, on the CISA list. |
+| graft | GRAFT writes the fix and opens one pull request. Here, it's a dry run. Nothing is sent. |
+| ci | CI checks the fix. On this page, CI is simulated, and clearly labelled. |
+| heal | The limb heals. Its eyes turn green. On GitHub, this really happened. A person merged the fix. The next raid reports it: healed. CRYPT never merges. |
+| sabotage | Now I sabotage a fix. CI goes red. A second agent reads the result, and rejects the graft. The creature remains. |
+| seal | And SEAL CRYPT is the kill switch. Every graft is refused. Every refusal is logged. |
+| scale | I ran it on twenty popular projects. Eleven thousand limbs. Two hundred and forty-eight findings. Three monsters. |
+| team | For the people who own the risk: a War Room with deadlines, alerts for the SIEM, and a one-page autopsy for the CISO. |
+| kiro | Built with Kiro. Specs first. Steering rules every session must follow. Agents that fix and agents that check. |
+| end | Paste your repo. Own it, without shame. Don't abandon your creature. |
