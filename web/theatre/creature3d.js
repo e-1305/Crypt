@@ -134,10 +134,18 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
   const placeLabels = () => {
     const w = holder.clientWidth || 300, h = holder.clientHeight || 260;
     body.updateMatrixWorld(true);
-    for (const { el, pos } of labels) {
+    // Labels sit on the outer side of their limb (left half: to the left) and never stack: same-side labels keep 14 px apart.
+    const placed = labels.map(({ el, pos }) => {
       const p = pos.clone().applyMatrix4(body.matrixWorld).project(camera);
-      el.style.left = `${((p.x + 1) / 2) * w + 10}px`;
-      el.style.top = `${((1 - p.y) / 2) * h - 7}px`;
+      return { el, x: ((p.x + 1) / 2) * w, y: ((1 - p.y) / 2) * h - 7, left: p.x < 0 };
+    }).sort((a, b) => a.y - b.y);
+    const lastY = { true: -Infinity, false: -Infinity };
+    for (const q of placed) {
+      const y = Math.max(q.y, lastY[q.left] + 14);
+      lastY[q.left] = y;
+      q.el.style.top = `${y}px`;
+      if (q.left) { q.el.style.left = ""; q.el.style.right = `${w - q.x + 10}px`; }
+      else { q.el.style.right = ""; q.el.style.left = `${q.x + 10}px`; }
     }
   };
 
