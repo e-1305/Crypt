@@ -21,3 +21,4 @@ $("roi-noise").value = String(ROI_DEFAULTS.noiseShare * 100);
 $("roi-minutes").value = String(ROI_DEFAULTS.triageMinutes);
 for (const id of ["roi-repos", "roi-findings", "roi-noise", "roi-minutes"]) $(id).addEventListener("input", render);
 render();
+$("roi-form").addEventListener("submit", (e) => e.preventDefault());

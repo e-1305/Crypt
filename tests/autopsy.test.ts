@@ -186,6 +186,12 @@ describe("autopsy page", () => {
     // The only URL is the link to the vendor security review.
     expect(html.replace(/https:\/\/github\.com\/e-1305\/Crypt\/blob\/main\/docs\/SECURITY-REVIEW\.md/g, "")).not.toMatch(/https?:\/\//i);
   });
+  it("carries a CSP meta that forbids script and network, before the style block", () => {
+    const csp = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:">`;
+    expect(html).toContain(csp);
+    expect(html.indexOf(csp)).toBeLessThan(html.indexOf("<style>"));
+  });
+
   it("matches the snapshot", () => {
     expect(html).toMatchSnapshot();
   });

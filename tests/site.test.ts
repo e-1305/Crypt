@@ -122,6 +122,14 @@ const manualOpts = (over: Partial<Parameters<typeof renderManual>[1]> = {}) => (
 const manualMd = readFileSync(join(ROOT, "docs", "USER_MANUAL.md"), "utf8");
 
 describe("renderManual", () => {
+  it("carries a CSP meta with no script source, before the stylesheet link", () => {
+    const html = renderManual("# T\n\nintro", manualOpts());
+    const m = html.match(/<meta http-equiv="Content-Security-Policy" content="([^"]+)">/);
+    expect(m).not.toBeNull();
+    expect(m![1]).toContain("default-src 'none'");
+    expect(m![1]).not.toContain("script-src");
+    expect(html.indexOf("Content-Security-Policy")).toBeLessThan(html.indexOf('<link rel="stylesheet"'));
+  });
   it("escapes HTML and renders tables, code fences, headings with ids and inline code", () => {
     const html = renderManual("# T\n\nintro <script>alert(1)</script> **b** `<x>`\n\n## 1. Two words\n\n| A | B |\n|---|---|\n| `x` | y |\n\n```bash\nnpm <ci>\n```\n\n- one\n- two\n", manualOpts());
     expect(html).not.toContain("<script>");
