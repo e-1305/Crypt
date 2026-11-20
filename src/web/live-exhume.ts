@@ -31,7 +31,13 @@ const OTHER_MANIFESTS = ["yarn.lock", "pnpm-lock.yaml", "requirements.txt", "poe
 export type FetchLike = (
   url: string,
   init?: { method?: string; body?: string; headers?: Record<string, string>; signal?: AbortSignal },
-) => Promise<{ ok: boolean; status: number; text(): Promise<string>; json(): Promise<unknown> }>;
+) => Promise<{
+  ok: boolean;
+  status: number;
+  headers?: { get(name: string): string | null };
+  text(): Promise<string>;
+  json(): Promise<unknown>;
+}>;
 
 export type LiveErrorCode =
   | "bad-url"
@@ -39,6 +45,7 @@ export type LiveErrorCode =
   | "no-npm-lockfile"
   | "unsupported-lockfile"
   | "malformed-lockfile"
+  | "too-large"
   | "rate-limited"
   | "network"
   | "osv-unavailable"
@@ -134,6 +141,13 @@ function withTimeout(f: FetchLike): FetchLike {
 const rateLimited = (what: string) =>
   new LiveExhumeError("rate-limited", `GitHub or OSV is rate limiting requests (${what}). Wait a few minutes, then try again.`);
 
+/** Largest raw file read, in characters. CODEOWNERS gets a smaller cap. */
+export const MAX_RAW_CHARS = 20 * 1024 * 1024;
+export const MAX_CODEOWNERS_CHARS = 256 * 1024;
+
+const tooLarge = (path: string, cap: number) =>
+  new LiveExhumeError("too-large", `${path} is larger than ${cap / 1024 / 1024 >= 1 ? `${cap / 1024 / 1024} MB` : `${cap / 1024} KB`}, so it was not read and nothing was drawn. Use the CLI instead: npx @e-1305/crypt exhume.`);
+
 /** One raw file. Null on 404. Throws a typed error on a rate limit or any other failure. */
 async function rawFile(f: FetchLike, owner: string, repo: string, ref: string, path: string): Promise<string | null> {
   const url = `${RAW_HOST}/${owner}/${repo}/${ref}/${path}`;
@@ -146,11 +160,17 @@ async function rawFile(f: FetchLike, owner: string, repo: string, ref: string, p
   if (res.status === 404) return null;
   if (res.status === 403 || res.status === 429) throw rateLimited(path);
   if (!res.ok) throw new LiveExhumeError("network", `raw.githubusercontent.com answered HTTP ${res.status} for ${path}. Try again in a minute.`);
+  const cap = CODEOWNERS_LOCATIONS.includes(path) ? MAX_CODEOWNERS_CHARS : MAX_RAW_CHARS;
+  const declared = Number(res.headers?.get("content-length") ?? "");
+  if (Number.isFinite(declared) && declared > cap) throw tooLarge(path, cap);
+  let text: string;
   try {
-    return await res.text();
+    text = await res.text();
   } catch (e) {
     throw new LiveExhumeError("network", `Could not read ${path} (${(e as Error).message}). Try again.`);
   }
+  if (text.length > cap) throw tooLarge(path, cap);
+  return text;
 }
 
 function cache(): ExhumeFs {
@@ -342,6 +362,9 @@ export async function liveExhume(input: string, opts: LiveExhumeOptions): Promis
     });
   } catch (e) {
     if (e instanceof LockfileError) {
+      if (/so it was not read$/.test(e.message)) {
+        throw new LiveExhumeError("too-large", `package-lock.json is over the size limit (${e.message.split(": ")[1]}), so nothing was drawn. Use the CLI instead: npx @e-1305/crypt exhume.`);
+      }
       const unsupported = /unsupported lockfileVersion/.test(e.message);
       throw new LiveExhumeError(
         unsupported ? "unsupported-lockfile" : "malformed-lockfile",

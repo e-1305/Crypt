@@ -11,7 +11,8 @@ import { renderPlate, plateSummary } from "../src/render/plate.js";
 import { nodeFs } from "../scripts/node-fs.js";
 import { feedSnapshotText } from "../scripts/build-site.js";
 import { parseFeedSnapshot, serializeFeedSnapshot, type FeedSnapshot } from "../src/web/feed-snapshot.js";
-import { LiveExhumeError, MAX_PAYLOADS, liveExhume, type FetchLike } from "../src/web/live-exhume.js";
+import { LockfileError, MAX_LOCKFILE_PACKAGES, parsePackageLock } from "../src/exhume/lockfile.js";
+import { LiveExhumeError, MAX_CODEOWNERS_CHARS, MAX_PAYLOADS, MAX_RAW_CHARS, liveExhume, type FetchLike } from "../src/web/live-exhume.js";
 
 const VULN = "fixtures/vulnerable-npm";
 const DEMO = "fixtures/crypt-demo";
@@ -353,4 +354,28 @@ describe("compiled web output", () => {
 
 it("CODEOWNERS locations are the CLI ones", () => {
   expect(CODEOWNERS_LOCATIONS).toEqual([".github/CODEOWNERS", "CODEOWNERS", "docs/CODEOWNERS"]);
+});
+
+describe("FIX-13 size caps", () => {
+  const big = (n: number) => "x".repeat(n);
+  it("rejects a lockfile above the character cap, with nothing drawn", async () => {
+    const { f } = serve(null, { [`https://raw.githubusercontent.com/e-1305/crypt-demo/HEAD/package-lock.json`]: { status: 200, body: big(MAX_RAW_CHARS + 1) } });
+    expect(await code(liveExhume(REPO_URL, opts(f)))).toBe("too-large");
+  });
+  it("rejects on Content-Length before reading the body", async () => {
+    let read = false;
+    const f: FetchLike = async () => ({ ok: true, status: 200, headers: { get: () => String(MAX_RAW_CHARS + 1) }, text: async () => ((read = true), ""), json: async () => null });
+    expect(await code(liveExhume(REPO_URL, opts(f)))).toBe("too-large");
+    expect(read).toBe(false);
+  });
+  it("rejects a lockfile with more than the package cap", () => {
+    const packages: Record<string, unknown> = { "": {} };
+    for (let i = 0; i <= MAX_LOCKFILE_PACKAGES; i++) packages[`node_modules/p${i}`] = { version: "1.0.0" };
+    expect(() => parsePackageLock(JSON.stringify({ lockfileVersion: 3, packages }), "package-lock.json")).toThrow(LockfileError);
+  });
+  it("keeps the repo readable when CODEOWNERS is too large, owners unknown", async () => {
+    const { f } = serve(DEMO, { [`https://raw.githubusercontent.com/e-1305/crypt-demo/HEAD/${CODEOWNERS_LOCATIONS[0]}`]: { status: 200, body: big(MAX_CODEOWNERS_CHARS + 1) } });
+    const r = await liveExhume(REPO_URL, opts(f));
+    expect(r.notes.join(" ")).toContain("CODEOWNERS could not be read");
+  });
 });
