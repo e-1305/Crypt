@@ -131,6 +131,41 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
   body.add(head, torso);
   let bones = null;
   let labels = []; // { el, pos: Vector3 }
+  // Heal burst: a limb that turns Healed (real or SIMULATED) flashes green, a light pulses and "HEALED" floats up.
+  const prevState = new Map();
+  let bursts = []; // { mesh, light, el, pos, t0 }
+  const burstGeo = new THREE.SphereGeometry(0.3, 18, 12);
+  const BURST_MS = 1400;
+  const startBurst = (l) => {
+    const m = new THREE.Mesh(burstGeo, new THREE.MeshBasicMaterial({ color: 0x33ff33, transparent: true, opacity: 0.9, depthWrite: false }));
+    m.position.set(l.x, l.y, l.z);
+    const light = new THREE.PointLight(0x33ff33, 8, 4);
+    light.position.copy(m.position);
+    body.add(m, light);
+    const el = document.createElement("span");
+    el.className = "creature3d-healed";
+    el.textContent = "HEALED";
+    el.style.cssText = "position:absolute;font:bold 13px monospace;color:#33ff33;text-shadow:0 0 6px #33ff33;pointer-events:none";
+    labelLayer.append(el);
+    bursts.push({ mesh: m, light, el, pos: new THREE.Vector3(l.x, l.y, l.z), t0: performance.now() });
+  };
+  const endBurst = (b) => { body.remove(b.mesh, b.light); b.mesh.material.dispose(); b.el.remove(); };
+  const stepBursts = (now) => {
+    if (bursts.length === 0) return;
+    const w = holder.clientWidth || 300, h = holder.clientHeight || 260;
+    bursts = bursts.filter((b) => {
+      const t = (now - b.t0) / BURST_MS;
+      if (t >= 1) { endBurst(b); return false; }
+      b.mesh.scale.setScalar(0.3 + 3.2 * t);
+      b.mesh.material.opacity = 0.9 * (1 - t);
+      b.light.intensity = 8 * (1 - t);
+      const p = b.pos.clone().applyMatrix4(body.matrixWorld).project(camera);
+      b.el.style.left = `${((p.x + 1) / 2) * w - 24}px`;
+      b.el.style.top = `${((1 - p.y) / 2) * h - 28 - 30 * t}px`;
+      b.el.style.opacity = String(t < 0.7 ? 1 : (1 - t) / 0.3);
+      return true;
+    });
+  };
   const placeLabels = () => {
     const w = holder.clientWidth || 300, h = holder.clientHeight || 260;
     body.updateMatrixWorld(true);
@@ -160,6 +195,9 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
     clear();
     const all = layoutCreature(globalThis.__cryptCreature);
     const { shown, more } = capLimbs(all, MAX_LIMBS);
+    const healedNow = shown.filter((l) => l.state === "Healed" && (prevState.get(l.id) === "Possessed" || prevState.get(l.id) === "Rotting"));
+    prevState.clear();
+    for (const l of all) prevState.set(l.id, l.state);
     bounds = layoutBounds(shown);
     frameCamera();
     const pts = [];
@@ -208,6 +246,7 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
       legendEl.append(item);
     }
     if (more > 0) legendEl.append(` ${moreLabel(more)} limbs`);
+    if (!reduced) for (const l of healedNow) startBurst(l);
     canvas.setAttribute("aria-label", `Creature 3D view: ${shown.length} limbs shown. ` + STATES.map((s) => `${counts[s]} ${s}`).join(", ") + (more > 0 ? `, ${moreLabel(more)}` : "") + ".");
     draw();
   };
@@ -237,6 +276,7 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
     spin += 0.004;
     body.rotation.y = Math.sin(spin) * 0.5;
     draw();
+    stepBursts(now);
   };
   window.addEventListener("resize", resize);
   resize();
@@ -258,6 +298,7 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
       window.removeEventListener("resize", resize);
       document.removeEventListener("visibilitychange", onVis);
       clear();
+      bursts.forEach(endBurst); bursts = []; burstGeo.dispose();
       Object.values(geos).forEach((g) => g.dispose());
       mat.dispose();
       bodyMat.dispose(); boneMat.dispose(); headGeo.dispose(); torsoGeo.dispose();
