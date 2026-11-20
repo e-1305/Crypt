@@ -2,7 +2,7 @@
 // Pure apart from the injected fetch: no node:, no clock (except opts.now), no git history. npm only (package-lock.json).
 // Fail-safe: any problem throws LiveExhumeError and returns no creature, so nothing is ever shown as Healthy by mistake.
 import { buildCreature, type Creature } from "../exhume/creature.js";
-import { LockfileError } from "../exhume/lockfile.js";
+import { LockfileError, LockfileTooLargeError, MAX_LOCKFILE_CHARS } from "../exhume/lockfile.js";
 import { osvLookup } from "../exhume/osv-client.js";
 import { groupLimbs, type PackageGroup } from "../exhume/group.js";
 import { CODEOWNERS_LOCATIONS, ownerLabel } from "../exhume/owners.js";
@@ -31,7 +31,7 @@ const OTHER_MANIFESTS = ["yarn.lock", "pnpm-lock.yaml", "requirements.txt", "poe
 export type FetchLike = (
   url: string,
   init?: { method?: string; body?: string; headers?: Record<string, string>; signal?: AbortSignal },
-) => Promise<{ ok: boolean; status: number; text(): Promise<string>; json(): Promise<unknown> }>;
+) => Promise<{ ok: boolean; status: number; headers?: { get(name: string): string | null }; text(): Promise<string>; json(): Promise<unknown> }>;
 
 export type LiveErrorCode =
   | "bad-url"
@@ -41,6 +41,7 @@ export type LiveErrorCode =
   | "malformed-lockfile"
   | "rate-limited"
   | "network"
+  | "too-large"
   | "osv-unavailable"
   | "feed-missing";
 
@@ -134,8 +135,13 @@ function withTimeout(f: FetchLike): FetchLike {
 const rateLimited = (what: string) =>
   new LiveExhumeError("rate-limited", `GitHub or OSV is rate limiting requests (${what}). Wait a few minutes, then try again.`);
 
+const MAX_CODEOWNERS_CHARS = 256 * 1024;
+
+const tooLarge = (path: string, cap: number) =>
+  new LiveExhumeError("too-large", `${path} is larger than the ${cap >= 1024 * 1024 ? `${cap / 1024 / 1024} MB` : `${cap / 1024} KB`} cap, so nothing was drawn. Nothing is marked healthy.`);
+
 /** One raw file. Null on 404. Throws a typed error on a rate limit or any other failure. */
-async function rawFile(f: FetchLike, owner: string, repo: string, ref: string, path: string): Promise<string | null> {
+async function rawFile(f: FetchLike, owner: string, repo: string, ref: string, path: string, cap: number): Promise<string | null> {
   const url = `${RAW_HOST}/${owner}/${repo}/${ref}/${path}`;
   let res;
   try {
@@ -146,11 +152,16 @@ async function rawFile(f: FetchLike, owner: string, repo: string, ref: string, p
   if (res.status === 404) return null;
   if (res.status === 403 || res.status === 429) throw rateLimited(path);
   if (!res.ok) throw new LiveExhumeError("network", `raw.githubusercontent.com answered HTTP ${res.status} for ${path}. Try again in a minute.`);
+  const declared = Number(res.headers?.get("content-length") ?? "");
+  if (Number.isFinite(declared) && declared > cap) throw tooLarge(path, cap);
+  let text: string;
   try {
-    return await res.text();
+    text = await res.text();
   } catch (e) {
     throw new LiveExhumeError("network", `Could not read ${path} (${(e as Error).message}). Try again.`);
   }
+  if (text.length > cap) throw tooLarge(path, cap);
+  return text;
 }
 
 function cache(): ExhumeFs {
@@ -287,7 +298,7 @@ export async function liveExhume(input: string, opts: LiveExhumeOptions): Promis
   let lock: string | null = null;
   let usedRef: string = REFS[0];
   for (const r of REFS) {
-    lock = await rawFile(f, owner, repo, r, "package-lock.json");
+    lock = await rawFile(f, owner, repo, r, "package-lock.json", MAX_LOCKFILE_CHARS);
     if (lock !== null) {
       usedRef = r;
       break;
@@ -295,7 +306,7 @@ export async function liveExhume(input: string, opts: LiveExhumeOptions): Promis
   }
   if (lock === null) {
     for (const other of OTHER_MANIFESTS) {
-      if ((await rawFile(f, owner, repo, REFS[0], other)) !== null) {
+      if ((await rawFile(f, owner, repo, REFS[0], other, MAX_LOCKFILE_CHARS)) !== null) {
         throw new LiveExhumeError("no-npm-lockfile", `${name} has ${other} but no package-lock.json at its root. ${NPM_ONLY_NOTE}`);
       }
     }
@@ -309,14 +320,18 @@ export async function liveExhume(input: string, opts: LiveExhumeOptions): Promis
   const notes: string[] = [];
   for (const loc of CODEOWNERS_LOCATIONS) {
     try {
-      const text = await rawFile(f, owner, repo, usedRef, loc);
+      const text = await rawFile(f, owner, repo, usedRef, loc, MAX_CODEOWNERS_CHARS);
       if (text !== null) {
         files.set(loc, text);
         break;
       }
     } catch (e) {
       if (e instanceof LiveExhumeError && e.code === "rate-limited") throw e;
-      notes.push("CODEOWNERS could not be read, so owners show as no owner yet.");
+      notes.push(
+        e instanceof LiveExhumeError && e.code === "too-large"
+          ? "CODEOWNERS is larger than the 256 KB cap, so it was not read and owners show as no owner yet."
+          : "CODEOWNERS could not be read, so owners show as no owner yet.",
+      );
       break;
     }
   }
@@ -341,6 +356,9 @@ export async function liveExhume(input: string, opts: LiveExhumeOptions): Promis
       name,
     });
   } catch (e) {
+    if (e instanceof LockfileTooLargeError) {
+      throw new LiveExhumeError("too-large", `package-lock.json is over the cap (20 MB or 20,000 packages), so nothing was drawn. Nothing is marked healthy.`);
+    }
     if (e instanceof LockfileError) {
       const unsupported = /unsupported lockfileVersion/.test(e.message);
       throw new LiveExhumeError(
