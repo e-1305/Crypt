@@ -27,6 +27,21 @@ export function buildTimeline() {
   ];
 }
 
+/** "2/6 caption": numbered so a judge always knows where the demo is. */
+export function numberedCaption(timeline, id) {
+  const i = timeline.findIndex((s) => s.id === id);
+  if (i < 0) return "";
+  return (i + 1) + "/" + timeline.length + " " + timeline[i].caption;
+}
+
+/** Focus mode (?focus=1): the element the spotlight sits on for each step. null = no spotlight. */
+export const FOCUS_TARGET = { title: null, exhume: "plate", examine: "input-form", graft: "input-form", ci: "sim-green", handover: "input-form" };
+
+/** Focus mode is on with ?focus=1 (also with ?record=1&focus=1). */
+export function focusEnabled(search) {
+  try { return new URLSearchParams(search).get("focus") === "1"; } catch { return false; }
+}
+
 /** The step running at `ms`, or null outside 0 to TOTAL_MS. */
 export function stepAt(timeline, ms) {
   if (!(ms >= 0)) return null;
@@ -168,6 +183,20 @@ function run(counts) {
   const plate = $("plate");
   const payloadPane = $("payload") ? $("payload").closest("section") : null;
   const sched = buildSchedule(counts);
+  const timeline = buildTimeline();
+  const focus = focusEnabled(location.search);
+  let spot = null;
+  function spotlight(id) {
+    spot?.classList.remove("judge-spot");
+    spot = null;
+    if (!focus) return;
+    const target = FOCUS_TARGET[id] ? $(FOCUS_TARGET[id]) : null;
+    if (!target || target.getClientRects().length === 0) return;
+    spot = id === "ci" ? (target.closest("section") ?? target) : target;
+    spot.classList.add("judge-spot");
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    spot.scrollIntoView({ block: "center", behavior: reduce ? "auto" : "smooth" });
+  }
 
   const stage = el("div", "judge-stage", "judge-stage");
   const title = el("div", "judge-title", "judge-title", TITLE_TEXT);
@@ -201,6 +230,7 @@ function run(counts) {
     document.removeEventListener("keydown", onInput, true);
     document.removeEventListener("click", onInput, true);
     if (cmd && !cmd.disabled && /^(EXAMINE|GRAFT) /.test(cmd.value)) cmd.value = "";
+    spotlight(null);
     stage.remove();
     counter.remove();
     if (skipBtn) skipBtn.hidden = true;
@@ -224,7 +254,7 @@ function run(counts) {
   function perform(a) {
     try {
       switch (a.kind) {
-        case "step": caption.textContent = a.caption; break;
+        case "step": caption.textContent = numberedCaption(timeline, a.id) || a.caption; spotlight(a.id); break;
         case "title-off": title.hidden = true; break;
         case "line": addLine(a.text); break;
         case "plate-draw":

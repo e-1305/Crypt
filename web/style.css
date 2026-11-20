@@ -493,3 +493,6 @@ body.theatre.drawer-open .top { position: absolute; width: 1px; height: 1px; mar
 #creature3d-legend { display: flex; flex-wrap: wrap; gap: .25rem .9rem; margin: .4rem 0 0; }
 .creature3d-key i { display: inline-block; width: .8em; height: .8em; margin-right: .35em; border-radius: 2px; }
 @media (max-width: 600px) { #creature3d-stage { height: 240px; } }
+/* Judge focus mode (?focus=1): one spotlight on the element the demo is acting on; everything else dims. */
+.judge-spot { position: relative; z-index: 6; outline: 2px solid var(--warn); outline-offset: 4px; box-shadow: 0 0 0 100vmax rgba(0, 0, 0, .55); transition: box-shadow .3s; }
+@media (prefers-reduced-motion: reduce) { .judge-spot { transition: none; } }
