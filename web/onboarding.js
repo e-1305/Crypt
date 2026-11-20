@@ -60,6 +60,13 @@ export function initOnboarding({ store, announce, now = () => Date.now() }) {
   $("tutorial-skip")?.addEventListener("click", () => { store.set("crypt.tutorial.skipped", true); announce("Getting started closed."); render(); });
   $("tutorial-hide")?.addEventListener("click", () => { store.set("crypt.tutorial.hidden", true); announce("Getting started is hidden on later visits."); render(); });
   $("cmd")?.addEventListener("input", () => { lastInput = now(); hint(); });
+  // Escape closes the strip like Skip (remembered). It never touches the command line's text.
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key !== "Escape" || !strip || strip.hidden) return;
+    store.set("crypt.tutorial.skipped", true);
+    announce("Getting started closed.");
+    render();
+  });
   timer = setInterval(hint, 1000);
   render();
 
