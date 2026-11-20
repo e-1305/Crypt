@@ -145,6 +145,38 @@ describe("fail-safe error paths", () => {
     expect(urls).toEqual([]);
   });
 
+  it("an oversized lockfile is too-large and draws nothing", async () => {
+    const big = { status: 200, body: "x".repeat(20 * 1024 * 1024 + 1) };
+    expect(await code(liveExhume(REPO_URL, opts(serve(null, { [LOCK]: big }).f)))).toBe("too-large");
+    const header: FetchLike = async (url) => ({
+      ok: true,
+      status: url === LOCK ? 200 : 404,
+      headers: { get: () => String(30 * 1024 * 1024) },
+      text: async () => "{}",
+      json: async () => ({}),
+    });
+    const err = await liveExhume(REPO_URL, opts(header)).catch((e) => e);
+    expect(err).toBeInstanceOf(LiveExhumeError);
+    expect(err.code).toBe("too-large");
+    expect(err.message).toContain("nothing was drawn");
+  });
+
+  it("a lockfile with more than 20000 packages is too-large", async () => {
+    const packages: Record<string, unknown> = { "": {} };
+    for (let i = 0; i < 20_001; i++) packages[`node_modules/p${i}`] = { version: "1.0.0" };
+    const body = JSON.stringify({ lockfileVersion: 3, packages });
+    expect(await code(liveExhume(REPO_URL, opts(serve(null, { [LOCK]: { status: 200, body } }).f)))).toBe("too-large");
+  });
+
+  it("an oversized CODEOWNERS is skipped with a note, not read", async () => {
+    const lock = readFileSync(`${DEMO}/package-lock.json`, "utf8");
+    const r = await liveExhume(REPO_URL, opts(serve(null, {
+      [LOCK]: { status: 200, body: lock },
+      "https://raw.githubusercontent.com/e-1305/crypt-demo/HEAD/CODEOWNERS": { status: 200, body: "x".repeat(256 * 1024 + 1) },
+    }).f));
+    expect(r.notes.join(" ")).toContain("CODEOWNERS could not be read");
+  });
+
   it("404 everywhere is not-found", async () => {
     expect(await code(liveExhume(REPO_URL, opts(serve(null).f)))).toBe("not-found");
   });

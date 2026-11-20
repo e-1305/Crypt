@@ -4,11 +4,18 @@ export class LockfileError extends Error {}
 
 const NM = "node_modules/";
 
+/** Size caps so one hostile or huge lockfile cannot exhaust memory or time. Past either cap nothing is parsed. */
+export const MAX_LOCKFILE_CHARS = 20 * 1024 * 1024;
+export const MAX_LOCKFILE_PACKAGES = 20_000;
+
 function isObj(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
 }
 
 export function parsePackageLock(text: string, manifest: string): Limb[] {
+  if (text.length > MAX_LOCKFILE_CHARS) {
+    throw new LockfileError(`${manifest}: larger than the 20 MB cap, so nothing was read`);
+  }
   let doc: unknown;
   try {
     doc = JSON.parse(text);
@@ -25,8 +32,12 @@ export function parsePackageLock(text: string, manifest: string): Limb[] {
   for (const f of ["dependencies", "devDependencies", "optionalDependencies", "peerDependencies"]) {
     if (isObj(root[f])) for (const n of Object.keys(root[f] as object)) direct.add(n);
   }
+  const entries = Object.entries(doc.packages);
+  if (entries.length > MAX_LOCKFILE_PACKAGES) {
+    throw new LockfileError(`${manifest}: more than the 20000 package cap, so nothing was read`);
+  }
   const byKey = new Map<string, Limb>();
-  for (const [path, raw] of Object.entries(doc.packages)) {
+  for (const [path, raw] of entries) {
     if (path === "" || !isObj(raw) || raw.link === true) continue;
     if (typeof raw.version !== "string" || raw.version === "") continue;
     const idx = path.lastIndexOf(NM);
