@@ -10,6 +10,7 @@ const MAX_FILE_BYTES = 1024 * 1024;
 export type Fetcher = (url: string, init?: { method?: string; body?: string; headers?: Record<string, string>; signal?: AbortSignal }) => Promise<{
   ok: boolean;
   status: number;
+  headers?: { get(name: string): string | null };
   json(): Promise<unknown>;
 }>;
 
@@ -25,6 +26,10 @@ export interface GithubClientOptions {
   /** Called before every request with method and path only. A throw stops the request. */
   audit?: (line: AuditLine) => void;
   timeoutMs?: number;
+  /** Test hook, defaults to a real timer. */
+  sleep?: (ms: number) => Promise<void>;
+  /** Rate limit retries, default 2. */
+  maxRetries?: number;
 }
 
 const refPath = (b: string) => b.split("/").map(encodeURIComponent).join("/");
@@ -36,12 +41,31 @@ export function redact(text: string, token: string): string {
   return text.split(`Bearer ${token}`).join("Bearer [redacted]").split(token).join("[redacted]");
 }
 
+const MAX_WAIT_MS = 60_000;
+
+/** Milliseconds to wait when the answer is a primary or secondary rate limit, else null. */
+function rateLimitWaitMs(res: { status: number; headers?: { get(name: string): string | null } }): number | null {
+  if (res.status !== 403 && res.status !== 429) return null;
+  const ra = res.headers?.get("retry-after");
+  const secs = ra === null || ra === undefined || ra === "" ? NaN : Number(ra);
+  if (Number.isFinite(secs) && secs >= 0) return Math.min(secs * 1000, MAX_WAIT_MS);
+  if (res.status === 429 || res.headers?.get("x-ratelimit-remaining") === "0") {
+    const reset = Number(res.headers?.get("x-ratelimit-reset"));
+    const ms = Number.isFinite(reset) && reset > 0 ? reset * 1000 - Date.now() : 1000;
+    return Math.min(Math.max(ms, 1000), MAX_WAIT_MS);
+  }
+  return null;
+}
+
 /** One audited, time limited, redacting request function shared by the GitHub adapters. */
-export function makeCall(o: { token: string; fetch?: Fetcher; audit?: (l: AuditLine) => void; timeoutMs?: number }) {
+export function makeCall(o: { token: string; fetch?: Fetcher; audit?: (l: AuditLine) => void; timeoutMs?: number; sleep?: (ms: number) => Promise<void>; maxRetries?: number }) {
+  const sleep = o.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
+  const maxRetries = o.maxRetries ?? 2;
   const f = o.fetch ?? (fetch as unknown as Fetcher);
   return async function call(method: string, path: string, body?: unknown): Promise<any> {
     const shown = path.split("?")[0]!;
     try {
+      for (let attempt = 0; ; attempt++) {
       o.audit?.({ method, path: shown });
       const res = await f(`${API}${path}`, {
         method,
@@ -54,8 +78,15 @@ export function makeCall(o: { token: string; fetch?: Fetcher; audit?: (l: AuditL
         body: body === undefined ? undefined : JSON.stringify(body),
         signal: AbortSignal.timeout(o.timeoutMs ?? 20_000),
       });
-      if (!res.ok) throw Object.assign(new Error(`GitHub ${method} ${shown} failed (${res.status})`), { status: res.status });
-      return await res.json();
+      if (res.ok) return await res.json();
+      // Rate limited requests were not processed, so a bounded wait and retry is safe. Never retry other failures.
+      const wait = rateLimitWaitMs(res);
+      if (wait !== null && attempt < maxRetries) {
+        await sleep(wait);
+        continue;
+      }
+      throw Object.assign(new Error(`GitHub ${method} ${shown} failed (${res.status})`), { status: res.status });
+      }
     } catch (e) {
       const err = e as { message?: unknown; status?: unknown };
       throw Object.assign(new Error(redact(String(err?.message ?? "request failed"), o.token)), {
