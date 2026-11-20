@@ -102,3 +102,42 @@ export function layoutCreature(creature: unknown): LayoutLimb[] {
   }
   return out;
 }
+
+export interface LayoutBounds {
+  minX: number; maxX: number; minY: number; maxY: number; minZ: number; maxZ: number;
+  width: number; height: number;
+  center: { x: number; y: number; z: number };
+  /** Half of the box diagonal: a sphere around the center that holds the whole creature. */
+  radius: number;
+}
+
+/** Body parts drawn by the view (head sphere, torso capsule). Part of the framed box even when there are no limbs. */
+export const BODY = { head: { y: 3.2, r: 0.4 }, torso: { y: 1.8, r: 0.45, half: 0.6 } } as const;
+const LIMB_PAD = 0.3; // the largest limb shape is about 0.5 tall, 0.3 wide
+
+/** Where a limb's bone attaches to the body: head, torso, shoulder (arms) or hip (legs). */
+export function anchorOf(l: Pick<LayoutLimb, "region" | "x">): { x: number; y: number; z: number } {
+  const side = l.x < 0 ? -1 : 1;
+  if (l.region === "head") return { x: 0, y: BODY.head.y, z: 0 };
+  if (l.region === "torso") return { x: 0, y: BODY.torso.y, z: 0 };
+  if (l.region === "arms") return { x: side * 0.4, y: BODY.torso.y + BODY.torso.half, z: 0 };
+  return { x: side * 0.25, y: BODY.torso.y - BODY.torso.half, z: 0 };
+}
+
+/** Box around the body and all limbs, padded by shape size. Pure. Always non-degenerate (the body alone has width and height). */
+export function layoutBounds(limbs: readonly LayoutLimb[]): LayoutBounds {
+  let minX: number = -BODY.torso.r, maxX: number = BODY.torso.r;
+  let minY = BODY.torso.y - BODY.torso.half - BODY.torso.r, maxY = BODY.head.y + BODY.head.r;
+  let minZ: number = -BODY.torso.r, maxZ: number = BODY.torso.r;
+  for (const l of limbs) {
+    minX = Math.min(minX, l.x - LIMB_PAD); maxX = Math.max(maxX, l.x + LIMB_PAD);
+    minY = Math.min(minY, l.y - LIMB_PAD); maxY = Math.max(maxY, l.y + LIMB_PAD);
+    minZ = Math.min(minZ, l.z - LIMB_PAD); maxZ = Math.max(maxZ, l.z + LIMB_PAD);
+  }
+  const width = maxX - minX, height = maxY - minY, depth = maxZ - minZ;
+  return {
+    minX, maxX, minY, maxY, minZ, maxZ, width, height,
+    center: { x: (minX + maxX) / 2, y: (minY + maxY) / 2, z: (minZ + maxZ) / 2 },
+    radius: Math.sqrt(width * width + height * height + depth * depth) / 2,
+  };
+}
