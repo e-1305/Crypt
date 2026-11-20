@@ -250,6 +250,8 @@ function drawPlate(real, fresh, convulse) {
   lastCreature = real;
   sound.setPossessed(countPossessed(heal.overlay(real.limbs)));
   const creature = { ...real, limbs: heal.overlay(real.limbs) };
+  globalThis.__cryptCreature = creature; // read by the Creature 3D view (web/theatre/creature3d.js)
+  document.dispatchEvent(new CustomEvent("crypt:plate"));
   const lines = layoutPlate(creature, { repo: creature.repo });
   plateEl.textContent = "";
   lines.forEach((line, i) => {

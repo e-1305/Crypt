@@ -13,7 +13,7 @@ export const BUDGETS = {
   fontBytesTotal: 47400, // measured 43076 B
 };
 
-const LAZY = [/(^|\/)vendor\/three[^/]*\.js$/, /(^|\/)theatre\/stage\.js$/];
+const LAZY = [/(^|\/)vendor\/three[^/]*\.js$/, /(^|\/)theatre\/stage\.js$/, /(^|\/)theatre\/creature3d\.js$/];
 
 /**
  * Pure check. `files` is [{ path, bytes }] for the first-load JS set, `fonts` is [{ path, bytes }].
