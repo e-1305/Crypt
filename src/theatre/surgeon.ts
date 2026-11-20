@@ -42,7 +42,8 @@ export type Step = "scan" | "examine" | "graft" | "ci-green" | "ci-red" | "rerai
 
 /** One plain sentence per step. States what happens, labels DRY RUN and SIMULATED, never claims a human step is done. */
 export function narratorLine(step: Step, subject = ""): string {
-  const s = cleanLabel(subject, 40);
+  // A subject must not add sentences: drop dots that end a word, so the line stays within two sentences.
+  const s = cleanLabel(subject, 40).replace(/\.+(?=\s|$)/g, "").replace(/\s+/g, " ").trim();
   switch (step) {
     case "scan": return "The jar is on the table and the creature is being examined.";
     case "examine": return s ? "The scalpel examines " + s + "." : "The scalpel examines the limb.";

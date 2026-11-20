@@ -83,3 +83,9 @@ describe("jars", () => {
     );
   });
 });
+
+describe("narrator subject with sentence breaks", () => {
+  it("never adds sentences", () => {
+    for (const step of STEPS) expect(narratorLine(step, "a. b. c. d").split(/(?<=\.)\s/).length).toBeLessThanOrEqual(2);
+  });
+});
