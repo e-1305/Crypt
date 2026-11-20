@@ -34,7 +34,7 @@ The page is a rehearsal and sends nothing. Only the CLI (`crypt raid <url> --liv
 Three pillars, paraphrased. Mary Shelley, *Frankenstein* (1818): every rotting limb gets a named surgeon from CODEOWNERS. Nadya Bartol, TED@BCG (2021): rot belongs to the package, never to a person. Saltzer and Schroeder, "The Protection of Information in Computer Systems" (1975): safe defaults and least privilege, so the Necromancer writes, the Inquisitor verifies, a human merges, at most 5 PRs per raid, one dependency each.
 
 ## How we built it with Kiro
-Specs first. Counts: <!-- stats:start -->31 specs in `.kiro/specs/`, 6 steering files, 7 hooks, 3 custom agents and 1300 tests (passed plus skipped, `npx vitest run`; counted by `npm run kiro:stats`)<!-- stats:end -->. The agents are the Necromancer and the Inquisitor, in `.kiro/agents/`; hooks are in `.kiro/hooks/` and steering in `.kiro/steering/`. A bridge ([bridge-v2](../.kiro/specs/bridge-v2/requirements.md)) watches the game transcript for `[[CRYPT ...]]` markers and drives the agents. See [KIRO.md](KIRO.md). Limits: no hook has been seen to fire inside a Kiro session (the hooks now log to `docs/evidence/hook-runs.jsonl`; in Kiro Web, saving matching files wrote no line, so every line there is a hand run marked `manual`), and we did not measure time saved.
+Specs first. Counts: <!-- stats:start -->31 specs in `.kiro/specs/`, 6 steering files, 7 hooks, 3 custom agents and 1311 tests (passed plus skipped, `npx vitest run`; counted by `npm run kiro:stats`)<!-- stats:end -->. The agents are the Necromancer and the Inquisitor, in `.kiro/agents/`; hooks are in `.kiro/hooks/` and steering in `.kiro/steering/`. A bridge ([bridge-v2](../.kiro/specs/bridge-v2/requirements.md)) watches the game transcript for `[[CRYPT ...]]` markers and drives the agents. See [KIRO.md](KIRO.md). Limits: no hook has been seen to fire inside a Kiro session (the hooks now log to `docs/evidence/hook-runs.jsonl`; in Kiro Web, saving matching files wrote no line, so every line there is a hand run marked `manual`), and we did not measure time saved.
 
 ## Challenges
 - A game must not be able to trick the watcher. Only markers the story prints count; typed text never does.
@@ -43,7 +43,7 @@ Specs first. Counts: <!-- stats:start -->31 specs in `.kiro/specs/`, 6 steering 
 
 ## Accomplishments
 - Census ([docs/census/RESULTS.md](census/RESULTS.md), scan 2026-11-17, rerun with `npm run census`): across 20 popular open-source projects, the filter cut 248 findings to 3 monsters. 95.2% were exorcised as noise, 0 were possessed, 84.7% of 11,244 limbs have no CODEOWNERS owner. Limits: lockfile only, no reachability, 20 popular projects, not a random sample.
-- Tests: <!-- stats:start -->31 specs in `.kiro/specs/`, 6 steering files, 7 hooks, 3 custom agents and 1300 tests (passed plus skipped, `npx vitest run`; counted by `npm run kiro:stats`)<!-- stats:end -->.
+- Tests: <!-- stats:start -->31 specs in `.kiro/specs/`, 6 steering files, 7 hooks, 3 custom agents and 1311 tests (passed plus skipped, `npx vitest run`; counted by `npm run kiro:stats`)<!-- stats:end -->.
 
 ## What we learned
 Putting safety rules in steering files and tests made them cheap to keep. A judge persona and a product manager persona, run in a loop over the live page ([PLAYTEST_LOG.md](PLAYTEST_LOG.md)), found problems that unit tests did not (the prompt sat 1500 px down the page).
