@@ -2,6 +2,7 @@
 // and open a PR. It has no method that lands a PR, and the interface it implements has none either.
 // Every request is announced to the audit hook first; if the hook throws, nothing is sent.
 // The token is redacted from every error this module throws.
+import { isRepoSlug } from "../src/cli/url.js";
 import type { GithubClient } from "../src/github/client.js";
 
 const API = "https://api.github.com";
@@ -111,7 +112,7 @@ export function githubClient(repo: string, token: string, f?: Fetcher): GithubCl
 export function githubClient(a: GithubClientOptions | string, token?: string, f?: Fetcher): GithubClient {
   const o: GithubClientOptions = typeof a === "string" ? { repo: a, token: token ?? "", fetch: f } : a;
   const { repo } = o;
-  if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo)) throw new Error("--repo must look like owner/name");
+  if (!isRepoSlug(repo)) throw new Error("--repo must look like owner/name");
   if (!o.token) throw new Error("GITHUB_TOKEN is not set");
   const raw = makeCall(o);
   const call = (method: string, path: string, body?: unknown) => raw(method, `/repos/${repo}${path}`, body);
