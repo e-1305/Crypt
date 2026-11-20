@@ -9,6 +9,16 @@ Add this step to a workflow, after `actions/checkout`:
     mode: report   # report only by default; never grafts unless mode: graft and a token is given
 ```
 
+## Pin the action by SHA
+
+A tag or branch can move. To pin `e-1305/Crypt` to an exact commit, use the full 40-character commit SHA and keep the version in a comment:
+
+```yaml
+- uses: e-1305/Crypt@<40-character-commit-sha> # vX.Y.Z
+```
+
+Dependabot (`package-ecosystem: github-actions`) can keep that SHA current in your repository. This repository pins every action it uses by SHA and updates the pins with Dependabot. See [Secure use of GitHub Actions](https://docs.github.com/en/actions/reference/security/secure-use).
+
 ## What report mode does
 
 - Needs no token beyond the default read-only `GITHUB_TOKEN`. Use `permissions: contents: read`.
