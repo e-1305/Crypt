@@ -23,3 +23,12 @@ export function parseGithubUrl(text: string): GithubRepo | null {
 export function looksRemote(text: string): boolean {
   return /^[A-Za-z][A-Za-z0-9+.-]*:\/\//.test(text) || /^[^/\s]+@[^/\s]+:/.test(text);
 }
+
+const SLUG = /^([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)$/;
+
+/** True only for owner/name: allowed characters, no dots-only segment, no leading "-". */
+export function isRepoSlug(text: string): boolean {
+  const m = SLUG.exec(text);
+  if (!m) return false;
+  return [m[1]!, m[2]!].every((p) => !/^\.+$/.test(p) && !p.startsWith("-"));
+}

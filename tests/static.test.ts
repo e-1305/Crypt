@@ -77,3 +77,35 @@ describe("no merge endpoint or command anywhere (failsafe 2)", () => {
     expect(mergeOffenses('fetch("/repos/o/r/pulls/1/merged_at/merge")')).not.toEqual([]);
   });
 });
+
+// Every fetch( call in scripts/ must pass a signal so a stalled server cannot hang a run.
+// Allow list: files whose fetch is only a reference handed to a wrapper that sets the signal per request.
+const FETCH_ALLOW = new Set<string>(["scripts/github-client.ts"]);
+
+/** Returns the line numbers of fetch( calls whose argument list has no signal. */
+export function fetchWithoutSignal(text: string): number[] {
+  const bad: number[] = [];
+  for (const m of text.matchAll(/(?<![\w.])fetch\s*\(/g)) {
+    let depth = 0;
+    let end = m.index! + m[0].length - 1;
+    for (; end < text.length; end++) {
+      if (text[end] === "(") depth++;
+      else if (text[end] === ")" && --depth === 0) break;
+    }
+    if (!/\bsignal\b/.test(text.slice(m.index!, end))) bad.push(text.slice(0, m.index).split("\n").length);
+  }
+  return bad;
+}
+
+describe("every script fetch has a timeout signal", () => {
+  it("scripts/*.ts pass a signal to each fetch(", () => {
+    const offenders = readdirSync("scripts")
+      .filter((f) => f.endsWith(".ts") && !FETCH_ALLOW.has(`scripts/${f}`))
+      .flatMap((f) => fetchWithoutSignal(readFileSync(join("scripts", f), "utf8")).map((l) => `scripts/${f}:${l}`));
+    expect(offenders).toEqual([]);
+  });
+  it("the check fails on a planted offender and passes with a signal", () => {
+    expect(fetchWithoutSignal("await fetch(url);")).toEqual([1]);
+    expect(fetchWithoutSignal("await fetch(url, { signal: AbortSignal.timeout(1) });")).toEqual([]);
+  });
+});

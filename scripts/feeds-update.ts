@@ -7,7 +7,13 @@ const EPSS_URL = "https://epss.empiricalsecurity.com/epss_scores-current.csv.gz"
 const dir = process.argv[2] ?? "data/feeds";
 
 async function get(url: string): Promise<Buffer> {
-  const res = await fetch(url);
+  let res: Response;
+  try {
+    res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+  } catch (e) {
+    const timedOut = (e as Error).name === "TimeoutError";
+    throw new Error(`${url}: ${timedOut ? "timed out after 30s" : (e as Error).message}`);
+  }
   if (!res.ok) throw new Error(`${url}: HTTP ${res.status}`);
   return Buffer.from(await res.arrayBuffer());
 }

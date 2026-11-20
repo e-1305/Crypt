@@ -27,6 +27,12 @@ describe("github adapter basics", () => {
     expect(() => githubClient("nope", TOKEN)).toThrow(/owner\/name/);
     expect(() => githubClient(REPO, "")).toThrow(/GITHUB_TOKEN/);
   });
+  it("refuses dots-only and leading-dash segments, still accepts a dot in a name", () => {
+    for (const bad of ["../x", "x/..", "./x", "x/.", "-a/b", "a/-b", "a/b/c", "a/"]) {
+      expect(() => githubClient(bad, TOKEN), bad).toThrow(/owner\/name/);
+    }
+    expect(() => githubClient("a/b.c", TOKEN)).not.toThrow();
+  });
   it("reads check runs by commit SHA", async () => {
     const w = makeWorld({ checkRuns: [{ name: "test", status: "completed", conclusion: "success" }] });
     const runs = await githubClient(REPO, TOKEN, w.github).getCheckRuns("a".repeat(40));
