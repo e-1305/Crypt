@@ -8,14 +8,10 @@ const WORKFLOWS = join(ROOT, ".github", "workflows");
 // FIX-6 (docs/SECURITY-AUDIT.md item 7): every `uses:` must name a 40 hex commit SHA.
 // Local `./` actions are excepted.
 //
-// FIX-6 is scoped to ci.yml only. These files still carry unpinned references and are
+// FIX-6 pinned ci.yml and FIX-7 pinned release, stats and kiro-hooks. These files still carry unpinned references and are
 // fixed by follow-up changes. Remove an entry when its file is pinned (the last test
 // below fails if you forget). Never add ci.yml here.
-const KNOWN_UNPINNED = new Set([
-  ".github/workflows/kiro-hooks.yml",
-  ".github/workflows/release.yml",
-  ".github/workflows/stats.yml",
-]);
+const KNOWN_UNPINNED = new Set<string>([]);
 
 const SHA = /^[0-9a-f]{40}$/;
 
@@ -92,5 +88,27 @@ describe("workflow action pins (FIX-6)", () => {
     const hardened = text.match(/persist-credentials: false/g)?.length ?? 0;
     expect(checkouts).toBeGreaterThan(0);
     expect(hardened).toBe(checkouts);
+  });
+});
+
+describe("narrow write permissions (FIX-7)", () => {
+  const top = (text: string) => /^permissions:\n((?:  .*\n)+)/m.exec(text)?.[1] ?? "";
+  for (const [name, writes] of [
+    ["release.yml", ["id-token: write"]],
+    ["stats.yml", ["contents: write"]],
+    ["kiro-hooks.yml", ["contents: write", "pull-requests: write"]],
+  ] as const) {
+    it(`${name}: workflow default is contents: read, writes only on the job`, () => {
+      const text = readFileSync(join(WORKFLOWS, name), "utf8");
+      expect(top(text).trim()).toBe("contents: read");
+      const jobs = text.slice(text.indexOf("\njobs:"));
+      for (const w of writes) expect(jobs).toContain(`      ${w}`);
+    });
+  }
+
+  it("stats.yml runs only on push to main or manual dispatch", () => {
+    const text = readFileSync(join(WORKFLOWS, "stats.yml"), "utf8");
+    expect(text).toMatch(/push:\n\s+branches: \[main\]/);
+    expect(text).not.toContain("pull_request");
   });
 });
