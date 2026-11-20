@@ -1,6 +1,11 @@
 import { type Limb, UNKNOWN_VERSION, compareLimbs, limbKey } from "./types.js";
 
 export class LockfileError extends Error {}
+/** The lockfile is over a size cap. Nothing was parsed, so nothing is drawn. */
+export class LockfileTooLargeError extends LockfileError {}
+
+export const MAX_LOCKFILE_CHARS = 20 * 1024 * 1024;
+export const MAX_LOCKFILE_PACKAGES = 20_000;
 
 const NM = "node_modules/";
 
@@ -9,6 +14,9 @@ function isObj(v: unknown): v is Record<string, unknown> {
 }
 
 export function parsePackageLock(text: string, manifest: string): Limb[] {
+  if (text.length > MAX_LOCKFILE_CHARS) {
+    throw new LockfileTooLargeError(`${manifest}: larger than the ${MAX_LOCKFILE_CHARS / 1024 / 1024} MB cap, so nothing was parsed`);
+  }
   let doc: unknown;
   try {
     doc = JSON.parse(text);
@@ -25,8 +33,12 @@ export function parsePackageLock(text: string, manifest: string): Limb[] {
   for (const f of ["dependencies", "devDependencies", "optionalDependencies", "peerDependencies"]) {
     if (isObj(root[f])) for (const n of Object.keys(root[f] as object)) direct.add(n);
   }
+  const entries = Object.entries(doc.packages);
+  if (entries.length > MAX_LOCKFILE_PACKAGES) {
+    throw new LockfileTooLargeError(`${manifest}: more than the ${MAX_LOCKFILE_PACKAGES} package cap, so nothing was parsed`);
+  }
   const byKey = new Map<string, Limb>();
-  for (const [path, raw] of Object.entries(doc.packages)) {
+  for (const [path, raw] of entries) {
     if (path === "" || !isObj(raw) || raw.link === true) continue;
     if (typeof raw.version !== "string" || raw.version === "") continue;
     const idx = path.lastIndexOf(NM);

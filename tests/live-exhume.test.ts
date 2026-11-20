@@ -354,3 +354,36 @@ describe("compiled web output", () => {
 it("CODEOWNERS locations are the CLI ones", () => {
   expect(CODEOWNERS_LOCATIONS).toEqual([".github/CODEOWNERS", "CODEOWNERS", "docs/CODEOWNERS"]);
 });
+
+describe("size caps", () => {
+  const LOCK = "https://raw.githubusercontent.com/e-1305/crypt-demo/HEAD/package-lock.json";
+  const OWNERS = "https://raw.githubusercontent.com/e-1305/crypt-demo/HEAD/.github/CODEOWNERS";
+  const withHeaders = (f: FetchLike, len: string): FetchLike => async (url, init) => ({ ...(await f(url, init)), headers: { get: () => len } });
+
+  it("rejects a lockfile over 20 MB of text and says nothing was drawn", async () => {
+    const { f } = serve(DEMO, { [LOCK]: { status: 200, body: " ".repeat(20 * 1024 * 1024 + 1) } });
+    const err = await liveExhume(REPO_URL, opts(f)).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(LiveExhumeError);
+    expect((err as LiveExhumeError).code).toBe("too-large");
+    expect((err as LiveExhumeError).message).toMatch(/20 MB cap, so nothing was drawn/);
+  });
+
+  it("rejects on a Content-Length over the cap", async () => {
+    const { f } = serve(DEMO);
+    expect(await code(liveExhume(REPO_URL, opts(withHeaders(f, String(20 * 1024 * 1024 + 1)))))).toBe("too-large");
+  });
+
+  it("rejects a lockfile with more than 20,000 packages", async () => {
+    const packages: Record<string, unknown> = { "": {} };
+    for (let i = 0; i <= 20_000; i++) packages[`node_modules/p${i}`] = { version: "1.0.0" };
+    const body = JSON.stringify({ lockfileVersion: 3, packages });
+    const { f } = serve(DEMO, { [LOCK]: { status: 200, body } });
+    expect(await code(liveExhume(REPO_URL, opts(f)))).toBe("too-large");
+  });
+
+  it("skips an oversize CODEOWNERS with a note and still draws the creature", async () => {
+    const { f } = serve(DEMO, { [OWNERS]: { status: 200, body: "x".repeat(256 * 1024 + 1) } });
+    const r = await liveExhume(REPO_URL, opts(f));
+    expect(r.notes.join(" ")).toMatch(/256 KB cap/);
+  });
+});
