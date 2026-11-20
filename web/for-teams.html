@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CRYPT for teams: a two-week read-only pilot</title>
 <meta name="description" content="Who CRYPT is for and how to start: the problem with census numbers, the process, a two-week read-only pilot, an ROI estimate you can edit, and a pricing hypothesis.">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="for-teams.css">
 </head>
@@ -57,7 +58,7 @@
     <h2 id="h-roi">Time saved <span class="ft-tag" id="roi-label">ESTIMATE</span></h2>
     <p id="roi-formula" class="ft-formula">hours saved per month = repos &times; findings per repo per month &times; noise share &times; triage minutes &divide; 60</p>
     <p>An estimate, not a measurement. Change the inputs to match your team. Everything is computed in your browser and nothing is sent.</p>
-    <form id="roi-form" class="ft-form" autocomplete="off" onsubmit="return false">
+    <form id="roi-form" class="ft-form" autocomplete="off">
       <label for="roi-repos">Repositories</label>
       <input id="roi-repos" type="number" min="0" step="1" value="20" inputmode="numeric">
       <label for="roi-findings">Findings per repo per month</label>

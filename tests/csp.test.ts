@@ -16,6 +16,10 @@ const PAGES: Page[] = [
   { file: "web/index.html", evalAllowed: true, connect: ["'self'", "https://raw.githubusercontent.com", "https://api.osv.dev"] },
   // The War Room does not load ZVM. connect-src is one host so a pasted token can only go to GitHub.
   { file: "web/war-room/war-room.html", evalAllowed: false, connect: ["'self'", "https://api.github.com"] },
+  // FIX-4. Graveyard runs a live exhume (web/graveyard/graveyard.js), so it needs the two data hosts.
+  { file: "web/graveyard/graveyard.html", evalAllowed: false, connect: ["'self'", "https://raw.githubusercontent.com", "https://api.osv.dev"] },
+  // The For-teams page makes no request at all.
+  { file: "web/for-teams.html", evalAllowed: false, connect: ["'self'"] },
 ];
 
 function policyOf(html: string): Map<string, string[]> {
@@ -61,5 +65,12 @@ describe.each(PAGES)("CSP meta in $file", ({ file, evalAllowed, connect }) => {
     expect(html).not.toMatch(/\son[a-z]+\s*=/i);
     expect(html).not.toMatch(/<style\b/i);
     expect(html).not.toMatch(/\sstyle\s*=/i);
+  });
+});
+
+describe("For-teams form without an inline handler", () => {
+  it("stops the native submit from a listener in for-teams.js", () => {
+    expect(readFileSync("web/for-teams.html", "utf8")).not.toMatch(/onsubmit/i);
+    expect(readFileSync("web/for-teams.js", "utf8")).toMatch(/\$\("roi-form"\)\.addEventListener\("submit",[^\n]*preventDefault\(\)/);
   });
 });

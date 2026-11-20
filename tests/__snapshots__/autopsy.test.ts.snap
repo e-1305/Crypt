@@ -7,6 +7,7 @@ exports[`autopsy page > matches the snapshot 1`] = `
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CRYPT Autopsy Report (sample) - e-1305/crypt-demo</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:">
 <style>
 :root{--fg:#33ff33;--dim:#22b022;--bg:#050805;--warn:#ffb000;--hot:#ff6a3d;--line:#22b022;--text:#c9f7c9}
 *{box-sizing:border-box}
