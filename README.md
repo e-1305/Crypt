@@ -1,10 +1,21 @@
-[![CI](https://github.com/e-1305/Crypt/actions/workflows/ci.yml/badge.svg)](https://github.com/e-1305/Crypt/actions/workflows/ci.yml) [![npm downloads](https://img.shields.io/npm/dw/@e-1305/crypt)](https://www.npmjs.com/package/@e-1305/crypt)
+# CRYPT
+### Don't abandon your creature.
 
+248 findings across 20 popular repos, 95.2% were noise and 84.7% of dependencies had no owner ([census](docs/census/RESULTS.md)).
+
+CRYPT finds the few vulnerable dependencies that matter, names an owner from CODEOWNERS and opens one fix PR that a human merges.
 
 ![CRYPT in judge mode: the creature, a graft, the rehearsal CI, the plate](docs/img/crypt-demo.gif)
 
-# CRYPT
-### Don't abandon your creature.
+**Try it:** [Live demo](https://e-1305.github.io/Crypt/) · `npx @e-1305/crypt raid <repo>`
+
+**Proof:** [PR #1 on crypt-demo, lodash 4.17.15 to 4.18.1, CI green, merged by a human](https://github.com/e-1305/crypt-demo/pull/1).
+
+**Built with Kiro:** [docs/KIRO.md](docs/KIRO.md)
+
+[![CI](https://github.com/e-1305/Crypt/actions/workflows/ci.yml/badge.svg)](https://github.com/e-1305/Crypt/actions/workflows/ci.yml) [![npm downloads](https://img.shields.io/npm/dw/@e-1305/crypt)](https://www.npmjs.com/package/@e-1305/crypt)
+
+## Details
 
 **In plain words:** CRYPT finds security holes that matter in your code's building blocks, opens one fix, and a person approves it.
 
