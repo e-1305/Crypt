@@ -1,18 +1,21 @@
-[![CI](https://github.com/e-1305/Crypt/actions/workflows/ci.yml/badge.svg)](https://github.com/e-1305/Crypt/actions/workflows/ci.yml) [![npm downloads](https://img.shields.io/npm/dw/@e-1305/crypt)](https://www.npmjs.com/package/@e-1305/crypt)
-
-
-![CRYPT in judge mode: the creature, a graft, the rehearsal CI, the plate](docs/img/crypt-demo.gif)
-
 # CRYPT
 ### Don't abandon your creature.
 
-**In plain words:** CRYPT finds security holes that matter in your code's building blocks, opens one fix, and a person approves it.
+**The problem:** dependency scanners drown teams in noise. Across 20 popular repos, 95.2% of 248 findings were noise and 84.7% of dependencies had no owner ([census](docs/census/RESULTS.md)).
 
-**The problem:** 248 findings across 20 popular repos, 95.2% were noise, and 84.7% of dependencies had no owner ([census](docs/census/RESULTS.md)).
+**CRYPT** keeps the few that matter (actively exploited first, CISA KEV, then EPSS), names the owning team from CODEOWNERS, opens one fix PR, and a person merges it. Your dependency tree becomes a creature you heal.
 
-**CRYPT:** finds the few vulnerable dependencies that matter, names an owner from CODEOWNERS, opens one fix PR, and a human merges.
+![CRYPT in judge mode: the creature, a graft, the rehearsal CI, the plate](docs/img/crypt-demo.gif)
+
+**Try it:** [live demo, paste your repo](https://e-1305.github.io/Crypt/) · `npx @e-1305/crypt raid <path-or-github-url>` (dry run by default)
 
 **Proof:** [lodash 4.17.15 to 4.18.1, CI green, merged by the repo owner with GitHub's Merge button](https://github.com/e-1305/crypt-demo/pull/1) (CRYPT has no merge call). One demo repo, a lockfile-level finding, not proof the vulnerable code is reachable.
+
+**Built with Kiro:** specs, steering, hooks, custom agents, MCP and the Kiro Web agent, each with evidence: [docs/KIRO.md](docs/KIRO.md).
+
+[![CI](https://github.com/e-1305/Crypt/actions/workflows/ci.yml/badge.svg)](https://github.com/e-1305/Crypt/actions/workflows/ci.yml) [![npm downloads](https://img.shields.io/npm/dw/@e-1305/crypt)](https://www.npmjs.com/package/@e-1305/crypt)
+
+---
 
 **Zork that patches your code, and can never break it.**
 
