@@ -127,3 +127,14 @@ describe("crypt init writes a pinned workflow", async () => {
   });
 });
 
+
+describe("crypt init stays in step with our own CI pins", async () => {
+  const { CHECKOUT_PIN } = await import("../src/init/plan.js");
+  const { readFileSync } = await import("node:fs");
+  it("uses the same actions/checkout SHA as .github/workflows/ci.yml (Dependabot bumps ci.yml; this test flags drift)", () => {
+    const ci = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
+    const pin = /actions\/checkout@([0-9a-f]{40}) # (v[\d.]+)/.exec(ci);
+    expect(pin).not.toBeNull();
+    expect(CHECKOUT_PIN).toBe(`actions/checkout@${pin![1]} # ${pin![2]}`);
+  });
+});
