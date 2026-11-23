@@ -496,3 +496,10 @@ body.theatre.drawer-open .top { position: absolute; width: 1px; height: 1px; mar
 /* Judge focus mode (?focus=1): one spotlight on the element the demo is acting on; everything else dims. */
 .judge-spot { position: relative; z-index: 6; outline: 2px solid var(--warn); outline-offset: 4px; box-shadow: 0 0 0 100vmax rgba(0, 0, 0, .55); transition: box-shadow .3s; }
 @media (prefers-reduced-motion: reduce) { .judge-spot { transition: none; } }
+/* First screen, one action (judges: simple and focused). Scan your repo is the only filled button; Watch it run is the
+   outlined second choice; Play and For teams are quiet links; the views row and the reader toggles step back. */
+.hero-actions #hero-scan { order: -2; background: var(--fg); color: #000; font-weight: bold; border-color: var(--fg); }
+.hero-actions #hero-watch { order: -1; }
+.hero-actions #hero-play, .hero-actions #hero-teams { border-color: transparent; text-decoration: underline; opacity: .8; }
+.views .manual-link, #manual-link, #hc-toggle { font-size: .85rem; opacity: .75; }
+body.hc .hero-actions #hero-scan { background: #fff; color: #000; border-color: #fff; }
