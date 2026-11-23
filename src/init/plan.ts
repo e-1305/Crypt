@@ -41,7 +41,7 @@ export function manifestPaths(tree: readonly string[]): string[] {
 }
 
 /** Pinned like our own workflows (security audit FIX-6..9): commit SHA plus the version it stands for. */
-export const CHECKOUT_PIN = "actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0";
+export const CHECKOUT_PIN = "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1";
 export const CRYPT_ACTION_PIN = "e-1305/Crypt@ff2ae7d68b80c8367566207a2f4cfa5684aeb1ec # main, 2026-11-23";
 
 export function workflowYaml(): string {
