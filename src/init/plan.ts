@@ -40,6 +40,10 @@ export function manifestPaths(tree: readonly string[]): string[] {
   return [...new Set(out)].sort().slice(0, 50);
 }
 
+/** Pinned like our own workflows (security audit FIX-6..9): commit SHA plus the version it stands for. */
+export const CHECKOUT_PIN = "actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0";
+export const CRYPT_ACTION_PIN = "e-1305/Crypt@ff2ae7d68b80c8367566207a2f4cfa5684aeb1ec # main, 2026-11-23";
+
 export function workflowYaml(): string {
   return [
     "# Added by `crypt init`. CRYPT ranks vulnerable dependencies (CISA KEV first, then EPSS),",
@@ -58,8 +62,8 @@ export function workflowYaml(): string {
     "  crypt:",
     "    runs-on: ubuntu-latest",
     "    steps:",
-    "      - uses: actions/checkout@v4",
-    "      - uses: e-1305/Crypt@main",
+    `      - uses: ${CHECKOUT_PIN}`,
+    `      - uses: ${CRYPT_ACTION_PIN}`,
     "        with:",
     "          mode: report",
     "",
