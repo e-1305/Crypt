@@ -14,6 +14,7 @@ The Kiro Web agent ships issues as PRs, and a human merges them.
 | Custom agents | foreman (manager), inquisitor (checks), necromancer (writes) | [`.kiro/agents`](../.kiro/agents) |
 | MCP | The `crypt` server, started with `npm run mcp` | [`.kiro/settings/mcp.json`](../.kiro/settings/mcp.json), [`.kiro/specs/mcp-server`](../.kiro/specs/mcp-server) |
 | Kiro Web autonomous agent | 83 merged PRs with a closing keyword (Closes, Fixes or Resolves) pointing at an issue labelled `kiro`. Counted with the GitHub REST API on 2026-11-20. 5 more merged PRs name such an issue only in the title (#89, #90, #94, #142, #161) and are not counted | [issues labelled `kiro`](https://github.com/e-1305/Crypt/issues?q=label%3Akiro), [merged PRs](https://github.com/e-1305/Crypt/pulls?q=is%3Apr+is%3Amerged) |
+| Kiro CLI | Not used (Free plan has no API key for headless use). The workflow that would install it for a manual hook run, `kiro-hooks.yml`, needs a paid plan's API key, so no CLI runs are claimed | [`kiro-hooks.yml`](../.github/workflows/kiro-hooks.yml), [Kiro headless docs, as cited in `ATTRIBUTION.md`](ATTRIBUTION.md) |
 | Schedules | The foreman agent reports to a log issue | [`docs/FOREMAN.md`](FOREMAN.md), [issue #180](https://github.com/e-1305/Crypt/issues/180) |
 | Property-based tests from specs | fast-check properties in `tests/*.test.ts`, 398 call sites in 53 files (see the generated numbers below) | [`tests/judge-mode.test.ts`](../tests/judge-mode.test.ts), [Numbers](#numbers) |
 
