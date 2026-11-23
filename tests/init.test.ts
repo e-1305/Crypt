@@ -114,3 +114,16 @@ describe("crypt init", () => {
     await expect(run(["--live", "--repo", "o/r"], fakeGithub({ failPut: true }).fetch)).rejects.toThrow(/crypt init stopped/);
   });
 });
+
+describe("crypt init writes a pinned workflow", async () => {
+  const { workflowYaml } = await import("../src/init/plan.js");
+  it("has no floating refs: every uses: is a 40-char commit SHA", () => {
+    const uses = workflowYaml().split("\n").filter((l) => l.trim().startsWith("- uses:"));
+    expect(uses.length).toBeGreaterThan(0);
+    for (const l of uses) {
+      const ref = l.split("#")[0]!;
+      expect(ref).toMatch(/@[0-9a-f]{40}\s*$/);
+    }
+  });
+});
+
