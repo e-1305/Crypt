@@ -25,6 +25,7 @@ export function initOnboarding({ store, announce, now = () => Date.now() }) {
     const off = hidden();
     strip.hidden = off;
     if (off) { setText("tutorial-hint", ""); clearInterval(timer); timer = 0; return; }
+    if (timer === 0) timer = setInterval(() => { if (!document.hidden) hint(); }, 1000);
     const i = done.findIndex((d) => !d);
     const step = tutorialSteps[i];
     setText("tutorial-progress", "Getting started, step " + (i + 1) + " of " + n);
@@ -67,8 +68,8 @@ export function initOnboarding({ store, announce, now = () => Date.now() }) {
     announce("Getting started closed.");
     render();
   });
-  timer = setInterval(hint, 1000);
-  render();
+  // Hidden tab: no idle hint work (the hint only matters when someone is looking).
+  render(); // starts the hint timer when the strip is on
 
   return {
     /** The limb id to suggest (a limb that has a rehearsal pull request). */

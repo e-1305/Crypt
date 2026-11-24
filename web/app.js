@@ -79,7 +79,7 @@ const raid = initRaid({
   announce,
   onRunning(on) {
     clearInterval(pollTimer);
-    pollTimer = on ? setInterval(() => loadPlate(), 5000) : 0;
+    pollTimer = on ? setInterval(() => { if (!document.hidden) loadPlate(); }, 5000) : 0; // no polling from a hidden tab
   },
 });
 

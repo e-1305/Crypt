@@ -230,7 +230,7 @@ export function initRaid({ store, announce, onRunning, now = () => Date.now() })
     const boss = bossLimbs(limbs).find((b) => !countsForScore(b));
     announce("Raid started. Fifteen minutes. Heal what you can." + (boss ? " A boss stirs: " + boss.name + ". Heal it to slay it." : ""));
     clearInterval(interval);
-    interval = setInterval(tick, 250);
+    interval = setInterval(() => { if (!document.hidden) tick(); }, 250); // the clock is wall time; a hidden tab skips only the redraw
     onRunning?.(true);
     render();
   }
