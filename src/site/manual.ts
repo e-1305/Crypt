@@ -2,7 +2,7 @@
 // It handles only what the manual uses: headings (levels 1 to 4), paragraphs, bullet and numbered lists, tables, fenced code, inline
 // code, bold and links. All text is escaped. The output is one static page: no script, relative URLs for site files.
 import { posix } from "node:path";
-import { brandHead } from "./brand.js";
+import { brandHead } from "../report/brand.js";
 
 export interface ManualOptions {
   /** Repo-relative path of the markdown file, used to resolve its relative links. */

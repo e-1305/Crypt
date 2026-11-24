@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { buildSite } from "../scripts/build-site.js";
 import { inform6Path } from "../scripts/toolchain-dir.js";
-import { OG_DESCRIPTION, TAGLINE } from "../src/site/brand.js";
+import { OG_DESCRIPTION, TAGLINE } from "../src/report/brand.js";
 
 // Issue #332: logo, favicon and social preview on every built page.
 

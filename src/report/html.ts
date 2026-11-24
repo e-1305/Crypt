@@ -1,5 +1,5 @@
 // Autopsy page: one self-contained printable HTML string. Every value is escaped. No script, no external request (one link to the vendor security review).
-import { brandHead } from "../site/brand.js";
+import { brandHead } from "./brand.js";
 import type { AutopsyModel, HistoryPoint, LimbRef } from "./model.js";
 import { durationText, type HistoryAggregate } from "./limb-history.js";
 import { FOOTNOTES, PDF_HINT, SAMPLE_BANNER, SAMPLE_NOTE, SECURITY_REVIEW_PATH, SECURITY_REVIEW_URL, STYLE } from "./template.js";
