@@ -176,7 +176,8 @@ export async function mountStage() {
   // B5.2: the camera moves in on the CRT at the first keystroke in #cmd. Instant under reduced motion.
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   let dollyAt = -1;
-  const onFirstKey = () => { dollyAt = performance.now(); cmd.removeEventListener("keydown", onFirstKey); };
+  const onFirstKey = () => { if (dollyAt < 0) dollyAt = performance.now(); cmd.removeEventListener("keydown", onFirstKey); };
+
   cmd.addEventListener("keydown", onFirstKey);
   const lookFrom = new THREE.Vector3(0, 2.3, 0);
   const lookTo = new THREE.Vector3(1.7, 1.9, 0);
@@ -226,6 +227,9 @@ export async function mountStage() {
     lastInputAt = performance.now();
     start();
   };
+  // "Play the creature" (app.js) moves the camera in to the CRT like a first keypress does, and wakes the idle loop.
+  const onPlay = () => { onFirstKey(); wake(); };
+  document.addEventListener("crypt:play", onPlay);
   const onDirty = () => { texDirty = true; start(); };
   const inputEvents = ["mousemove", "keydown", "pointerdown", "pointermove", "wheel", "scroll", "touchstart"];
   for (const ev of inputEvents) window.addEventListener(ev, wake, { passive: true, capture: true });
@@ -325,6 +329,7 @@ export async function mountStage() {
     window.removeEventListener("resize", onResize);
     document.removeEventListener("keydown", onKey);
     document.removeEventListener("crypt:fx", onFx);
+    document.removeEventListener("crypt:play", onPlay);
     screen.dispose();
     wallPlate.dispose();
     drawer.dispose();

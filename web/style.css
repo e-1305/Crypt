@@ -508,3 +508,9 @@ body.hc .hero-actions #hero-scan { background: #fff; color: #000; border-color: 
 .creature3d-card div:first-child { font-weight: bold; }
 body.hc .creature3d-card { background: #000; color: #fff; border-color: #fff; }
 #creature3d-canvas:focus-visible { outline: 2px solid var(--warn); outline-offset: 2px; }
+/* "Play the creature" lands here: a short glow so the player sees where to type. */
+@media (prefers-reduced-motion: no-preference) { .cmd-pulse { animation: cmd-pulse 1.4s ease-out 1; } }
+@keyframes cmd-pulse { 0% { box-shadow: 0 0 0 0 rgba(124,255,138,.9); } 100% { box-shadow: 0 0 0 14px rgba(124,255,138,0); } }
+.cmd-pulse { outline: 2px solid var(--fg); outline-offset: 2px; }
+/* After "Play the creature" on the 3D bench, the hero card steps aside so the CRT and its command line are visible. */
+body.theatre.playing .hero { display: none; }
