@@ -16,6 +16,19 @@ export interface LayoutLimb {
   z: number;
   /** Body region, from head to feet. */
   region: "head" | "torso" | "arms" | "legs";
+  /** EPSS in 0..1. 0 when absent or not a number (an assumption: unknown is drawn as the coolest glow, never as safe). */
+  epss: number;
+}
+
+/** Emissive intensity of a Possessed limb: EPSS 0 maps to 0.3, EPSS 1 to 1.0. */
+export function glowOf(epss: number): number {
+  const e = Number.isFinite(epss) ? Math.min(1, Math.max(0, epss)) : 0;
+  return round(0.3 + 0.7 * e);
+}
+
+/** How far the limb's bend (the middle of the tube curve) sags, in layout units. Rotting limbs droop most. */
+export function droopOf(state: LayoutState): number {
+  return state === "Rotting" ? 0.16 : state === "Unknown" ? 0.06 : 0;
 }
 
 /** Same hues as the plate and the share card (src/render/card.ts); Unknown gets amber, as "not known" is not "clean". */
@@ -47,6 +60,7 @@ export function regionCounts(n: number): [number, number, number] {
   return [head, arms, legs];
 }
 
+const round = (n: number) => Math.round(n * 1000) / 1000;
 const GOLDEN = Math.PI * (3 - Math.sqrt(5));
 /** Position of the k-th of n limbs in a region. Deterministic; spacing grows with n so limbs never stack. */
 function placeLimb(region: LayoutLimb["region"], k: number, n: number): { x: number; y: number; z: number } {
@@ -79,7 +93,6 @@ export function stateOf(l: Record<string, unknown>): LayoutState {
   return "Unknown";
 }
 
-const round = (n: number) => Math.round(n * 1000) / 1000;
 
 /** Lay out every limb of a creature. Order: by rank (missing rank last), then by id. Never throws on bad input: returns []. */
 export function layoutCreature(creature: unknown): LayoutLimb[] {
@@ -112,6 +125,7 @@ export function layoutCreature(creature: unknown): LayoutLimb[] {
         y: round(p.y),
         z: round(p.z),
         region,
+        epss: typeof l.epss === "number" && Number.isFinite(l.epss) ? Math.min(1, Math.max(0, l.epss)) : 0,
       });
     }
   }
