@@ -4,6 +4,8 @@ Part 1 is the live raid. Part 2 is the 3D bench. This is the exact order for the
 
 CRYPT never merges. It has no merge call, no merge endpoint and no merge command. The one merge in the demo is a human clicking a button.
 
+Positioning: CRYPT is the last mile. It complements Dependabot, Snyk and Socket and does not compete on detection. Say: exploited first, a named owner, one fix PR, a person merges. See [COMPETITORS.md](COMPETITORS.md).
+
 The landing page demo creature is `crypt-demo` (owner @e-1305), built offline by `npm run build:site` from the committed snapshot `fixtures/crypt-demo/` of that repository at commit `bd82e8eb00428db829ac002944f1be98f51c94df` (recorded in `fixtures/crypt-demo/SNAPSHOT.json`).
 
 ## Shot list (3:00)
@@ -96,11 +98,11 @@ What happens, in order:
 GRAFT LODASH
 ```
 
-4. CRYPT prints `Graft LODASH: pull request opened https://github.com/e-1305/crypt-demo/pull/<n>`. The pull request bumps lodash 4.17.15 to 4.18.0 in `package.json` and `package-lock.json` (with the `resolved` URL and `integrity` hash taken from registry metadata; no package is downloaded or installed). Open the URL in the browser.
+4. CRYPT prints `Graft LODASH: pull request opened https://github.com/e-1305/crypt-demo/pull/<n>`. The pull request bumps lodash 4.17.15 to 4.18.1 in `package.json` and `package-lock.json` (with the `resolved` URL and `integrity` hash taken from registry metadata; no package is downloaded or installed). Open the URL in the browser.
 5. Show the `test` check running on the pull request, then turning green. The console prints `LODASH: awaiting a human to land the pull request`. The default wait is 10 minutes; use `--timeout <seconds>` (10 to 3600) on `raid` for more.
 6. Type `QUIT`, then `Y`, to leave the game.
 
-The commit is one commit on the branch `crypt/graft-lodash-4.18.0`. It has no author name taken from the target's git history.
+The commit is one commit on the branch `crypt/graft-lodash-4.18.1`. It has no author name taken from the target's git history.
 
 ## Beat 2: a human lands the pull request
 
@@ -164,7 +166,7 @@ Example lines:
 ```
 2026-...Z	GET /repos/e-1305/crypt-demo
 2026-...Z	GET /user/repos
-2026-...Z	GET /lodash/4.18.0
+2026-...Z	GET /lodash/4.18.1
 2026-...Z	POST /repos/e-1305/crypt-demo/git/refs
 2026-...Z	POST /repos/e-1305/crypt-demo/pulls
 ```

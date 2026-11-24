@@ -10,6 +10,7 @@ const SCANNED = [
   "README.md",
   "docs/DEVPOST.md",
   "docs/PITCH.md",
+  "docs/DEMO.md",
   "docs/PRFAQ.md",
   "docs/BUSINESS.md",
   "docs/WHO-PAYS.md",
@@ -101,6 +102,22 @@ describe("public docs agree with FACTS.md", () => {
       expect(bad).toEqual([]);
     });
   }
+
+  for (const file of ["docs/PITCH.md", "docs/DEMO.md"]) {
+    it(`${file}: positioning is last mile, links COMPETITORS.md, makes no "better than" claim`, () => {
+      const text = read(file);
+      expect(text).toMatch(/last mile/i);
+      expect(text).toMatch(/Dependabot, Snyk and Socket/);
+      expect(text).toContain("COMPETITORS.md");
+      expect(text).not.toMatch(/\b(better|faster|smarter) than\b/i);
+    });
+  }
+
+  it("docs/DEMO.md uses the lodash target version from FACTS.md", () => {
+    const text = read("docs/DEMO.md");
+    expect(text).toContain(LODASH_TO);
+    expect(text).not.toMatch(/lodash[^\n]*4\.18\.(?!1\b)\d/);
+  });
 
   it("the check itself catches a drifted number", () => {
     const drifted = "95.0% of findings were noise";

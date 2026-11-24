@@ -6,9 +6,11 @@ CRYPT turns that list into a creature. Each dependency is a limb. Limbs with kno
 
 The guarantee is simple. CRYPT has no merge call. `SEAL CRYPT` blocks every graft. By default a graft is a dry run that writes a file and sends nothing. A person reviews and lands every pull request, and only then does the limb heal.
 
-Kiro shaped the work: specs written before the code, steering files that bind every change, hooks that check each save, and two custom agents.
+CRYPT is the last mile and complements Dependabot, Snyk and Socket: exploited first, a named owner, one fix pull request, and a person merges. [Competitors](COMPETITORS.md).
 
-Open the page, or from a checkout of this repository run one command:
+Kiro shaped the work: specs before code, binding steering files, hooks on each save, and two custom agents.
+
+Open the page, or from a checkout run one command:
 
 ```
 npm ci && npx --no-install crypt raid fixtures/vulnerable-npm --offline
