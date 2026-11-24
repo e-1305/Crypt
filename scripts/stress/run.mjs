@@ -161,7 +161,7 @@ async function limbs400(browser) {
     const shown = Number(/(\d+) limbs shown/.exec(m.label)?.[1] ?? NaN);
     s.check(`limb cap holds (${BOUNDS.limbCap} drawn)`, shown === BOUNDS.limbCap, `canvas label says ${shown} shown`);
     s.check("overflow is summed up as \"N more\"", /340 more/.test(m.legend), m.legend.slice(-40));
-    s.check(`median frame interval within ${BOUNDS.frameRatio}x of the 7-limb demo`, s.metrics.frameIntervalMedianMs <= base7.interval * BOUNDS.frameRatio, `${s.metrics.frameIntervalMedianMs} ms against ${s.metrics.baseline7FrameIntervalMedianMs} ms`);
+    s.check(`median frame interval within ${BOUNDS.frameRatio}x of the 7-limb demo (detects dropped frames only, both are vsync-capped)`, s.metrics.frameIntervalMedianMs <= base7.interval * BOUNDS.frameRatio, `${s.metrics.frameIntervalMedianMs} ms against ${s.metrics.baseline7FrameIntervalMedianMs} ms`);
     s.check(`p95 frame cost within ${BOUNDS.frameRatio}x + 2 ms of the 7-limb demo`, s.metrics.frameCostP95Ms <= base7.costP95 * BOUNDS.frameRatio + 2, `${s.metrics.frameCostP95Ms} ms against ${s.metrics.baseline7FrameCostP95Ms} ms (software renderer, so the GPU cost is not in this number)`);
     s.check(`heap after ${HOLD_MS / 1000} s <= ${BOUNDS.heap400Mb} MB`, mb(after) <= BOUNDS.heap400Mb, `${mb(after)} MB (${mb(before)} MB before opening)`);
     await clickToggle(page);
@@ -288,6 +288,8 @@ const pastePage = async (browser, route) => {
 };
 
 async function submit(page, url) {
+  // Clear the previous message so an ignored input cannot inherit it.
+  await page.evaluate(() => { const s = document.getElementById("paste-status"); if (s) s.textContent = ""; });
   await page.fill("#paste-url", url);
   await page.click("#paste-go");
   await page.waitForTimeout(300);
@@ -347,13 +349,13 @@ async function paste(browser) {
       const longest = Math.round(Math.max(0, ...r.long));
       s.metrics.status50k = r.status;
       s.metrics.longestTask50kMs = longest;
-      s.check("50k packages: stopped with a message that names the cap", /cap|too large|larger|more than/i.test(r.status), r.status.slice(0, 200));
+      s.check("50k packages: stopped with a message that names the cap", /over the cap|larger than the 20 MB cap/i.test(r.status) && /nothing is marked healthy/i.test(r.status), r.status.slice(0, 200));
       s.check("50k packages: no creature drawn, nothing claims clean", !r.drawn && !claimsClean(r.status), `drawn=${r.drawn}`);
       s.check("50k packages: no OSV request for a rejected lockfile", calls.osv === 0, `${calls.osv} OSV requests`);
       s.check(`50k packages: no main-thread task over ${BOUNDS.freezeMs} ms`, longest <= BOUNDS.freezeMs, `longest task ${longest} ms`);
       await ctx.close();
     }
-    // Over the byte cap: 22 MB of text, declared by content-length and as a body.
+    // Over the byte cap: 22 MB of text, sent as a body only (no content-length header is declared).
     {
       const body = syntheticLockfile(2000, 11000);
       s.metrics.lockfileBigMb = mb(body.length);
@@ -362,7 +364,7 @@ async function paste(browser) {
       const longest = Math.round(Math.max(0, ...r.long));
       s.metrics.statusBig = r.status;
       s.metrics.longestTaskBigMs = longest;
-      s.check(`${mb(body.length)} MB lockfile: stopped with a message that names the cap`, /cap|too large|larger|more than/i.test(r.status), r.status.slice(0, 200));
+      s.check(`${mb(body.length)} MB lockfile: stopped with a message that names the cap`, /over the cap|larger than the 20 MB cap/i.test(r.status) && /nothing is marked healthy/i.test(r.status), r.status.slice(0, 200));
       s.check(`${mb(body.length)} MB lockfile: no creature, nothing claims clean, no OSV request`, !r.drawn && !claimsClean(r.status) && calls.osv === 0, `drawn=${r.drawn} osv=${calls.osv}`);
       s.check(`${mb(body.length)} MB lockfile: no main-thread task over ${BOUNDS.freezeMs} ms`, longest <= BOUNDS.freezeMs, `longest task ${longest} ms`);
       await ctx.close();
@@ -420,7 +422,7 @@ async function offline(browser) {
       await ctx.setOffline(true);
       const r = await submit(page, "https://github.com/e-1305/crypt-demo");
       s.metrics.statusOffline = r.status;
-      s.check("offline: a message that names the network problem", /network|connection|reach|offline|try again/i.test(r.status), r.status.slice(0, 200));
+      s.check("offline: a message that names the network problem", /did not load|did not answer|could not be read/i.test(r.status) && /try again/i.test(r.status), r.status.slice(0, 200));
       s.check("offline: no creature drawn, nothing claims clean", !r.drawn && !claimsClean(r.status + " " + r.result), `drawn=${r.drawn}`);
       await page.fill("#cmd", "HELP"); await page.press("#cmd", "Enter");
       await page.waitForTimeout(500);

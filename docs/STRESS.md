@@ -6,7 +6,7 @@ CI runs it as the `stress` job in `.github/workflows/ci.yml`. The job has `conti
 
 ## Environment
 
-Measured on one run in a Linux sandbox: Chromium 159.0.8154.6 headless, Node 22, software WebGL (SwiftShader, no GPU), viewport 1440x900. GPU cost is therefore not in the frame numbers. Treat times as relative (400 limbs against the 7-limb demo in the same browser), not as device figures. Totals: 48 checks, 46 pass, 2 fail.
+Dated snapshot of one run (later runs and `out/stress/report.json` take precedence; the failure table goes stale once #342 or #343 is fixed). Measured on one run in a Linux sandbox: Chromium 159.0.8154.6 headless, Node 22, software WebGL (SwiftShader, no GPU), viewport 1440x900. GPU cost is therefore not in the frame numbers. Treat times as relative (400 limbs against the 7-limb demo in the same browser), not as device figures. Totals: 48 checks, 46 pass, 2 fail.
 
 ## Failures
 

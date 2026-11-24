@@ -41,7 +41,7 @@ export function commandMix(n) {
 /** True when text claims a repo is clean. Phrases that deny it ("Nothing is marked healthy") do not count. */
 export function claimsClean(text) {
   const denied = String(text).replace(/nothing is marked (healthy|clean)|not marked (healthy|clean)|not (checked|clean|healthy)|no creature/gi, "");
-  return /\b(all clear|no vulnerabilit(y|ies)|is clean|looks clean|all healthy|0 rotting|zero rotting)\b/i.test(denied);
+  return /\b(all clear|no (known )?(vulnerabilit(y|ies)|issues?|problems?|findings?)( found)?|0 (vulnerable|rotting|findings)|zero (vulnerable|rotting)|is clean|looks clean|all healthy|healthy|clean)\b/i.test(denied);
 }
 
 /** Median of a list of numbers. NaN for an empty list. */

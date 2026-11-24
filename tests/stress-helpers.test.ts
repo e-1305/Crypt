@@ -27,6 +27,8 @@ describe("stress harness helpers", () => {
   it("flags clean claims but not the fail-safe wording", () => {
     expect(claimsClean("Good news: this repo is clean.")).toBe(true);
     expect(claimsClean("No vulnerabilities found")).toBe(true);
+    expect(claimsClean("0 vulnerable packages")).toBe(true);
+    expect(claimsClean("No issues found")).toBe(true);
     expect(claimsClean("Could not reach api.osv.dev. Nothing is marked healthy. Try again.")).toBe(false);
     expect(claimsClean("is larger than the 20 MB cap, so nothing was drawn.")).toBe(false);
   });

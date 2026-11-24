@@ -35,6 +35,7 @@
     "bin",
     "scripts",
     "!scripts/ci",
+    "!scripts/stress",
     "!scripts/hooks",
     "!scripts/playtest",
     "!scripts/census",
