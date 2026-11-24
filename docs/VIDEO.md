@@ -1,12 +1,12 @@
-# Video kit (3:00)
+# Video kit
 
 Storyboard for the Devpost video. It follows [DEMO.md](DEMO.md) beat for beat, with a cold open and a closing line added. Nothing here claims more than the repository proves. Each number names its source.
 
 ## Rules
 
-- Total length 3:00 or less. The shots below add up to exactly 3:00.
-- Narration: the v2 cut uses a synthetic voice (Kokoro-82M TTS, Apache-2.0), chosen by the author and disclosed on the end card and in the Devpost text. A human take may replace it.
-- Audio: original or CC0 only. The v2 cut uses a generated low drone and a generated chime (ffmpeg noise and sine sources). No copyrighted tracks.
+- Total length 3:00 or less (Devpost rule). The current cut is v3, 1:58, listed at the end of this file. The storyboard below is the original 3:00 plan, kept for the record.
+- Narration: the current cut uses a synthetic voice (Kokoro-82M TTS, Apache-2.0), chosen by the author and disclosed on the end card and in the Devpost text. A human take may replace it.
+- Audio: original or CC0 only. The current cut uses a generated low drone and a generated chime (ffmpeg noise and sine sources). No copyrighted tracks.
 - Whenever a graft is on screen, the dry-run label ("Dry run. Nothing was sent.") or "[SIMULATED CI]" is in frame.
 - CRYPT has no merge call. The one merge is a person clicking **Merge pull request**.
 - Say a cloud hook fired in a real Kiro Web session: trigger `Stop`, 2026-11-18T21:15:44Z, recorded in [docs/evidence/hook-runs.jsonl](evidence/hook-runs.jsonl). Do not say the repository's own hooks (`.kiro/hooks`) fired in a Kiro session. They were not observed. Their run on screen is a by-hand run of the same script ([DEMO.md](DEMO.md)).
@@ -69,7 +69,7 @@ Already recorded and public: shot 2 (crypt-demo PR #1, CI green, merged by the r
 Still to record: shot 4 (the offline terminal part), shot 6 (audit log), shot 7 (SOC outputs, run from a clone with `npm run build:site` for the page views) and shot 8. Shot 6 needs no token. A new live take needs one: follow "Create the token" and "Reset between takes" in [DEMO.md](DEMO.md). If a live take fails, use the fallbacks in the DEMO.md shot list.
 
 
-## v2 cut (1:34), 2026-11-20
+## v2 cut (1:34), 2026-11-20 (superseded by v3)
 
 Shots: cold open on the census numbers; judge mode on the 3D bench (zoomed on the plate and the CRT); the 3D creature healing under SIMULATED CI; the real PR #1 merged by a person and the next raid reporting HEALED (runs 44369138370, 44399933498); the real sabotage PR #2 rejected (run 44375794960); SEAL CRYPT; census plus two gallery creatures and the Graveyard; War Room (SIMULATED raid), SOC outputs, Autopsy; the `.kiro/` tree with the cloud hook line; end card with QR code to the live page.
 
@@ -88,3 +88,28 @@ Shots: cold open on the census numbers; judge mode on the 3D bench (zoomed on th
 | team | For the people who own the risk: a War Room with deadlines, alerts for the SIEM, and a one-page autopsy for the CISO. |
 | kiro | Built with Kiro. Specs first. Steering rules every session must follow. Agents that fix and agents that check. |
 | end | Paste your repo. Own it, without shame. Don't abandon your creature. |
+
+## v3 cut (1:58), 2026-11-23: the current video
+
+1920x1080, synthetic voice (Kokoro-82M, voice am_onyx), subtitles, a generated drone and a chime at the heal. Every number on screen matches [FACTS.md](FACTS.md).
+
+| Time | Beat | What is on screen |
+|---|---|---|
+| 0:00 | Cold open | 11,244 dependencies, 248 with a known vulnerability, 3 that can really hurt you (census) |
+| 0:08 | Intro | The 3D bench title card, then the creature with its possessed limb |
+| 0:13 | Exhume | Judge mode, zoomed on the plate. Label: replayed from the committed demo snapshot |
+| 0:20 | Examine | Zoomed on the transcript: jquery 3.4.1, actively exploited (CISA KEV) |
+| 0:27 | Graft | Zoomed on the transcript. Label: dry run, nothing is sent |
+| 0:33 | CI | Plate heals. Label: SIMULATED CI |
+| 0:39 | Real CLI | `npx @e-1305/crypt raid fixtures/vulnerable-npm --offline`, real output |
+| 0:47 | CI/CD | `crypt init` dry run and the SHA-pinned workflow it writes |
+| 0:56 | Heal | The 3D limb heals (SIMULATED CI), then the real PR #1 merged by a person and HEALED on the next raid |
+| 1:06 | Sabotage | Real PR #2, red CI, `GRAFT_REJECTED` (run 44375794960) |
+| 1:14 | SEAL | SEALED: no graft will run |
+| 1:20 | Scale | Census card, two gallery creatures (scan of 2026-11-17), the Graveyard |
+| 1:28 | Team | War Room (SIMULATED raid), SOC outputs, the Autopsy |
+| 1:35 | Kiro | Spec, steering, hook (with the cloud hook line), agents, "Where Kiro surprised us" |
+| 1:51 | End | Paste your repo, URL, QR code, voice disclosure |
+
+Not yet in v3: a narration line on positioning (CRYPT works alongside existing scanners and does the last mile, [COMPETITORS.md](COMPETITORS.md)). It goes into the next cut, with the new creature looks and the limb card.
+
