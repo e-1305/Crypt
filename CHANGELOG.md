@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Brand tokens: `docs/BRAND.md` and `web/brand.css` (palette, type, spacing, radius, focus ring, motion), loaded first by every page.
 - Surgeon's theatre in the 3D bench (#217): repos as labelled jars on a shelf, the creature on the table, a tool tray (scalpel EXAMINE, needle GRAFT, magnifier simulated CI, lamp SEAL, bell reraise) lifted when the command runs, and one plain narrator line per step with a hidden live DOM twin. The text commands and the 2D page are unchanged.
 - `crypt init` (P4): one onboarding pull request with the workflow in report mode and, if missing, a CODEOWNERS draft with team placeholders.
 - Buyer page `/for-teams.html` and a design-partner issue template (P5).
