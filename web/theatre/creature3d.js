@@ -1,7 +1,7 @@
 // 3D-b: the "Creature 3D" view. Renders src/theatre/creature3d-layout.ts with three.js instanced meshes (one per shape).
 // Lazy: this file loads with the page but three.js is requested only when the toggle is first used (#233).
 // Fail safe: no WebGL, or any error, keeps the plain 2D plate. Reduced motion draws one still frame.
-import { layoutCreature, layoutBounds, anchorOf, BODY, STATE_COLOR, STATE_SHAPE } from "../js/theatre/creature3d-layout.js";
+import { layoutCreature, layoutBounds, anchorOf, glowOf, droopOf, BODY, STATE_COLOR, STATE_SHAPE } from "../js/theatre/creature3d-layout.js";
 import { MAX_LIMBS, GUARD_FRAMES, capLimbs, isSlowDevice, moreLabel, shouldRunGuard } from "../js/theatre/caps.js";
 
 const STATES = ["Possessed", "Rotting", "Healed", "Healthy", "Unknown"];
@@ -171,6 +171,19 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
   const boneGeos = [];
   let bones = null;
   let labels = []; // { el, pos: Vector3 }
+  // State cues on the limb itself (shape stays the primary cue; colour never carries state alone).
+  // Possessed: glow follows EPSS and a few small droplets fall (motion only). Rotting: desaturated and drooping.
+  // Healed: a stitched bandage ring, plus a short green flash on the tube at heal time. Healthy: pale skin.
+  const PALE = 0xcfc9ae;
+  const MAX_DRIP_LIMBS = 8, DRIPS_PER_LIMB = 3, DRIP_MS = 1600;
+  const dripGeo = new THREE.SphereGeometry(0.03, 6, 5);
+  const dripMat = new THREE.MeshBasicMaterial({ color: 0xff6a3d });
+  const wrapGeo = new THREE.TorusGeometry(0.1, 0.03, 6, 14);
+  const stitchRingGeo = new THREE.TorusGeometry(0.1, 0.008, 4, 14);
+  const wrapMat = new THREE.MeshStandardMaterial({ color: 0xe8e0c8, roughness: 0.9 });
+  const wrapStitchMat = new THREE.MeshBasicMaterial({ color: 0x1a120a });
+  let drips = null, dripSrc = [];
+  let flashes = []; // { mesh, t0 }
   // Heal burst: a limb that turns Healed (real or SIMULATED) flashes green, a light pulses and "HEALED" floats up.
   const prevState = new Map();
   let bursts = []; // { mesh, light, el, pos, t0 }
@@ -224,9 +237,33 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
     }
   };
 
+  const dripDummy = new THREE.Object3D();
+  const stepDrips = (now) => {
+    let n = 0;
+    for (const d of dripSrc) {
+      for (let k = 0; k < DRIPS_PER_LIMB; k++, n++) {
+        const t = ((now / DRIP_MS) + k / DRIPS_PER_LIMB + d.i * 0.37) % 1;
+        dripDummy.position.set(d.x + (k - 1) * 0.04, d.y - 0.15 - 0.5 * t * t, d.z);
+        dripDummy.scale.setScalar(1 - 0.6 * t);
+        dripDummy.updateMatrix();
+        drips.setMatrixAt(n, dripDummy.matrix);
+      }
+    }
+    drips.instanceMatrix.needsUpdate = true;
+  };
+  const stepFlashes = (now) => {
+    flashes = flashes.filter((f) => {
+      const t = (now - f.t0) / BURST_MS;
+      f.mesh.material.emissiveIntensity = t >= 1 ? 0 : 0.9 * (1 - t);
+      return t < 1;
+    });
+  };
   const clear = () => {
     for (const m of meshes) { body.remove(m); m.dispose?.(); }
     meshes = [];
+    if (drips) { body.remove(drips); drips.dispose?.(); drips = null; }
+    dripSrc = [];
+    flashes = [];
     if (bones) { body.remove(bones); bones.children.forEach((m) => m.material.dispose()); bones = null; }
     boneGeos.splice(0).forEach((g) => g.dispose());
     labelLayer.textContent = "";
@@ -247,13 +284,31 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
       const a = anchorOf(l);
       const from = new THREE.Vector3(a.x, a.y, a.z), to = new THREE.Vector3(l.x, l.y, l.z);
       // A gently bent limb: the elbow or knee sags outward and down, so limbs hang instead of poking out straight.
-      const mid = from.clone().lerp(to, 0.5).add(new THREE.Vector3((to.x - from.x) * 0.08, -0.18, 0.06));
-      const geo = new THREE.TubeGeometry(new THREE.QuadraticBezierCurve3(from, mid, to), 10, l.region === "arms" || l.region === "legs" ? 0.075 : 0.05, 7, false);
+      // Rotting limbs sag further (droopOf).
+      const mid = from.clone().lerp(to, 0.5).add(new THREE.Vector3((to.x - from.x) * 0.08, -0.18 - droopOf(l.state), 0.06));
+      const curve = new THREE.QuadraticBezierCurve3(from, mid, to);
+      const geo = new THREE.TubeGeometry(curve, 10, l.region === "arms" || l.region === "legs" ? 0.075 : 0.05, 7, false);
       boneGeos.push(geo);
       const m = new THREE.Mesh(geo, boneMat.clone());
       m.material.color.set(SKIN).lerp(tint.set(l.color), l.state === "Healthy" ? 0.1 : 0.35);
-      if (l.state === "Possessed") { m.material.emissive = new THREE.Color(0x5a1000); m.userData.pulse = true; }
+      if (l.state === "Healthy") m.material.color.lerp(tint.set(PALE), 0.45);
+      if (l.state === "Rotting") { const hsl = {}; m.material.color.getHSL(hsl); m.material.color.setHSL(hsl.h, hsl.s * 0.4, hsl.l * 0.85); }
+      if (l.state === "Possessed") {
+        m.material.emissive = new THREE.Color(0xff3a10);
+        m.userData.glow = glowOf(l.epss); // 0.3 to 1.0 with EPSS
+        m.material.emissiveIntensity = m.userData.glow;
+        m.userData.pulse = true;
+        if (!reduced && dripSrc.length < MAX_DRIP_LIMBS) dripSrc.push({ x: l.x, y: l.y, z: l.z, i: dripSrc.length });
+      }
       bones.add(m);
+      if (l.state === "Healed") {
+        const p = curve.getPoint(0.6), q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), curve.getTangent(0.6).normalize());
+        const wm = new THREE.Mesh(wrapGeo, wrapMat), sm = new THREE.Mesh(stitchRingGeo, wrapStitchMat);
+        for (const x of [wm, sm]) { x.position.copy(p); x.quaternion.copy(q); }
+        sm.translateZ(0.045); // a dark stitch line beside the cloth
+        bones.add(wm, sm);
+        if (healedNow.includes(l) && !reduced) { m.material.emissive = new THREE.Color(0x33ff33); m.material.emissiveIntensity = 0.9; flashes.push({ mesh: m, t0: performance.now() }); }
+      }
       if (l.state === "Possessed" || l.state === "Rotting") {
         const el = document.createElement("span");
         el.className = "creature3d-label";
@@ -265,6 +320,10 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
       }
     }
     body.add(bones);
+    if (dripSrc.length > 0) {
+      drips = new THREE.InstancedMesh(dripGeo, dripMat, dripSrc.length * DRIPS_PER_LIMB);
+      body.add(drips);
+    }
     // Eyes: amber while something is possessed, green once nothing is.
     eyeMat.color.set(shown.some((l) => l.state === "Possessed") ? 0xff5a1a : 0x33ff66);
     const dummy = new THREE.Object3D();
@@ -326,7 +385,9 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
     body.rotation.y = Math.sin(spin) * 0.5;
     // Breathing, and a slow throb on possessed limbs.
     torso.scale.set(1 + Math.sin(spin * 6) * 0.012, 1 + Math.sin(spin * 6) * 0.018, 0.72);
-    if (bones) for (const m of bones.children) if (m.userData.pulse) m.material.emissiveIntensity = 0.6 + 0.6 * Math.sin(spin * 20);
+    if (bones) for (const m of bones.children) if (m.userData.pulse) m.material.emissiveIntensity = Math.min(1, m.userData.glow * (0.85 + 0.15 * Math.sin(spin * 20)));
+    if (drips) stepDrips(now);
+    if (flashes.length) stepFlashes(now);
     draw();
     stepBursts(now);
   };
@@ -353,6 +414,8 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
       bursts.forEach(endBurst); bursts = []; burstGeo.dispose();
       Object.values(geos).forEach((g) => g.dispose());
       mat.dispose();
+      [dripGeo, wrapGeo, stitchRingGeo].forEach((g) => g.dispose());
+      [dripMat, wrapMat, wrapStitchMat].forEach((x) => x.dispose());
       bodyMat.dispose(); boneMat.dispose(); stitchMat.dispose(); boltMat.dispose(); eyeMat.dispose(); shadowMat.dispose();
       [headGeo, torsoGeo, neckGeo, browGeo, flatGeo, eyeGeo, boltGeo, stitchGeo, shadowGeo].forEach((g) => g.dispose());
       renderer.dispose();
