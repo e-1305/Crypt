@@ -37,3 +37,41 @@ export function isSlowDevice(deltas: readonly number[], threshold: number = SLOW
 export function shouldRunGuard(webdriver: unknown): boolean {
   return webdriver !== true;
 }
+
+/** Frame cap for the 3D bench (frames per second). */
+export const MAX_FPS = 30;
+/** Slack (ms) so a 60 Hz display still lands on every second frame. */
+const FRAME_SLACK_MS = 2;
+/** No input for this long (ms) and nothing animating: the render loop stops. */
+export const IDLE_MS = 6000;
+/** Upper bound for the renderer pixel ratio. */
+export const MAX_PIXEL_RATIO = 1.5;
+
+export interface RenderState {
+  now: number;
+  lastInputAt: number;
+  dollyActive: boolean;
+  flashActive: boolean;
+  texDirty: boolean;
+  visible: boolean;
+}
+
+/** True when a frame at `now` is due under the fps cap. A bad timestamp renders (fail open to a normal frame). */
+export function frameDue(now: number, lastRenderAt: number, maxFps: number = MAX_FPS): boolean {
+  if (!Number.isFinite(now) || !Number.isFinite(lastRenderAt) || !(maxFps > 0)) return true;
+  return now - lastRenderAt >= 1000 / maxFps - FRAME_SLACK_MS;
+}
+
+/** Render only while visible and (recent input, or a dolly, flash or texture update is pending). */
+export function shouldRender(s: RenderState, idleMs: number = IDLE_MS): boolean {
+  if (!s.visible) return false;
+  if (s.dollyActive || s.flashActive || s.texDirty) return true;
+  if (!Number.isFinite(s.now) || !Number.isFinite(s.lastInputAt)) return true;
+  return s.now - s.lastInputAt < idleMs;
+}
+
+/** Pixel ratio for the renderer: the device ratio, at most `max`, at least 1. */
+export function pixelRatioFor(dpr: unknown, max: number = MAX_PIXEL_RATIO): number {
+  const d = typeof dpr === "number" && Number.isFinite(dpr) && dpr > 0 ? dpr : 1;
+  return Math.min(d, max);
+}

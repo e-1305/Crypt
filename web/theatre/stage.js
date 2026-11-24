@@ -7,8 +7,8 @@ import { makeDrawer } from "./drawer.js";
 import { makeBoard } from "./board.js";
 import { ensureFonts } from "./font.js";
 import { makeSurgeon } from "./surgeon.js";
-import { MAX_LIMBS, capLimbs, isSlowDevice, moreLabel, shouldRunGuard, GUARD_FRAMES } from "../js/theatre/caps.js";
-import { TITLE_CARD_TEXT, dollyProgress, shouldShowTitleCard, titleCardVisible } from "../js/theatre/polish.js";
+import { MAX_LIMBS, capLimbs, isSlowDevice, moreLabel, shouldRunGuard, GUARD_FRAMES, frameDue, shouldRender, pixelRatioFor } from "../js/theatre/caps.js";
+import { TITLE_CARD_TEXT, DOLLY_MS, dollyProgress, shouldShowTitleCard, titleCardVisible } from "../js/theatre/polish.js";
 
 export async function mountStage() {
   const THREE = await import("../vendor/three.module.min.js");
@@ -19,7 +19,7 @@ export async function mountStage() {
   const summaryEl = document.getElementById("plate-summary");
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setPixelRatio(pixelRatioFor(window.devicePixelRatio)); // capped at 1.5 to spare the GPU
   renderer.setClearColor(0x050403);
   const canvas = renderer.domElement;
   canvas.id = "theatre-canvas";
@@ -219,6 +219,32 @@ export async function mountStage() {
   const onFx = (e) => { if (e.detail && e.detail.kind === "heal" && e.detail.reduced !== true) flashAt = performance.now(); };
   document.addEventListener("crypt:fx", onFx);
 
+  // Idle and visibility: the loop runs at most 30 fps, stops after 6 s without input, and wakes on any input,
+  // DOM change that feeds a texture, or heal flash. It also stops while the canvas is off screen or the tab is hidden.
+  let lastInputAt = performance.now(), texDirty = true, visible = true, lastRenderAt = -1e9;
+  const wake = () => {
+    lastInputAt = performance.now();
+    start();
+  };
+  const onDirty = () => { texDirty = true; start(); };
+  const inputEvents = ["mousemove", "keydown", "pointerdown", "pointermove", "wheel", "scroll", "touchstart"];
+  for (const ev of inputEvents) window.addEventListener(ev, wake, { passive: true, capture: true });
+  const domWatch = new MutationObserver(onDirty);
+  domWatch.observe(document.body, { childList: true, characterData: true, subtree: true, attributes: true });
+  const rootWatch = new MutationObserver(onDirty);
+  rootWatch.observe(document.documentElement, { attributes: true });
+  document.addEventListener("crypt:fx", wake);
+  let io = null;
+  if (typeof IntersectionObserver === "function") {
+    io = new IntersectionObserver((entries) => {
+      const last = entries[entries.length - 1];
+      if (!last) return;
+      visible = last.isIntersecting;
+      if (visible) wake();
+    });
+    io.observe(canvas);
+  }
+
   let raf = 0, stopped = false;
   const t0 = performance.now();
   // Frame guard: time a few frames after the first (which pays for shader compile). A slow median drops to the plain 2D page.
@@ -226,7 +252,7 @@ export async function mountStage() {
   let lastNow = -1, guardDone = !shouldRunGuard(navigator.webdriver);
   function frame(now) {
     if (stopped) return;
-    raf = requestAnimationFrame(frame);
+    raf = 0;
     if (!guardDone) {
       if (lastNow >= 0) deltas.push(now - lastNow);
       lastNow = now;
@@ -235,6 +261,14 @@ export async function mountStage() {
         try { if (isSlowDevice(deltas.slice(1))) { destroy("2d:slow"); return; } } catch { /* keep the bench */ }
       }
     }
+    if (!frameDue(now, lastRenderAt)) { raf = requestAnimationFrame(frame); return; }
+    const dollyActive = dollyAt >= 0 && !reduced && now - dollyAt < DOLLY_MS;
+    const sinceFlashNow = flashAt < 0 ? 1e9 : now - flashAt;
+    const drawerMoving = Math.abs((drawer.isOpen() ? 0.7 : 0) - drawerOut) > 0.005;
+    if (!shouldRender({ now, lastInputAt, dollyActive, flashActive: sinceFlashNow < 700, texDirty: texDirty || drawerMoving, visible })) return; // idle: the loop stops until wake()
+    raf = requestAnimationFrame(frame);
+    lastRenderAt = now;
+    texDirty = false;
     const t = (now - t0) / 1000;
     const d = dollyProgress(dollyAt < 0 ? 0 : now - dollyAt, reduced && dollyAt >= 0);
     camera.position.set(camBase.x + mouse.x * 0.35 + (1.7 - camBase.x) * 0.6 * d, camBase.y - mouse.y * 0.2 - 0.3 * d, camBase.z * (1 - 0.5 * d));
@@ -256,12 +290,18 @@ export async function mountStage() {
     frames++;
   }
   let frames = 0;
-  raf = requestAnimationFrame(frame);
-  // Hidden tab: stop the loop entirely. Visible again: restart it and re-measure from a clean slate.
+  // Start the loop if it is stopped and the page can be seen. Re-measures the frame guard from a clean slate.
+  function start() {
+    if (stopped || raf !== 0 || document.hidden || !visible) return;
+    deltas.length = 0; lastNow = -1;
+    raf = requestAnimationFrame(frame);
+  }
+  start();
+  // Hidden tab: stop the loop entirely. Visible again: restart it.
   const onVisibility = () => {
     if (stopped) return;
     if (document.hidden) { cancelAnimationFrame(raf); raf = 0; return; }
-    if (raf === 0) { deltas.length = 0; lastNow = -1; raf = requestAnimationFrame(frame); }
+    wake();
   };
   document.addEventListener("visibilitychange", onVisibility);
   if (document.hidden) onVisibility();
@@ -271,6 +311,11 @@ export async function mountStage() {
     stopped = true;
     cancelAnimationFrame(raf);
     document.removeEventListener("visibilitychange", onVisibility);
+    for (const ev of inputEvents) window.removeEventListener(ev, wake, { capture: true });
+    domWatch.disconnect();
+    rootWatch.disconnect();
+    io?.disconnect();
+    document.removeEventListener("crypt:fx", wake);
     plateView.dispose();
     hcWatch.disconnect();
     clearInterval(cardTimer);
