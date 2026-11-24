@@ -182,9 +182,11 @@ describe("autopsy page", () => {
     for (const w of ["Implementation", "Efficiency", "Impact", "SLA compliance", "Trend", "Noise exorcised", "exploitable risk removed", "How computed", "NIST SP 800-55", "Print or save as PDF from your browser", "@media print", "<svg"]) {
       expect(html).toContain(w);
     }
-    expect(html).not.toMatch(/<script|<link/i);
+    // The brand head (issue #332): an inline data: icon and the absolute social image URL, which no request follows.
+    const bare = html.replace(/<link rel="icon" type="image\/svg\+xml" href="data:[^"]*">/, "").replace(/<meta property="og:image" content="https:\/\/e-1305\.github\.io\/Crypt\/og-image\.png">/, "");
+    expect(bare).not.toMatch(/<script|<link/i);
     // The only URL is the link to the vendor security review.
-    expect(html.replace(/https:\/\/github\.com\/e-1305\/Crypt\/blob\/main\/docs\/SECURITY-REVIEW\.md/g, "")).not.toMatch(/https?:\/\//i);
+    expect(bare.replace(/https:\/\/github\.com\/e-1305\/Crypt\/blob\/main\/docs\/SECURITY-REVIEW\.md/g, "")).not.toMatch(/https?:\/\//i);
   });
   it("carries a CSP meta that forbids script and network, before the style block", () => {
     const csp = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:">`;

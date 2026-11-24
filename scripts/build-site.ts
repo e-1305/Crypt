@@ -118,6 +118,8 @@ export async function buildSite(outDir: string): Promise<void> {
     cpSync(join(WEB, "war-room"), join(outDir, "war-room"), { recursive: true, filter: (src) => !src.endsWith(".html") });
     // Real crypt-demo history of 2026-11-18 (docs/PROOF.md), read by the War Room history panel.
     cpSync(join(ROOT, "fixtures", "history", "crypt-demo-2026-11-18.jsonl"), join(outDir, "war-room", "crypt-history-demo.jsonl"));
+    // Brand files (issue #332): icons, manifest and the social preview image at the site root, linked from every page.
+    for (const f of readdirSync(join(ROOT, "assets", "brand"))) cpSync(join(ROOT, "assets", "brand", f), join(outDir, f));
     writeFileSync(join(outDir, ".nojekyll"), "");
     writeFileSync(join(outDir, "feeds.json"), feedSnapshotText());
     cpSync(join(WEB, "manual.css"), join(outDir, "manual.css"));

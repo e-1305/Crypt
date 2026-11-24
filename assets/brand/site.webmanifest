@@ -1,0 +1,22 @@
+{
+  "name": "CRYPT",
+  "short_name": "CRYPT",
+  "description": "Don't abandon your creature.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#050805",
+  "theme_color": "#050805",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}

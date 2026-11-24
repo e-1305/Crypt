@@ -51,3 +51,12 @@ Source: [docs/VIDEO.md](VIDEO.md).
 
 - About two minutes.
 - The voice is synthetic and disclosed (Kokoro-82M TTS).
+
+## Brand
+
+Source: [assets/brand/](../assets/brand/), written by `scripts/brand.ts`.
+
+- Tagline: Don't abandon your creature.
+- Social preview text (og:description): Don't abandon your creature. CRYPT turns your dependency tree into a creature you heal: the few findings that matter, and one fix PR for a person to review.
+- Live URL: https://e-1305.github.io/Crypt/
+- Colours: phosphor green #33ff33 on near-black #050805.

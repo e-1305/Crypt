@@ -80,6 +80,7 @@
     "kiro:stats": "tsx scripts/kiro-stats.ts",
     "kiro:timeline": "tsx scripts/kiro-timeline.ts",
     "build:web": "tsc -p tsconfig.web.json",
+    "brand": "tsx scripts/brand.ts",
     "build:site": "bash scripts/setup-tools.sh && tsx scripts/build-site.ts",
     "gallery:snapshot": "tsx scripts/gallery-snapshot.ts",
     "crypt": "node bin/crypt.mjs",

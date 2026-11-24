@@ -43,6 +43,7 @@ and using third-party SDKs, APIs and data in line with their terms. Keep this fi
 |---|---|---|
 | `docs/img/bench-3d.png` | Original. A screenshot of this project's own 3D bench, taken with `scripts/playtest/judge.mjs` (headless Chromium, software WebGL, 1280x720). All geometry and text are ours | Same licence as the repository (MIT) |
 | `docs/img/visual-qa-*.png` | Original. Screenshots of this project's own page at 390x844, 1280x800, 1440x900 and 1920x1080, written by `VISUAL_QA_COPY_DOCS=1 npm run test:visual` (headless Chromium; a plain run writes only to `out/visual-qa`). The 1440x900 shot shows the 3D bench | Same licence as the repository (MIT) |
+| `assets/brand/*` (`logo.svg`, `logo-wordmark.svg`, `favicon.svg`, `favicon.ico`, `apple-touch-icon.png`, `og-image.png`, `site.webmanifest`) | Original. A stitched coffin drawn from six points and five strokes, written and rasterised by `scripts/brand.ts` (`npm run brand`, zlib only, with a small 5x7 pixel font of our own for the social image). No copied logo, font or art. The wordmark SVG names the site font (JetBrains Mono, OFL-1.1, above) but embeds no font file | Same licence as the repository (MIT) |
 
 ## Ideas and references (not code)
 
