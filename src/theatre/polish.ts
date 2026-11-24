@@ -37,11 +37,11 @@ export function recordModeAfterKey(recording: boolean, key: string): boolean {
   return recording && key === "Escape" ? false : recording;
 }
 
-/** Dolly progress from 0 (start position) to 1 (at the CRT). Instant under reduced motion. Eased, monotonic. */
+/** Dolly progress from 0 (start position) to 1 (at the CRT). Instant under reduced motion. Ease-out, monotonic. */
 export function dollyProgress(elapsedMs: number, reducedMotion: boolean): number {
   if (reducedMotion) return 1;
   if (!(elapsedMs > 0)) return 0;
   if (elapsedMs >= DOLLY_MS) return 1;
   const t = elapsedMs / DOLLY_MS;
-  return t * t * (3 - 2 * t);
+  return 1 - Math.pow(1 - t, 3); // ease-out cubic, same family as --ease-out in web/style.css
 }

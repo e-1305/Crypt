@@ -122,6 +122,7 @@ export function initRaid({ store, announce, onRunning, now = () => Date.now() })
     setText("raid-vitals", "Creature health " + vit.health + " of 100. Heartbeat " + vit.bpm + " beats per minute.");
     $("raid-health")?.setAttribute("aria-valuenow", String(vit.health));
     setStyle("raid-health", "--pct", vit.health + "%");
+    setStyle("raid-health", "--n", String(vit.health / 100));
     setStyle("raid-heart", "--beat", (60 / vit.bpm).toFixed(2) + "s");
     if (score !== shown) countTo(score);
     const prog = rankProgress(healed);
@@ -156,6 +157,7 @@ export function initRaid({ store, announce, onRunning, now = () => Date.now() })
     setText("raid-pressure-text", pressureLabel(level, openKev()));
     $("raid-pressure")?.setAttribute("aria-valuenow", String(pct));
     setStyle("raid-pressure", "--pct", pct + "%");
+    setStyle("raid-pressure", "--n", String(pct / 100));
     const warn = v.status === "running" ? pressureWarning(v.remainingMs) : null;
     setText("raid-warning", warn ?? "");
     const el = $("raid-warning");

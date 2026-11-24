@@ -1,7 +1,10 @@
 /* CRT look: phosphor green on near-black, scanlines, slight bloom. One self-hosted monospace webfont (JetBrains Mono, OFL-1.1, web/fonts/), system monospace only as a fallback. */
 @font-face { font-family: "JetBrains Mono"; font-style: normal; font-weight: 400; font-display: swap; src: url("fonts/jetbrains-mono-latin-400-normal.woff2") format("woff2"); }
 @font-face { font-family: "JetBrains Mono"; font-style: normal; font-weight: 700; font-display: swap; src: url("fonts/jetbrains-mono-latin-700-normal.woff2") format("woff2"); }
-:root { --fg: #33ff33; --dim: #22b022; --bg: #050805; --warn: #ffb000; --hot: #ff6a3d; }
+:root { --fg: #33ff33; --dim: #22b022; --bg: #050805; --warn: #ffb000; --hot: #ff6a3d;
+  /* Motion tokens: one easing family and a short duration scale. Animate transform and opacity only. */
+  --ease-out: cubic-bezier(.22, 1, .36, 1); --ease-in-out: cubic-bezier(.65, 0, .35, 1);
+  --dur-fast: 150ms; --dur-reveal: 240ms; --dur-reveal-long: 320ms; --dur-cue: 480ms; --dur-settle: 600ms; }
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); color: var(--fg);
   font-family: "JetBrains Mono", ui-monospace, "Cascadia Mono", Menlo, Consolas, "DejaVu Sans Mono", "Courier New", monospace;
@@ -46,16 +49,16 @@ button:hover, button[aria-pressed="true"] { background: var(--fg); color: #000; 
 .plate [data-state="Healthy"] { color: var(--dim); text-shadow: none; }
 .plate [data-state="Rotting"] { color: #c8e63c; }
 .plate [data-state="Possessed"] { color: var(--hot); text-shadow: 0 0 6px rgba(255, 106, 61, .6); display: inline-block;
-  animation: glitch 4s steps(1, end) infinite; }
+  animation: glitch 4s var(--ease-out) infinite; }
 .plate [data-state="Healed"] { color: var(--fg); }
-.plate .just-healed { animation: healed 1.6s ease-out 1; }
+.plate .just-healed { animation: healed 1.6s var(--ease-out) 1; }
 @keyframes glitch {
-  0%, 92%, 100% { transform: none; text-shadow: 0 0 6px rgba(255, 106, 61, .6); }
-  93% { transform: translateX(1px); text-shadow: -2px 0 rgba(0, 255, 255, .6), 2px 0 rgba(255, 0, 80, .6); }
+  0%, 92%, 100% { transform: none; }
+  93% { transform: translateX(1px); }
   95% { transform: translateX(-1px); }
-  97% { transform: none; text-shadow: 2px 0 rgba(0, 255, 255, .6), -2px 0 rgba(255, 0, 80, .6); }
+  97% { transform: none; }
 }
-.plate .convulsing { display: inline-block; animation: convulse .5s linear 3; color: #ff4d4d; }
+.plate .convulsing { display: inline-block; animation: convulse var(--dur-cue) var(--ease-out) 3; color: #ff4d4d; }
 .line.reject { color: #ff6a3d; }
 .sim-label { color: var(--hot); font-weight: bold; }
 @keyframes convulse {
@@ -66,8 +69,8 @@ button:hover, button[aria-pressed="true"] { background: var(--fg); color: #000; 
   80% { transform: translate(-1px, -1px); }
 }
 @keyframes healed {
-  0% { color: #fff; text-shadow: 0 0 14px #fff; }
-  100% { color: var(--fg); text-shadow: 0 0 5px rgba(51, 255, 51, .45); }
+  0% { opacity: .35; transform: scale(1.06); }
+  100% { opacity: 1; transform: none; }
 }
 
 /* Scanlines and phosphor flicker-free vignette: CSS only, ignore the pointer. */
@@ -83,7 +86,7 @@ body::after { content: ""; position: fixed; inset: 0; pointer-events: none;
 body.hc { background: #000; color: #fff; }
 body.hc::after { display: none; }
 body.hc .crt { box-shadow: none; border-radius: 0; background: #000; }
-body.hc * { text-shadow: none !important; animation: none !important; }
+body.hc * { text-shadow: none !important; animation: none !important; transition: none !important; }
 body.hc .pane { border-color: #fff; }
 body.hc h1, body.hc h2 { letter-spacing: normal; }
 body.hc .plate [data-state], body.hc .line.echo, body.hc .muted, body.hc .plate-summary { color: #fff; }
@@ -143,7 +146,7 @@ body:not(.theatre) .sound-toggle { position: static; display: block; margin: .5r
 /* Title card (web/theatre/stage.js): 3D path only, 3 seconds, any key or click skips it. */
 #title-card { position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center; text-align: center; padding: 2rem;
   background: #000; color: var(--fg); font-size: clamp(1.4rem, 4vw, 3rem); letter-spacing: .08em; text-shadow: 0 0 12px rgba(51, 255, 51, .6);
-  animation: card-out .6s ease-in 2.4s forwards; cursor: pointer; }
+  animation: card-out var(--dur-reveal-long) var(--ease-out) 2.4s forwards; cursor: pointer; }
 @keyframes card-out { to { opacity: 0; } }
 
 /* Recording mode (web/theatre.js): hides the chrome, keeps the CRT and the plate. Escape or the hidden button reverses it. */
@@ -159,7 +162,7 @@ body.record .sound-toggle, body.record .record-toggle:not(:focus) { position: ab
 .raid-pop { color: var(--warn); font-size: 1rem; }
 .raid-heart { color: var(--hot); display: inline-block; }
 .raid-health { display: inline-block; vertical-align: middle; width: 12rem; height: .9rem; border: 1px solid var(--dim); }
-.raid-health-fill { display: block; height: 100%; width: var(--pct, 100%); background: var(--fg); }
+.raid-health-fill { display: block; height: 100%; width: 100%; transform: scaleX(var(--n, 1)); transform-origin: left center; background: var(--fg); }
 .raid-chip { color: var(--warn); }
 .raid-boss { border: 1px solid var(--hot); color: var(--hot); padding: .25rem .5rem; font-weight: bold; }
 .raid-trophies { list-style: none; margin: 0; padding: 0; }
@@ -167,12 +170,12 @@ body.record .sound-toggle, body.record .record-toggle:not(:focus) { position: ab
 .raid-trophies li[data-earned="true"] { color: var(--warn); }
 body.theatre .raid-hud { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 @media (prefers-reduced-motion: no-preference) {
-  .raid-heart { animation: beat var(--beat, 1.2s) ease-in-out infinite; }
-  .raid-pop { animation: pop-up .9s ease-out 1; }
-  body.fx-pop .raid-chip { animation: chip-pop .5s ease-out 1; }
-  body.fx-shake .crt { animation: shake .5s linear 1; }
-  body.fx-flash::before { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 30; background: #fff; animation: flash .9s ease-out 1; }
-  .raid-health-fill { transition: width .6s ease; }
+  .raid-heart { animation: beat var(--beat, 1.2s) var(--ease-in-out) infinite; }
+  .raid-pop { animation: pop-up var(--dur-reveal-long) var(--ease-out) 1; }
+  body.fx-pop .raid-chip { animation: chip-pop var(--dur-cue) var(--ease-out) 1; }
+  body.fx-shake .crt { animation: shake var(--dur-cue) var(--ease-out) 1; }
+  body.fx-flash::before { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 30; background: #fff; animation: flash var(--dur-settle) var(--ease-out) 1; }
+  .raid-health-fill { transition: transform var(--dur-settle) var(--ease-out); }
 }
 @keyframes beat { 0%, 100% { transform: scale(1); } 15% { transform: scale(1.35); } 30% { transform: scale(1); } 45% { transform: scale(1.2); } }
 @keyframes pop-up { from { opacity: 0; transform: translateY(.5rem); } 30% { opacity: 1; } to { opacity: 1; transform: none; } }
@@ -188,10 +191,10 @@ body.hc .raid-health-fill { background: #fff; }
 .tutorial-command { font-weight: bold; }
 .tutorial-hint { color: var(--warn); min-height: 1.2em; }
 .raid-pressure { display: inline-block; vertical-align: middle; width: 12rem; height: .9rem; border: 1px solid var(--dim); }
-.raid-pressure-fill { display: block; height: 100%; width: var(--pct, 0%); background: var(--hot); }
+.raid-pressure-fill { display: block; height: 100%; width: 100%; transform: scaleX(var(--n, 0)); transform-origin: left center; background: var(--hot); }
 body.hc .raid-pressure-fill { background: #fff; }
 @media (prefers-reduced-motion: no-preference) {
-  .raid-pressure-fill { transition: width .6s ease; }
+  .raid-pressure-fill { transition: transform var(--dur-settle) var(--ease-out); }
 }
 
 /* Above the fold (web/index.html). The toolbar holds the two page toggles in one row on the 2D page, so neither
@@ -396,10 +399,10 @@ body.judge-running:not(.theatre) .top { padding-top: 2.75rem; }
 .judge-line { color: var(--warn); }
 body.record .judge-skip, body.record .judge-replay { display: none; }
 @media (prefers-reduced-motion: no-preference) {
-  .plate.judge-draw { animation: judge-draw 5s steps(var(--judge-lines, 20), end) both; }
-  .judge-slide { animation: judge-slide 1s ease-out both; }
+  .plate.judge-draw { animation: judge-draw var(--dur-reveal-long) var(--ease-out) both; }
+  .judge-slide { animation: judge-slide var(--dur-reveal-long) var(--ease-out) both; }
 }
-@keyframes judge-draw { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes judge-draw { from { opacity: 0; transform: translateY(.5rem); } to { opacity: 1; transform: none; } }
 @keyframes judge-slide { from { transform: translateX(110%); opacity: 0; } to { transform: none; opacity: 1; } }
 
 /* Share card panel (D3) */
@@ -422,7 +425,7 @@ body.record .judge-skip, body.record .judge-replay { display: none; }
 .import-drop input[type="file"] { flex: 1 1 14rem; min-height: 44px; color: var(--fg); font: inherit; max-width: 100%; }
 .import-drop:focus-within, .import select:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
 .import select { min-height: 44px; background: transparent; color: var(--fg); border: 1px solid var(--dim); font: inherit; }
-@media (prefers-reduced-motion: no-preference) { .import-drop { transition: border-color .15s; } }
+@media (prefers-reduced-motion: no-preference) { .import-drop { transition: opacity var(--dur-fast) var(--ease-out); } }
 .paste-chip { min-height: 44px; background: transparent; border: 1px solid var(--dim); color: var(--fg); font: inherit; padding: 0 .75rem; cursor: pointer; }
 .paste-source { font-weight: bold; margin: .25rem 0; }
 
@@ -494,7 +497,7 @@ body.theatre.drawer-open .top { position: absolute; width: 1px; height: 1px; mar
 .creature3d-key i { display: inline-block; width: .8em; height: .8em; margin-right: .35em; border-radius: 2px; }
 @media (max-width: 600px) { #creature3d-stage { height: 240px; } }
 /* Judge focus mode (?focus=1): one spotlight on the element the demo is acting on; everything else dims. */
-.judge-spot { position: relative; z-index: 6; outline: 2px solid var(--warn); outline-offset: 4px; box-shadow: 0 0 0 100vmax rgba(0, 0, 0, .55); transition: box-shadow .3s; }
+.judge-spot { position: relative; z-index: 6; outline: 2px solid var(--warn); outline-offset: 4px; box-shadow: 0 0 0 100vmax rgba(0, 0, 0, .55); }
 @media (prefers-reduced-motion: reduce) { .judge-spot { transition: none; } }
 /* First screen, one action (judges: simple and focused). Scan your repo is the only filled button; Watch it run is the
    outlined second choice; Play and For teams are quiet links; the views row and the reader toggles step back. */
@@ -509,8 +512,8 @@ body.hc .hero-actions #hero-scan { background: #fff; color: #000; border-color: 
 body.hc .creature3d-card { background: #000; color: #fff; border-color: #fff; }
 #creature3d-canvas:focus-visible { outline: 2px solid var(--warn); outline-offset: 2px; }
 /* "Play the creature" lands here: a short glow so the player sees where to type. */
-@media (prefers-reduced-motion: no-preference) { .cmd-pulse { animation: cmd-pulse 1.4s ease-out 1; } }
-@keyframes cmd-pulse { 0% { box-shadow: 0 0 0 0 rgba(124,255,138,.9); } 100% { box-shadow: 0 0 0 14px rgba(124,255,138,0); } }
+@media (prefers-reduced-motion: no-preference) { .cmd-pulse { animation: cmd-pulse var(--dur-settle) var(--ease-out) 1; } }
+@keyframes cmd-pulse { 0% { opacity: .55; transform: scale(1.03); } 100% { opacity: 1; transform: none; } }
 .cmd-pulse { outline: 2px solid var(--fg); outline-offset: 2px; }
 /* After "Play the creature" on the 3D bench, the hero card steps aside so the CRT and its command line are visible. */
 body.theatre.playing .hero { display: none; }
