@@ -53,6 +53,26 @@ describe("FACTS.md matches its sources", () => {
   });
 });
 
+describe("web/index.html hero matches FACTS.md", () => {
+  const html = read("web/index.html");
+  const hero = (id: string) => (html.match(new RegExp(`id="${id}"[^>]*>([\\s\\S]*?)</p>`)) ?? [])[1] ?? "";
+
+  it("hero-problem states the census numbers", () => {
+    const t = hero("hero-problem");
+    for (const v of [`${FINDINGS} findings`, `${REPOS} popular`, `${NOISE}%`, `${NO_OWNER}%`]) expect(t).toContain(v);
+  });
+
+  it("hero-what states the positioning line", () => {
+    const t = hero("hero-what");
+    expect(t).toContain("complements Dependabot, Snyk and Socket");
+    expect(t).toContain("exploited first, a named owner, one fix PR, a person merges");
+  });
+
+  it("hero-proof states the demo fix", () => {
+    expect(hero("hero-proof")).toContain(`lodash 4.17.15 to ${LODASH_TO}`);
+  });
+});
+
 describe("public docs agree with FACTS.md", () => {
   for (const file of SCANNED) {
     if (!existsSync(join(ROOT, file))) continue; // PRFAQ.md lands with #300
