@@ -261,11 +261,12 @@ async function commands(browser) {
     s.check("no page errors or console errors", errors.length === 0, errors.slice(0, 3).join(" / "));
     s.check("the page still takes input after 200 commands", alive && skipped === 0, `input enabled=${alive}, ${skipped} commands could not be typed`);
     s.check("the game still answers HELP", await (async () => {
-      const before = (await lines()).n;
+      // Mark the current last line, then check a newer line follows it (the count alone stays flat once the transcript cap is reached).
+      await page.evaluate(() => document.getElementById("transcript").lastElementChild?.setAttribute("data-stress-mark", ""));
       await page.fill("#cmd", "HELP"); await page.press("#cmd", "Enter");
       await page.waitForTimeout(800);
-      return (await lines()).n > before;
-    })(), "a line was added by HELP");
+      return page.evaluate(() => { const last = document.getElementById("transcript").lastElementChild; return !!last && !last.hasAttribute("data-stress-mark"); });
+    })(), "a new line followed HELP");
     s.check(`transcript stays under ${BOUNDS.transcriptLines} lines after 800 commands`, b.n <= BOUNDS.transcriptLines, `${start.n} lines at start, ${a.n} after 200, ${b.n} after 800 (${Math.round(b.chars / 1024)} KB of text)`);
     await ctx.close();
   });
