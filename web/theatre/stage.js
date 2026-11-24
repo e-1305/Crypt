@@ -337,6 +337,8 @@ export async function mountStage() {
     surgeon?.dispose();
     scene.traverse((o) => { o.geometry?.dispose?.(); });
     renderer.dispose();
+    // Release the WebGL context now; Chrome keeps at most 16 and warns after that (#343).
+    renderer.forceContextLoss();
     canvas.remove();
     document.getElementById("theatre-plain")?.remove();
     document.getElementById("theatre-manual")?.remove();
