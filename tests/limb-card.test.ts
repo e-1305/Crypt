@@ -37,3 +37,21 @@ describe("limb card", async () => {
     expect(src).toMatch(/hit\.object\.userData\.limbs\?\.\[hit\.instanceId\]/);
   });
 });
+
+describe("limb card keyboard (#318)", () => {
+  const s = readFileSync(resolve(import.meta.dirname, "..", "web/theatre/creature3d.js"), "utf8");
+  const css = readFileSync(resolve(import.meta.dirname, "..", "web/style.css"), "utf8");
+  it("canvas is focusable with a visible focus ring", () => {
+    expect(s).toMatch(/canvas\.tabIndex = 0;/);
+    expect(css).toMatch(/#creature3d-canvas:focus-visible \{ outline: 2px solid/);
+  });
+  it("arrow keys cycle limbs in both directions and Enter puts EXAMINE <NAME> on the command line", () => {
+    expect(s).toMatch(/ArrowRight" \|\| e\.key === "ArrowDown"\) kbIndex = \(kbIndex \+ 1\) % kbLimbs\.length/);
+    expect(s).toMatch(/ArrowLeft" \|\| e\.key === "ArrowUp"\) kbIndex = \(kbIndex - 1 \+ kbLimbs\.length\) % kbLimbs\.length/);
+    expect(s).toMatch(/cmd\.value = "EXAMINE " \+ String\(kbLimbs\[kbIndex\]\.name \|\| ""\)\.toUpperCase\(\); cmd\.focus\(\);/);
+  });
+  it("keeps a single pointermove listener and removes the key listener on dispose", () => {
+    expect(s.match(/addEventListener\("pointermove"/g)).toHaveLength(1);
+    expect(s).toMatch(/removeEventListener\("keydown", onKey\)/);
+  });
+});

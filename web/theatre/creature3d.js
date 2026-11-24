@@ -88,6 +88,7 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
   renderer.setClearColor(0x050403);
   const canvas = renderer.domElement;
   canvas.id = "creature3d-canvas";
+  canvas.tabIndex = 0; // keyboard: arrow keys cycle limbs, Enter sends EXAMINE to the command line
   canvas.setAttribute("role", "img");
   canvas.style.cssText = "display:block;width:100%;height:100%";
   const holder = document.createElement("div");
@@ -189,6 +190,7 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
   const boneGeos = [];
   let bones = null;
   let labels = []; // { el, pos: Vector3 }
+  let kbLimbs = []; // limbs in rank order, for keyboard cycling of the limb card
   // State cues on the limb itself (shape stays the primary cue; colour never carries state alone).
   // Possessed: glow follows EPSS and a few small droplets fall (motion only). Rotting: desaturated and drooping.
   // Healed: a stitched bandage ring, plus a short green flash on the tube at heal time. Healthy: pale skin.
@@ -291,6 +293,7 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
     clear();
     const all = layoutCreature(globalThis.__cryptCreature);
     const { shown, more } = capLimbs(all, MAX_LIMBS);
+    kbLimbs = shown;
     const healedNow = shown.filter((l) => l.state === "Healed" && (prevState.get(l.id) === "Possessed" || prevState.get(l.id) === "Rotting"));
     prevState.clear();
     for (const l of all) prevState.set(l.id, l.state);
@@ -471,6 +474,42 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
   const ray = new THREE.Raycaster();
   const ndc = new THREE.Vector2();
   let cardFor = "";
+  const fillCard = (l, x, y, w) => {
+    if (cardFor !== l.id) {
+      cardFor = l.id;
+      card.textContent = "";
+      for (const line of limbCardLines(l)) { const p = document.createElement("div"); p.textContent = line; card.append(p); }
+    }
+    card.style.left = `${Math.max(4, Math.min(x + 14, w - 230))}px`;
+    card.style.top = `${Math.max(4, y - 20)}px`;
+    card.hidden = false;
+  };
+  // Keyboard: arrow keys cycle limbs in rank order and show the same card; Enter puts EXAMINE <NAME> on the command line.
+  let kbIndex = -1;
+  const showKeyCard = () => {
+    const l = kbLimbs[kbIndex];
+    if (!l) return;
+    const w = holder.clientWidth || 300, h = holder.clientHeight || 260;
+    const p = new THREE.Vector3(l.x, l.y, l.z).applyMatrix4(body.matrixWorld).project(camera);
+    fillCard(l, ((p.x + 1) / 2) * w, ((1 - p.y) / 2) * h, w);
+  };
+  const onKey = (e) => {
+    if (kbLimbs.length === 0) return;
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") kbIndex = (kbIndex + 1) % kbLimbs.length;
+    else if (e.key === "ArrowLeft" || e.key === "ArrowUp") kbIndex = (kbIndex - 1 + kbLimbs.length) % kbLimbs.length;
+    else if (e.key === "Enter" && kbIndex >= 0) {
+      const cmd = document.getElementById("cmd");
+      if (cmd) { cmd.value = "EXAMINE " + String(kbLimbs[kbIndex].name || "").toUpperCase(); cmd.focus(); }
+      e.preventDefault();
+      return;
+    } else if (e.key === "Escape") { card.hidden = true; cardFor = ""; kbIndex = -1; return; }
+    else return;
+    e.preventDefault();
+    try { showKeyCard(); } catch { card.hidden = true; }
+    if (reduced) draw();
+  };
+  canvas.addEventListener("keydown", onKey);
+  canvas.addEventListener("blur", () => { if (kbIndex >= 0) { card.hidden = true; cardFor = ""; kbIndex = -1; } });
   const showCard = (e) => {
     const r = canvas.getBoundingClientRect();
     if (!r.width || !r.height) return;
@@ -479,14 +518,7 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
     const hit = ray.intersectObjects(meshes, false).find((h) => h.instanceId !== undefined);
     const l = hit ? hit.object.userData.limbs?.[hit.instanceId] : null;
     if (!l) { card.hidden = true; cardFor = ""; return; }
-    if (cardFor !== l.id) {
-      cardFor = l.id;
-      card.textContent = "";
-      for (const line of limbCardLines(l)) { const p = document.createElement("div"); p.textContent = line; card.append(p); }
-    }
-    card.style.left = `${Math.min(e.clientX - r.left + 14, r.width - 230)}px`;
-    card.style.top = `${Math.max(4, e.clientY - r.top - 20)}px`;
-    card.hidden = false;
+    fillCard(l, e.clientX - r.left, e.clientY - r.top, r.width);
   };
   const onMove = (e) => {
     hovering = true;
@@ -526,7 +558,7 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
       window.removeEventListener("resize", resize);
       document.removeEventListener("visibilitychange", onVis);
       canvas.removeEventListener("pointermove", onMove); canvas.removeEventListener("pointerleave", onLeave);
-      canvas.removeEventListener("pointerdown", onTap); card.remove();
+      canvas.removeEventListener("pointerdown", onTap); canvas.removeEventListener("keydown", onKey); card.remove();
       document.removeEventListener("crypt:fx", onFx);
       io?.disconnect();
       clear();
