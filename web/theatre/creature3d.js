@@ -11,17 +11,29 @@ const IDLE_MS = 8000;
 const MAX_DPR = 1.5;
 const SHAPE_NAME = { spike: "spike", cube: "cube", ring: "ring", sphere: "sphere", cone: "cone" };
 
+/** The command the card tells you to type. */
+export function limbCommand(l) {
+  return `EXAMINE ${String(l.name || "").toUpperCase()}`;
+}
+
+/** Next limb index for an arrow key. -1 means none chosen yet. Wraps at both ends. */
+export function stepLimbIndex(i, count, key) {
+  if (count <= 0) return -1;
+  const fwd = key === "ArrowRight" || key === "ArrowDown";
+  if (i < 0 || i >= count) return fwd ? 0 : count - 1;
+  return (i + (fwd ? 1 : count - 1)) % count;
+}
+
 /** Lines of the limb card. Unknown data says "not recorded", never "no". Text only. */
 export function limbCardLines(l) {
   const pct = (x) => (x * 100).toFixed(x < 0.1 ? 1 : 0) + "%";
-  const cmd = String(l.name || "").toUpperCase();
-  return [
+    return [
     `${l.name}${l.version ? "@" + l.version : ""}`,
     `State: ${l.state}`,
     `Exploited (CISA KEV): ${l.kev === true ? "yes" : l.kev === false ? "no" : "not recorded"}`,
     `EPSS: ${l.epssKnown ? pct(l.epss) : "not recorded"}`,
     `Owner: ${l.owner || "not recorded"}`,
-    `Type: EXAMINE ${cmd}`,
+    `Type: ${limbCommand(l)}`,
   ];
 }
 
@@ -89,6 +101,8 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
   const canvas = renderer.domElement;
   canvas.id = "creature3d-canvas";
   canvas.setAttribute("role", "img");
+  canvas.setAttribute("aria-label", "Creature 3D. Arrow keys choose a limb. Enter puts its EXAMINE command in the command box.");
+  canvas.tabIndex = 0;
   canvas.style.cssText = "display:block;width:100%;height:100%";
   const holder = document.createElement("div");
   holder.id = "creature3d-stage";
@@ -471,6 +485,12 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
   const ray = new THREE.Raycaster();
   const ndc = new THREE.Vector2();
   let cardFor = "";
+  const fillCard = (l) => {
+    if (cardFor === l.id) return;
+    cardFor = l.id;
+    card.textContent = "";
+    for (const line of limbCardLines(l)) { const p = document.createElement("div"); p.textContent = line; card.append(p); }
+  };
   const showCard = (e) => {
     const r = canvas.getBoundingClientRect();
     if (!r.width || !r.height) return;
@@ -479,11 +499,7 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
     const hit = ray.intersectObjects(meshes, false).find((h) => h.instanceId !== undefined);
     const l = hit ? hit.object.userData.limbs?.[hit.instanceId] : null;
     if (!l) { card.hidden = true; cardFor = ""; return; }
-    if (cardFor !== l.id) {
-      cardFor = l.id;
-      card.textContent = "";
-      for (const line of limbCardLines(l)) { const p = document.createElement("div"); p.textContent = line; card.append(p); }
-    }
+    fillCard(l);
     card.style.left = `${Math.min(e.clientX - r.left + 14, r.width - 230)}px`;
     card.style.top = `${Math.max(4, e.clientY - r.top - 20)}px`;
     card.hidden = false;
@@ -512,6 +528,38 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
   // Tap shows the card everywhere, also under reduced motion (it is information, not animation).
   const onTap = (e) => { try { showCard(e); } catch { card.hidden = true; } if (reduced) draw(); };
   canvas.addEventListener("pointerdown", onTap);
+  // Keyboard: arrows cycle the limbs and show the same card, Enter puts the EXAMINE command in #cmd and focuses it. It never sends it.
+  let keyLimb = "";
+  const keyLimbs = () => meshes.flatMap((m) => m.userData.limbs || []);
+  const onKey = (e) => {
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    const list = keyLimbs();
+    const at = list.findIndex((l) => l.id === keyLimb);
+    if (e.key === "ArrowRight" || e.key === "ArrowDown" || e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      e.preventDefault();
+      const l = list[stepLimbIndex(at, list.length, e.key)];
+      if (!l) return;
+      keyLimb = l.id;
+      fillCard(l);
+      card.style.left = "8px";
+      card.style.top = "8px";
+      card.hidden = false;
+      wake();
+    } else if (e.key === "Enter" && at >= 0) {
+      const input = document.getElementById("cmd");
+      if (!input || input.disabled) return; // the game is not ready: change nothing
+      e.preventDefault();
+      input.value = limbCommand(list[at]);
+      input.focus();
+    } else if (e.key === "Escape") {
+      card.hidden = true; cardFor = ""; keyLimb = "";
+    }
+  };
+  const onFocus = () => { canvas.style.outline = "3px solid #fff"; canvas.style.outlineOffset = "-3px"; };
+  const onBlur = () => { canvas.style.outline = ""; canvas.style.outlineOffset = ""; if (keyLimb) { card.hidden = true; cardFor = ""; keyLimb = ""; } };
+  canvas.addEventListener("keydown", onKey);
+  canvas.addEventListener("focus", onFocus);
+  canvas.addEventListener("blur", onBlur);
   if (!reduced) { canvas.addEventListener("pointermove", onMove); canvas.addEventListener("pointerleave", onLeave); }
   io?.observe(holder);
   ready = true;
@@ -527,6 +575,7 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
       document.removeEventListener("visibilitychange", onVis);
       canvas.removeEventListener("pointermove", onMove); canvas.removeEventListener("pointerleave", onLeave);
       canvas.removeEventListener("pointerdown", onTap); card.remove();
+      canvas.removeEventListener("keydown", onKey); canvas.removeEventListener("focus", onFocus); canvas.removeEventListener("blur", onBlur);
       document.removeEventListener("crypt:fx", onFx);
       io?.disconnect();
       clear();
