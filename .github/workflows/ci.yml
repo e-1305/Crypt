@@ -68,7 +68,7 @@ jobs:
       - name: Resource budgets (first-load JS, lazy three.js, fonts)
         run: node scripts/ci/budget.mjs
       - run: npx playwright-core install --with-deps chromium
-      - name: Screenshots and layout checks at 390x844, 1280x800, 1440x900, 1920x1080
+      - name: Screenshots, layout checks at 390x844, 1280x800, 1440x900, 1920x1080, and idle animation budget (<= 10 frames/s at rest)
         run: npm run test:visual
       - name: Lighthouse accessibility on the 2D page (>= 95)
         run: npm run test:a11y
