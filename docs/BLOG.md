@@ -1,5 +1,7 @@
 # Nobody owns the monster: building CRYPT with Kiro
 
+*This post was written as part of the Kiroween 2026 hackathon.*
+
 Live demo: [e-1305.github.io/Crypt](https://e-1305.github.io/Crypt/)
 
 ![The CRYPT operating theatre, a 3D bench with a creature made of dependencies](img/bench-3d.png)
@@ -41,6 +43,10 @@ The ownership number surprised me more than the vulnerability number. Most of th
 The limits matter as much as the numbers. The scan reads lockfiles only. A finding means the locked version has a known advisory, not that the vulnerable code runs. Twenty popular projects are not a random sample of all software. The results are aggregates, and no project is named next to a finding, following the blameless rule.
 
 ![The raid view at 1440 by 900 pixels](img/visual-qa-1440x900.png)
+
+## Where CRYPT fits
+
+CRYPT is not another scanner. Dependabot now shows EPSS on its alerts, Snyk ranks by exploit maturity and reachability, and Socket catches malicious packages. CRYPT works alongside them and does the last mile: exploited first, a named owner from CODEOWNERS, one fix PR, and a person merges. It has no malware detection and no function-level reachability. The side-by-side, with a source for every cell, is in [COMPETITORS.md](COMPETITORS.md).
 
 ## What broke, and how it got fixed
 
