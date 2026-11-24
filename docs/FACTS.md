@@ -32,7 +32,7 @@ Source: [docs/SECURITY-AUDIT.md](SECURITY-AUDIT.md).
 
 ## Positioning
 
-Source: `docs/COMPETITORS.md` (lands with #300).
+Source: [docs/COMPETITORS.md](COMPETITORS.md).
 
 - CRYPT complements Dependabot, Snyk and Socket.
 - It does not compete on detection: no malware detection, no function-level reachability.
@@ -40,7 +40,7 @@ Source: `docs/COMPETITORS.md` (lands with #300).
 
 ## Traction
 
-Source: `docs/INTERVIEWS.md` (lands with #300).
+Source: [docs/INTERVIEWS.md](INTERVIEWS.md).
 
 - No customers and no revenue. Pricing is a hypothesis (assumption).
 - Interviews: 0 of 5.
