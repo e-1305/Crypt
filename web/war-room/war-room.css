@@ -1,7 +1,9 @@
 /* War Room (Epic D4): the big-screen team raid. Same CRT look as web/style.css, own file so the main page is untouched. */
 @font-face { font-family: "JetBrains Mono"; font-style: normal; font-weight: 400; font-display: swap; src: url("../fonts/jetbrains-mono-latin-400-normal.woff2") format("woff2"); }
 @font-face { font-family: "JetBrains Mono"; font-style: normal; font-weight: 700; font-display: swap; src: url("../fonts/jetbrains-mono-latin-700-normal.woff2") format("woff2"); }
-:root { --fg: #33ff33; --dim: #22b022; --bg: #050805; --warn: #ffb000; --hot: #ff6a3d; }
+:root { --fg: #33ff33; --dim: #22b022; --bg: #050805; --warn: #ffb000; --hot: #ff6a3d;
+  --ease-out: cubic-bezier(.22, 1, .36, 1); --ease-in-out: cubic-bezier(.65, 0, .35, 1);
+  --dur-fast: 150ms; --dur-reveal: 240ms; --dur-reveal-long: 320ms; --dur-cue: 480ms; --dur-settle: 600ms; }
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); color: var(--fg);
   font-family: "JetBrains Mono", ui-monospace, "Cascadia Mono", Menlo, Consolas, "DejaVu Sans Mono", "Courier New", monospace;
@@ -28,14 +30,14 @@ label { display: block; color: var(--dim); }
 .plate span[data-state="Possessed"] { color: var(--hot); }
 .plate span[data-state="Rotting"] { color: var(--warn); }
 .plate span[data-state="Healed"] { color: #9dffb0; }
-.plate .just-healed { animation: heal 1.6s ease-out 1; }
-.plate .convulsing { animation: convulse .5s linear 3; display: inline-block; color: #ff3030; }
-@keyframes heal { 0% { color: #fff; text-shadow: 0 0 18px #fff; } 100% { text-shadow: 0 0 4px rgba(51, 255, 51, .5); } }
+.plate .just-healed { animation: heal 1.6s var(--ease-out) 1; }
+.plate .convulsing { animation: convulse var(--dur-cue) var(--ease-out) 3; display: inline-block; color: #ff3030; }
+@keyframes heal { 0% { opacity: .35; transform: scale(1.06); } 100% { opacity: 1; transform: none; } }
 @keyframes convulse { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(-3px, 2px); } 75% { transform: translate(3px, -2px); } }
 .flash { position: absolute; inset: 0; background: #dff; opacity: 0; pointer-events: none; }
-.flash.thunder { animation: thunder .8s ease-out 1; }
+.flash.thunder { animation: thunder var(--dur-settle) var(--ease-out) 1; }
 @keyframes thunder { 0% { opacity: .85; } 20% { opacity: .1; } 35% { opacity: .6; } 100% { opacity: 0; } }
-.rejection { min-height: 1.4em; color: #ff6060; font-weight: 700; transition: opacity .6s; }
+.rejection { min-height: 1.4em; color: #ff6060; font-weight: 700; transition: opacity var(--dur-settle) var(--ease-out); }
 .rejection:empty { opacity: 0; }
 .boss-list, .feed, .badges { list-style: none; margin: 0; padding: 0; }
 .boss-list li { margin-bottom: .6rem; }
@@ -51,7 +53,7 @@ label { display: block; color: var(--dim); }
 .nights { margin: .2rem 0; font-size: 4.5rem; line-height: 1; font-weight: 700; }
 .boss-name { display: flex; justify-content: space-between; gap: .5rem; }
 .bar { height: 14px; border: 1px solid var(--dim); background: #0a140a; }
-.bar > span { display: block; height: 100%; background: var(--hot); transition: width .6s; }
+.bar > span { display: block; height: 100%; background: var(--hot); }
 .bar.healed > span { background: #9dffb0; }
 .big { font-size: 2.4rem; font-weight: 700; margin: 0; text-shadow: 0 0 8px rgba(51, 255, 51, .6); }
 .feed { max-height: 22rem; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; }
@@ -85,8 +87,7 @@ label { display: block; color: var(--dim); }
 }
 @media (min-width: 1700px) { .plate { font-size: 13px; } .big { font-size: 3rem; } }
 @media (prefers-reduced-motion: reduce) {
-  .plate .just-healed, .plate .convulsing, .flash.thunder { animation: none; }
-  .bar > span, .rejection { transition: none; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 h3 { margin: .6rem 0 .2rem; font-size: .9rem; color: var(--dim); letter-spacing: .1em; text-transform: uppercase; }
 .hist { margin: 0; padding-left: 1.2rem; }
