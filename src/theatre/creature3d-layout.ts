@@ -18,6 +18,12 @@ export interface LayoutLimb {
   region: "head" | "torso" | "arms" | "legs";
   /** EPSS in 0..1. 0 when absent or not a number (an assumption: unknown is drawn as the coolest glow, never as safe). */
   epss: number;
+  /** Package name, version and owner for the limb card. kev/owner are null when the data does not say (never shown as "no"). */
+  name: string;
+  version: string;
+  kev: boolean | null;
+  owner: string | null;
+  epssKnown: boolean;
 }
 
 /** Emissive intensity of a Possessed limb: EPSS 0 maps to 0.3, EPSS 1 to 1.0. */
@@ -126,6 +132,11 @@ export function layoutCreature(creature: unknown): LayoutLimb[] {
         z: round(p.z),
         region,
         epss: typeof l.epss === "number" && Number.isFinite(l.epss) ? Math.min(1, Math.max(0, l.epss)) : 0,
+        epssKnown: typeof l.epss === "number" && Number.isFinite(l.epss),
+        name: text(l.name, 60),
+        version,
+        kev: typeof l.kev === "boolean" ? l.kev : null,
+        owner: text(l.owner, 80) || null,
       });
     }
   }

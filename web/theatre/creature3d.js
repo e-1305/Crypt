@@ -11,6 +11,20 @@ const IDLE_MS = 8000;
 const MAX_DPR = 1.5;
 const SHAPE_NAME = { spike: "spike", cube: "cube", ring: "ring", sphere: "sphere", cone: "cone" };
 
+/** Lines of the limb card. Unknown data says "not recorded", never "no". Text only. */
+export function limbCardLines(l) {
+  const pct = (x) => (x * 100).toFixed(x < 0.1 ? 1 : 0) + "%";
+  const cmd = String(l.name || "").toUpperCase();
+  return [
+    `${l.name}${l.version ? "@" + l.version : ""}`,
+    `State: ${l.state}`,
+    `Exploited (CISA KEV): ${l.kev === true ? "yes" : l.kev === false ? "no" : "not recorded"}`,
+    `EPSS: ${l.epssKnown ? pct(l.epss) : "not recorded"}`,
+    `Owner: ${l.owner || "not recorded"}`,
+    `Type: EXAMINE ${cmd}`,
+  ];
+}
+
 function hasWebgl() {
   try {
     const gl = document.createElement("canvas").getContext("webgl2") || document.createElement("canvas").getContext("webgl");
@@ -344,6 +358,7 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
       });
       mesh.instanceMatrix.needsUpdate = true;
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+      mesh.userData.limbs = group; // instanceId -> limb, for the limb card
       body.add(mesh);
       meshes.push(mesh);
     }
@@ -446,8 +461,36 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
     raf = requestAnimationFrame(frame);
   };
   wakeLoop = wake;
+  // Limb card: hover or tap a limb to see what it is and the command to type. Text only, inside the label layer.
+  const card = document.createElement("div");
+  card.id = "creature3d-card";
+  card.className = "creature3d-card";
+  card.setAttribute("role", "status");
+  card.hidden = true;
+  holder.append(card);
+  const ray = new THREE.Raycaster();
+  const ndc = new THREE.Vector2();
+  let cardFor = "";
+  const showCard = (e) => {
+    const r = canvas.getBoundingClientRect();
+    if (!r.width || !r.height) return;
+    ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -(((e.clientY - r.top) / r.height) * 2 - 1));
+    ray.setFromCamera(ndc, camera);
+    const hit = ray.intersectObjects(meshes, false).find((h) => h.instanceId !== undefined);
+    const l = hit ? hit.object.userData.limbs?.[hit.instanceId] : null;
+    if (!l) { card.hidden = true; cardFor = ""; return; }
+    if (cardFor !== l.id) {
+      cardFor = l.id;
+      card.textContent = "";
+      for (const line of limbCardLines(l)) { const p = document.createElement("div"); p.textContent = line; card.append(p); }
+    }
+    card.style.left = `${Math.min(e.clientX - r.left + 14, r.width - 230)}px`;
+    card.style.top = `${Math.max(4, e.clientY - r.top - 20)}px`;
+    card.hidden = false;
+  };
   const onMove = (e) => {
     hovering = true;
+    try { showCard(e); } catch { card.hidden = true; }
     const r = canvas.getBoundingClientRect();
     if (r.width && r.height) {
       look.x = Math.max(-1, Math.min(1, ((e.clientX - r.left) / r.width) * 2 - 1));
@@ -455,7 +498,7 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
     }
     wake();
   };
-  const onLeave = () => { hovering = false; look.x = 0; look.y = 0; lastActive = performance.now(); };
+  const onLeave = () => { card.hidden = true; cardFor = ""; hovering = false; look.x = 0; look.y = 0; lastActive = performance.now(); };
   const onVis = () => {
     if (reduced || stopped) return;
     if (document.hidden) pause(); else wake();
@@ -466,6 +509,9 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
       if (onScreen) wake(); else pause();
     })
     : null;
+  // Tap shows the card everywhere, also under reduced motion (it is information, not animation).
+  const onTap = (e) => { try { showCard(e); } catch { card.hidden = true; } if (reduced) draw(); };
+  canvas.addEventListener("pointerdown", onTap);
   if (!reduced) { canvas.addEventListener("pointermove", onMove); canvas.addEventListener("pointerleave", onLeave); }
   io?.observe(holder);
   ready = true;
@@ -480,6 +526,7 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
       window.removeEventListener("resize", resize);
       document.removeEventListener("visibilitychange", onVis);
       canvas.removeEventListener("pointermove", onMove); canvas.removeEventListener("pointerleave", onLeave);
+      canvas.removeEventListener("pointerdown", onTap); card.remove();
       document.removeEventListener("crypt:fx", onFx);
       io?.disconnect();
       clear();
