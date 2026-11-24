@@ -489,8 +489,8 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
     card.hidden = false;
   };
   const onMove = (e) => {
-    try { showCard(e); } catch { card.hidden = true; }
     hovering = true;
+    try { showCard(e); } catch { card.hidden = true; }
     const r = canvas.getBoundingClientRect();
     if (r.width && r.height) {
       look.x = Math.max(-1, Math.min(1, ((e.clientX - r.left) / r.width) * 2 - 1));
