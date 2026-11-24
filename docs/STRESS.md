@@ -8,6 +8,8 @@ CI runs it as the `stress` job in `.github/workflows/ci.yml`. The job has `conti
 
 Dated snapshot of one run (later runs and `out/stress/report.json` take precedence; the failure table goes stale once #342 or #343 is fixed). Measured on one run in a Linux sandbox: Chromium 159.0.8154.6 headless, Node 22, software WebGL (SwiftShader, no GPU), viewport 1440x900. GPU cost is therefore not in the frame numbers. Treat times as relative (400 limbs against the 7-limb demo in the same browser), not as device figures. Totals: 48 checks, 46 pass, 2 fail.
 
+Reproduced on a second machine (the CTO review sandbox, 2026-11-24): Chrome for Testing 153.0.8010.12 headless, Node 22, SwiftShader, 60 s hold. Same totals (48 checks, 2 fail) and the same two failures with the same counts (4 context warnings; 16, 981 and 3855 transcript lines). Small drift elsewhere: p95 frame cost 0.8 ms against 0.5 ms, heap after 60 s 7.4 MB, 4x startup frame 200.1 ms.
+
 ## Failures
 
 | Issue | Scenario | What failed |
