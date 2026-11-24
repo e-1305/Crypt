@@ -15,10 +15,10 @@ describe("landing page idle animation budget (#316)", () => {
     expect(goto).toBeGreaterThan(init);
     expect(qa).toMatch(/window\.requestAnimationFrame = /);
   });
-  it("waits 8 s, then counts over 5 s and allows at most 10 per second", () => {
+  it("waits 8 s, then counts over 5 s and allows at most 2 per second", () => {
     expect(qa).toMatch(/const REST_SETTLE_MS = 8000;/);
     expect(qa).toMatch(/const REST_WINDOW_MS = 5000;/);
-    expect(qa).toMatch(/const REST_RAF_MAX_PER_SEC = 10;/);
+    expect(qa).toMatch(/const REST_RAF_MAX_PER_SEC = 2;/);
     expect(qa).toMatch(/perSec > REST_RAF_MAX_PER_SEC\) fail\(/);
   });
   it("sends no input between the settle wait and the count", () => {

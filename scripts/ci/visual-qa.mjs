@@ -951,7 +951,7 @@ async function checkCreature3d(browser, vp) {
 // after 8 s with no input, the callbacks that run in the next 5 s must stay at or under REST_RAF_MAX_PER_SEC per second.
 const REST_SETTLE_MS = 8000;
 const REST_WINDOW_MS = 5000;
-const REST_RAF_MAX_PER_SEC = 10;
+const REST_RAF_MAX_PER_SEC = 2;
 async function checkRestRaf(browser, vp) {
   const tag = `rest-raf ${vp.w}x${vp.h}`;
   const ctx = await browser.newContext({ viewport: { width: vp.w, height: vp.h } });
