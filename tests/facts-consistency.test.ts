@@ -152,3 +152,17 @@ describe("for-teams and manual positioning matches FACTS.md", () => {
     expect(manualHtml).toContain(COMPETITORS_URL);
   });
 });
+
+describe("landing hero matches FACTS.md positioning (#321)", () => {
+  const html = readFileSync(join(ROOT, "web/index.html"), "utf8");
+  const hero = /<p id="hero-what"[^>]*>([\s\S]*?)<\/p>/.exec(html)?.[1] ?? "";
+  it("says last mile, alongside the existing scanners, and that a person merges", () => {
+    expect(hero).toMatch(/exploited first/);
+    expect(hero).toMatch(/a person merges/);
+    expect(hero).toMatch(/alongside Dependabot, Snyk or Socket/);
+    expect(hero).toMatch(/last mile, not detection/);
+  });
+  it("makes no replacement or 'better than' claim", () => {
+    expect(hero).not.toMatch(/better than|replaces?|instead of/i);
+  });
+});
