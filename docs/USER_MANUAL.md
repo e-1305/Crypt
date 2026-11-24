@@ -2,6 +2,8 @@
 
 CRYPT turns a project's dependency tree into a creature, one limb per package, and lets a team heal it by playing a text adventure. This manual covers day-to-day use. Background and design live in the [README](../README.md), [DEMO.md](DEMO.md) (the live pull request walkthrough), [ACCESSIBILITY.md](ACCESSIBILITY.md) (measurements) and [KIRO.md](KIRO.md).
 
+**Where CRYPT fits.** CRYPT complements Dependabot, Snyk and Socket. It does not compete on detection: it has no malware detection and no function-level reachability. Its job is the last mile: exploited first, a named owner, one fix PR, and a person merges. See [COMPETITORS.md](COMPETITORS.md). CRYPT has no customers yet.
+
 ## Quick start for testers
 
 You do not need to know what jQuery is. This page walks you through the live demo in about five minutes. Nothing you do here changes any real project.

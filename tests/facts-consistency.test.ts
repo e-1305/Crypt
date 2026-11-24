@@ -2,6 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { renderManual } from "../src/site/manual.js";
 
 const ROOT = join(import.meta.dirname, "..");
 const read = (p: string) => readFileSync(join(ROOT, p), "utf8");
@@ -106,5 +107,48 @@ describe("public docs agree with FACTS.md", () => {
     const drifted = "95.0% of findings were noise";
     const hit = [...drifted.matchAll(/(\d+(?:\.\d+)?)\s?%/g)].some((m) => Number(m[1]) >= 93 && Number(m[1]) <= 97 && m[1] !== NOISE);
     expect(hit).toBe(true);
+  });
+});
+
+const COMPETITORS_URL = "https://github.com/e-1305/Crypt/blob/main/docs/COMPETITORS.md";
+const manualHtml = renderManual(read("docs/USER_MANUAL.md"), {
+  sourcePath: "docs/USER_MANUAL.md",
+  repoBlobBase: "https://github.com/e-1305/Crypt/blob/main/",
+  repoHas: (p: string) => existsSync(join(ROOT, p)),
+  siteHas: () => false,
+  siteBase: "https://e-1305.github.io/Crypt/",
+});
+const plain = (h: string) => h.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+const PAGES: Record<string, string> = {
+  "web/for-teams.html": plain(read("web/for-teams.html")),
+  "web/manual.html (rendered)": plain(manualHtml),
+  "docs/USER_MANUAL.md": read("docs/USER_MANUAL.md"),
+};
+
+describe("for-teams and manual positioning matches FACTS.md", () => {
+  const teams = read("web/for-teams.html");
+  it("FACTS.md states the positioning the pages repeat", () => {
+    expect(facts).toMatch(/Dependabot/);
+    expect(facts).toMatch(/Socket/);
+  });
+  it("for-teams links COMPETITORS.md on GitHub and labels pricing a hypothesis", () => {
+    expect(teams).toContain(`href="${COMPETITORS_URL}"`);
+    expect(teams).toMatch(/id="pricing-label">HYPOTHESIS</);
+    expect(teams).toContain('id="link-business"');
+    expect(PAGES["web/for-teams.html"]).toMatch(/No customers, no revenue/);
+  });
+  for (const [name, text] of Object.entries(PAGES)) {
+    it(`${name}: says CRYPT complements Dependabot, Snyk and Socket`, () => {
+      expect(text).toMatch(/complements Dependabot, Snyk and Socket/);
+      expect(text).toMatch(/no malware detection and no function-level reachability/);
+      expect(text).toMatch(/exploited first, a named owner, one fix PR, and a person merges/);
+    });
+    it(`${name}: makes no customer, replacement or detection claims`, () => {
+      expect(text).not.toMatch(/trusted by|testimonial|customers (use|love|rely)|our customers|replaces? (Dependabot|Snyk|Socket)/i);
+      expect(text).not.toMatch(/detects? malware|function-level reachability analysis/i);
+    });
+  }
+  it("the rendered manual links COMPETITORS.md", () => {
+    expect(manualHtml).toContain(COMPETITORS_URL);
   });
 });
