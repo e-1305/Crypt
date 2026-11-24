@@ -1,6 +1,6 @@
 # How CRYPT was built with Kiro
 
-CRYPT was built with Kiro specs, steering, hooks and custom agents (see "Custom agents": three agents, two with config files), plus its own MCP server. Strategy, review gates and some CI and conflict fixes came from a human-supervised AI CTO (Claude); the commits are listed under "Process note". Specs were used for real in Kiro Web sessions. Steering was read on instruction, not observed as auto-loaded. Hooks are configured and CI-checked but were not observed firing in Kiro Web (see "Limits"). Every count below comes from `npm run kiro:stats`, not from typing.
+CRYPT was built with Kiro specs, steering, hooks and custom agents (see "Custom agents": four agents, three with config files), plus its own MCP server. Strategy, review gates and some CI and conflict fixes came from a human-supervised AI CTO (Claude); the commits are listed under "Process note". Specs were used for real in Kiro Web sessions. Steering was read on instruction, not observed as auto-loaded. Hooks are configured and CI-checked but were not observed firing in Kiro Web (see "Limits"). Every count below comes from `npm run kiro:stats`, not from typing.
 
 **Strategy.** Spec first: each feature starts as `requirements.md`, `design.md` and `tasks.md` in [`.kiro/specs`](../.kiro/specs). Steering in [`.kiro/steering`](../.kiro/steering) guards every session, and hooks in [`.kiro/hooks`](../.kiro/hooks) check on save and on stop.
 Custom agents split the work: necromancer writes and inquisitor checks ([`.kiro/agents`](../.kiro/agents)).
@@ -45,11 +45,11 @@ Generated 2026-11-24 (UTC).
 | Hook runs by hand (manual) | 5 | lines of `docs/evidence/hook-runs.jsonl` whose trigger is `manual` |
 | Hook runs recorded in a real Kiro session | 1 | lines of `docs/evidence/hook-runs.jsonl` whose trigger is not `manual` |
 | of which Kiro CLI in GitHub Actions (source kiro-cli-ci) | 0 | real Kiro lines of `docs/evidence/hook-runs.jsonl` with `"source":"kiro-cli-ci"` |
-| Steering files | 6 | `.kiro/steering/*.md` |
-| Custom agents | 3 | `.kiro/agents/*.json` (Oracle has no file) |
+| Steering files | 8 | `.kiro/steering/*.md` |
+| Custom agents | 4 | `.kiro/agents/*.json` (Oracle has no file) |
 | Property test call sites | 402 in 54 files | `fc.assert`, `fc.property`, `fc.asyncProperty`, `test.prop` in `tests/*.test.ts` |
-| Tests | 1425 passed, 16 skipped | `npx vitest run --reporter=json` (numPassedTests, numPendingTests) |
-| Test files | 109 | `npx vitest run --reporter=json` (testResults) |
+| Tests | 1445 passed, 4 skipped | `npx vitest run --reporter=json` (numPassedTests, numPendingTests) |
+| Test files | 110 | `npx vitest run --reporter=json` (testResults) |
 | PRs | 66 | unique `#N` in landing-commit subjects of `git log` (`pull request #N` or `PR #N`); `(#N)` suffixes are issues and are not counted; `gh` is not used |
 <!-- kiro-stats:end -->
 
@@ -102,7 +102,7 @@ Longer notes for each spec are under "Spec details" in the appendix.
 - Test: [`tests/mcp.test.ts`](../tests/mcp.test.ts), "request_graft writes a request only for an ID in limbs.json while unsealed" (M3.3) and "after seal() no input ever writes a request".
 
 ## Steering
-The files in `.kiro/steering/`, all `inclusion: always`. In Kiro Web sessions the agent got them because each issue told it to read `.kiro/steering/`, not because Kiro was seen to load them (see "Limits"). The evidence is in the repository. Three examples: (1) no merge path: `failsafe.md` rule 2 is enforced by `scripts/ci/failsafe-guard.sh` in the CI job `failsafe-guard` and by `tests/failsafe-guard.test.ts`; (2) owners from CODEOWNERS only: `blameless.md` shows in `tests/exhume.test.ts` ("CODEOWNERS (E6)" and "no output field contains a git author or committer"); (3) deterministic ranking: `failsafe.md` rule 4 and `sla-policy.md` show in `tests/exhume.test.ts` ("KEV always outranks non-KEV") and in `tests/static.test.ts` (no LLM import in `src/`).
+The files in `.kiro/steering/` are `inclusion: always`, except two review rituals with `inclusion: manual`: [`review-round-of-10s.md`](../.kiro/steering/review-round-of-10s.md) (10 personas grade the product and the five official criteria) and [`review-conseil-des-7.md`](../.kiro/steering/review-conseil-des-7.md) (seven seats, blind round, one revision round, pre-mortem, vote; the human decides). The Reviewer agent loads both. In Kiro Web sessions the agent got them because each issue told it to read `.kiro/steering/`, not because Kiro was seen to load them (see "Limits"). The evidence is in the repository. Three examples: (1) no merge path: `failsafe.md` rule 2 is enforced by `scripts/ci/failsafe-guard.sh` in the CI job `failsafe-guard` and by `tests/failsafe-guard.test.ts`; (2) owners from CODEOWNERS only: `blameless.md` shows in `tests/exhume.test.ts` ("CODEOWNERS (E6)" and "no output field contains a git author or committer"); (3) deterministic ranking: `failsafe.md` rule 4 and `sla-policy.md` show in `tests/exhume.test.ts` ("KEV always outranks non-KEV") and in `tests/static.test.ts` (no LLM import in `src/`).
 
 The files in `.kiro/steering/`. The enforcing checks are `tests/failsafe-guard.test.ts`, `tests/static.test.ts`, `tests/theatre-blameless.test.ts` and the CI job `failsafe-guard`.
 
@@ -163,6 +163,7 @@ Date of all five manual runs: 2026-11-18. None of them caught anything. What was
 | Oracle | Wraps the deterministic scorer. Code in `src/`, no `.kiro/agents/` file. |
 | Necromancer | Drafts the fix PR. `.kiro/agents/necromancer.json`: read and write tools, no shell, no web. |
 | Inquisitor | Verifies the fix. `.kiro/agents/inquisitor.json`: read only (separation of privilege, failsafe rule 3). |
+| Reviewer | Runs the review rituals below and posts the result as a comment. `.kiro/agents/reviewer.json`: read only, no write, no shell, no web. |
 
 ## MCP
 **Consumed.** Kiro reads `.kiro/settings/mcp.json`, which names one server: CRYPT's own. No third-party MCP server is configured or used.
