@@ -5,6 +5,10 @@ import { layoutCreature, layoutBounds, anchorOf, BODY, STATE_COLOR, STATE_SHAPE 
 import { MAX_LIMBS, GUARD_FRAMES, capLimbs, isSlowDevice, moreLabel, shouldRunGuard } from "../js/theatre/caps.js";
 
 const STATES = ["Possessed", "Rotting", "Healed", "Healthy", "Unknown"];
+// Fan guard: the loop draws at most 30 fps, sleeps after 8 s without input, data or a burst, and the pixel ratio stops at 1.5.
+const FRAME_MS = 1000 / 30;
+const IDLE_MS = 8000;
+const MAX_DPR = 1.5;
 const SHAPE_NAME = { spike: "spike", cube: "cube", ring: "ring", sphere: "sphere", cone: "cone" };
 
 function hasWebgl() {
@@ -66,7 +70,7 @@ export function initCreature3d() {
 
 function mountView(THREE, panel, legendEl, reduced, onSlow) {
   const renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MAX_DPR));
   renderer.setClearColor(0x050403);
   const canvas = renderer.domElement;
   canvas.id = "creature3d-canvas";
@@ -298,7 +302,9 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
     if (!reduced) for (const l of healedNow) startBurst(l);
     canvas.setAttribute("aria-label", `Creature 3D view: ${shown.length} limbs shown. ` + STATES.map((s) => `${counts[s]} ${s}`).join(", ") + (more > 0 ? `, ${moreLabel(more)}` : "") + ".");
     draw();
+    wakeLoop();
   };
+  let wakeLoop = () => {};
   const draw = () => { renderer.render(scene, camera); placeLabels(); };
   const resize = () => {
     const w = holder.clientWidth || 300, h = holder.clientHeight || 260;
@@ -309,11 +315,14 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
   };
 
   let raf = 0, stopped = false, last = -1, spin = 0;
+  let lastActive = performance.now(), hovering = false, onScreen = true, ready = false;
   const deltas = [];
   let guard = !reduced && shouldRunGuard(navigator.webdriver);
   const frame = (now) => {
     if (stopped) return;
+    if (bursts.length === 0 && !hovering && now - lastActive > IDLE_MS) { raf = 0; last = -1; return; } // idle: the last frame stays on screen
     raf = requestAnimationFrame(frame);
+    if (last >= 0 && now - last < FRAME_MS - 1) return; // 30 fps cap
     if (last >= 0) {
       deltas.push(now - last);
       if (guard && deltas.length >= GUARD_FRAMES + 1) {
@@ -335,10 +344,29 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
   build();
   // Reduced motion: one still frame, no loop. Hidden tabs stop the loop too.
   if (!reduced) raf = requestAnimationFrame(frame);
+  // Idle rule: any pointer move over the canvas, plate update or burst restarts the loop. Off screen or hidden pauses it.
+  const pause = () => { cancelAnimationFrame(raf); raf = 0; last = -1; };
+  const wake = () => {
+    lastActive = performance.now();
+    if (!ready || reduced || stopped || !onScreen || document.hidden || raf !== 0) return;
+    raf = requestAnimationFrame(frame);
+  };
+  wakeLoop = wake;
+  const onMove = () => { hovering = true; wake(); };
+  const onLeave = () => { hovering = false; lastActive = performance.now(); };
   const onVis = () => {
     if (reduced || stopped) return;
-    if (document.hidden) { cancelAnimationFrame(raf); raf = 0; } else if (raf === 0) { last = -1; raf = requestAnimationFrame(frame); }
+    if (document.hidden) pause(); else wake();
   };
+  const io = !reduced && typeof IntersectionObserver === "function"
+    ? new IntersectionObserver((entries) => {
+      onScreen = entries[entries.length - 1].isIntersecting;
+      if (onScreen) wake(); else pause();
+    })
+    : null;
+  if (!reduced) { canvas.addEventListener("pointermove", onMove); canvas.addEventListener("pointerleave", onLeave); }
+  io?.observe(holder);
+  ready = true;
   document.addEventListener("visibilitychange", onVis);
   document.documentElement.dataset.creature3d = reduced ? "static" : "live";
 
@@ -349,6 +377,8 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
       document.removeEventListener("visibilitychange", onVis);
+      canvas.removeEventListener("pointermove", onMove); canvas.removeEventListener("pointerleave", onLeave);
+      io?.disconnect();
       clear();
       bursts.forEach(endBurst); bursts = []; burstGeo.dispose();
       Object.values(geos).forEach((g) => g.dispose());
