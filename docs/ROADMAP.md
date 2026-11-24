@@ -61,6 +61,21 @@ Fail-safe at every step: unknown is never "clean", CRYPT never merges, SEAL CRYP
 
 **P6. Demo v2 (after P1 to P4).** One story told from the customer's side: *Monday 9:00, a VOC lead has 248 findings and one actively exploited jquery.* Scan → noise cut → owner → one PR → CI → human merge → healed → the trend line moves → the CISO page → the SIEM sees it. Under three minutes, the owner's own voice. Lifts judge, voter, recruiter, Presentation criterion.
 
+## 5b. RICE scoring (next quarter)
+
+Score = Reach × Impact × Confidence ÷ Effort. **Every input is an assumption** unless marked measured. Reach is repos or teams touched per quarter; Impact uses 0.25 / 0.5 / 1 / 2 / 3; Effort is person-weeks for one builder with Kiro.
+
+| Item | Reach | Impact | Confidence | Effort | RICE | Note |
+|---|---|---|---|---|---|---|
+| S2. One outside maintainer runs `crypt init` | 1 (measured target) | 3 | 80% | 0.5 | 4.8 | First real user; unblocks Impact |
+| S1. Five practitioner interviews ([INTERVIEWS.md](INTERVIEWS.md)) | 5 | 2 | 90% | 0.5 | 18 | Cheapest learning per hour |
+| P3+. Import-level "is it used?" for pip | 20 | 1 | 50% | 2 | 5 | Same honesty rules as npm |
+| Org view from GitHub App install (read-only) | 10 | 2 | 40% | 4 | 2 | Needs interviews to confirm the buyer |
+| Malware signal (consume an existing feed) | 30 | 1 | 30% | 3 | 3 | Socket's core; complement, not race |
+| Auto-merge | | | | | 0 | Out of scope by design |
+
+Reading: talk to people first (S1, S2), then build. This order is the opposite of how the hackathon build went, on purpose.
+
 ## 6. Signals (only real people can create these)
 
 | # | Signal | Who | Lifts |

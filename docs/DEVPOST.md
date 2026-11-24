@@ -3,7 +3,7 @@
 Tagline (111 chars, limit 200): CRYPT finds security holes that matter in your code's building blocks, opens one fix, and a person approves it.
 
 ## Links
-- Repo: https://github.com/e-1305/Crypt
+- Repo: https://github.com/e-1305/Crypt · product docs: [PRFAQ](PRFAQ.md), [competitors](COMPETITORS.md), [metrics](METRICS.md), [RICE roadmap](ROADMAP.md#5b-rice-scoring-next-quarter), [interview guide](INTERVIEWS.md)
 - Live site: https://e-1305.github.io/Crypt/
 - Demo repo: https://github.com/e-1305/crypt-demo
 - Video: VIDEO_URL_PENDING (shot list in [review/round-5.md](review/round-5.md), pitch in [PITCH.md](PITCH.md))
@@ -13,7 +13,7 @@ Tagline (111 chars, limit 200): CRYPT finds security holes that matter in your c
 **Technological Implementation.** Work is split between a read and write agent (Necromancer, no shell, no web) and a read only agent (Inquisitor), described under [Custom agents](KIRO.md#custom-agents). Fail-safe rules are enforced by the [CI guard jobs](KIRO.md#ci-guard-jobs) and by hooks, with the rest of the Kiro setup under [Hooks](KIRO.md#hooks) and [Property-based tests](KIRO.md#property-based-tests). The [steering files](KIRO.md#steering) act as governance policy: the same rules load in every session for every agent, and the `failsafe-guard` CI job applies them to pull requests, which is how a team can roll Kiro out safely.
 **Design.** The [live site](https://e-1305.github.io/Crypt/) shows each project as a creature, with a 3D bench and a 2D fallback, and [ACCESSIBILITY.md](ACCESSIBILITY.md) lists what was measured and what was not yet measured. A 15-item [security audit](SECURITY-AUDIT.md) records its findings and the PRs that fixed them. CRYPT is CI/CD-native: `crypt init` opens one PR with a read-only report-mode workflow ([INSTALL-ACTION.md](INSTALL-ACTION.md#what-report-mode-does)), and SARIF lands in GitHub Code Scanning ([PROOF.md](PROOF.md#sarif-in-github-code-scanning)).
 **Innovation.** The report is a playable Z-machine game (a 1979 VM, written in Inform 6) whose GRAFT command prepares a fix, a dry run by default. Real PRs are opened only from the CLI with `crypt raid <url> --live`, and each dependency becomes one limb of the creature ([DEVPOST.md, What it does](#what-it-does)).
-**Presentation.** The chain is a scan, a PR, CI, a person landing it, then `crypt reraise` showing HEALED, as described in [DEMO.md](DEMO.md) and run on the [demo repo PR](https://github.com/e-1305/crypt-demo/pull/1). The video is not recorded yet (VIDEO_URL_PENDING above); the shot list and pitch are in [VIDEO.md](VIDEO.md) and [PITCH.md](PITCH.md).
+**Presentation.** The chain is a scan, a PR, CI, a person landing it, then `crypt reraise` showing HEALED, as described in [DEMO.md](DEMO.md) and run on the [demo repo PR](https://github.com/e-1305/crypt-demo/pull/1). The video is recorded (under two minutes, script in [VIDEO.md](VIDEO.md)); its link (VIDEO_URL_PENDING above) is added on upload. Pitch in [PITCH.md](PITCH.md).
 **Limit.** Kiro CLI was not used (Free plan, no API key): the CI workflow that would call it is ready but has not run, per [KIRO.md Limits](KIRO.md#limits), and API key use needs a paid plan per [ATTRIBUTION.md](ATTRIBUTION.md).
 
 ## Who uses it and who pays
