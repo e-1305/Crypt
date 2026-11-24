@@ -122,8 +122,26 @@ if (benchToggle && benchBody) {
 }
 
 // Hero actions (issue #120): "Play the creature" moves focus to the game input, "Scan your repo" focuses the paste field under the hero.
-document.getElementById("hero-play")?.addEventListener("click", () => {
-  document.getElementById("cmd")?.focus();
+// It must visibly do something: the command line comes into view, glows for a moment, and holds a first command to try
+// (EXAMINE on the worst limb). Nothing runs until the player presses Enter.
+let firstLimb = "";
+document.getElementById("hero-play")?.addEventListener("click", (ev) => {
+  const box = document.getElementById("cmd");
+  if (!box) return;
+  ev.preventDefault();
+  box.scrollIntoView({ block: "center", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  if (!box.value.trim() && firstLimb) box.value = "EXAMINE " + firstLimb;
+  box.focus({ preventScroll: true });
+  box.select?.();
+  const row = box.closest(".input-row") ?? box;
+  row.classList.remove("cmd-pulse");
+  void row.offsetWidth; // restart the glow if clicked twice
+  row.classList.add("cmd-pulse");
+  setTimeout(() => row.classList.remove("cmd-pulse"), 1500);
+  // 3D bench: the hero card covers the CRT, so it steps aside, and the camera moves in to the screen.
+  if (document.body.classList.contains("theatre")) document.body.classList.add("playing");
+  document.dispatchEvent(new CustomEvent("crypt:play"));
+  announce(box.value ? "Command line ready with " + box.value + ". Press Enter to play." : "Command line ready. Type a command and press Enter.");
 });
 document.getElementById("hero-scan")?.addEventListener("click", () => {
   const field = document.getElementById("paste-url");
@@ -359,6 +377,7 @@ function wireTryChip(limb) {
   const chip = document.getElementById("try-chip");
   if (!chip || !limb) return;
   const text = "GRAFT " + limb;
+  firstLimb = limb;
   chip.textContent = "Try: " + text;
   chip.setAttribute("aria-label", "Try: " + text + ". Fills the command box and runs only when you press Enter.");
   chip.hidden = false;
