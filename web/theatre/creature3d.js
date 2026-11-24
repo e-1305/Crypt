@@ -373,6 +373,38 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
     draw();
   };
 
+  // Life cues (#309): eyes follow the pointer over the canvas, the body flinches on a graft (or a red-CI convulse), the head lifts
+  // and the torso exhales on a heal. Event driven, off under reduced motion. The cue only moves meshes; no state changes.
+  const FLINCH_MS = 300, SIGH_MS = 900;
+  const headParts = [head, brow, flatTop, ...eyes].map((m) => ({ m, y: m.position.y }));
+  const eyeBase = eyes.map((e) => e.position.x);
+  const look = { x: 0, y: 0 };
+  let cue = null; // { kind: "flinch" | "sigh", t0 }
+  const onFx = (e) => {
+    const d = e && e.detail;
+    if (!d || d.reduced === true || reduced) return;
+    if (d.kind === "graft" || d.kind === "convulse") cue = { kind: "flinch", t0: performance.now() };
+    else if (d.kind === "heal") cue = { kind: "sigh", t0: performance.now() };
+    else return;
+    wake(); // idle rule: a cue after the loop paused must restart it
+  };
+  const stepLife = (now) => {
+    eyes.forEach((e, i) => { e.position.x = eyeBase[i] + look.x * hr * 0.07; });
+    let lift = 0, shake = 0, exhale = 0;
+    if (cue) {
+      const t = (now - cue.t0) / (cue.kind === "flinch" ? FLINCH_MS : SIGH_MS);
+      if (t >= 1) cue = null;
+      else if (cue.kind === "flinch") shake = Math.sin(t * Math.PI) * (1 - t);
+      else { lift = Math.sin(t * Math.PI); exhale = lift; }
+    }
+    headParts.forEach((h, i) => { h.m.position.y = h.y + lift * 0.1 + (i >= 3 ? look.y * hr * 0.05 : 0); });
+    body.position.z = -0.25 * shake;
+    body.rotation.x = -0.12 * shake;
+    torso.scale.x *= 1 + 0.05 * exhale;
+    torso.scale.y *= 1 - 0.04 * exhale;
+  };
+  if (!reduced) document.addEventListener("crypt:fx", onFx);
+
   let raf = 0, stopped = false, last = -1, spin = 0;
   let lastActive = performance.now(), hovering = false, onScreen = true, ready = false;
   const deltas = [];
@@ -394,6 +426,7 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
     body.rotation.y = Math.sin(spin) * 0.5;
     // Breathing, and a slow throb on possessed limbs.
     torso.scale.set(1 + Math.sin(spin * 6) * 0.012, 1 + Math.sin(spin * 6) * 0.018, 0.72);
+    stepLife(now);
     if (bones) for (const m of bones.children) if (m.userData.pulse) m.material.emissiveIntensity = Math.min(1, m.userData.glow * (0.85 + 0.15 * Math.sin(spin * 20)));
     if (drips) stepDrips(now);
     if (flashes.length) stepFlashes(now);
@@ -413,8 +446,16 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
     raf = requestAnimationFrame(frame);
   };
   wakeLoop = wake;
-  const onMove = () => { hovering = true; wake(); };
-  const onLeave = () => { hovering = false; lastActive = performance.now(); };
+  const onMove = (e) => {
+    hovering = true;
+    const r = canvas.getBoundingClientRect();
+    if (r.width && r.height) {
+      look.x = Math.max(-1, Math.min(1, ((e.clientX - r.left) / r.width) * 2 - 1));
+      look.y = Math.max(-1, Math.min(1, 1 - ((e.clientY - r.top) / r.height) * 2));
+    }
+    wake();
+  };
+  const onLeave = () => { hovering = false; look.x = 0; look.y = 0; lastActive = performance.now(); };
   const onVis = () => {
     if (reduced || stopped) return;
     if (document.hidden) pause(); else wake();
@@ -439,6 +480,7 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
       window.removeEventListener("resize", resize);
       document.removeEventListener("visibilitychange", onVis);
       canvas.removeEventListener("pointermove", onMove); canvas.removeEventListener("pointerleave", onLeave);
+      document.removeEventListener("crypt:fx", onFx);
       io?.disconnect();
       clear();
       bursts.forEach(endBurst); bursts = []; burstGeo.dispose();
