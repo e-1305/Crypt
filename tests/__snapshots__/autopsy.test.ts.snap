@@ -8,6 +8,15 @@ exports[`autopsy page > matches the snapshot 1`] = `
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CRYPT Autopsy Report (sample) - e-1305/crypt-demo</title>
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2212%22%20fill%3D%22%23050805%22%2F%3E%3Cpolygon%20points%3D%2222%2C4%2042%2C4%2054%2C22%2042%2C60%2022%2C60%2010%2C22%22%20fill%3D%22%230b180b%22%20stroke%3D%22%2333ff33%22%20stroke-width%3D%225%22%20stroke-linejoin%3D%22round%22%2F%3E%3Cpath%20d%3D%22M17%2030L47%2030M20%2023L20%2037M26%2023L26%2037M32%2023L32%2037M38%2023L38%2037M44%2023L44%2037%22%20fill%3D%22none%22%20stroke%3D%22%2333ff33%22%20stroke-width%3D%223.5%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E">
+<meta name="theme-color" content="#050805">
+<meta property="og:type" content="website">
+<meta property="og:title" content="CRYPT Autopsy Report (sample)">
+<meta property="og:description" content="Don&#39;t abandon your creature. CRYPT turns your dependency tree into a creature you heal: the few findings that matter, and one fix PR for a person to review.">
+<meta property="og:image" content="https://e-1305.github.io/Crypt/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <style>
 :root{--fg:#33ff33;--dim:#22b022;--bg:#050805;--warn:#ffb000;--hot:#ff6a3d;--line:#22b022;--text:#c9f7c9}
 *{box-sizing:border-box}

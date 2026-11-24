@@ -308,14 +308,16 @@ describe.skipIf(!haveToolchain)("build:site output", () => {
       expect(autopsy).toContain("SAMPLE DATA");
       // The only URL is the link to the vendor security review.
       expect(autopsy).not.toMatch(/<script/i);
-      expect(autopsy.replace(/https:\/\/github\.com\/e-1305\/Crypt\/blob\/main\/docs\/SECURITY-REVIEW\.md/g, "")).not.toMatch(/https?:\/\//i);
+      // The brand head adds an inline icon and the absolute social image URL (no request is made for either).
+      const autopsyBare = autopsy.replace(/<link rel="icon"[^>]*>/, "").replace(/<meta property="og:image" content="[^"]*">/, "");
+      expect(autopsyBare.replace(/https:\/\/github\.com\/e-1305\/Crypt\/blob\/main\/docs\/SECURITY-REVIEW\.md/g, "")).not.toMatch(/https?:\/\//i);
 
       // Relative URLs only, and the page code opens no connection except to its own files.
       for (const f of ["index.html", "app.js", "style.css", ...files(join(a, "js")).map((x) => x.slice(a.length + 1))]) {
         const text = readFileSync(join(a, f), "utf8");
         // The live exhume modules (paste your repo) read raw.githubusercontent.com and api.osv.dev, and nothing else.
         const live = f === "js/web/live-exhume.js" || f === "js/exhume/osv-client.js" || f === "js/necromancer/package-advisories.js" || f === "js/render/card.js";
-        const allowed = f === "index.html" ? "(?!github\\.com\\/owner\\/repo|github\\.com\\/e-1305\\/|raw\\.githubusercontent\\.com|api\\.osv\\.dev)" : live ? "(?!github\\.com\\/owner\\/repo|raw\\.githubusercontent\\.com|api\\.osv\\.dev|e-1305\\.github\\.io|www\\.linkedin\\.com|github\\.com\\/e-1305\\/)" : "(?!github\\.com\\/owner\\/repo)";
+        const allowed = f === "index.html" ? "(?!github\\.com\\/owner\\/repo|github\\.com\\/e-1305\\/|e-1305\\.github\\.io\\/Crypt\\/og-image\\.png|raw\\.githubusercontent\\.com|api\\.osv\\.dev)" : live ? "(?!github\\.com\\/owner\\/repo|raw\\.githubusercontent\\.com|api\\.osv\\.dev|e-1305\\.github\\.io|www\\.linkedin\\.com|github\\.com\\/e-1305\\/)" : "(?!github\\.com\\/owner\\/repo)";
         expect(text, f).not.toMatch(new RegExp(`https?:\\/\\/${allowed}`));
         if (!live) expect(text, f).not.toMatch(/\b(XMLHttpRequest|WebSocket|sendBeacon)\b|method:\s*["']POST/);
         else expect(text, f).not.toMatch(/\b(XMLHttpRequest|WebSocket|sendBeacon)\b/);

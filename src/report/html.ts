@@ -1,4 +1,5 @@
 // Autopsy page: one self-contained printable HTML string. Every value is escaped. No script, no external request (one link to the vendor security review).
+import { brandHead } from "../site/brand.js";
 import type { AutopsyModel, HistoryPoint, LimbRef } from "./model.js";
 import { durationText, type HistoryAggregate } from "./limb-history.js";
 import { FOOTNOTES, PDF_HINT, SAMPLE_BANNER, SAMPLE_NOTE, SECURITY_REVIEW_PATH, SECURITY_REVIEW_URL, STYLE } from "./template.js";
@@ -125,6 +126,7 @@ export function renderAutopsyHtml(m: AutopsyModel): string {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CRYPT Autopsy Report${m.sample ? " (sample)" : ""}${m.repo ? ` - ${esc(m.repo)}` : ""}</title>
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:">
+${brandHead({ title: `CRYPT Autopsy Report${m.sample ? " (sample)" : ""}`, standalone: true })}
 <style>${STYLE}</style>
 </head>
 <body>
