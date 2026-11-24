@@ -947,6 +947,32 @@ async function checkCreature3d(browser, vp) {
   await ctx.close();
 }
 
+// Perf budget (#316): the landing page must stop animating at rest. A requestAnimationFrame counter is injected before load;
+// after 8 s with no input, the callbacks that run in the next 5 s must stay at or under REST_RAF_MAX_PER_SEC per second.
+const REST_SETTLE_MS = 8000;
+const REST_WINDOW_MS = 5000;
+const REST_RAF_MAX_PER_SEC = 2;
+async function checkRestRaf(browser, vp) {
+  const tag = `rest-raf ${vp.w}x${vp.h}`;
+  const ctx = await browser.newContext({ viewport: { width: vp.w, height: vp.h } });
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => fail(tag, `page error: ${e.message}`));
+  await page.addInitScript(() => {
+    window.__rafCount = 0;
+    const raf = window.requestAnimationFrame.bind(window);
+    window.requestAnimationFrame = (cb) => raf((t) => { window.__rafCount++; return cb(t); });
+  });
+  await page.goto(base);
+  await page.waitForTimeout(REST_SETTLE_MS);
+  const before = await page.evaluate(() => window.__rafCount);
+  await page.waitForTimeout(REST_WINDOW_MS);
+  const after = await page.evaluate(() => window.__rafCount);
+  const perSec = (after - before) / (REST_WINDOW_MS / 1000);
+  if (perSec > REST_RAF_MAX_PER_SEC) fail(tag, `landing page ran ${perSec.toFixed(1)} animation frames per second at rest, budget is ${REST_RAF_MAX_PER_SEC}`);
+  else console.log(`ok   [${tag}] ${perSec.toFixed(1)} animation frames per second at rest (budget ${REST_RAF_MAX_PER_SEC})`);
+  await ctx.close();
+}
+
 let browser;
 try {
   browser = await chromium.launch(launchOptions());
@@ -965,6 +991,7 @@ try {
   for (const vp of VIEWPORTS) await checkGraveyard(browser, vp);
   for (const vp of CREATURE3D_VIEWPORTS) await checkCreature3d(browser, vp);
   for (const vp of TEAMS_VIEWPORTS) await checkForTeams(browser, vp);
+  await checkRestRaf(browser, { w: 1440, h: 900 });
   mkdirSync(outDir, { recursive: true });
   const autopsyFile = join(outDir, "autopsy.html");
   const gen = spawnSync(process.execPath, [join(root, "bin", "crypt.mjs"), "autopsy", "--sample", "--out", autopsyFile], { cwd: root, encoding: "utf8" });
