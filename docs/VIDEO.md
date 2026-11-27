@@ -89,7 +89,7 @@ Shots: cold open on the census numbers; judge mode on the 3D bench (zoomed on th
 | kiro | Built with Kiro. Specs first. Steering rules every session must follow. Agents that fix and agents that check. |
 | end | Paste your repo. Own it, without shame. Don't abandon your creature. |
 
-## v3 cut (1:58), 2026-11-23: the current video
+## v3 cut (1:58), 2026-11-23 (superseded by v5)
 
 1920x1080, synthetic voice (Kokoro-82M, voice am_onyx), subtitles, a generated drone and a chime at the heal. Every number on screen matches [FACTS.md](FACTS.md).
 
@@ -113,3 +113,12 @@ Shots: cold open on the census numbers; judge mode on the 3D bench (zoomed on th
 
 Not yet in v3: a narration line on positioning (CRYPT works alongside existing scanners and does the last mile, [COMPETITORS.md](COMPETITORS.md)). It goes into the next cut, with the new creature looks and the limb card.
 
+
+## v5 cut (2:06), 2026-11-27: the current video
+
+Re-recorded from main after the brand, motion, ghost-line and stress fixes, to match the judges' guidance of 2026-11-26:
+
+- The product is on screen from the first frame: the census graveyard (20 projects), then the 3D creature with jquery possessed. The CRYPT logo is on the cold open and the end card.
+- Kiro on screen: a spec (`judge-mode` requirements and tasks), the `failsafe.md` steering, the Stop hook, the two agents, and "Where Kiro surprised us". New voice-over line (opinion): without Kiro we would not have tried a 1979 game engine driving 2026 agents, kept safe by rules every session loads.
+- Every page and CI shot keeps its SIMULATED or DRY RUN label. The voice is synthetic (Kokoro TTS, Apache-2.0) and disclosed on the end card. The background is generated noise plus a sine chime: no music, no third-party trademarks.
+- Measured: 1920x1080, H.264 + AAC, -15.7 LUFS integrated, -1.5 dBFS peak.
