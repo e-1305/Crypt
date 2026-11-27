@@ -168,6 +168,7 @@ export function renderManual(md: string, o: ManualOptions): string {
 <meta name="description" content="How to play CRYPT, with a quick start for people new to the demo.">
 <title>${esc(title)} | CRYPT</title>
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self' data:; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<link rel="stylesheet" href="brand.css">
 ${brandHead({ title: `${title} | CRYPT` })}
 <link rel="stylesheet" href="manual.css">
 </head>

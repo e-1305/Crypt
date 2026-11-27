@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { BRAND_TOKENS, STYLE } from "../src/report/template.js";
+import { renderManual } from "../src/site/manual.js";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const read = (f: string) => readFileSync(resolve(ROOT, f), "utf8");
@@ -49,5 +50,50 @@ describe("brand tokens on the pages (issue #334)", () => {
 
   it("keeps every animation off the new styles", () => {
     expect(STYLE).not.toMatch(/@keyframes|animation\s*:/);
+  });
+});
+
+describe("brand tokens on For teams and the manual (issue #335)", () => {
+  const strip = (css: string) => css.replace(/\/\*[\s\S]*?\*\//g, "");
+  const manualHtml = renderManual("# T\n\nintro", {
+    sourcePath: "docs/USER_MANUAL.md",
+    repoBlobBase: "https://github.com/e-1305/Crypt/blob/main/",
+    repoHas: () => false,
+    siteHas: () => false,
+    siteBase: "https://e-1305.github.io/Crypt/",
+  });
+
+  it("has no hex colour in for-teams.css", () => {
+    expect(strip(read("web/for-teams.css")).match(HEX) ?? []).toEqual([]);
+  });
+
+  it("has hex colours in manual.css only inside the single :root block", () => {
+    const css = strip(read("web/manual.css"));
+    expect(css.match(/:root\s*\{/g)).toHaveLength(1);
+    expect(css.replace(/:root\s*\{[^}]*\}/, "").match(HEX) ?? []).toEqual([]);
+  });
+
+  it("does not redeclare brand tokens in :root", () => {
+    const names = new Set(rootVars(brand).keys());
+    for (const f of ["web/for-teams.css", "web/manual.css"]) {
+      const css = strip(read(f));
+      const block = css.match(/:root\s*\{([^}]*)\}/)?.[1] ?? "";
+      for (const m of block.matchAll(/(--[a-z0-9-]+)\s*:/g)) expect(names.has(m[1]), `${f} ${m[1]}`).toBe(false);
+    }
+  });
+
+  it("links brand.css first, right after the CSP meta", () => {
+    for (const [f, html] of [["for-teams.html", read("web/for-teams.html")], ["manual", manualHtml]]) {
+      const csp = html.match(/<meta http-equiv="Content-Security-Policy"[^>]*>\n/)!;
+      const after = html.slice(html.indexOf(csp[0]) + csp[0].length);
+      expect(after.startsWith('<link rel="stylesheet" href="brand.css">'), f).toBe(true);
+      expect(html.match(/<link rel="stylesheet" href="([^"]+)"/)![1], f).toBe("brand.css");
+    }
+  });
+
+  it("adds no animation to either stylesheet", () => {
+    for (const f of ["web/for-teams.css", "web/manual.css"]) {
+      expect(strip(read(f)), f).not.toMatch(/@keyframes|animation\s*:|transition\s*:/);
+    }
   });
 });
