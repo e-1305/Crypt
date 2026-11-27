@@ -16,6 +16,10 @@ One small set of design tokens for every page. They are CSS custom properties in
 | `--state-possessed` | `#ff6a3d` | Plate and 3D view: Possessed limb |
 | `--state-healed` | `#33ff33` | Plate and 3D view: Healed limb |
 | `--state-rejected` | `#ff4d4d` | Rejected graft (the plate convulses) |
+| `--surface` | `#0a140a` | Panels, cards, inputs on `--bg` |
+| `--surface-deep` | `#03060a` | Graveyard night stage |
+| `--healed-soft` | `#9dffb0` | Healed text and bars on the War Room |
+| `--flash` | `#ddffff` | War Room thunder flash |
 | `--hc-fg` | `#fff` | High-contrast text and borders |
 | `--hc-bg` | `#000` | High-contrast background |
 

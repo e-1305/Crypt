@@ -3,6 +3,7 @@
   /* Palette */
   --fg: #33ff33; --dim: #22b022; --bg: #050805; --warn: #ffb000; --hot: #ff6a3d;
   --state-healthy: #22b022; --state-rotting: #c8e63c; --state-possessed: #ff6a3d; --state-healed: #33ff33; --state-rejected: #ff4d4d;
+  --surface: #0a140a; --surface-deep: #03060a; --healed-soft: #9dffb0; --flash: #ddffff;
   --hc-fg: #fff; --hc-bg: #000;
   /* Type scale (JetBrains Mono) */
   --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Menlo, Consolas, "DejaVu Sans Mono", "Courier New", monospace;
