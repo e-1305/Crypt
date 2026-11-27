@@ -32,7 +32,7 @@ Presentation is lowest: the video is not yet public and v4 opens on stat cards f
 
 ## Ranked fixes (value per hour)
 
-1. Fill the GitHub About box: description, website, topics (5 min, Presentation and J3). Done by the CTO on 2026-11-27.
+1. Fill the GitHub About box: description, website, topics (5 min, Presentation and J3). For Amine: repository settings are not writable from the CTO session.
 2. Video v5: product on screen in the first 3 s, one spec and one hook shown, no live typing, the logo, the "before Kiro" line, under 3 min (Presentation; a few hours).
 3. Ghost voice for the getting-started strip in `web/onboarding.js` (Design, J2; 1 hour).
 4. `CONTRIBUTING.md` plus 3 issues labelled `good first issue` (J3, OSS maintainer; 1 hour).
