@@ -7,7 +7,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { NoManifestError, buildCreature, serializeCreature } from "../src/exhume/creature.js";
 import { parseEpss, parseKev } from "../src/exhume/feeds.js";
-import { LockfileError, parsePackageLock, parseRequirements } from "../src/exhume/lockfile.js";
+import { LockfileError, parsePackageLock, parseRequirements, parseYarnLock } from "../src/exhume/lockfile.js";
 import { ownerOf, parseCodeowners } from "../src/exhume/owners.js";
 import { OSV_TTL_MS, cachePath, resolveOsv } from "../src/exhume/osv.js";
 import { countLimbs, combineOsvAnswers, rankLimbs, scoreOf } from "../src/exhume/rank.js";
@@ -61,6 +61,12 @@ describe("lockfile parsing (E1)", () => {
   it("rejects lockfileVersion 1 and invalid JSON", () => {
     expect(() => parsePackageLock('{"lockfileVersion":1,"dependencies":{}}', "x")).toThrow(LockfileError);
     expect(() => parsePackageLock("{", "x")).toThrow(LockfileError);
+  });
+  it("rejects yarn.lock with a LockfileError until it is supported", () => {
+    const yarn = ['# yarn lockfile v1', "", 'a@^1.0.0:', '  version "1.0.0"', ""].join("\n");
+    expect(() => parseYarnLock(yarn, "yarn.lock")).toThrow(LockfileError);
+    expect(() => parseYarnLock(yarn, "yarn.lock")).toThrow("yarn.lock: yarn.lock is not supported yet");
+    expect(() => parseYarnLock("", "sub/yarn.lock")).toThrow(LockfileError);
   });
   it("reads only == pins from requirements.txt and never guesses the rest", () => {
     const limbs = parseRequirements(
