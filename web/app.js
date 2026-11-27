@@ -21,6 +21,7 @@ const sound = initSound();
 const seal = createSealGate(); // SEAL CRYPT lasts until the page is reloaded
 
 const transcript = document.getElementById("transcript");
+const TRANSCRIPT_MAX = 1000;
 const form = document.getElementById("input-form");
 const cmd = document.getElementById("cmd");
 const eventLog = document.getElementById("event-log");
@@ -164,6 +165,8 @@ function addLine(text, cls) {
   div.className = cls ? "line " + cls : "line";
   div.textContent = text === "" ? "\u00a0" : text;
   transcript.appendChild(div);
+  // Keep the newest TRANSCRIPT_MAX lines so a long session does not grow the DOM without bound (#342).
+  while (transcript.childElementCount > TRANSCRIPT_MAX) transcript.firstElementChild.remove();
   transcript.scrollTop = transcript.scrollHeight;
 }
 
