@@ -99,3 +99,6 @@ main { display: flex; flex-direction: column; padding: var(--space-1) var(--spac
 }
 @media (max-width: 899px) { .gy-top h1 { font-size: 1.1rem; } .gy-totals { flex-basis: 100%; font-size: .9rem; } .gy-top .gy-sub { order: 1; } .gy-totals { order: 2; } .gy-scan { margin-top: var(--space-2); } .gy-top { padding-top: .35rem; } .gy-sub a { min-height: 44px; line-height: 44px; } }
 .gy.record .gy-legend { display: flex; }
+
+/* #363: the screen-reader table sits in a .sr-only box (style.css). Let its text wrap so the hidden table never lays out wider than a 390px phone. */
+.sr-only > #sr-table { width: 100%; max-width: 100%; table-layout: fixed; white-space: normal; overflow-wrap: anywhere; }

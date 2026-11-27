@@ -27,4 +27,11 @@ table { border-collapse: collapse; width: 100%; font-size: .95rem; }
 th, td { border: var(--border-width) solid var(--man-dim); padding: .4rem .6rem; text-align: left; vertical-align: top; }
 th { background: var(--man-code-bg); }
 li { margin: .3rem 0; }
+/* Phones (#363): code and tables stay inside the 390px viewport. Long code wraps, cells wrap, and a table that is still wider scrolls inside its .table-wrap. */
+@media (max-width: 599px) {
+  pre { white-space: pre-wrap; max-width: 100%; }
+  pre code { overflow-wrap: anywhere; }
+  .table-wrap { max-width: 100%; overflow-x: auto; }
+  th, td { overflow-wrap: anywhere; }
+}
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
