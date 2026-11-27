@@ -45,7 +45,7 @@ describe("motion system", () => {
   });
 
   it("keeps reveal durations within 200-320 ms", () => {
-    const t = css("web/style.css");
+    const t = css("web/brand.css");
     for (const n of ["--dur-reveal", "--dur-reveal-long"]) {
       const ms = Number(new RegExp(n + ":\\s*(\\d+)ms").exec(t)![1]);
       expect(ms).toBeGreaterThanOrEqual(200);
