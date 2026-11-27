@@ -61,6 +61,14 @@ export function parsePackageLock(text: string, manifest: string): Limb[] {
   return [...byKey.values()].sort(compareLimbs);
 }
 
+/**
+ * yarn.lock is not supported yet (#361). This stub always throws, so a
+ * yarn.lock is never silently read as an empty tree.
+ */
+export function parseYarnLock(text: string, manifest: string): Limb[] {
+  throw new LockfileError(`${manifest}: yarn.lock is not supported yet`);
+}
+
 export function normalizePypiName(name: string): string {
   return name.toLowerCase().replace(/[-_.]+/g, "-");
 }
