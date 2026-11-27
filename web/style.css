@@ -42,9 +42,9 @@ button:hover, button[aria-pressed="true"] { background: var(--fg); color: #000; 
 /* The plate: 80 columns of engraved ASCII. */
 .plate { margin: 0; overflow-x: auto; font: inherit; font-size: 13px; line-height: 1.15; white-space: pre;
   text-shadow: 0 0 5px rgba(51, 255, 51, .45); }
-/* Phone (issue #362): the plate is 80 columns, about .6em each. 1.8vw keeps the widest line inside a 390px viewport
-   with the 1rem page margins (80 * .6 * 1.8vw = 86vw). Above 480px the 13px size above applies, so 1440 is unchanged. */
-@media (max-width: 480px) { .plate { font-size: min(var(--text-14), 1.8vw); } }
+/* Phone (issue #362): the plate is 80 columns, about .6em each. 1.72vw keeps the widest line inside the 324px plate box at 390px (measured)
+   with the 1rem page margins (80 * .6 * 1.72vw = 83vw). Above 480px the 13px size above applies, so 1440 is unchanged. */
+@media (max-width: 480px) { .plate { font-size: min(var(--text-14), 1.72vw); } }
 .plate-summary { margin: .5rem 0 0; color: var(--dim); }
 .plate [data-state="Healthy"] { color: var(--dim); text-shadow: none; }
 .plate [data-state="Rotting"] { color: #c8e63c; }
