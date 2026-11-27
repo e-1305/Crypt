@@ -7,6 +7,7 @@ import { noiseFunnel, funnelText, funnelOwners, exorcisedRows, LOCKFILE_LIMIT_LI
 import { slaOf, toCsv, toJson } from "./js/web/report-export.js";
 import { parseFeedSnapshot } from "./js/web/feed-snapshot.js";
 import { mountCardPanel } from "./card/panel.js";
+import { withGhost } from "./js/web/ghost-lines.js";
 import { parseRepoUrl, repoFromQuery, repoSlug } from "./js/web/repo-url.js";
 
 const $ = (id) => document.getElementById(id);
@@ -207,7 +208,7 @@ export function initPaste({ announce, gallery = [], fetchFn = (...a) => fetch(..
     if (busy) return;
     const ref = parseRepoUrl(text);
     if (!ref) {
-      status.textContent = "Enter an address like https://github.com/owner/repo.";
+      status.textContent = withGhost("bad-url", "Enter an address like https://github.com/owner/repo.");
       announce(status.textContent);
       return;
     }
@@ -238,7 +239,7 @@ export function initPaste({ announce, gallery = [], fetchFn = (...a) => fetch(..
       // Fail safe: no creature is drawn, nothing is shown as healthy.
       result.hidden = true;
       result.textContent = "";
-      status.textContent = err instanceof LiveExhumeError ? err.message : "The repo could not be read, so no creature is shown. Check the address and try again in a minute.";
+      status.textContent = withGhost(err instanceof LiveExhumeError ? err.code : undefined, err instanceof LiveExhumeError ? err.message : "The repo could not be read, so no creature is shown. Check the address and try again in a minute.");
       announce(status.textContent);
     } finally {
       busy = false;
@@ -259,7 +260,7 @@ export function initPaste({ announce, gallery = [], fetchFn = (...a) => fetch(..
       input.value = "https://github.com/" + ref.owner + "/" + ref.repo;
       run(input.value);
     } else {
-      status.textContent = "The shared link has no valid owner/name. Paste a GitHub address like https://github.com/owner/repo.";
+      status.textContent = withGhost("bad-url", "The shared link has no valid owner/name. Paste a GitHub address like https://github.com/owner/repo.");
       announce(status.textContent);
     }
   }
