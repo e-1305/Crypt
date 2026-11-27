@@ -15,6 +15,8 @@
 
 **Product docs:** [PRFAQ](docs/PRFAQ.md) · [vs Dependabot, Snyk, Socket](docs/COMPETITORS.md) · [metrics](docs/METRICS.md) · [RICE roadmap](docs/ROADMAP.md#5b-rice-scoring-next-quarter) · [user interviews](docs/INTERVIEWS.md)
 
+**Contributing:** [CONTRIBUTING.md](CONTRIBUTING.md)
+
 [![CI](https://github.com/e-1305/Crypt/actions/workflows/ci.yml/badge.svg)](https://github.com/e-1305/Crypt/actions/workflows/ci.yml) [![npm downloads](https://img.shields.io/npm/dw/@e-1305/crypt)](https://www.npmjs.com/package/@e-1305/crypt)
 
 ---
