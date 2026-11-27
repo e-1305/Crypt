@@ -5,6 +5,7 @@
 // that was not checked reads "Unknown (not checked)", never Healthy.
 import { importInBrowser, ImportWebError, MAX_WEB_IMPORT_BYTES, PRIVACY_LINE } from "./js/web/import-glue.js";
 import { parseFeedSnapshot } from "./js/web/feed-snapshot.js";
+import { withGhost } from "./js/web/ghost-lines.js";
 
 const $ = (id) => document.getElementById(id);
 const MAX_LIMB_ROWS = 12;
@@ -85,7 +86,7 @@ export function initImport({ announce = () => {}, fetchFn = (...a) => fetch(...a
       status.textContent = "Done: " + r.groups.length + " packages from " + file.name + ", " + r.groups.filter((g) => g.spawned).length + " spawned. " + PRIVACY_LINE;
       announce(status.textContent);
     } catch (err) {
-      fail(err instanceof ImportWebError ? err.message : "The file could not be read, so no creature is shown.");
+      fail(withGhost(undefined, err instanceof ImportWebError ? err.message : "The file could not be read, so no creature is shown."));
     } finally {
       busy = false;
     }
