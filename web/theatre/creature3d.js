@@ -570,6 +570,8 @@ function mountView(THREE, panel, legendEl, reduced, onSlow) {
       bodyMat.dispose(); boneMat.dispose(); stitchMat.dispose(); boltMat.dispose(); eyeMat.dispose(); shadowMat.dispose();
       [headGeo, torsoGeo, neckGeo, browGeo, flatGeo, eyeGeo, boltGeo, stitchGeo, shadowGeo].forEach((g) => g.dispose());
       renderer.dispose();
+      // Release the WebGL context now; Chrome keeps at most 16 and warns after that (#343).
+      renderer.forceContextLoss();
       holder.remove();
       legendEl.textContent = "";
       delete document.documentElement.dataset.creature3d;
