@@ -5,6 +5,14 @@ import { dailyEvent, nextHint, stepText, tutorialCommand, tutorialSteps } from "
 
 const $ = (id) => document.getElementById(id);
 
+// The ghost's line before each getting-started step (same voice as src/web/ghost-lines.ts: wry, never blames, 70 characters max).
+// Plain text only. The instruction after it is unchanged.
+export const STEP_GHOST_LINES = {
+  look: "Take a slow look. The rot is easy to spot from here.",
+  graft: "Your turn. The ghost keeps its hands in its sheet.",
+  ci: "One last rite: the Bench wants a green light.",
+};
+
 export function initOnboarding({ store, announce, now = () => Date.now() }) {
   const n = tutorialSteps.length;
   let done = Array.isArray(store.get("crypt.tutorial.done")) ? tutorialSteps.map((_, i) => store.get("crypt.tutorial.done")[i] === true) : tutorialSteps.map(() => false);
@@ -29,7 +37,7 @@ export function initOnboarding({ store, announce, now = () => Date.now() }) {
     const i = done.findIndex((d) => !d);
     const step = tutorialSteps[i];
     setText("tutorial-progress", "Getting started, step " + (i + 1) + " of " + n);
-    setText("tutorial-step", stepText(step, limb));
+    setText("tutorial-step", (STEP_GHOST_LINES[step.id] ? STEP_GHOST_LINES[step.id] + " " : "") + stepText(step, limb));
     const cmd = tutorialCommand(step, limb);
     setText("tutorial-command", cmd === null ? "" : "Type: " + cmd);
     const next = $("tutorial-next");
