@@ -1,53 +1,53 @@
 /* Graveyard page. Palette and fonts come from ../style.css (phosphor green on near black). */
 .gy { min-height: 100vh; }
-.gy-top { padding: .5rem 1rem 0; display: flex; flex-wrap: wrap; align-items: center; gap: 0 1.25rem; }
+.gy-top { padding: var(--space-2) var(--space-4) 0; display: flex; flex-wrap: wrap; align-items: center; gap: 0 1.25rem; }
 .gy-top h1 { font-size: 1.25rem; margin: 0; }
 .gy-totals { margin: 0; flex: 1 1 18rem; font-weight: 700; overflow-wrap: anywhere; }
 .gy-sub { margin: 0; }
 .gy-sub a, .gy a { color: var(--fg); }
-main { display: flex; flex-direction: column; padding: .25rem 1rem 1rem; max-width: 100%; }
-.gy-controls { position: relative; border: 1px solid var(--dim); padding: .25rem .75rem; margin-bottom: .5rem; }
+main { display: flex; flex-direction: column; padding: var(--space-1) var(--space-4) var(--space-4); max-width: 100%; }
+.gy-controls { position: relative; border: var(--border); padding: var(--space-1) var(--space-3); margin-bottom: var(--space-2); }
 .gy-controls .gy-row { margin: .2rem 0; }
-.gy-scan { margin: .25rem 0; padding: .5rem .75rem; background: #050805; border: 1px solid var(--fg); }
+.gy-scan { margin: var(--space-1) 0; padding: var(--space-2) var(--space-3); background: var(--bg); border: var(--border-strong); }
 .gy-scan[hidden] { display: none; }
-.gy-scan label { display: block; margin-bottom: .25rem; }
-.gy-row { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; margin: .4rem 0; }
-.gy-muted { margin: .25rem 0; color: var(--dim); max-width: 60rem; }
+.gy-scan label { display: block; margin-bottom: var(--space-1); }
+.gy-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); margin: .4rem 0; }
+.gy-muted { margin: var(--space-1) 0; color: var(--dim); max-width: 60rem; }
 .gy button, .gy select, .gy-file { min-height: 44px; min-width: 44px; }
-.gy select { font: inherit; color: var(--fg); background: #0a140a; border: 1px solid var(--dim); padding: .25rem .5rem; max-width: 100%; }
-.gy textarea { width: 100%; max-width: 40rem; font: inherit; color: var(--fg); background: #0a140a; border: 1px solid var(--dim); padding: .5rem; }
-.gy-file { display: inline-flex; align-items: center; gap: .5rem; border: 1px solid var(--dim); padding: .25rem .75rem; cursor: pointer; }
+.gy select { font: inherit; color: var(--fg); background: var(--surface); border: var(--border); padding: var(--space-1) var(--space-2); max-width: 100%; }
+.gy textarea { width: 100%; max-width: 40rem; font: inherit; color: var(--fg); background: var(--surface); border: var(--border); padding: var(--space-2); }
+.gy-file { display: inline-flex; align-items: center; gap: var(--space-2); border: var(--border); padding: var(--space-1) var(--space-3); cursor: pointer; }
 .gy-file input { max-width: 14rem; font: inherit; color: var(--fg); }
-.gy-progress { height: 14px; border: 1px solid var(--dim); max-width: 40rem; }
+.gy-progress { height: 14px; border: var(--border); max-width: 40rem; }
 .gy-progress span { display: block; height: 100%; width: 0; background: var(--fg); }
 #status { margin: .35rem 0; min-height: 1.35em; overflow-wrap: anywhere; }
 
-.gy-stage { position: relative; width: 100%; border: 1px solid var(--dim); background: #03060a; overflow: hidden; order: 1; }
+.gy-stage { position: relative; width: 100%; border: var(--border); background: var(--surface-deep); overflow: hidden; order: 1; }
 #scene { display: block; width: 100%; height: 480px; }
-.gy-legend { list-style: none; margin: 0 0 .5rem; padding: 0; display: flex; flex-wrap: wrap; gap: .25rem 1.25rem; font-size: .875rem; }
-.gy-legend li { display: inline-flex; align-items: center; flex-wrap: wrap; gap: .25rem; }
+.gy-legend { list-style: none; margin: 0 0 var(--space-2); padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-1) 1.25rem; font-size: .875rem; }
+.gy-legend li { display: inline-flex; align-items: center; flex-wrap: wrap; gap: var(--space-1); }
 .gy-legend svg { flex: none; }
-.gy-legend li svg:not(:first-child) { margin-left: .5rem; }
+.gy-legend li svg:not(:first-child) { margin-left: var(--space-2); }
 .gy-tombs { list-style: none; margin: 0; padding: 0; position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
 .gy-tombs li { position: absolute; }
 .gy-tombs button { display: block; width: 100%; height: 100%; min-width: 44px; min-height: 44px; padding: 0; border: 1px solid transparent; background: transparent; cursor: pointer; }
 .gy-tombs button:hover { background: rgba(51, 255, 51, .08); color: inherit; }
-.gy-tombs button:focus-visible { outline: 2px solid var(--warn); border-color: var(--warn); background: rgba(255, 176, 0, .1); }
-.gy-tip { position: absolute; z-index: 5; pointer-events: none; background: #0a140a; border: 1px solid var(--fg); padding: .35rem .6rem; max-width: 18rem; overflow-wrap: anywhere; font-size: .875rem; }
+.gy-tombs button:focus-visible { outline: var(--focus-ring); border-color: var(--warn); background: rgba(255, 176, 0, .1); }
+.gy-tip { position: absolute; z-index: 5; pointer-events: none; background: var(--surface); border: var(--border-strong); padding: .35rem .6rem; max-width: 18rem; overflow-wrap: anywhere; font-size: .875rem; }
 
-.gy-cards { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr)); gap: .75rem; }
-.gy-card { border: 1px solid var(--dim); padding: .6rem .8rem; min-width: 0; }
+.gy-cards { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr)); gap: var(--space-3); }
+.gy-card { border: var(--border); padding: .6rem .8rem; min-width: 0; }
 .gy-card.sla-breached { border-color: var(--hot); }
 .gy-card.sla-at-risk { border-color: var(--warn); }
 .gy-card button { width: 100%; min-height: 44px; text-align: left; overflow-wrap: anywhere; font-weight: 700; }
-.gy-card p { margin: .25rem 0; overflow-wrap: anywhere; }
+.gy-card p { margin: var(--space-1) 0; overflow-wrap: anywhere; }
 
-.gy-panel { position: fixed; z-index: 20; right: 0; top: 0; bottom: 0; width: min(36rem, 100%); overflow: auto; background: #050805; border-left: 2px solid var(--fg); padding: .75rem 1rem 2rem; box-shadow: -8px 0 40px rgba(0, 0, 0, .8); }
+.gy-panel { position: fixed; z-index: 20; right: 0; top: 0; bottom: 0; width: min(36rem, 100%); overflow: auto; background: var(--bg); border-left: 2px solid var(--fg); padding: var(--space-3) var(--space-4) 2rem; box-shadow: -8px 0 40px rgba(0, 0, 0, .8); }
 .gy-panel[hidden] { display: none; }
-.gy-panel-head { display: flex; justify-content: space-between; align-items: flex-start; gap: .5rem; }
+.gy-panel-head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-2); }
 .gy-panel h2 { overflow-wrap: anywhere; }
-.gy-panel h3 { margin: 1rem 0 .25rem; font-size: .95rem; }
-.gy-panel pre { white-space: pre-wrap; overflow-wrap: anywhere; border: 1px solid var(--dim); padding: .5rem; margin: .25rem 0; max-width: 100%; overflow-x: auto; }
+.gy-panel h3 { margin: var(--space-4) 0 var(--space-1); font-size: .95rem; }
+.gy-panel pre { white-space: pre-wrap; overflow-wrap: anywhere; border: var(--border); padding: var(--space-2); margin: var(--space-1) 0; max-width: 100%; overflow-x: auto; }
 .gy-panel ol, .gy-panel ul { padding-left: 1.25rem; overflow-wrap: anywhere; }
 .gy-panel .gy-dry { color: var(--warn); }
 
@@ -56,12 +56,12 @@ main { display: flex; flex-direction: column; padding: .25rem 1rem 1rem; max-wid
 .gy.record { font-size: 22px; }
 .gy.record .gy-top h1 { font-size: 2rem; }
 .gy.record main { padding: 0; }
-.gy.record .gy-legend { padding: 0 1rem; }
+.gy.record .gy-legend { padding: 0 var(--space-4); }
 .gy.record .gy-stage { border: 0; }
 .gy.record .gy-tip { font-size: 1.25rem; }
 .gy.record #status { position: fixed; bottom: .5rem; left: 1rem; right: 1rem; text-align: center; margin: 0; color: var(--dim); }
 
-@media (max-width: 480px) { .gy-top h1 { font-size: 1.1rem; } main { padding: .5rem .5rem 2rem; } }
+@media (max-width: 480px) { .gy-top h1 { font-size: 1.1rem; } main { padding: var(--space-2) var(--space-2) 2rem; } }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
 .gy-sub a { display: inline-block; min-height: 44px; line-height: 44px; }
 .gy .skip { min-height: 44px; }
@@ -86,16 +86,16 @@ main { display: flex; flex-direction: column; padding: .25rem 1rem 1rem; max-wid
   .gy-stage { flex: 1 1 auto; min-height: 0; overflow-x: hidden; overflow-y: auto; }
   #list-wrap { flex: 1 1 auto; min-height: 0; overflow: auto; }
   .gy-scan { position: absolute; z-index: 10; left: 0; top: 100%; width: min(44rem, 100%); box-shadow: 0 8px 30px rgba(0, 0, 0, .8); }
-  .gy-progress-wrap { display: flex; align-items: center; gap: 1rem; }
+  .gy-progress-wrap { display: flex; align-items: center; gap: var(--space-4); }
   .gy-progress-wrap .gy-progress { flex: 0 0 12rem; margin: 0; }
-  #status { margin: 0 0 .25rem; min-height: 1.35em; }
+  #status { margin: 0 0 var(--space-1); min-height: 1.35em; }
   .gy .skip { z-index: 30; }
   .gy-note { display: none; }
-  .gy-controls { padding: .1rem .5rem; margin-bottom: .35rem; }
-  .gy-toolbar { gap: .35rem .5rem; flex-wrap: wrap; }
+  .gy-controls { padding: .1rem var(--space-2); margin-bottom: .35rem; }
+  .gy-toolbar { gap: .35rem var(--space-2); flex-wrap: wrap; }
   .gy-toolbar button, .gy-toolbar select, .gy-toolbar .gy-file { min-height: 36px; padding-top: 0; padding-bottom: 0; }
   .gy-toolbar .gy-file input { min-height: 36px; max-width: 9rem; }
-  .gy-toolbar .gy-file { padding: 0 .5rem; }
+  .gy-toolbar .gy-file { padding: 0 var(--space-2); }
 }
-@media (max-width: 899px) { .gy-top h1 { font-size: 1.1rem; } .gy-totals { flex-basis: 100%; font-size: .9rem; } .gy-top .gy-sub { order: 1; } .gy-totals { order: 2; } .gy-scan { margin-top: .5rem; } .gy-top { padding-top: .35rem; } .gy-sub a { min-height: 44px; line-height: 44px; } }
+@media (max-width: 899px) { .gy-top h1 { font-size: 1.1rem; } .gy-totals { flex-basis: 100%; font-size: .9rem; } .gy-top .gy-sub { order: 1; } .gy-totals { order: 2; } .gy-scan { margin-top: var(--space-2); } .gy-top { padding-top: .35rem; } .gy-sub a { min-height: 44px; line-height: 44px; } }
 .gy.record .gy-legend { display: flex; }

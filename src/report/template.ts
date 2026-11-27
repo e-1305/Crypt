@@ -22,14 +22,19 @@ export const FOOTNOTES = {
 export const SAMPLE_BANNER = "SAMPLE DATA";
 export const SAMPLE_NOTE = "Made-up numbers from crypt autopsy --sample. This is not a real team's history.";
 
+// The standalone report cannot link web/brand.css (one file, CSP style-src inline only), so it carries the same :root tokens.
+// tests/brand-pages.test.ts checks this block against web/brand.css.
+export const BRAND_TOKENS = `:root{--fg:#33ff33;--dim:#22b022;--bg:#050805;--warn:#ffb000;--hot:#ff6a3d;--hc-fg:#fff;--hc-bg:#000;--font-mono:"JetBrains Mono",ui-monospace,"Cascadia Mono",Menlo,Consolas,"DejaVu Sans Mono","Courier New",monospace;--text-12:12px;--text-14:14px;--text-20:20px;--space-2:8px;--space-3:12px;--border:1px solid var(--dim);--focus-ring:2px solid var(--warn);--focus-offset:2px}`;
+
 export const STYLE = `
-:root{--fg:#33ff33;--dim:#22b022;--bg:#050805;--warn:#ffb000;--hot:#ff6a3d;--line:#22b022;--text:#c9f7c9}
+${BRAND_TOKENS}
+:root{--line:var(--dim);--text:#c9f7c9}
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--text);font-family:"JetBrains Mono",ui-monospace,"Cascadia Mono",Menlo,Consolas,"DejaVu Sans Mono","Courier New",monospace;font-size:14px;line-height:1.4}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-mono);font-size:var(--text-14);line-height:1.4}
 .page{max-width:210mm;margin:0 auto;padding:12mm 10mm}
 h1,h2{margin:0;letter-spacing:.15em;text-transform:uppercase;color:var(--fg)}
-h1{font-size:20px}
-h2{font-size:12px;color:var(--dim)}
+h1{font-size:var(--text-20)}
+h2{font-size:var(--text-12);color:var(--dim)}
 .sub{margin:.25rem 0 0;color:var(--text)}
 .hint{margin:.75rem 0;padding:.4rem .6rem;border:1px solid var(--warn);color:var(--warn)}
 .banner{margin:.6rem 0 0;padding:.35rem .6rem;border:2px solid var(--warn);color:var(--warn);font-weight:700;letter-spacing:.2em}
@@ -37,10 +42,10 @@ h2{font-size:12px;color:var(--dim)}
 .wm{position:fixed;top:0;left:0;width:100%;height:100%;overflow:hidden;pointer-events:none;z-index:0;display:flex;align-items:center;justify-content:center}
 .wm span{display:block;transform:rotate(-30deg);white-space:nowrap;font-size:min(14vw,110px);font-weight:700;letter-spacing:.15em;color:rgba(255,176,0,.16)}
 .page{position:relative;z-index:1}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
-.card{border:1px solid var(--line);padding:8px 10px;min-width:0}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-2);margin:var(--space-3) 0}
+.card{border:var(--border);padding:var(--space-2) 10px;min-width:0}
 .card .big{display:block;font-size:24px;color:var(--fg);font-weight:700;margin:.2rem 0}
-.card .detail{margin:0;color:var(--text);font-size:12px}
+.card .detail{margin:0;color:var(--text);font-size:var(--text-12)}
 .card sup{color:var(--warn)}
 .wide{grid-column:span 3}
 .n-a{color:var(--warn)}
@@ -53,6 +58,7 @@ li{margin:.1rem 0}
 footer{margin-top:10px;border-top:1px solid var(--line);padding-top:6px;font-size:11px;color:var(--text)}
 footer ol{margin:.25rem 0;padding-left:1.4rem}
 a{color:var(--fg)}
+:focus-visible{outline:var(--focus-ring);outline-offset:var(--focus-offset)}
 @page{size:A4;margin:10mm}
 @media print{
 html,body{background:#fff;color:#111;font-size:11px}
