@@ -2,7 +2,7 @@
   "ecosystem": "npm",
   "name": "handlebars",
   "version": "4.0.11",
-  "fetchedAt": "2026-11-17T13:01:41.710Z",
+  "fetchedAt": "2026-11-28T12:01:32.800Z",
   "vulns": [
     {
       "id": "GHSA-2cf5-4w76-r9qv",
